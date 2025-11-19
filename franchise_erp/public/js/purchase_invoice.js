@@ -4,13 +4,12 @@ frappe.ui.form.on("Purchase Invoice", {
         let profile_names = [];
 
         try {
-            // Fetch role profiles for logged-in user
             const result = await frappe.call({
-                method: "franchise_erp.custom.customs.get_user_role_profiles",
-                args: { user: frappe.session.user }
-            });
+            method: "franchise_erp.custom.customs.get_user_role_profiles",
+            args: { user: frappe.session.user }
+        });
 
-            profile_names = result.message || [];
+        const profile_names = result.message || [];
 
         } catch (error) {
             console.error("Error fetching user role profiles:", error);
