@@ -24,6 +24,23 @@ app_license = "mit"
 # Includes in <head>
 # ------------------
 
+
+
+doc_events = {
+   "Purchase Invoice": {
+        "after_insert": "franchise_erp.custom.customs.set_franchise_owner",
+         
+    }
+
+}
+
+doctype_js = {
+    "Purchase Invoice": "public/js/purchase_invoice.js"
+}
+
+
+
+
 # include js, css files in header of desk.html
 # app_include_css = "/assets/franchise_erp/css/franchise_erp.css"
 # app_include_js = "/assets/franchise_erp/js/franchise_erp.js"
