@@ -1,20 +1,16 @@
 frappe.ui.form.on("Purchase Invoice", {
-    before_submit(frm) {
+    async before_submit(frm) {
+        // Fetch role profiles for current user
+        const result = await frappe.call({
+            method: "franchise_erp.api.get_user_role_profiles",
+            args: { user: frappe.session.user }
+        });
 
-        // ---- PRINT ROLE PROFILES IN CONSOLE ----
-        console.log("User Full Doc:", frappe.user_doc);  
-        console.log("Role Profile Child Table:", frappe.user_doc?.role_profiles);
+        const profile_names = result.message || [];
+        console.log("User Role Profiles:", profile_names);
 
-        // Extract only the role_profile names
-        let role_profiles = (frappe.user_doc?.role_profiles || []).map(r => r.role_profile);
-
-        // Print role names
-        console.log("Extracted Role Profiles:", role_profiles); 
-
-        // ------------------------------------------
-
-        const has_franchise_profile = role_profiles.includes("Franchise Role");
-        const is_return_invoice = frm.doc.is_return == 1;
+        const has_franchise_profile = profile_names.includes("Franchise Role");
+        const is_return_invoice = frm.doc.is_return === 1;
 
         if (has_franchise_profile && is_return_invoice) {
             frappe.msgprint("Franchise user cannot submit Return Purchase Invoice");
