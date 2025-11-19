@@ -21,3 +21,4 @@ frappe.ui.form.on('Purchase Invoice', {
         // Case 3: Supplier (non-franchise) can submit return PI → allowed
     }
 });
+
