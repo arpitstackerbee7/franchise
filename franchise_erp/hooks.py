@@ -259,3 +259,4 @@ doctype_js = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+fixtures = ["Custom Field", "Property Setter"]
