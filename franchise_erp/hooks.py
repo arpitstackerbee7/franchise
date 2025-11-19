@@ -39,7 +39,8 @@ doctype_js = {
 }
 
 
-# Run this patch during bench migrate
+# franchise_erp/franchise_erp/hooks.py
+
 patches = [
     "franchise_erp.patches.add_user_custom_fields"
 ]

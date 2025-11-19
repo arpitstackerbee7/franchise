@@ -11,7 +11,6 @@ def execute():
             'fieldtype': 'Link',
             'options': 'Company',
             'insert_after': 'full_name',
-            'no_copy': 0,
             'permlevel': 0
         }).insert(ignore_permissions=True)
 
@@ -25,6 +24,7 @@ def execute():
             'fieldtype': 'Link',
             'options': 'Company',
             'insert_after': 'company',
-            'no_copy': 0,
             'permlevel': 0
         }).insert(ignore_permissions=True)
+
+    frappe.db.commit()
