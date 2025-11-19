@@ -57,8 +57,8 @@ def remove_represents_company_in_return(doc, method):
 def get_user_role_profiles(user):
     """Return list of role profiles assigned to user"""
     profiles = frappe.get_all(
-        "User Role Profile",
-        filters={"parent": user},
+        "Role Profile",
+        filters={"name": user},
         pluck="role_profile"
     )
     return profiles
