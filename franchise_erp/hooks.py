@@ -34,6 +34,7 @@ doc_events = {
 
 }
 
+
 doctype_js = {
     "Purchase Invoice": "public/js/purchase_invoice.js",
 }

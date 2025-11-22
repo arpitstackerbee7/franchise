@@ -22,3 +22,5 @@ frappe.ui.form.on('Purchase Invoice', {
         // No action needed here; allowed
     }
 });
+
+
