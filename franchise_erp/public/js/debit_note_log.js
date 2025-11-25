@@ -48,7 +48,7 @@ frappe.ui.form.on("Debit Note Log", {
         }
     },
 
-    show_invoice_table(frm) {
+   show_invoice_table(frm) {
     frm.$wrapper.find(".invoice-table").remove();
 
     let html = "<h4 style='margin-top:20px;'>Eligible Discounted Items</h4>";
@@ -58,9 +58,11 @@ frappe.ui.form.on("Debit Note Log", {
             <th>Invoice</th>
             <th>Date</th>
             <th>Customer</th>
-            <th>Item</th>
+            <th>Item Code</th>
+            <th>Item Name</th>
             <th>Qty</th>
             <th>Rate</th>
+            <th>Total Amount</th>
             <th>Disc%</th>
             <th>Net Amount</th>
         </tr>
@@ -73,9 +75,11 @@ frappe.ui.form.on("Debit Note Log", {
                 <td>${row.posting_date}</td>
                 <td>${row.customer}</td>
                 <td>${row.item_code}</td>
+                <td>${row.item_name}</td>
                 <td>${row.qty}</td>
                 <td>${row.rate}</td>
-                <td>${row.additional_discount_percentage}</td>
+                <td>${row.total_amount}</td>
+                <td>${row.discount_percentage}</td>
                 <td>${row.net_amount}</td>
             </tr>
         `;
@@ -86,15 +90,11 @@ frappe.ui.form.on("Debit Note Log", {
 },
 
 
+    
+show_create_button(frm) {
+    frm.page.remove_inner_button("Create Debit Note");
 
-
-
-   show_create_button(frm) {
-
-    frm.page.remove_inner_button("Create Journal Entry");
-
-    frm.page.add_inner_button("Create Journal Entry", function () {
-
+    frm.page.add_inner_button("Create Debit Note", function () {
         frappe.call({
             method: "franchise_erp.custom.debit_note.create_debit_note",
             args: {
@@ -103,16 +103,13 @@ frappe.ui.form.on("Debit Note Log", {
                 to_date: frm.doc.to_date
             },
             callback(r) {
-
                 frappe.msgprint(r.message);
 
-                // Auto-open the generated JE
                 if (r.message && r.message.journal_entry) {
                     frappe.set_route("Form", "Journal Entry", r.message.journal_entry);
                 }
             }
         });
-
     });
 }
 
