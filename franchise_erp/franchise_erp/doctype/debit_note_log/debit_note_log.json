@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-24 22:41:43.738526",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "column_break_jcqd",
+  "from_date",
+  "column_break_klfj",
+  "to_date",
+  "section_break_stdu",
+  "debit_note",
+  "created_by",
+  "column_break_ptct",
+  "total_discounted_amount",
+  "created_on",
+  "column_break_tdkk",
+  "debit_note_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_jcqd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "From Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_klfj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "To Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_stdu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "debit_note",
+   "fieldtype": "Link",
+   "label": "Debit Note",
+   "options": "Purchase Invoice"
+  },
+  {
+   "fieldname": "created_by",
+   "fieldtype": "Data",
+   "label": "Created By"
+  },
+  {
+   "fieldname": "column_break_ptct",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_discounted_amount",
+   "fieldtype": "Currency",
+   "label": "Total Discounted Amount"
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On"
+  },
+  {
+   "fieldname": "column_break_tdkk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "debit_note_amount",
+   "fieldtype": "Currency",
+   "label": "Debit Note Amount"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-24 23:24:28.434893",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Debit Note Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

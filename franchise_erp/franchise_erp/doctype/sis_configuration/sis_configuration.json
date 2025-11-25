@@ -1,0 +1,153 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-24 12:40:53.693140",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_kkvx",
+  "amended_from",
+  "company",
+  "fresh_margin",
+  "discounted_margin",
+  "auto_credit_note_percent",
+  "discount_threshold"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_kkvx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "SIS Configuration",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fresh_margin",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Define Fresh Item Margin (%)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "discounted_margin",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Max Fresh Discount Allowed (%)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "auto_credit_note_percent",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Auto Debit Note (%)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "discount_threshold",
+   "fieldtype": "Float",
+   "label": "Discount Threshold (%)",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-11-24 22:14:39.951346",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "SIS Configuration",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manufacturing Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Manufacturing User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

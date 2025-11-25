@@ -28,17 +28,19 @@ app_license = "mit"
 
 doc_events = {
    "Purchase Invoice": {
-        "after_insert": "franchise_erp.custom.customs.set_franchise_owner",
-         
-    }
+        "after_insert": "franchise_erp.custom.customs.set_franchise_owner",  
+    },
+    # "Sales Invoice": {
+    #     "on_submit": "franchise_erp.overrides.sales_invoice.apply_sis_company_margins"
+    # }
 
 }
 
 
 doctype_js = {
     "Purchase Invoice": "public/js/purchase_invoice.js",
+    "Debit Note Log": "public/js/debit_note_log.js"
 }
-
 # correct whitelisted override path
 # override_whitelisted_methods = {
 #     "franchise_erp.custom.customs.get_user_role_profiles": 
@@ -52,7 +54,12 @@ doctype_js = {
 
 
 # hooks.py
-after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
+after_migrate = [
+    "franchise_erp.event.add_user_custom_fields.create_custom_fields",
+    "franchise_erp.config.workspace.create_sidebar_items"
+]
+
+# after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
 
 
 # include js, css files in header of desk.html
