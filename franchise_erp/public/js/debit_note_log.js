@@ -87,6 +87,8 @@ frappe.ui.form.on("Debit Note Log", {
 
 
 
+
+
     // Show Create Debit Note button after invoices load
     show_create_button(frm) {
 
