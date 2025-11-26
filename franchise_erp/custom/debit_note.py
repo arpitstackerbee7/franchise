@@ -74,6 +74,7 @@ def fetch_invoices(company, from_date, to_date):
             sii.rate,
             sii.price_list_rate,
             sii.discount_percentage,
+                              sii.price_list_rate,
 
             (sii.qty * sii.price_list_rate) AS total_amount,
 
@@ -192,17 +193,27 @@ def create_debit_note(company, from_date, to_date):
 
     company_abbr = frappe.db.get_value("Company", company, "abbr")
 
-    # Read percent from SIS Configuration
-    auto_credit_note_percent = frappe.db.get_value(
+    # Read values from SIS Configuration
+    config = frappe.db.get_value(
         "SIS Configuration",
         {"company": company},
-        "auto_credit_note_percent"
+        ["auto_credit_note_percent", "discount_threshold"],
+        as_dict=True
     )
 
-    if not auto_credit_note_percent:
-        frappe.throw("Please set Auto Credit Note Percent in SIS Configuration.")
+    if not config:
+        frappe.throw("Please set Auto Credit Note Percent and Discount Threshold in SIS Configuration.")
 
-    # Get Penalty Expense Account dynamically
+    auto_credit_note_percent = config.auto_credit_note_percent        # Penalty %
+    discount_threshold = config.discount_threshold                    # Allowed Max %
+
+    if not auto_credit_note_percent:
+        frappe.throw("Auto Credit Note Percent is missing in SIS Configuration.")
+
+    if discount_threshold is None:
+        frappe.throw("Discount Threshold is missing in SIS Configuration.")
+
+    # Get Penalty Expense Account
     penalty_account = frappe.db.get_value(
         "Account",
         {
@@ -219,48 +230,28 @@ def create_debit_note(company, from_date, to_date):
             f"Create account like 'SIS Penalty Exp - {company_abbr}'."
         )
 
-    # Fetch invoice ITEMS where discount is greater
+    # Fetch invoice ITEMS where discount exceeds threshold
     items = frappe.db.sql("""
-    SELECT 
-        si.name AS invoice,
-        si.customer,
-        sii.item_code,
-        sii.item_name,
-        sii.discount_percentage,
-        sii.qty,
-        sii.rate,
-
-        ip.price_list AS selling_price_list,
-        ip.price_list_rate AS price_list_rate,
-
-        (sii.qty * sii.rate) AS total_amount,
-
-        (
-            (sii.qty * sii.rate) -
-            (((sii.qty * sii.rate) * sii.discount_percentage) / 100)
-        ) AS net_amount
-
-    FROM `tabSales Invoice` si
-    JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
-
-    LEFT JOIN `tabItem Price` ip 
-        ON ip.item_code = sii.item_code
-        AND ip.price_list = si.selling_price_list
-        AND ip.selling = 1
-        AND ip.docstatus < 2
-
-    WHERE 
-        si.company = %s
-        AND si.posting_date BETWEEN %s AND %s
-        AND si.docstatus = 1
-        AND sii.discount_percentage > %s
-
-    ORDER BY si.posting_date, si.name
-""", (company, from_date, to_date, auto_credit_note_percent), as_dict=True)
+        SELECT 
+            si.name AS invoice,
+            si.customer,
+            sii.item_code,
+            sii.discount_percentage,
+            (sii.qty * sii.rate) AS total_amount,
+            ((sii.qty * sii.rate)) AS net_amount
+        FROM `tabSales Invoice` si
+        JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
+        WHERE 
+            si.company = %s
+            AND si.posting_date BETWEEN %s AND %s
+            AND si.docstatus = 1
+            AND sii.discount_percentage > %s
+        ORDER BY si.posting_date, si.name
+    """, (company, from_date, to_date, discount_threshold), as_dict=True)
 
     if not items:
         return {
-            "message": f"No invoice items found with discount > {auto_credit_note_percent}%."
+            "message": f"No invoice items found with discount > {discount_threshold}% (threshold)."
         }
 
     # Create Journal Entry
@@ -271,25 +262,24 @@ def create_debit_note(company, from_date, to_date):
 
     total_penalty = 0
 
-    # Add each line item to JE
-    # Add each line item to JE, avoid duplicates
-    # Add each line item to JE, avoid duplicates in submitted JEs only
+    # Create JE items (credit rows)
     for row in items:
-        # Check if this invoice item already has a JE line in a submitted JE
+
+        # Check duplicate entry only in submitted JEs
         existing_entry = frappe.db.sql("""
             SELECT ja.name
             FROM `tabJournal Entry Account` ja
             JOIN `tabJournal Entry` je ON je.name = ja.parent
             WHERE ja.custom_penalty_invoice = %s
-            AND ja.account = %s
-            AND je.docstatus = 1
+              AND ja.account = %s
+              AND je.docstatus = 1
             LIMIT 1
         """, (row.invoice, penalty_account))
 
         if existing_entry:
-            # Skip this item, already recorded in a submitted JE
             continue
 
+        # Calculate penalty based on Auto Credit Note % (always fixed)
         penalty_amount = (row.net_amount * auto_credit_note_percent) / 100
         total_penalty += penalty_amount
 
@@ -297,13 +287,19 @@ def create_debit_note(company, from_date, to_date):
             "account": penalty_account,
             "credit_in_account_currency": penalty_amount,
             "custom_penalty_invoice": row.invoice,
-            "remarks": f"{row.item_code} (Disc {row.discount_percentage}%)"
+            "remarks": (
+                f"{row.item_code} "
+                f"(Disc {row.discount_percentage}%, "
+                f"Threshold {discount_threshold}%, "
+                f"Penalty {auto_credit_note_percent}%)"
+            )
         })
 
+    # If no items added due to duplicates
+    if total_penalty == 0:
+        return {"message": "All invoice items already have penalty entries. No new debit note created."}
 
-
-    # Fetch supplier who supplied these items to the company
-    # Assuming using Purchase Invoice
+    # Find the supplier who supplied these items
     supplier_info = frappe.db.sql("""
         SELECT pi.supplier
         FROM `tabPurchase Invoice` pi
@@ -317,24 +313,25 @@ def create_debit_note(company, from_date, to_date):
     if supplier_info:
         supplier_name = supplier_info[0].supplier
     else:
-        frappe.throw(f"No supplier found for the sold items supplied to {company}")
+        frappe.throw("No supplier found for the sold items.")
 
+    # Creditors account
     creditors_account = frappe.db.get_value(
-    "Account",
-    {
-        "company": company,
-        "account_type": "Payable",
-        "root_type": "Liability",
-        "name": ["like", "%Creditors%"],
-        "is_group": 0
-    },
-    "name"
+        "Account",
+        {
+            "company": company,
+            "account_type": "Payable",
+            "root_type": "Liability",
+            "name": ["like", "%Creditors%"],
+            "is_group": 0
+        },
+        "name"
     )
 
     if not creditors_account:
         frappe.throw(f"No Creditors account found for company {company}")
 
-    # Add balancing debit row for invoice summary with party_type and type
+    # Add Debit row (balance row)
     je.append("accounts", {
         "account": creditors_account,
         "debit_in_account_currency": total_penalty,
@@ -342,11 +339,12 @@ def create_debit_note(company, from_date, to_date):
         "party_type": "Supplier",
         "party": supplier_name,
         "type": "Payable",
-        "remarks": "Balance Penalty Entry"
+        "remarks": "Total Penalty Summary"
     })
 
+    # Save JE
     je.insert(ignore_permissions=True)
-    # je.submit()  # Uncomment if you want to auto-submit
+    # je.submit() # enable when tested
 
     return {
         "message": f"Journal Entry Created Successfully: {je.name}",

@@ -1,4 +1,4 @@
-frappe.ui.form.on("Debit Note Log", {
+frappe.ui.form.on("SIS Debit Note Log", {
 
     period(frm) {
         if (!frm.doc.period) return;

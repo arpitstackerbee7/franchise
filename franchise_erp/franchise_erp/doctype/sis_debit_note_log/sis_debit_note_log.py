@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class DebitNoteLog(Document):
+class SISDebitNoteLog(Document):
 	pass

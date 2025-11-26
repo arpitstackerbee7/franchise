@@ -39,7 +39,8 @@ doc_events = {
 
 doctype_js = {
     "Purchase Invoice": "public/js/purchase_invoice.js",
-    "Debit Note Log": "public/js/debit_note_log.js"
+    "SIS Debit Note Log": "public/js/debit_note_log.js",
+    "SIS Configuration": "public/js/sis_configuration.js",
 }
 # correct whitelisted override path
 # override_whitelisted_methods = {
