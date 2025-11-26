@@ -1,9 +1,9 @@
 frappe.ui.form.on('SIS Configuration', {
-    custom_sis_debit_note_creation_period(frm) {
-        let period = frm.doc.custom_sis_debit_note_creation_period;
+    sis_debit_note_creation_period(frm) {
+        let period = frm.doc.sis_debit_note_creation_period;
 
         // Get wrapper of the select field
-        let wrapper = $(frm.fields_dict.custom_sis_debit_note_creation_period.wrapper);
+        let wrapper = $(frm.fields_dict.sis_debit_note_creation_period.wrapper);
 
         // Remove old span if exists
         wrapper.find(".period-info-text").remove();
@@ -28,6 +28,6 @@ frappe.ui.form.on('SIS Configuration', {
 
     refresh(frm) {
         // Run on form load also
-        frm.trigger('custom_sis_debit_note_creation_period');
+        frm.trigger('sis_debit_note_creation_period');
     }
 });
