@@ -9,15 +9,7 @@
   "column_break_jcqd",
   "from_date",
   "column_break_klfj",
-  "to_date",
-  "section_break_stdu",
-  "debit_note",
-  "created_by",
-  "column_break_ptct",
-  "total_discounted_amount",
-  "created_on",
-  "column_break_tdkk",
-  "debit_note_amount"
+  "to_date"
  ],
  "fields": [
   {
@@ -49,50 +41,12 @@
    "in_list_view": 1,
    "label": "To Date",
    "reqd": 1
-  },
-  {
-   "fieldname": "section_break_stdu",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "debit_note",
-   "fieldtype": "Link",
-   "label": "Debit Note",
-   "options": "Purchase Invoice"
-  },
-  {
-   "fieldname": "created_by",
-   "fieldtype": "Data",
-   "label": "Created By"
-  },
-  {
-   "fieldname": "column_break_ptct",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "total_discounted_amount",
-   "fieldtype": "Currency",
-   "label": "Total Discounted Amount"
-  },
-  {
-   "fieldname": "created_on",
-   "fieldtype": "Datetime",
-   "label": "Created On"
-  },
-  {
-   "fieldname": "column_break_tdkk",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "debit_note_amount",
-   "fieldtype": "Currency",
-   "label": "Debit Note Amount"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-24 23:24:28.434893",
+ "modified": "2025-11-26 15:27:52.982194",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "SIS Debit Note Log",

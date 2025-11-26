@@ -25,17 +25,11 @@
    "hide_border": 0,
    "hide_days": 0,
    "hide_seconds": 0,
-<<<<<<< Updated upstream
-   "idx": 8,
-=======
    "idx": 7,
->>>>>>> Stashed changes
    "ignore_user_permissions": 0,
    "ignore_xss_filter": 0,
    "in_global_search": 0,
    "in_list_view": 0,
-<<<<<<< Updated upstream
-=======
    "in_preview": 0,
    "in_standard_filter": 0,
    "insert_after": "custom_period_info",
@@ -164,22 +158,11 @@
    "ignore_xss_filter": 0,
    "in_global_search": 0,
    "in_list_view": 1,
->>>>>>> Stashed changes
    "in_preview": 0,
    "in_standard_filter": 0,
    "insert_after": "discount_threshold",
    "is_system_generated": 0,
    "is_virtual": 0,
-<<<<<<< Updated upstream
-   "label": "",
-   "length": 0,
-   "link_filters": null,
-   "mandatory_depends_on": null,
-   "modified": "2025-11-25 23:02:04.901828",
-   "modified_by": "Administrator",
-   "module": null,
-   "name": "SIS Configuration-custom_column_break_svbou",
-=======
    "label": "SIS Debit Note Creation Period",
    "length": 0,
    "link_filters": null,
@@ -188,7 +171,6 @@
    "modified_by": "Administrator",
    "module": null,
    "name": "SIS Configuration-custom_sis_debit_note_creation_period",
->>>>>>> Stashed changes
    "no_copy": 0,
    "non_negative": 0,
    "options": "Weekly\nFortnightly\nMonthly",
@@ -202,75 +184,11 @@
    "read_only": 0,
    "read_only_depends_on": null,
    "report_hide": 0,
-   "reqd": 0,
+   "reqd": 1,
    "search_index": 0,
    "show_dashboard": 0,
    "sort_options": 0,
    "translatable": 0,
-   "unique": 0,
-   "width": null
-  },
-  {
-   "_assign": null,
-   "_comments": null,
-   "_liked_by": null,
-   "_user_tags": null,
-   "allow_in_quick_entry": 0,
-   "allow_on_submit": 0,
-   "bold": 0,
-   "collapsible": 0,
-   "collapsible_depends_on": null,
-   "columns": 0,
-   "creation": "2025-11-25 23:02:04.728949",
-   "default": null,
-   "depends_on": null,
-   "description": null,
-   "docstatus": 0,
-   "dt": "SIS Configuration",
-   "fetch_from": null,
-   "fetch_if_empty": 0,
-   "fieldname": "custom_sis_debit_note_creation_period",
-   "fieldtype": "Select",
-   "hidden": 0,
-   "hide_border": 0,
-   "hide_days": 0,
-   "hide_seconds": 0,
-   "idx": 3,
-   "ignore_user_permissions": 0,
-   "ignore_xss_filter": 0,
-   "in_global_search": 0,
-   "in_list_view": 0,
-   "in_preview": 0,
-   "in_standard_filter": 0,
-   "insert_after": "company",
-   "is_system_generated": 0,
-   "is_virtual": 0,
-   "label": "SIS Debit Note Creation Period",
-   "length": 0,
-   "link_filters": null,
-   "mandatory_depends_on": null,
-   "modified": "2025-11-25 23:02:04.728949",
-   "modified_by": "Administrator",
-   "module": null,
-   "name": "SIS Configuration-custom_sis_debit_note_creation_period",
-   "no_copy": 0,
-   "non_negative": 0,
-   "options": "Weekly\nMonthly\nFortnightly",
-   "owner": "Administrator",
-   "permlevel": 0,
-   "placeholder": null,
-   "precision": "",
-   "print_hide": 0,
-   "print_hide_if_no_value": 0,
-   "print_width": null,
-   "read_only": 0,
-   "read_only_depends_on": null,
-   "report_hide": 0,
-   "reqd": 0,
-   "search_index": 0,
-   "show_dashboard": 0,
-   "sort_options": 0,
-   "translatable": 1,
    "unique": 0,
    "width": null
   }
@@ -307,11 +225,7 @@
    "_comments": null,
    "_liked_by": null,
    "_user_tags": null,
-<<<<<<< Updated upstream
-   "creation": "2025-11-25 23:02:05.554096",
-=======
    "creation": "2025-11-26 12:56:15.522533",
->>>>>>> Stashed changes
    "default_value": null,
    "doc_type": "SIS Configuration",
    "docstatus": 0,
@@ -319,11 +233,7 @@
    "field_name": null,
    "idx": 0,
    "is_system_generated": 0,
-<<<<<<< Updated upstream
-   "modified": "2025-11-25 23:02:05.554096",
-=======
    "modified": "2025-11-26 12:56:15.522533",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "SIS Configuration-main-field_order",
@@ -331,11 +241,7 @@
    "property": "field_order",
    "property_type": "Data",
    "row_name": null,
-<<<<<<< Updated upstream
-   "value": "[\"section_break_kkvx\", \"amended_from\", \"company\", \"custom_sis_debit_note_creation_period\", \"discount_threshold\", \"custom_column_break_svbou\", \"fresh_margin\", \"discounted_margin\", \"auto_credit_note_percent\"]"
-=======
    "value": "[\"section_break_kkvx\", \"amended_from\", \"company\", \"discount_threshold\", \"custom_sis_debit_note_creation_period\", \"custom_period_info\", \"custom_column_break_svbou\", \"fresh_margin\", \"discounted_margin\", \"auto_credit_note_percent\"]"
->>>>>>> Stashed changes
   }
  ],
  "sync_on_migrate": 1
