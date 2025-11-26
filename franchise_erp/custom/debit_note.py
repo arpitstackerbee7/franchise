@@ -72,13 +72,14 @@ def fetch_invoices(company, from_date, to_date):
             sii.item_name,
             sii.qty,
             sii.rate,
+            sii.price_list_rate,
             sii.discount_percentage,
 
-            (sii.qty * sii.rate) AS total_amount,
+            (sii.qty * sii.price_list_rate) AS total_amount,
 
             -- Net Amount after applying invoice discount
-            ((sii.qty * sii.rate) - 
-             (((sii.qty * sii.rate) * sii.discount_percentage) / 100)
+            ((sii.qty * sii.price_list_rate) - 
+             (((sii.qty * sii.price_list_rate) * sii.discount_percentage) / 100)
             ) AS net_amount
 
         FROM `tabSales Invoice` si
@@ -220,25 +221,42 @@ def create_debit_note(company, from_date, to_date):
 
     # Fetch invoice ITEMS where discount is greater
     items = frappe.db.sql("""
-        SELECT 
-            si.name AS invoice,
-            si.customer,
-            sii.item_code,
-            sii.discount_percentage,
-            (sii.qty * sii.rate) AS total_amount,
-            (
-                (sii.qty * sii.rate) -
-                (((sii.qty * sii.rate) * sii.discount_percentage) / 100)
-            ) AS net_amount
-        FROM `tabSales Invoice` si
-        JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
-        WHERE 
-            si.company = %s
-            AND si.posting_date BETWEEN %s AND %s
-            AND si.docstatus = 1
-            AND sii.discount_percentage > %s
-        ORDER BY si.posting_date, si.name
-    """, (company, from_date, to_date, auto_credit_note_percent), as_dict=True)
+    SELECT 
+        si.name AS invoice,
+        si.customer,
+        sii.item_code,
+        sii.item_name,
+        sii.discount_percentage,
+        sii.qty,
+        sii.rate,
+
+        ip.price_list AS selling_price_list,
+        ip.price_list_rate AS price_list_rate,
+
+        (sii.qty * sii.rate) AS total_amount,
+
+        (
+            (sii.qty * sii.rate) -
+            (((sii.qty * sii.rate) * sii.discount_percentage) / 100)
+        ) AS net_amount
+
+    FROM `tabSales Invoice` si
+    JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
+
+    LEFT JOIN `tabItem Price` ip 
+        ON ip.item_code = sii.item_code
+        AND ip.price_list = si.selling_price_list
+        AND ip.selling = 1
+        AND ip.docstatus < 2
+
+    WHERE 
+        si.company = %s
+        AND si.posting_date BETWEEN %s AND %s
+        AND si.docstatus = 1
+        AND sii.discount_percentage > %s
+
+    ORDER BY si.posting_date, si.name
+""", (company, from_date, to_date, auto_credit_note_percent), as_dict=True)
 
     if not items:
         return {

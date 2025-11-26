@@ -77,7 +77,7 @@ frappe.ui.form.on("Debit Note Log", {
                 <td>${row.item_code}</td>
                 <td>${row.item_name}</td>
                 <td>${row.qty}</td>
-                <td>${row.rate}</td>
+                <td>${row.price_list_rate}</td>
                 <td>${row.total_amount}</td>
                 <td>${row.discount_percentage}</td>
                 <td>${row.net_amount}</td>
@@ -115,3 +115,4 @@ show_create_button(frm) {
 
 
 });
+
