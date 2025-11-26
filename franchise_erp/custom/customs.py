@@ -54,6 +54,31 @@ def remove_represents_company_in_return(doc, method):
 
 
 
+def set_customer_email_as_owner(doc, method):
+    """
+    Purchase Invoice ka owner = Customer ka email
+    """
+    if doc.doctype != "Purchase Invoice":
+        return
+
+    # Customer ka email find karo
+    customer_email = None
+
+    # Agar supplier linked hai customer se (custom field)
+    if frappe.db.exists("Supplier", doc.supplier):
+        customer_email = frappe.db.get_value("Supplier", doc.supplier, "email_id")
+
+    # Agar PI me customer field hai
+    if not customer_email and getattr(doc, "customer", None):
+        customer_email = frappe.db.get_value("Customer", doc.customer, "email_id")
+
+    if not customer_email:
+        frappe.log_error(f"Customer email not found for PI: {doc.name}")
+        return
+
+    # Owner change kar do
+    doc.db_set("owner", customer_email)
+    doc.db_set("modified_by", customer_email)
 
 # @frappe.whitelist()
 # def get_user_role_profiles(user):

@@ -28,7 +28,8 @@ app_license = "mit"
 
 doc_events = {
    "Purchase Invoice": {
-        "after_insert": "franchise_erp.custom.customs.set_franchise_owner",  
+       "before_insert": "franchise_erp.custom.customs.set_customer_email_as_owner",
+        # "after_insert": "franchise_erp.custom.customs.set_franchise_owner",  
     },
     # "Sales Invoice": {
     #     "on_submit": "franchise_erp.overrides.sales_invoice.apply_sis_company_margins"
