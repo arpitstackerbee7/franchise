@@ -17,7 +17,7 @@
 //             frappe.validated = false;
 //             return;
 //         }
-       
+
 
 //         // Return PI: supplier (owner) cannot submit
 //         if (is_return === 1 && current_user === owner) {
@@ -28,7 +28,7 @@
 //     }
 // });
 frappe.ui.form.on('Purchase Invoice', {
-    before_submit: async function(frm) {
+    before_submit: async function (frm) {
         const current_user = frappe.session.user;
         const is_return = frm.doc.is_return;
         const owner = frm.doc.owner;
@@ -41,7 +41,7 @@ frappe.ui.form.on('Purchase Invoice', {
         console.log("ir:", is_return);
         console.log("o:", owner);
         console.log("modify:", modify);
-console.log("re c:", represents_company);
+        console.log("re c:", represents_company);
         // Allow Administrator
         if (current_user === "Administrator") {
             return;
