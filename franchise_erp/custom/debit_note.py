@@ -74,6 +74,7 @@ def fetch_invoices(company, from_date, to_date):
             sii.rate,
             sii.price_list_rate,
             sii.discount_percentage,
+                              sii.price_list_rate,
 
             (sii.qty * sii.price_list_rate) AS total_amount,
 
@@ -221,6 +222,7 @@ def create_debit_note(company, from_date, to_date):
 
     # Fetch invoice ITEMS where discount is greater
     items = frappe.db.sql("""
+<<<<<<< Updated upstream
     SELECT 
         si.name AS invoice,
         si.customer,
@@ -257,11 +259,33 @@ def create_debit_note(company, from_date, to_date):
 
     ORDER BY si.posting_date, si.name
 """, (company, from_date, to_date, auto_credit_note_percent), as_dict=True)
+=======
+        SELECT 
+            si.name AS invoice,
+            si.customer,
+            sii.item_code,
+            sii.discount_percentage,
+            (sii.qty * sii.rate) AS total_amount,
+            (
+                (sii.qty * sii.rate) -
+                (((sii.qty * sii.rate) * 0) / 100)
+            ) AS net_amount
+        FROM `tabSales Invoice` si
+        JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
+        WHERE 
+            si.company = %s
+            AND si.posting_date BETWEEN %s AND %s
+            AND si.docstatus = 1
+            AND sii.discount_percentage > %s
+        ORDER BY si.posting_date, si.name
+    """, (company, from_date, to_date, auto_credit_note_percent), as_dict=True)
+>>>>>>> Stashed changes
 
     if not items:
         return {
             "message": f"No invoice items found with discount > {auto_credit_note_percent}%."
         }
+
 
     # Create Journal Entry
     je = frappe.new_doc("Journal Entry")

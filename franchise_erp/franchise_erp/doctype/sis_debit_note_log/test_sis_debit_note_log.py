@@ -13,9 +13,9 @@ IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
 
-class IntegrationTestDebitNoteLog(IntegrationTestCase):
+class IntegrationTestSISDebitNoteLog(IntegrationTestCase):
 	"""
-	Integration tests for DebitNoteLog.
+	Integration tests for SISDebitNoteLog.
 	Use this class for testing interactions between multiple components.
 	"""
 
