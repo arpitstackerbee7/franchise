@@ -11,7 +11,9 @@
   "fresh_margin",
   "discounted_margin",
   "auto_credit_note_percent",
-  "discount_threshold"
+  "discount_threshold",
+  "sis_debit_note_creation_period",
+  "period_info"
  ],
  "fields": [
   {
@@ -29,6 +31,7 @@
    "search_index": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "company",
    "fieldtype": "Link",
    "in_list_view": 1,
@@ -37,6 +40,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "fresh_margin",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -44,6 +48,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "discounted_margin",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -51,6 +56,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "auto_credit_note_percent",
    "fieldtype": "Float",
    "in_list_view": 1,
@@ -58,17 +64,32 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "discount_threshold",
    "fieldtype": "Float",
    "label": "Discount Threshold (%)",
    "reqd": 1
+  },
+  {
+   "fieldname": "sis_debit_note_creation_period",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "SIS Debit Note Creation Period",
+   "options": "Weekly\nFortnightly\nMonthly",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_info",
+   "fieldtype": "HTML",
+   "label": "Period Info",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-24 22:14:39.951346",
+ "modified": "2025-11-26 16:10:57.716164",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "SIS Configuration",
