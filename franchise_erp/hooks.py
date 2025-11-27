@@ -42,6 +42,7 @@ doctype_js = {
     "Purchase Invoice": "public/js/purchase_invoice.js",
     "SIS Debit Note Log": "public/js/debit_note_log.js",
     "SIS Configuration": "public/js/sis_configuration.js",
+    "Sales Invoice": "public/js/sales_invoice.js"
 }
 
 # override_whitelisted_methods = {
