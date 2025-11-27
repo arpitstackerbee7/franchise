@@ -84,4 +84,15 @@ def set_customer_email_as_owner(doc, method):
 # def get_user_role_profiles(user):
 #     role_profile = frappe.db.get_value("User", user, "role_profile_name")
 #     return [role_profile] if role_profile else []
+import frappe
+from frappe import _
 
+def validate_user_status(login_manager):
+    user = login_manager.user
+
+    # Fetch workflow_state from User
+    workflow_state = frappe.db.get_value("User", user, "workflow_state")
+
+    # Block login if workflow_state is Pending or Rejected
+    if workflow_state in ["Pending", "Rejected"]:
+        frappe.throw(_("Your account is not approved yet. Current status: {0}").format(workflow_state))

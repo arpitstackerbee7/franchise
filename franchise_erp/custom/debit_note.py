@@ -69,6 +69,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
         SELECT 
             si.name AS name,
             si.posting_date,
+            si.posting_time,
             si.customer,
             si.additional_discount_percentage,
 
@@ -96,7 +97,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
             AND si.posting_date BETWEEN %s AND %s
             AND si.docstatus = 1
 
-        ORDER BY si.posting_date DESC, si.name, sii.idx
+        ORDER BY si.posting_date DESC, si.posting_time DESC, si.name, sii.idx
     """, (company, from_date, to_date), as_dict=True)
 
     return {

@@ -24,6 +24,7 @@ app_license = "mit"
 # Includes in <head>
 # ------------------
 
+on_login = "franchise_erp.custom.customs.validate_user_status"
 
 
 doc_events = {
@@ -40,8 +41,8 @@ doctype_js = {
     "SIS Configuration": "public/js/sis_configuration.js",
     "Sales Invoice": "public/js/sales_invoice.js",
     "User": "public/js/user_mobile_validation.js",
-    # "Sales Invoice Item": "public/js/calculation.js",
 }
+
 
 # override_whitelisted_methods = {
 #     "franchise_erp.custom.customs.get_user_role_profiles": 

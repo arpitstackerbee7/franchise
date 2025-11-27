@@ -154,9 +154,9 @@ function show_invoice_dialog(frm) {
         let start = (page - 1) * page_size;
         let paginated = filtered.slice(start, start + page_size);
 
-        // Table with S.No
+        // --- TABLE HTML ---
         let table = `
-            <table class="table table-bordered" style="margin:0px;">
+            <table class="table table-bordered" style="margin-bottom:0;">
                 <thead>
                     <tr>
                         <th>S.No</th>
@@ -177,7 +177,7 @@ function show_invoice_dialog(frm) {
         `;
 
         if (paginated.length === 0) {
-            table += `<tr><td colspan="11" class="text-center">No Records Found</td></tr>`;
+            table += `<tr><td colspan="12" class="text-center">No Records Found</td></tr>`;
         } else {
             paginated.forEach((r, idx) => {
                 const serial = start + idx + 1;
@@ -185,7 +185,7 @@ function show_invoice_dialog(frm) {
                     <tr>
                         <td>${serial}</td>
                         <td>${r.name}</td>
-                        <td>${r.posting_date}</td>
+                        <td>${r.posting_date} ${r.posting_time.split('.')[0]}</td>
                         <td>${r.customer}</td>
                         <td>${r.item_code}</td>
                         <td>${r.item_name}</td>
@@ -200,23 +200,36 @@ function show_invoice_dialog(frm) {
             });
         }
 
-        table += "</tbody></table>";
+        table += `</tbody></table>`;
+
+        // Inject table
         d.get_field("items_html").$wrapper.html(table);
 
-        // Pagination HTML
-        let pagination = `
-            <div style="display:flex; justify-content:center; gap:40px; margin:20px;">
-                <button class="btn btn-secondary" id="prev_page">Prev</button>
-                <b>Page ${page} / ${total_pages}</b>
-                <button class="btn btn-secondary" id="next_page">Next</button>
+        // --- RECORD COUNT + PAGINATION BELOW TABLE ---
+        let footer = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;">
+                
+                <!-- LEFT: Total Records -->
+                <div style="font-weight:bold;">
+                    Total Records: ${filtered.length}
+                </div>
+
+                <!-- RIGHT: Pagination -->
+                <div>
+                    <button class="btn btn-sm btn-primary" id="prev_page" ${page === 1 ? "disabled" : ""}>Prev</button>
+                    <span style="margin:0 10px;">Page ${page} of ${total_pages}</span>
+                    <button class="btn btn-sm btn-primary" id="next_page" ${page === total_pages ? "disabled" : ""}>Next</button>
+                </div>
             </div>
         `;
-        d.get_field("pagination_html").$wrapper.html(pagination);
 
-        // bind handlers scoped to this dialog (remove previous handlers first)
+        d.get_field("pagination_html").$wrapper.html(footer);
+
+        // --- Bind Events ---
         d.$wrapper.find("#prev_page").off("click").on("click", () => {
             if (page > 1) { page--; update_table(); }
         });
+
         d.$wrapper.find("#next_page").off("click").on("click", () => {
             if (page < total_pages) { page++; update_table(); }
         });

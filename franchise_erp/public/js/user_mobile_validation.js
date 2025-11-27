@@ -10,3 +10,5 @@ frappe.ui.form.on("User", {
         frm.set_value("mobile_no", mobile);
     }
 });
+
+
