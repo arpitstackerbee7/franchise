@@ -40,7 +40,7 @@ doctype_js = {
     "SIS Debit Note Log": "public/js/debit_note_log.js",
     "SIS Configuration": "public/js/sis_configuration.js",
     "Sales Invoice": "public/js/sales_invoice.js",
-    "User": "public/js/user_mobile_validation.js",
+    "User": "public/js/user_validation.js"
 }
 
 
