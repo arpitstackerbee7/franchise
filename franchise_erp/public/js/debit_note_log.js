@@ -27,6 +27,8 @@ frappe.ui.form.on("SIS Debit Note Log", {
         });
     },
 
+
+    
     refresh(frm) {
         // First: auto fetch config when company is selected
         if (frm.doc.company) {
