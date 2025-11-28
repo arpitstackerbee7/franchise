@@ -15,15 +15,15 @@ def create_custom_fields():
                 "permlevel": 0,
                 "reqd": 1
             },
-            {
-                "fieldname": "franchise_company",
-                "label": "Franchise Company",
-                "fieldtype": "Link",
-                "options": "Company",
-                "insert_after": "company",
-                "permlevel": 0,
-                "reqd": 1
-            }
+            # {
+            #     "fieldname": "franchise_company",
+            #     "label": "Franchise Company",
+            #     "fieldtype": "Link",
+            #     "options": "Company",
+            #     "insert_after": "company",
+            #     "permlevel": 0,
+            #     "reqd": 1
+            # }
         ]
     }
 

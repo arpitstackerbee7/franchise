@@ -90,6 +90,10 @@ from frappe import _
 def validate_user_status(login_manager):
     user = login_manager.user
 
+    # Allow Administrator to login without any restriction
+    if user == "Administrator":
+        return
+
     # Fetch workflow_state from User
     workflow_state = frappe.db.get_value("User", user, "workflow_state")
 
