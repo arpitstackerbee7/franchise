@@ -197,6 +197,7 @@ function show_invoice_dialog(frm) {
                         <th>Input GST Value</th>
                         <th>Invoice Value</th>
                         <th>Debit Note</th>
+                        
 
                     </tr>
                 </thead>

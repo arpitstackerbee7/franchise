@@ -423,6 +423,7 @@ def create_debit_note(company, period_type=None, invoices=None):
         "remarks": "Total Penalty Summary"
     })
 
+
     # --------------------------------------------------------
     #  SAVE JE
     # --------------------------------------------------------
