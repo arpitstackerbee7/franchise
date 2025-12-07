@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-02 15:03:34.786783",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "purchase_order",
+  "purchase_receipt",
+  "box",
+  "box_id",
+  "used_box_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "purchase_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Purchase Order",
+   "options": "Purchase Order"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "purchase_receipt",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Purchase Receipt",
+   "options": "Purchase Receipt"
+  },
+  {
+   "fieldname": "box",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Box",
+   "reqd": 1
+  },
+  {
+   "fieldname": "box_id",
+   "fieldtype": "Small Text",
+   "label": "Box Id"
+  },
+  {
+   "fieldname": "used_box_id",
+   "fieldtype": "Small Text",
+   "label": "Used Box Id"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-02 15:03:34.786783",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Gate Entry Table",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

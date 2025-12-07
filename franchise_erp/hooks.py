@@ -30,9 +30,16 @@ app_license = "mit"
 doc_events = {
    "Purchase Invoice": {
        "before_insert": "franchise_erp.custom.customs.set_customer_email_as_owner",
+    },
+    "Journal Entry": {
+        "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
+    },
+    "Sales Invoice": {
+        "before_submit": "franchise_erp.custom.sales_invoice_validation.before_submit"
     }
 
 }
+
 
 
 doctype_js = {

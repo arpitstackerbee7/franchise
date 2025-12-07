@@ -1,0 +1,276 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2025-12-02 15:03:39.672661",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "general_details_section",
+  "naming_series",
+  "select_transaction_type",
+  "column_break_omju",
+  "asn_no",
+  "vendor_name",
+  "section_break_zmlq",
+  "table_phxi",
+  "invoice_details_section",
+  "invoice_no",
+  "invoice_image",
+  "column_break_wyrc",
+  "invoice_date",
+  "total_no_boxes",
+  "column_break_ifqn",
+  "invoice_value",
+  "amended_from",
+  "column_break_urkf",
+  "total_invoice_qty",
+  "eway_bill",
+  "vechical_details_section",
+  "vehicle_no",
+  "vehicle_arrival_date",
+  "vehicle_image",
+  "column_break_xlqo",
+  "select_vehicle",
+  "vehicle_arrival_time",
+  "column_break_wtct",
+  "transport_method",
+  "driver_name",
+  "builty_no",
+  "column_break_tfgp",
+  "transporter",
+  "driver_mobile_no",
+  "column_break_lwox",
+  "sh_weight",
+  "vehicle_remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_details_section",
+   "fieldtype": "Section Break",
+   "label": "General Details"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "No.",
+   "options": "GE-PRE-.YYYY.-"
+  },
+  {
+   "fieldname": "select_transaction_type",
+   "fieldtype": "Select",
+   "label": "Select Transaction Type",
+   "options": "\nPurchase Order\nSale Return",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_omju",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "asn_no",
+   "fieldtype": "Select",
+   "label": "ASN no."
+  },
+  {
+   "fieldname": "vendor_name",
+   "fieldtype": "Link",
+   "label": "Vendor Name",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "section_break_zmlq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "table_phxi",
+   "fieldtype": "Table",
+   "label": "Gate Entry Details",
+   "options": "Gate Entry Table"
+  },
+  {
+   "fieldname": "invoice_details_section",
+   "fieldtype": "Section Break",
+   "label": "Invoice Details"
+  },
+  {
+   "fieldname": "invoice_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Invoice No.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice_image",
+   "fieldtype": "Attach Image",
+   "label": "Invoice Image",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_wyrc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "invoice_date",
+   "fieldtype": "Date",
+   "label": "Invoice Date ",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_no_boxes",
+   "fieldtype": "Data",
+   "label": "Total No. Boxes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ifqn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "invoice_value",
+   "fieldtype": "Float",
+   "label": "Invoice Value",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Gate Entry",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_urkf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_invoice_qty",
+   "fieldtype": "Float",
+   "label": "Total Invoice Qty",
+   "reqd": 1
+  },
+  {
+   "fieldname": "eway_bill",
+   "fieldtype": "Data",
+   "label": "Eway Bill",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vechical_details_section",
+   "fieldtype": "Section Break",
+   "label": "Vechical Details"
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "label": "Vehicle No.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vehicle_arrival_date",
+   "fieldtype": "Date",
+   "label": "Vehicle Arrival Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "vehicle_image",
+   "fieldtype": "Attach Image",
+   "label": "Vehicle Image "
+  },
+  {
+   "fieldname": "column_break_xlqo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "select_vehicle",
+   "fieldtype": "Link",
+   "label": "Select Vehicle",
+   "options": "Vehicle"
+  },
+  {
+   "fieldname": "vehicle_arrival_time",
+   "fieldtype": "Time",
+   "label": "Vehicle Arrival Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_wtct",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "transport_method",
+   "fieldtype": "Select",
+   "label": "Transport Method",
+   "options": "\nland\nwater\nair"
+  },
+  {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "label": "Driver Name"
+  },
+  {
+   "fieldname": "builty_no",
+   "fieldtype": "Data",
+   "label": "Builty No."
+  },
+  {
+   "fieldname": "column_break_tfgp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter ",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "driver_mobile_no",
+   "fieldtype": "Data",
+   "label": "Driver Mobile No."
+  },
+  {
+   "fieldname": "column_break_lwox",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sh_weight",
+   "fieldtype": "Int",
+   "label": "Shipment Weight"
+  },
+  {
+   "fieldname": "vehicle_remarks",
+   "fieldtype": "Small Text",
+   "label": "Vehicle Condition/Remarks"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-02 15:03:39.672661",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Gate Entry",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

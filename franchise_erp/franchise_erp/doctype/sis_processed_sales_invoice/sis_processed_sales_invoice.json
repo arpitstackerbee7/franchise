@@ -1,0 +1,200 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-29 13:05:38.059780",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sales_invoice",
+  "column_break_wjcz",
+  "customer",
+  "column_break_zawg",
+  "posting_date",
+  "section_break_jlxh",
+  "company",
+  "column_break_qxvj",
+  "journal_entry",
+  "column_break_uhnr",
+  "voucher_type",
+  "column_break_aszs",
+  "total_qty",
+  "section_break_jbdw",
+  "total_base",
+  "column_break_iwzm",
+  "total_margin",
+  "column_break_plov",
+  "total_ogst",
+  "column_break_rwbb",
+  "total_igst",
+  "section_break_urjg",
+  "total_inv",
+  "section_break_gkoh",
+  "items",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Data",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice"
+  },
+  {
+   "fieldname": "column_break_wjcz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Data",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "column_break_zawg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date"
+  },
+  {
+   "fieldname": "section_break_jlxh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company"
+  },
+  {
+   "fieldname": "column_break_qxvj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "journal_entry",
+   "fieldtype": "Data",
+   "label": "Journal Entry"
+  },
+  {
+   "fieldname": "column_break_uhnr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "voucher_type",
+   "fieldtype": "Data",
+   "label": "Entry Type"
+  },
+  {
+   "fieldname": "column_break_aszs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_qty",
+   "fieldtype": "Float",
+   "label": "Qty"
+  },
+  {
+   "fieldname": "section_break_jbdw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "total_base",
+   "fieldtype": "Currency",
+   "label": "Base"
+  },
+  {
+   "fieldname": "column_break_iwzm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_margin",
+   "fieldtype": "Currency",
+   "label": "Margin"
+  },
+  {
+   "fieldname": "column_break_plov",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_ogst",
+   "fieldtype": "Currency",
+   "label": "Output GST"
+  },
+  {
+   "fieldname": "column_break_rwbb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_igst",
+   "fieldtype": "Data",
+   "label": "Input GST"
+  },
+  {
+   "fieldname": "section_break_urjg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "total_inv",
+   "fieldtype": "Data",
+   "label": "Final Invoice"
+  },
+  {
+   "fieldname": "section_break_gkoh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "SIS Processed Sales Invoice Item"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "SIS Processed Sales Invoice",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-01 23:47:33.454010",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "SIS Processed Sales Invoice",
+ "owner": "sis@sis.com",
+ "permissions": [
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "select": 1,
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

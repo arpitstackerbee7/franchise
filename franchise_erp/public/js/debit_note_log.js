@@ -28,7 +28,7 @@ frappe.ui.form.on("SIS Debit Note Log", {
     },
 
 
-    
+
     refresh(frm) {
         // First: auto fetch config when company is selected
         if (frm.doc.company) {
@@ -54,7 +54,7 @@ frappe.ui.form.on("SIS Debit Note Log", {
                             show_invoice_dialog(frm);
 
                             // ADD BUTTON AFTER FETCH
-                            show_create_button(frm);
+                            // show_create_button(frm);
 
                             frappe.msgprint(r.message.message);
                         }
@@ -76,10 +76,7 @@ function show_invoice_dialog(frm) {
         title: "Invoice Items",
         size: "extra-large",
         fields: [
-            {
-                fieldname: "header_html",
-                fieldtype: "HTML"
-            },
+            { fieldname: "header_html", fieldtype: "HTML" },
             {
                 fieldname: "discount_filter",
                 label: "Filter by Discount %",
@@ -99,7 +96,27 @@ function show_invoice_dialog(frm) {
         ]
     });
 
-    // add Create button in header (top-right)
+    // Show dialog first
+    d.show();
+
+    // -----------------------
+    // 1. Increase modal width
+    // -----------------------
+    d.$wrapper.find('.modal-dialog').css({
+        "max-width": "95%",
+        "width": "95%"
+    });
+
+    // -----------------------
+    // 2. Override max-width of page sections
+    // -----------------------
+    let page_div = d.$wrapper.find('div.modal-body.ui-front .form-page > div > div');
+    if (page_div.length) {
+        page_div.css('max-width', '1350px');
+    }
+    // -----------------------
+    // 3. Add Create button in header
+    // -----------------------
     d.fields_dict.header_html.$wrapper.html(`
         <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
             <button class="btn btn-primary" id="create_debit_note_btn_dialog">
@@ -108,14 +125,13 @@ function show_invoice_dialog(frm) {
         </div>
     `);
 
-    // click action for create button (scoped to dialog)
     d.$wrapper.on("click", "#create_debit_note_btn_dialog", function () {
         frappe.call({
             method: "franchise_erp.custom.debit_note.create_debit_note",
             args: {
                 company: frm.doc.company,
-                from_date: frm.doc.from_date,
-                to_date: frm.doc.to_date
+                period_type: frm.doc.sis_debit_note_creation_period,
+                invoices: all_items          // <--- FIXED
             },
             callback(r) {
                 if (r.message?.journal_entry) {
@@ -126,6 +142,8 @@ function show_invoice_dialog(frm) {
             }
         });
     });
+
+
 
     function update_table() {
         let filter_value = d.get_value("discount_filter");
@@ -165,11 +183,21 @@ function show_invoice_dialog(frm) {
                         <th>Item Code</th>
                         <th>Item Name</th>
                         <th>Qty</th>
-                        <th>Rate</th>
-                        <th>Total Amount</th>
-                        <th>Disc%</th>
-                        <th>Disc Amount</th>
-                        <th>Net Amount</th>
+                        <th>MRP</th>
+                        <th>Total</th>
+                        <th>Discount</th>
+                        <th>Realized Sale</th>
+                        <th>Output GST%</th>
+                        <th>Output GST Value</th>
+                        <th>Net Sale Value</th>
+                        <th>Margin%</th>
+                        <th>Margin Value</th>
+                        <th>INV Base Value</th>
+                        <th>Input GST%</th>
+                        <th>Input GST Value</th>
+                        <th>Invoice Value</th>
+                        <th>Debit Note</th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -189,11 +217,20 @@ function show_invoice_dialog(frm) {
                         <td>${r.item_code}</td>
                         <td>${r.item_name}</td>
                         <td>${r.qty}</td>
-                        <td>${r.price_list_rate}</td>
-                        <td>${r.total_amount}</td>
-                        <td>${r.discount_percentage}</td>
-                        <td>${r.discount_amount}</td>
-                        <td>${r.net_amount}</td>
+                        <td>${r.price_list_rate}</td> 
+                        <td>${(r.price_list_rate * r.qty).toFixed(2)}</td> <!-- Grand Total -->
+                        <td>${r.discount_percentage}</td> <!-- Discount -->
+                        <td>${r.net_amount}</td> <!-- Realized Sale -->
+                        <td>${r.gst_percent}</td> <!-- Output GST% -->
+                        <td>${r.gst_amount}</td> <!-- Output GST Value -->
+                        <td>${(r.net_sale_value).toFixed(2)}</td> <!-- Net Sale Value -->
+                        <td>${r.margin_percent}</td> <!-- Margin% -->
+                        <td>${r.margin_amount}</td> <!-- Margin Value -->
+                        <td>${r.inv_base_value}</td> <!-- INV Base Value -->
+                        <td>${r.gst_percent}</td> <!-- Input GST% -->
+                        <td>${r.in_put_gst_value}</td> <!-- Input GST Value -->
+                        <td>${(r.invoice_value).toFixed(2)}</td> <!-- Invoice Value -->
+                        <td>${(r.debit_note).toFixed(2)}</td>
                     </tr>
                 `;
             });
@@ -234,38 +271,10 @@ function show_invoice_dialog(frm) {
         });
     }
 
-    d.show();
+    // d.show();
+
     update_table();
 }
 
-
-
-
-// ========== CREATE DEBIT NOTE BUTTON ==============
-// function show_create_button(frm) {
-//     frm.page.remove_inner_button("Create Debit Note");
-
-//     frm.page.add_inner_button("Create Debit Note", function () {
-
-//         frappe.call({
-//             method: "franchise_erp.custom.debit_note.create_debit_note",
-//             args: {
-//                 company: frm.doc.company,
-//                 from_date: frm.doc.from_date,
-//                 to_date: frm.doc.to_date
-//             },
-//             callback(r) {
-//                 if (r.message) {
-//                     frappe.msgprint(r.message);
-
-//                     if (r.message.journal_entry) {
-//                         frappe.set_route("Form", "Journal Entry", r.message.journal_entry);
-//                     }
-//                 }
-//             }
-//         });
-
-//     });
-// }
 
 
