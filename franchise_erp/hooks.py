@@ -29,14 +29,27 @@ app_license = "mit"
 
 doc_events = {
    "Purchase Invoice": {
+       "before_save": ["franchise_erp.custom.purchase_invoice_hooks.update_purchase_invoice_totals"],
+    #    "before_submit": "franchise_erp.custom.purchase_invoice_hooks.before_submit",
+    "before_submit": "franchise_erp.custom.purchase_invoice_hooks.update_serial_input_gst",
+       "on_submit": ["franchise_erp.custom.purchase_invoice_hooks.on_submit"],
        "before_insert": "franchise_erp.custom.customs.set_customer_email_as_owner",
     },
     "Journal Entry": {
         "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
     },
     "Sales Invoice": {
-        "before_submit": "franchise_erp.custom.sales_invoice_validation.before_submit"
+        "before_save": ["franchise_erp.custom.sales_invoice_hooks.before_save","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
+        "before_submit": ["franchise_erp.custom.sales_invoice_validation.before_submit","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
+        "on_submit": ["franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
+        "on_update_after_submit":"franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"
+    },
+   "Item": {
+        "before_insert": "franchise_erp.custom.item_master.generate_item_code",
+        "before_save": "franchise_erp.custom.item_master.generate_item_code",
     }
+
+
 
 }
 
@@ -47,7 +60,10 @@ doctype_js = {
     "SIS Debit Note Log": "public/js/debit_note_log.js",
     "SIS Configuration": "public/js/sis_configuration.js",
     "Sales Invoice": "public/js/sales_invoice.js",
-    "User": "public/js/user_validation.js"
+    "User": "public/js/user_validation.js",
+    "Incoming Logistics": "public/js/incoming_logistics.js",
+    "Color": "public/js/colour_code.js",
+    "Item": "public/js/item_master.js"
 }
 
 
@@ -70,8 +86,11 @@ after_migrate = [
 
 # after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
 
+# app_include_js = "public/js/back_date_disabled.js"
 
-app_include_js = "/assets/franchise_erp/js/back_date_disabled.js"
+app_include_js = ["/assets/franchise_erp/js/back_date_disabled.js"]
+
+
 
 
 # include js, css files in header of web template

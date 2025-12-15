@@ -60,6 +60,7 @@ frappe.ui.form.on("SIS Debit Note Log", {
                         }
                     },
                 });
+                
             });
         }
     },
@@ -193,10 +194,10 @@ function show_invoice_dialog(frm) {
                         <th>Margin%</th>
                         <th>Margin Value</th>
                         <th>INV Base Value</th>
-                        <th>Input GST%</th>
+                        
                         <th>Input GST Value</th>
-                        <th>Invoice Value</th>
-                        <th>Debit Note</th>
+                        <th>Collectable</th>
+                        <th>CD/DN</th>
                         
 
                     </tr>
@@ -229,7 +230,6 @@ function show_invoice_dialog(frm) {
                         <td>${r.margin_percent}</td> <!-- Margin% -->
                         <td>${r.margin_amount}</td> <!-- Margin Value -->
                         <td>${r.inv_base_value}</td> <!-- INV Base Value -->
-                        <td>${r.gst_percent}</td> <!-- Input GST% -->
                         <td>${r.in_put_gst_value}</td> <!-- Input GST Value -->
                         <td>${(r.invoice_value).toFixed(2)}</td> <!-- Invoice Value -->
                         <td>${(r.debit_note).toFixed(2)}</td>

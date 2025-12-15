@@ -1,136 +1,58 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "naming_series:",
- "creation": "2025-12-02 15:03:39.672661",
+ "creation": "2025-12-08 16:49:37.418498",
+ "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "general_details_section",
-  "naming_series",
-  "select_transaction_type",
-  "column_break_omju",
-  "asn_no",
-  "vendor_name",
-  "section_break_zmlq",
-  "table_phxi",
-  "invoice_details_section",
-  "invoice_no",
-  "invoice_image",
-  "column_break_wyrc",
-  "invoice_date",
-  "total_no_boxes",
-  "column_break_ifqn",
-  "invoice_value",
+  "section_break_2avj",
   "amended_from",
-  "column_break_urkf",
-  "total_invoice_qty",
-  "eway_bill",
-  "vechical_details_section",
-  "vehicle_no",
-  "vehicle_arrival_date",
-  "vehicle_image",
-  "column_break_xlqo",
-  "select_vehicle",
-  "vehicle_arrival_time",
-  "column_break_wtct",
-  "transport_method",
-  "driver_name",
-  "builty_no",
-  "column_break_tfgp",
-  "transporter",
-  "driver_mobile_no",
-  "column_break_lwox",
-  "sh_weight",
-  "vehicle_remarks"
+  "general_section",
+  "owner_site",
+  "entry_no",
+  "consignor",
+  "document_no",
+  "column_break_kknq",
+  "type",
+  "date",
+  "site",
+  "document_date",
+  "transport_information_section",
+  "lr_entry_no",
+  "lr_qty",
+  "declaration_amount",
+  "column_break_vrba",
+  "lr_entry_date",
+  "pending_qyt",
+  "pending_amount",
+  "charge_information_section",
+  "qyt",
+  "pending_qtys",
+  "column_break_hmwf",
+  "received_qyt",
+  "amount",
+  "others_section",
+  "remarks",
+  "received_details_section",
+  "entry_nos",
+  "column_break_kees",
+  "entry_date",
+  "column_break_qpey",
+  "document_nos",
+  "column_break_xsyr",
+  "document_dates",
+  "column_break_jakg",
+  "amounts",
+  "column_break_xpbt",
+  "item_qty",
+  "column_break_yabo",
+  "ge_qty"
  ],
  "fields": [
   {
-   "fieldname": "general_details_section",
-   "fieldtype": "Section Break",
-   "label": "General Details"
-  },
-  {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "label": "No.",
-   "options": "GE-PRE-.YYYY.-"
-  },
-  {
-   "fieldname": "select_transaction_type",
-   "fieldtype": "Select",
-   "label": "Select Transaction Type",
-   "options": "\nPurchase Order\nSale Return",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_omju",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "asn_no",
-   "fieldtype": "Select",
-   "label": "ASN no."
-  },
-  {
-   "fieldname": "vendor_name",
-   "fieldtype": "Link",
-   "label": "Vendor Name",
-   "options": "Supplier"
-  },
-  {
-   "fieldname": "section_break_zmlq",
+   "fieldname": "section_break_2avj",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "table_phxi",
-   "fieldtype": "Table",
-   "label": "Gate Entry Details",
-   "options": "Gate Entry Table"
-  },
-  {
-   "fieldname": "invoice_details_section",
-   "fieldtype": "Section Break",
-   "label": "Invoice Details"
-  },
-  {
-   "fieldname": "invoice_no",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Invoice No.",
-   "reqd": 1
-  },
-  {
-   "fieldname": "invoice_image",
-   "fieldtype": "Attach Image",
-   "label": "Invoice Image",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_wyrc",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "invoice_date",
-   "fieldtype": "Date",
-   "label": "Invoice Date ",
-   "reqd": 1
-  },
-  {
-   "fieldname": "total_no_boxes",
-   "fieldtype": "Data",
-   "label": "Total No. Boxes",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_ifqn",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "invoice_value",
-   "fieldtype": "Float",
-   "label": "Invoice Value",
-   "reqd": 1
   },
   {
    "fieldname": "amended_from",
@@ -143,117 +65,212 @@
    "search_index": 1
   },
   {
-   "fieldname": "column_break_urkf",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "total_invoice_qty",
-   "fieldtype": "Float",
-   "label": "Total Invoice Qty",
-   "reqd": 1
-  },
-  {
-   "fieldname": "eway_bill",
-   "fieldtype": "Data",
-   "label": "Eway Bill",
-   "reqd": 1
-  },
-  {
-   "fieldname": "vechical_details_section",
+   "fieldname": "general_section",
    "fieldtype": "Section Break",
-   "label": "Vechical Details"
+   "label": "General"
   },
   {
-   "fieldname": "vehicle_no",
+   "fieldname": "owner_site",
    "fieldtype": "Data",
-   "label": "Vehicle No.",
+   "in_list_view": 1,
+   "label": "Owner Site",
    "reqd": 1
   },
   {
-   "fieldname": "vehicle_arrival_date",
-   "fieldtype": "Date",
-   "label": "Vehicle Arrival Date",
+   "fieldname": "entry_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Gate Entry No",
    "reqd": 1
   },
   {
-   "fieldname": "vehicle_image",
-   "fieldtype": "Attach Image",
-   "label": "Vehicle Image "
+   "fieldname": "consignor",
+   "fieldtype": "Data",
+   "label": "Consignor"
   },
   {
-   "fieldname": "column_break_xlqo",
+   "fieldname": "column_break_kknq",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "select_vehicle",
-   "fieldtype": "Link",
-   "label": "Select Vehicle",
-   "options": "Vehicle"
-  },
-  {
-   "fieldname": "vehicle_arrival_time",
-   "fieldtype": "Time",
-   "label": "Vehicle Arrival Time",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_wtct",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "transport_method",
+   "fieldname": "type",
    "fieldtype": "Select",
-   "label": "Transport Method",
-   "options": "\nland\nwater\nair"
+   "label": "Type",
+   "options": "Procurement: Receipts",
+   "reqd": 1
   },
   {
-   "fieldname": "driver_name",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "site",
    "fieldtype": "Data",
-   "label": "Driver Name"
+   "label": "Site"
   },
   {
-   "fieldname": "builty_no",
-   "fieldtype": "Data",
-   "label": "Builty No."
+   "fieldname": "transport_information_section",
+   "fieldtype": "Section Break",
+   "label": "LR Information"
   },
   {
-   "fieldname": "column_break_tfgp",
+   "fieldname": "column_break_vrba",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "transporter",
-   "fieldtype": "Link",
-   "label": "Transporter ",
-   "options": "Supplier"
-  },
-  {
-   "fieldname": "driver_mobile_no",
+   "fieldname": "pending_qyt",
    "fieldtype": "Data",
-   "label": "Driver Mobile No."
+   "label": "Pending Qty"
   },
   {
-   "fieldname": "column_break_lwox",
+   "fieldname": "charge_information_section",
+   "fieldtype": "Section Break",
+   "label": "Gate Details"
+  },
+  {
+   "fieldname": "declaration_amount",
+   "fieldtype": "Data",
+   "label": "Declaration Amount"
+  },
+  {
+   "fieldname": "column_break_hmwf",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "sh_weight",
-   "fieldtype": "Int",
-   "label": "Shipment Weight"
+   "fieldname": "others_section",
+   "fieldtype": "Section Break",
+   "label": "Others"
   },
   {
-   "fieldname": "vehicle_remarks",
+   "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Vehicle Condition/Remarks"
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "document_no",
+   "fieldtype": "Data",
+   "label": "Document No"
+  },
+  {
+   "fieldname": "document_date",
+   "fieldtype": "Date",
+   "label": "Document Date"
+  },
+  {
+   "fieldname": "lr_entry_no",
+   "fieldtype": "Data",
+   "label": "LR Entry No"
+  },
+  {
+   "fieldname": "lr_qty",
+   "fieldtype": "Data",
+   "label": "LR Quantity"
+  },
+  {
+   "fieldname": "lr_entry_date",
+   "fieldtype": "Date",
+   "label": "LR Entry Date"
+  },
+  {
+   "fieldname": "pending_amount",
+   "fieldtype": "Data",
+   "label": "Pending Amount"
+  },
+  {
+   "fieldname": "qyt",
+   "fieldtype": "Data",
+   "label": "Quantity"
+  },
+  {
+   "fieldname": "pending_qtys",
+   "fieldtype": "Data",
+   "label": "Pending Quantity"
+  },
+  {
+   "fieldname": "received_qyt",
+   "fieldtype": "Data",
+   "label": "Received Quantity"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Data",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "received_details_section",
+   "fieldtype": "Section Break",
+   "label": "Received Details"
+  },
+  {
+   "fieldname": "entry_nos",
+   "fieldtype": "Data",
+   "label": "Entry No"
+  },
+  {
+   "fieldname": "column_break_kees",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "entry_date",
+   "fieldtype": "Date",
+   "label": "Entry Date"
+  },
+  {
+   "fieldname": "column_break_qpey",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "document_nos",
+   "fieldtype": "Data",
+   "label": "Document No"
+  },
+  {
+   "fieldname": "column_break_xsyr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "document_dates",
+   "fieldtype": "Date",
+   "label": "Document Date"
+  },
+  {
+   "fieldname": "column_break_jakg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amounts",
+   "fieldtype": "Data",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "column_break_xpbt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_qty",
+   "fieldtype": "Data",
+   "label": "Item Qty"
+  },
+  {
+   "fieldname": "column_break_yabo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ge_qty",
+   "fieldtype": "Data",
+   "label": "GE Qty"
   }
  ],
+ "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-02 15:03:39.672661",
+ "modified": "2025-12-08 16:59:23.180402",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
- "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
@@ -266,11 +283,13 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   }
  ],
  "row_format": "Dynamic",
- "sort_field": "modified",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
  "sort_order": "DESC",
  "states": []
 }
