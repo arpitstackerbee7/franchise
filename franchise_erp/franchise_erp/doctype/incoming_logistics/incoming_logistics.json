@@ -1,0 +1,304 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-08 15:52:05.518736",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_2avj",
+  "amended_from",
+  "general_section",
+  "owner_site",
+  "entry_no",
+  "consignor",
+  "transporter",
+  "invoice_no",
+  "lr_document_no",
+  "gate_entry",
+  "column_break_kknq",
+  "type",
+  "date",
+  "site",
+  "mode",
+  "invoice_date",
+  "lr_date",
+  "status",
+  "transport_information_section",
+  "maintain_bale_wise_qty",
+  "lr_quantity",
+  "received_qty",
+  "station_from",
+  "vehicle_no",
+  "column_break_vrba",
+  "unit",
+  "pending_qyt",
+  "station_to",
+  "policy_no",
+  "charge_information_section",
+  "to_pay",
+  "actual_weight",
+  "freight",
+  "declaration_amount",
+  "column_break_hmwf",
+  "rate",
+  "charged_weight",
+  "others",
+  "total_amount",
+  "others_section",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_2avj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Incoming Logistics",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "owner_site",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Owner Site",
+   "reqd": 1
+  },
+  {
+   "fieldname": "entry_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Entry No",
+   "reqd": 1
+  },
+  {
+   "fieldname": "consignor",
+   "fieldtype": "Data",
+   "label": "Consignor"
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Transporter",
+   "options": "Supplier",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Invoice No",
+   "reqd": 1
+  },
+  {
+   "fieldname": "lr_document_no",
+   "fieldtype": "Data",
+   "label": "LR, Document No"
+  },
+  {
+   "fieldname": "gate_entry",
+   "fieldtype": "Data",
+   "label": "Gate Entry"
+  },
+  {
+   "fieldname": "column_break_kknq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Procurement: Receipts",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Data",
+   "label": "Site"
+  },
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Road\nAir\nWater"
+  },
+  {
+   "fieldname": "invoice_date",
+   "fieldtype": "Date",
+   "label": "Invoice Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "lr_date",
+   "fieldtype": "Date",
+   "label": "LR, Date"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Received\nInspection Pending\nInspected\nAccepted\nRejected\nPutaway Pending\nStored"
+  },
+  {
+   "fieldname": "transport_information_section",
+   "fieldtype": "Section Break",
+   "label": "Transport Information"
+  },
+  {
+   "default": "0",
+   "fieldname": "maintain_bale_wise_qty",
+   "fieldtype": "Check",
+   "label": "Maintain Bale wise Qty"
+  },
+  {
+   "fieldname": "lr_quantity",
+   "fieldtype": "Data",
+   "label": "LR Quantity"
+  },
+  {
+   "fieldname": "received_qty",
+   "fieldtype": "Data",
+   "label": "Received Qty"
+  },
+  {
+   "fieldname": "station_from",
+   "fieldtype": "Data",
+   "label": "Station From"
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "label": "Vehicle No"
+  },
+  {
+   "fieldname": "column_break_vrba",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "label": "Unit"
+  },
+  {
+   "fieldname": "pending_qyt",
+   "fieldtype": "Data",
+   "label": "Pending Qty"
+  },
+  {
+   "fieldname": "station_to",
+   "fieldtype": "Data",
+   "label": "Station To"
+  },
+  {
+   "fieldname": "policy_no",
+   "fieldtype": "Data",
+   "label": "Policy No"
+  },
+  {
+   "fieldname": "charge_information_section",
+   "fieldtype": "Section Break",
+   "label": "Charge Information"
+  },
+  {
+   "fieldname": "to_pay",
+   "fieldtype": "Data",
+   "label": "To Pay"
+  },
+  {
+   "fieldname": "actual_weight",
+   "fieldtype": "Data",
+   "label": "Actual Weight"
+  },
+  {
+   "fieldname": "freight",
+   "fieldtype": "Data",
+   "label": "Freight"
+  },
+  {
+   "fieldname": "declaration_amount",
+   "fieldtype": "Data",
+   "label": "Declaration Amount"
+  },
+  {
+   "fieldname": "column_break_hmwf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Data",
+   "label": "Rate"
+  },
+  {
+   "fieldname": "charged_weight",
+   "fieldtype": "Data",
+   "label": "Charged Weight"
+  },
+  {
+   "fieldname": "others",
+   "fieldtype": "Data",
+   "label": "Others"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Data",
+   "label": "Total Amount"
+  },
+  {
+   "fieldname": "others_section",
+   "fieldtype": "Section Break",
+   "label": "Others"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-08 16:42:37.251052",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Incoming Logistics",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

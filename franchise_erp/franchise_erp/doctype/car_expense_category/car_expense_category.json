@@ -1,12 +1,15 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-12-08 18:21:50.936523",
+ "autoname": "field:name1",
+ "creation": "2025-12-08 18:23:36.526912",
+ "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "section_break_gasd",
-  "amended_from"
+  "amended_from",
+  "name1"
  ],
  "fields": [
   {
@@ -18,20 +21,29 @@
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Car Expense",
+   "options": "Car Expense Category",
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "name1",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Name",
+   "reqd": 1,
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-08 18:22:39.941902",
+ "modified": "2025-12-08 18:25:14.086226",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
- "name": "Car Expense",
+ "name": "Car Expense Category",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

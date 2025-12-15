@@ -1,0 +1,288 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-08 15:50:03.919961",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_2avj",
+  "amended_from",
+  "general_section",
+  "owner_site",
+  "entry_no",
+  "consignor",
+  "transporter",
+  "stock_point",
+  "document_date",
+  "column_break_kknq",
+  "type",
+  "date",
+  "site",
+  "mode",
+  "document_no",
+  "transport_information_section",
+  "quantity",
+  "station_from",
+  "vehicle_no",
+  "distancein_km",
+  "column_break_vrba",
+  "unit",
+  "station_to",
+  "policy_no",
+  "delivery_date",
+  "charge_information_section",
+  "to_pay",
+  "actual_weight",
+  "freight_charges",
+  "declaration_amount",
+  "document_amount",
+  "column_break_hmwf",
+  "rate",
+  "charged_weight",
+  "others_charges",
+  "total_amount",
+  "completion_time",
+  "others_section",
+  "item_barcode"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_2avj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Outgoing Logistics",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "General"
+  },
+  {
+   "fieldname": "owner_site",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Owner Site",
+   "reqd": 1
+  },
+  {
+   "fieldname": "entry_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Entry No",
+   "reqd": 1
+  },
+  {
+   "fieldname": "consignor",
+   "fieldtype": "Data",
+   "label": "Consignor"
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Transporter",
+   "reqd": 1
+  },
+  {
+   "fieldname": "stock_point",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Stock Point",
+   "reqd": 1
+  },
+  {
+   "fieldname": "document_date",
+   "fieldtype": "Date",
+   "label": "Document Date"
+  },
+  {
+   "fieldname": "column_break_kknq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "S&D: Sales Invoice/Transfer In",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "site",
+   "fieldtype": "Data",
+   "label": "Site"
+  },
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Land\nAir\nWater"
+  },
+  {
+   "fieldname": "document_no",
+   "fieldtype": "Data",
+   "label": "Document No"
+  },
+  {
+   "fieldname": "transport_information_section",
+   "fieldtype": "Section Break",
+   "label": "Transport Information"
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Data",
+   "label": "Quantity"
+  },
+  {
+   "fieldname": "station_from",
+   "fieldtype": "Data",
+   "label": "Station From"
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Data",
+   "label": "Vehicle No"
+  },
+  {
+   "fieldname": "distancein_km",
+   "fieldtype": "Data",
+   "label": "Distance(In Km)"
+  },
+  {
+   "fieldname": "column_break_vrba",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unit",
+   "fieldtype": "Data",
+   "label": "Unit"
+  },
+  {
+   "fieldname": "station_to",
+   "fieldtype": "Data",
+   "label": "Station To"
+  },
+  {
+   "fieldname": "policy_no",
+   "fieldtype": "Data",
+   "label": "Policy No"
+  },
+  {
+   "fieldname": "delivery_date",
+   "fieldtype": "Date",
+   "label": "Delivery Date"
+  },
+  {
+   "fieldname": "charge_information_section",
+   "fieldtype": "Section Break",
+   "label": "Charge Information"
+  },
+  {
+   "fieldname": "to_pay",
+   "fieldtype": "Data",
+   "label": "To Pay"
+  },
+  {
+   "fieldname": "actual_weight",
+   "fieldtype": "Data",
+   "label": "Actual Weight"
+  },
+  {
+   "fieldname": "freight_charges",
+   "fieldtype": "Data",
+   "label": "Freight Charges"
+  },
+  {
+   "fieldname": "declaration_amount",
+   "fieldtype": "Data",
+   "label": "Declaration Amount"
+  },
+  {
+   "fieldname": "document_amount",
+   "fieldtype": "Data",
+   "label": "Document Amount"
+  },
+  {
+   "fieldname": "column_break_hmwf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Data",
+   "label": "Rate"
+  },
+  {
+   "fieldname": "charged_weight",
+   "fieldtype": "Data",
+   "label": "Charged Weight"
+  },
+  {
+   "fieldname": "others_charges",
+   "fieldtype": "Data",
+   "label": "Others Charges"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Data",
+   "label": "Total Amount"
+  },
+  {
+   "fieldname": "completion_time",
+   "fieldtype": "Date",
+   "label": "Completion Time"
+  },
+  {
+   "fieldname": "others_section",
+   "fieldtype": "Section Break",
+   "label": "Others"
+  },
+  {
+   "fieldname": "item_barcode",
+   "fieldtype": "Barcode",
+   "label": "Item Barcode"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-08 15:51:08.398436",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Outgoing Logistics",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

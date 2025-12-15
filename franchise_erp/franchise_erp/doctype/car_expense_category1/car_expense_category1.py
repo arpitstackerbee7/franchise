@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class GateEntryTable(Document):
+class CarExpenseCategory1(Document):
 	pass

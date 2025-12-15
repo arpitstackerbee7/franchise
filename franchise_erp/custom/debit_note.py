@@ -46,9 +46,16 @@ from datetime import date
 import calendar
 import datetime
 import json
-from decimal import Decimal, ROUND_HALF_UP
 import frappe
 from frappe import _
+from decimal import Decimal, ROUND_HALF_UP
+
+def round2(v):
+    try:
+        v = Decimal(str(v))
+    except:
+        v = Decimal("0")
+    return float(v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 @frappe.whitelist()
 def fetch_invoices(company, from_date=None, to_date=None):
     from frappe.utils import getdate, nowdate, add_days
@@ -61,8 +68,6 @@ def fetch_invoices(company, from_date=None, to_date=None):
         except:
             return Decimal("0")
 
-    def round2(v):
-        return float(v.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
     # -------------------------------------------------------------------
     # FETCH CONFIG VALUES
@@ -94,7 +99,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
     # SET DATE RANGE USING PERIOD TYPE
     # -------------------------------------------------------------------
     if period_type == "Fortnightly":
-        from_date, to_date = get_period_dates("Fortnightly")
+      from_date, to_date = get_period_dates("Fortnightly")
     else:
         # Use provided dates OR generate new if blank
         if not from_date or not to_date:
@@ -167,21 +172,65 @@ def fetch_invoices(company, from_date=None, to_date=None):
         margin_percent = discounted_margin if discount_percentage > 0 else fresh_margin
         margin_amount = (net_amount * margin_percent) / Decimal(100)
         inv_base_value = net_sale_value - margin_amount
-        in_put_gst_value = (inv_base_value * gst_percent) / Decimal(100)
-        invoice_value = inv_base_value + in_put_gst_value
+        # Fetch Input GST from Purchase Invoice Item (HO → Branch Purchase)
+        # Fetch Input GST From Serial No (Branch → End customer)
+        # r = your row dict
+        serial_no = None
+
+        if r.get("sii_name"):
+            serial_no = frappe.db.get_value("Sales Invoice Item", r["sii_name"], "serial_no")
+
+        input_gst_value = Decimal("0.00")
+        custom_invoice_amount = Decimal("0.00")
+
+        if serial_no:
+
+            # Fetch custom_input_gst
+            serial_gst = frappe.db.get_value(
+                "Serial No",
+                {"item_code": r.get("item_code"), "name": serial_no},
+                "custom_input_gst"
+            )
+
+            if serial_gst:
+                input_gst_value = Decimal(str(serial_gst))
+
+            # Fetch custom_invoice_amount
+            serial_base_amount = frappe.db.get_value(
+                "Serial No",
+                {"item_code": r.get("item_code"), "name": serial_no},
+                "custom_invoice_amount"
+            )
+
+            if serial_base_amount:
+                custom_invoice_amount = Decimal(str(serial_base_amount))
+
+        # -----------------------------------------
+        # TOTAL SERIAL VALUE = base + gst
+        # -----------------------------------------
+        total_serial_invoice_value = custom_invoice_amount + input_gst_value
+        # Example: 67.24 + 3.36 = 70.60
+
+        # -----------------------------------------
+        # NOW CALCULATE CD/DN DIFFERENCE
+        # -----------------------------------------
+        # invoice_value = inv_base_value + input_gst_value (your own invoice value)
+        invoice_value = inv_base_value + input_gst_value
+
+        cd_dn_value = total_serial_invoice_value - invoice_value
 
         # Auto credit note
-        if discount_percentage > discount_threshold:
-            debit_note = (invoice_value * auto_credit_note_percent) / Decimal(100)
-        else:
-            debit_note = Decimal(0)
+        # if discount_percentage > discount_threshold:
+        #     debit_note = purchase_value - invoice_value
+        # else:
+        #     debit_note = Decimal(0)
 
         # ROUNDS
         r["gst_percent"] = float(gst_percent)
         r["gst_amount"] = round2(out_put_gst_value)
         r["net_sale_value"] = round2(net_sale_value)
         r["inv_base_value"] = round2(inv_base_value)
-        r["in_put_gst_value"] = round2(in_put_gst_value)
+        r["in_put_gst_value"] = round2(input_gst_value)
         r["base_value"] = round2(net_sale_value)
         r["margin_percent"] = float(margin_percent)
         r["margin_amount"] = round2(margin_amount)
@@ -189,7 +238,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
         r["discount_amount"] = round2(to_decimal(r.get("discount_amount") or 0))
         r["net_amount"] = round2(net_amount)
         r["invoice_value"] = round2(invoice_value)
-        r["debit_note"] = round2(debit_note)
+        r["debit_note"] = round2(cd_dn_value)
 
         processed.append(r)
 
@@ -200,52 +249,266 @@ def fetch_invoices(company, from_date=None, to_date=None):
         "to_date": str(to_date)
     }
 
+def get_purchase_input_gst(item_code, company):
+    """Return (input_gst_percent, input_gst_value, purchase_value)
+       from latest Purchase Invoice Item"""
+# DEBUG PRINTS
+   
+    def to_decimal_value(v):
+        try:
+            return Decimal(str(v))
+        except:
+            return Decimal("0")
+
+    # Fetch latest HO Purchase Invoice Item for this item
+    data = frappe.db.sql("""
+        SELECT 
+            custom_input_gst_ AS gst_percent,
+            custom_input_gst_values AS gst_value,
+            custom_inv_purchase_value AS purchase_value
+        FROM `tabPurchase Invoice Item`
+        WHERE item_code = %s 
+        AND parent IN (
+            SELECT name FROM `tabPurchase Invoice`
+            WHERE docstatus = 1
+        )
+        ORDER BY creation DESC
+        LIMIT 1
+    """, (item_code,), as_dict=True)
+
+    if data:
+        row = data[0]
+        return (
+            to_decimal_value(row.get("gst_percent") or 0),
+            to_decimal_value(row.get("gst_value") or 0),
+            to_decimal_value(row.get("purchase_value") or 0)
+        )
+
+    return Decimal("0"), Decimal("0"), Decimal("0")
+
 # ======================================================
 #       PERIOD DATE CALCULATION LOGIC
 # ======================================================
 
-import frappe
-from frappe.utils import getdate, nowdate, add_days, today
-from decimal import Decimal
-import calendar
-
-
-# --------------------------------------------------------
-#  PERIOD LOGIC — FIXED
-# --------------------------------------------------------
 def get_period_dates(period_type):
-    today_date = getdate(nowdate())
+    today = getdate(nowdate())
+    import calendar
 
-    # WEEKLY (Mon–Sun)
+    # WEEKLY -- Monday to Sunday
     if period_type == "Weekly":
-        weekday = today_date.weekday()
-        start = add_days(today_date, -weekday)
+        weekday = today.weekday()
+        start = add_days(today, -weekday)
         end = add_days(start, 6)
         return start, end
 
-    # FORTNIGHTLY (1–15 and 16–Month End)
+    # FORTNIGHTLY
     elif period_type == "Fortnightly":
-        first_day = today_date.replace(day=1)
-        last_day = today_date.replace(day=calendar.monthrange(today_date.year, today_date.month)[1])
+        first_day = today.replace(day=1)
+        last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
 
-        if today_date.day <= 15:
+        if today.day <= 15:
             return first_day, first_day.replace(day=15)
         else:
             return first_day.replace(day=16), last_day
 
     # MONTHLY
     elif period_type == "Monthly":
-        first_day = today_date.replace(day=1)
-        last_day = today_date.replace(day=calendar.monthrange(today_date.year, today_date.month)[1])
+        first_day = today.replace(day=1)
+        last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
         return first_day, last_day
 
-    return today_date, today_date
+    return today, today
+
+
+import frappe
+from frappe.utils import today
+
+# @frappe.whitelist()
+# def create_debit_note(company, period_type=None, invoices=None):
+
+#     invoices = frappe.parse_json(invoices or [])
+
+#     if not invoices:
+#         frappe.throw("No invoice data received. Please refresh page.")
+
+#     company_abbr = frappe.db.get_value("Company", company, "abbr")
+
+#     # Fetch config
+#     config = frappe.db.get_value(
+#         "SIS Configuration",
+#         {"company": company},
+#         ["auto_credit_note_percent", "discount_threshold", "sis_debit_note_creation_period"],
+#         as_dict=True
+#     )
+
+#     auto_credit_note_percent = config.auto_credit_note_percent
+#     discount_threshold = config.discount_threshold
+#     period_type = period_type or config.sis_debit_note_creation_period
+
+#     if not auto_credit_note_percent:
+#         frappe.throw("Auto Credit Note Percent missing in SIS Configuration.")
+
+#     if discount_threshold is None:
+#         frappe.throw("Discount Threshold missing in SIS Configuration.")
+
+#     # Date Range
+#     from_date, to_date = get_period_dates(period_type)
+
+#     # Penalty Account
+#     penalty_account = frappe.db.get_value(
+#         "Account",
+#         {
+#             "company": company,
+#             "root_type": "Expense",
+#             "name": ["like", f"TZU Penalty%{company_abbr}"]
+#         },
+#         "name"
+#     )
+
+#     if not penalty_account:
+#         frappe.throw(f"Create Penalty Expense Account like 'TZU Penalty Exp - {company_abbr}'.")
+
+#     # --- Create Journal Entry ---
+#     je = frappe.new_doc("Journal Entry")
+#     je.posting_date = today()
+#     je.company = company
+#     je.voucher_type = "Credit Note"
+
+#     total_penalty = 0
+#     item_codes = []
+
+#     # ---------------------------------------------------------
+#     # 🔥 CHECK DUPLICATION ONLY IN SUBMITTED JOURNAL ENTRIES
+#     # ---------------------------------------------------------
+#     existing_invoices = frappe.db.sql("""
+#         SELECT ja.custom_penalty_invoice
+#         FROM `tabJournal Entry Account` ja
+#         JOIN `tabJournal Entry` je ON ja.parent = je.name
+#         WHERE ja.custom_penalty_invoice IS NOT NULL
+#         AND ja.custom_penalty_invoice != ''
+#         AND je.voucher_type = 'Credit Note'
+#         AND je.docstatus = 1
+#     """, as_dict=True)
+
+
+#     already_posted = {d.custom_penalty_invoice for d in existing_invoices}
+
+#     # ---------------------------------------------------------
+#     # 🔥 PROCESS INVOICES (avoid duplicates)
+#     # ---------------------------------------------------------
+#     for row in invoices:
+
+#         discount = row.get("discount_percentage", 0)
+#         if discount <= discount_threshold:
+#             continue
+
+#         invoice_name = row.get("name")
+#         item_code = row.get("item_code")
+#         invoice_value = Decimal(str(row.get("invoice_value") or 0))
+
+#         # Skip already processed CN
+#         si_status = frappe.db.get_value(
+#             "Sales Invoice",
+#             invoice_name,
+#             ["status", "is_return"],
+#             as_dict=True
+#         )
+
+#         if si_status and (si_status.status == "Credit Note" or si_status.is_return == 1):
+#             continue
+
+#         if invoice_name in already_posted:
+#             continue
+
+#         # --------------------------
+#         # Fetch HO purchase GST + Value
+#         # --------------------------
+#         input_gst_percent, input_gst_value, purchase_value = get_purchase_input_gst(item_code, company)
+
+#         # --------------------------
+#         # FINAL DEBIT NOTE VALUE LOGIC
+#         # --------------------------
+#         if purchase_value > 0:
+#             # HO purchase exists → use real diff
+#             penalty_amount = float(purchase_value - invoice_value)
+
+#         else:
+#             # HO purchase not found → fallback %
+#             penalty_amount = float((invoice_value * Decimal(str(auto_credit_note_percent))) / 100)
+
+#         # accumulate
+#         total_penalty += penalty_amount
+#         item_codes.append(item_code)
+
+#         je.append("accounts", {
+#             "account": penalty_account,
+#             "credit_in_account_currency": penalty_amount,
+#             "custom_penalty_invoice": invoice_name,
+#             "remarks": (
+#                 f"{item_code} (Disc {discount}%, "
+#                 f"Threshold {discount_threshold}%, "
+#                 f"Penalty based on HO Purchase Difference)"
+#             )
+#         })
 
 
 
-# --------------------------------------------------------
-#  MAIN FUNCTION
-# --------------------------------------------------------
+#     if total_penalty == 0:
+#         return {"message": "All invoices already processed or below threshold."}
+
+#     # ---------------- Supplier Auto Fetch ----------------
+#     supplier_info = frappe.db.sql("""
+#         SELECT pi.supplier
+#         FROM `tabPurchase Invoice` pi
+#         JOIN `tabPurchase Invoice Item` pii ON pii.parent = pi.name
+#         WHERE pii.item_code IN %s
+#           AND pi.company = %s
+#         ORDER BY pi.posting_date DESC
+#         LIMIT 1
+#     """, (tuple(item_codes), company), as_dict=True)
+
+#     if not supplier_info:
+#         frappe.throw("Supplier could not be identified for these items.")
+
+#     supplier = supplier_info[0].supplier
+
+#     # Payable account
+#     creditors_account = frappe.db.get_value(
+#         "Account",
+#         {
+#             "company": company,
+#             "is_group": 0,
+#             "account_type": "Payable",
+#             "root_type": "Liability",
+#             "name": ["like", "%Creditors%"]
+#         },
+#         "name"
+#     )
+
+#     if not creditors_account:
+#         frappe.throw(f"No Creditors account found for company {company}")
+
+#     # Summary row
+#     je.append("accounts", {
+#         "account": creditors_account,
+#         "debit_in_account_currency": total_penalty,
+#         "party_type": "Supplier",
+#         "party": supplier,
+#         "custom_penalty_invoice": "Summary",
+#         "remarks": "Total Penalty Summary"
+#     })
+
+#     # Save JE
+#     je.insert(ignore_permissions=True)
+#     # je.submit()  # enable after testing
+
+#     return {
+#         "message": f"Journal Entry Created Successfully: {je.name}",
+#         "journal_entry": je.name
+#     }
+
+
+
 @frappe.whitelist()
 def create_debit_note(company, period_type=None, invoices=None):
 
@@ -264,28 +527,20 @@ def create_debit_note(company, period_type=None, invoices=None):
         as_dict=True
     )
 
-    if not config:
-        frappe.throw("SIS Configuration not found for this company.")
-
     auto_credit_note_percent = config.auto_credit_note_percent
     discount_threshold = config.discount_threshold
     period_type = period_type or config.sis_debit_note_creation_period
 
-    # Required checks
     if not auto_credit_note_percent:
         frappe.throw("Auto Credit Note Percent missing in SIS Configuration.")
 
     if discount_threshold is None:
         frappe.throw("Discount Threshold missing in SIS Configuration.")
 
-    # --------------------------------------------------------
-    #  FIXED FORTNIGHTLY DATE RANGE
-    # --------------------------------------------------------
+    # Date Range
     from_date, to_date = get_period_dates(period_type)
 
-    # --------------------------------------------------------
-    #  PENALTY EXPENSE ACCOUNT
-    # --------------------------------------------------------
+    # Penalty Account
     penalty_account = frappe.db.get_value(
         "Account",
         {
@@ -297,11 +552,20 @@ def create_debit_note(company, period_type=None, invoices=None):
     )
 
     if not penalty_account:
-        frappe.throw(f"Create 'TZU Penalty Exp - {company_abbr}' account in Chart of Accounts.")
+        frappe.throw(f"Create Penalty Expense Account like 'TZU Penalty Exp - {company_abbr}'.")
 
-    # --------------------------------------------------------
-    #  CHECK DUPLICATES (ONLY SUBMITTED JEs)
-    # --------------------------------------------------------
+    # --- Create Journal Entry ---
+    je = frappe.new_doc("Journal Entry")
+    je.posting_date = today()
+    je.company = company
+    je.voucher_type = "Credit Note"
+
+    total_penalty = 0
+    item_codes = []
+
+    # ---------------------------------------------------------
+    # 🔥 CHECK DUPLICATION ONLY IN SUBMITTED JOURNAL ENTRIES
+    # ---------------------------------------------------------
     existing_invoices = frappe.db.sql("""
         SELECT ja.custom_penalty_invoice
         FROM `tabJournal Entry Account` ja
@@ -312,54 +576,65 @@ def create_debit_note(company, period_type=None, invoices=None):
         AND je.docstatus = 1
     """, as_dict=True)
 
+
     already_posted = {d.custom_penalty_invoice for d in existing_invoices}
 
-    # --------------------------------------------------------
-    #  START JOURNAL ENTRY
-    # --------------------------------------------------------
-    je = frappe.new_doc("Journal Entry")
-    je.posting_date = today()
-    je.company = company
-    je.voucher_type = "Credit Note"
-
-    total_penalty = 0
-    item_codes = []
-
-    # --------------------------------------------------------
-    #  PROCESS INVOICES
-    # --------------------------------------------------------
+    # ---------------------------------------------------------
+    # 🔥 PROCESS INVOICES (avoid duplicates)
+    # ---------------------------------------------------------
     for row in invoices:
 
-        # ---- DISCOUNT FILTER (only > threshold) ----
         discount = row.get("discount_percentage", 0)
         if discount <= discount_threshold:
             continue
 
         invoice_name = row.get("name")
         item_code = row.get("item_code")
+
+        # Realized / Net Sale Value (Invoice Base Value)
         invoice_value = Decimal(str(row.get("invoice_value") or 0))
 
-        # ---- AVOID ALREADY CREDIT NOTE INVOICES ----
+        # -----------------------------
+        # ⭐ NEW: CD/DN Value From Table
+        # -----------------------------
+        passed_penalty = row.get("debit_note") or row.get("cd_dn") or row.get("cd_dn_value")
+
+        # Skip duplicates
+        if invoice_name in already_posted:
+            continue
+
+        # Skip if invoice already a credit note
         si_status = frappe.db.get_value(
             "Sales Invoice",
             invoice_name,
             ["status", "is_return"],
             as_dict=True
         )
-
         if si_status and (si_status.status == "Credit Note" or si_status.is_return == 1):
             continue
 
-        # ---- AVOID DUPLICATED INVOICES ----
-        if invoice_name in already_posted:
-            continue
+        # --------------------------
+        # Fetch HO purchase GST + Value
+        # --------------------------
+        input_gst_percent, input_gst_value, purchase_value = get_purchase_input_gst(item_code, company)
 
-        # ---- PENALTY ----
-        penalty_amount = float((invoice_value * Decimal(str(auto_credit_note_percent))) / 100)
+        # -------------------------------------------------
+        # ⭐ FINAL LOGIC — USE CD/DN VALUE IF PASSED
+        # -------------------------------------------------
+        if passed_penalty not in (None, "", 0):
+            penalty_amount = float(passed_penalty)
+        elif purchase_value > 0:
+            penalty_amount = float(purchase_value - invoice_value)
+        else:
+            penalty_amount = float((invoice_value * Decimal(str(auto_credit_note_percent))) / 100)
+
+        # accumulate
         total_penalty += penalty_amount
         item_codes.append(item_code)
 
-        # Row entry
+        # -----------------------------
+        # Add journal entry line
+        # -----------------------------
         je.append("accounts", {
             "account": penalty_account,
             "credit_in_account_currency": penalty_amount,
@@ -367,17 +642,17 @@ def create_debit_note(company, period_type=None, invoices=None):
             "remarks": (
                 f"{item_code} (Disc {discount}%, "
                 f"Threshold {discount_threshold}%, "
-                f"Penalty on Invoice Value)"
+                f"Penalty passed from UI or HO difference)"
             )
         })
 
-    # If no invoice processed
-    if total_penalty == 0:
-        return {"message": "No invoices above discount threshold or already processed."}
 
-    # --------------------------------------------------------
-    #  GET SUPPLIER FOR THESE ITEMS
-    # --------------------------------------------------------
+
+
+    if total_penalty == 0:
+        return {"message": "All invoices already processed or below threshold."}
+
+    # ---------------- Supplier Auto Fetch ----------------
     supplier_info = frappe.db.sql("""
         SELECT pi.supplier
         FROM `tabPurchase Invoice` pi
@@ -393,9 +668,7 @@ def create_debit_note(company, period_type=None, invoices=None):
 
     supplier = supplier_info[0].supplier
 
-    # --------------------------------------------------------
-    #  CREDITOR (PAYABLE) ACCOUNT
-    # --------------------------------------------------------
+    # Payable account
     creditors_account = frappe.db.get_value(
         "Account",
         {
@@ -409,11 +682,9 @@ def create_debit_note(company, period_type=None, invoices=None):
     )
 
     if not creditors_account:
-        frappe.throw(f"Creditors account missing for company {company}")
+        frappe.throw(f"No Creditors account found for company {company}")
 
-    # --------------------------------------------------------
-    #  SUMMARY ROW
-    # --------------------------------------------------------
+    # Summary row
     je.append("accounts", {
         "account": creditors_account,
         "debit_in_account_currency": total_penalty,
@@ -423,18 +694,11 @@ def create_debit_note(company, period_type=None, invoices=None):
         "remarks": "Total Penalty Summary"
     })
 
-
-
-    # --------------------------------------------------------
-    #  SAVE JE
-    # --------------------------------------------------------
+    # Save JE
     je.insert(ignore_permissions=True)
+    # je.submit()  # enable after testing
 
     return {
         "message": f"Journal Entry Created Successfully: {je.name}",
-        "journal_entry": je.name,
-        "from_date": from_date,
-        "to_date": to_date
+        "journal_entry": je.name
     }
-
-
