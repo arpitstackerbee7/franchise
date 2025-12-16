@@ -275,6 +275,44 @@ def to_decimal(v):
 from decimal import Decimal
 import frappe
 
+# def get_item_input_gst(item_code, company):
+#     """
+#     Fetch INPUT GST directly from last Purchase Invoice Item
+#     using FINAL calculated fields
+#     """
+
+#     pii = frappe.db.sql("""
+#         SELECT
+#             pii.custom_single_item_rate AS single_item_rate,
+#             pii.custom_single_item_input_gst_amount AS gst_amount
+#         FROM `tabPurchase Invoice Item` pii
+#         JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+#         WHERE
+#             pii.item_code = %s
+#             AND pi.company = %s
+#             AND pi.docstatus = 1
+#         ORDER BY pi.posting_date DESC, pi.posting_time DESC, pii.creation DESC
+#         LIMIT 1
+#     """, (item_code, company), as_dict=True)
+
+#     if not pii:
+#         return Decimal("0"), Decimal("0"), Decimal("0")
+
+#     row = pii[0]
+
+#     single_item_rate = Decimal(str(row.single_item_rate or 0))
+#     gst_amount_per_item = Decimal(str(row.gst_amount or 0))
+
+#     # GST % derive (optional, if needed)
+#     gst_percent = (
+#         (gst_amount_per_item * 100 / single_item_rate)
+#         if single_item_rate > 0 else Decimal("0")
+#     )
+
+#     return gst_percent, gst_amount_per_item, single_item_rate
+
+from decimal import Decimal
+
 def get_item_input_gst(item_code, company):
     """
     Fetch INPUT GST directly from last Purchase Invoice Item
@@ -300,16 +338,17 @@ def get_item_input_gst(item_code, company):
 
     row = pii[0]
 
-    single_item_rate = Decimal(str(row.single_item_rate or 0))
-    gst_amount_per_item = Decimal(str(row.gst_amount or 0))
+    single_item_rate = abs(Decimal(str(row.single_item_rate or 0)))
+    gst_amount_per_item = abs(Decimal(str(row.gst_amount or 0)))
 
-    # GST % derive (optional, if needed)
+    # GST % derive
     gst_percent = (
-        (gst_amount_per_item * 100 / single_item_rate)
+        abs(gst_amount_per_item * 100 / single_item_rate)
         if single_item_rate > 0 else Decimal("0")
     )
 
     return gst_percent, gst_amount_per_item, single_item_rate
+
 
 @frappe.whitelist()
 def fetch_invoices(company, from_date=None, to_date=None):
