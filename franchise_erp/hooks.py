@@ -29,11 +29,14 @@ app_license = "mit"
 
 doc_events = {
    "Purchase Invoice": {
-       "before_save": ["franchise_erp.custom.purchase_invoice_hooks.update_purchase_invoice_totals"],
+      "validate": "franchise_erp.custom.purchase_invoice_hooks.apply_item_gst",
+    #    "validate": "franchise_erp.custom.purchase_invoice_hooks.apply_hsn_based_gst",
+    #    "before_save": ["franchise_erp.custom.purchase_invoice_hooks.update_purchase_invoice_totals"],
     #    "before_submit": "franchise_erp.custom.purchase_invoice_hooks.before_submit",
     "before_submit": "franchise_erp.custom.purchase_invoice_hooks.update_serial_input_gst",
-       "on_submit": ["franchise_erp.custom.purchase_invoice_hooks.on_submit"],
+    #    "on_submit": ["franchise_erp.custom.purchase_invoice_hooks.on_submit"],
        "before_insert": "franchise_erp.custom.customs.set_customer_email_as_owner",
+       "on_submit": "franchise_erp.custom.purchase_invoice_hooks.calculate_single_item_gst"
     },
     "Journal Entry": {
         "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
@@ -41,7 +44,7 @@ doc_events = {
     "Sales Invoice": {
         "before_save": ["franchise_erp.custom.sales_invoice_hooks.before_save","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
         "before_submit": ["franchise_erp.custom.sales_invoice_validation.before_submit","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
-        "on_submit": ["franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
+        "on_submit": ["franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins","franchise_erp.custom.sales_invoice_hooks.force_margin_totals_after_submit"],
         "on_update_after_submit":"franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"
     },
    "Item": {
@@ -327,3 +330,12 @@ fixtures = [
     {"dt": "Workflow Action Master"},
         ]
 
+fixtures = [
+    {
+        "dt": "DocType",
+        "filters": [
+            ["module", "=", "Franchise Erp"],
+            ["custom", "=", 1]
+        ]
+    }
+]
