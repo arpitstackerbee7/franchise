@@ -59,6 +59,25 @@ frappe.ui.form.on('Item', {
     }
 });
 
+frappe.ui.form.on('Item', {
+
+    onload(frm) {
+        set_item_group_query(frm);
+    },
+    refresh(frm) {
+        set_item_group_query(frm);
+    }
+});
+
+
+function set_item_group_query(frm) {
+    frm.set_query('custom_silvet', () => {
+        return {
+            query: 'franchise_erp.custom.item_group.all_item_group_for_silvet'
+        };
+    });
+}
+
 // frappe.ui.form.on('Item', {
 //     refresh(frm) {
 //         frm.add_custom_button('Print Label', () => {
@@ -175,3 +194,4 @@ frappe.ui.form.on('Item', {
 //         }
 //     });
 // }
+
