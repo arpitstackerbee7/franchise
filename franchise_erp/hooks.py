@@ -55,9 +55,9 @@ doc_events = {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
         "before_save": "franchise_erp.custom.item_master.generate_item_code",
     },
-     "Item Group": {
-        "before_insert": "franchise_erp.custom.item_group.set_custom_group_name",
-    },
+    #  "Item Group": {
+    #     "before_insert": "franchise_erp.custom.item_group.set_custom_group_name",
+    # },
 
 
 
