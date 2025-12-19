@@ -47,17 +47,32 @@ frappe.ui.form.on('Item', {
     }
 });
 
-frappe.ui.form.on('Item', {
-    setup(frm) {
-        frm.set_query("custom_silvet", function () {
-            return {
-                filters: {
-                    is_group: 0
-                }
-            };
-        });
-    }
-});
+// frappe.ui.form.on('Item', {
+//     setup(frm) {
+//         frm.set_query("custom_silvet", function () {
+//             return {
+//                 filters: {
+//                     is_group: 0
+//                 }
+//             };
+//         });
+//     }
+// });
+// frappe.ui.form.on('Item', {
+//     setup(frm) {
+//         frm.set_query("custom_silvet", function () {
+//             return {
+//                 query: "franchise_erp.custom.item_master.item_group_query",
+//                 filters: {
+//                     is_group: 0
+//                 }
+//             };
+//         });
+//     }
+// });
+
+
+
 
 frappe.ui.form.on('Item', {
 

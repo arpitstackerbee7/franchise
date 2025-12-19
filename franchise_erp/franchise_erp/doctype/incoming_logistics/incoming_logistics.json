@@ -10,41 +10,46 @@
   "amended_from",
   "general_section",
   "owner_site",
-  "entry_no",
-  "consignor",
+  "date",
   "transporter",
-  "invoice_no",
-  "lr_document_no",
+  "invoice_date",
   "gate_entry",
+  "supplier",
   "column_break_kknq",
   "type",
-  "date",
-  "site",
+  "consignor",
   "mode",
-  "invoice_date",
-  "lr_date",
+  "lr_document_no",
   "status",
+  "column_break_cred",
+  "entry_no",
+  "site",
+  "invoice_no",
+  "lr_date",
+  "purchase_no",
   "transport_information_section",
   "maintain_bale_wise_qty",
-  "lr_quantity",
   "received_qty",
-  "station_from",
-  "vehicle_no",
-  "column_break_vrba",
-  "unit",
-  "pending_qyt",
   "station_to",
+  "column_break_vrba",
+  "lr_quantity",
+  "pending_qyt",
+  "vehicle_no",
+  "column_break_dmpn",
+  "unit",
+  "station_from",
   "policy_no",
   "charge_information_section",
   "to_pay",
-  "actual_weight",
-  "freight",
+  "charged_weight",
   "declaration_amount",
   "column_break_hmwf",
   "rate",
-  "charged_weight",
-  "others",
+  "freight",
   "total_amount",
+  "column_break_uyae",
+  "actual_weight",
+  "others",
   "others_section",
   "remarks"
  ],
@@ -108,6 +113,7 @@
    "label": "LR, Document No"
   },
   {
+   "default": "Yes",
    "fieldname": "gate_entry",
    "fieldtype": "Data",
    "label": "Gate Entry"
@@ -118,9 +124,9 @@
   },
   {
    "fieldname": "type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Type",
-   "options": "Procurement: Receipts",
+   "options": "Incoming Logistics Type",
    "reqd": 1
   },
   {
@@ -194,8 +200,9 @@
   },
   {
    "fieldname": "unit",
-   "fieldtype": "Data",
-   "label": "Unit"
+   "fieldtype": "Link",
+   "label": "Unit",
+   "options": "UOM"
   },
   {
    "fieldname": "pending_qyt",
@@ -219,8 +226,9 @@
   },
   {
    "fieldname": "to_pay",
-   "fieldtype": "Data",
-   "label": "To Pay"
+   "fieldtype": "Select",
+   "label": "To Pay",
+   "options": "Yes\nNo"
   },
   {
    "fieldname": "actual_weight",
@@ -270,13 +278,37 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "fieldname": "purchase_no",
+   "fieldtype": "Data",
+   "label": "Purchase No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Data",
+   "label": "Supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cred",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_dmpn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_uyae",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-08 16:42:37.251052",
+ "modified": "2025-12-17 12:45:35.066470",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

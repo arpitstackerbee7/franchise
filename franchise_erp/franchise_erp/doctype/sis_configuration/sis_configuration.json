@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "field:company",
  "creation": "2025-11-24 12:40:53.693140",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -13,7 +14,9 @@
   "auto_credit_note_percent",
   "discount_threshold",
   "sis_debit_note_creation_period",
-  "period_info"
+  "period_info",
+  "output_gst_min_net_rate",
+  "output_gst_max_net_rate"
  ],
  "fields": [
   {
@@ -85,16 +88,27 @@
    "fieldtype": "HTML",
    "label": "Period Info",
    "read_only": 1
+  },
+  {
+   "fieldname": "output_gst_min_net_rate",
+   "fieldtype": "Float",
+   "label": "Output GST 5%"
+  },
+  {
+   "fieldname": "output_gst_max_net_rate",
+   "fieldtype": "Float",
+   "label": "Output GST 18%"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-11-27 12:14:44.596539",
- "modified_by": "Administrator",
+ "modified": "2025-12-18 18:53:28.159524",
+ "modified_by": "sis@sis.com",
  "module": "Franchise Erp",
  "name": "SIS Configuration",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

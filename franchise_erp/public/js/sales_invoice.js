@@ -42,26 +42,26 @@ function apply_discount_hide(frm, cdt, cdn) {
     );
 }
 
-frappe.ui.form.on("Sales Invoice", {
-    refresh(frm) {
-        frm.refresh_field("items");
-    },
-    onload_post_render(frm) {
-        frm.refresh_field("items");
-    }
-});
+// frappe.ui.form.on("Sales Invoice", {
+//     refresh(frm) {
+//         frm.refresh_field("items");
+//     },
+//     onload_post_render(frm) {
+//         frm.refresh_field("items");
+//     }
+// });
 
-frappe.ui.form.on("Sales Invoice Item", {
-    custom_margins_: function(frm, cdt, cdn) {
-        frm.refresh_field("items");
-    },
-    custom_margin_amount: function(frm, cdt, cdn) {
-        frm.refresh_field("items");
-    },
-    custom_total_invoice_amount: function(frm, cdt, cdn) {
-        frm.refresh_field("items");
-    }
-});
+// frappe.ui.form.on("Sales Invoice Item", {
+//     custom_margins_: function(frm, cdt, cdn) {
+//         frm.refresh_field("items");
+//     },
+//     custom_margin_amount: function(frm, cdt, cdn) {
+//         frm.refresh_field("items");
+//     },
+//     custom_total_invoice_amount: function(frm, cdt, cdn) {
+//         frm.refresh_field("items");
+//     }
+// });
 
 // frappe.ui.form.on("Sales Invoice", {
 //     refresh(frm) {
@@ -224,3 +224,43 @@ frappe.ui.form.on("Sales Invoice Item", {
 //     frm.set_value("outstanding_amount", total);
 // }
 
+
+frappe.ui.form.on("Sales Invoice Item", {
+    rate(frm, cdt, cdn) {
+        calculate_sis(frm, cdt, cdn);
+    },
+    qty(frm, cdt, cdn) {
+        calculate_sis(frm, cdt, cdn);
+    }
+});
+
+
+function calculate_sis(frm, cdt, cdn) {
+    let row = locals[cdt][cdn];
+
+    if (!row.rate || !frm.doc.customer) return;
+
+    frappe.call({
+        method: "franchise_erp.custom.sales_invoice.calculate_sis_values",
+        args: {
+            customer: frm.doc.customer,
+            rate: row.rate
+        },
+       callback: function (r) {
+    if (!r.message) return;
+
+    let d = r.message;
+
+    // Custom fields
+    frappe.model.set_value(cdt, cdn, "custom_output_gst_", d.custom_output_gst_);
+    frappe.model.set_value(cdt, cdn, "custom_output_gst_value", d.custom_output_gst_value);
+    frappe.model.set_value(cdt, cdn, "custom_margins_", d.custom_margins_);
+    frappe.model.set_value(cdt, cdn, "custom_margin_amount", d.custom_margin_amount);
+    frappe.model.set_value(cdt, cdn, "custom_net_sale_value", d.custom_net_sale_value);
+    frappe.model.set_value(cdt, cdn, "custom_total_invoice_amount", d.custom_total_invoice_amount);
+
+   
+}
+
+    });
+}

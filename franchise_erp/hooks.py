@@ -28,29 +28,36 @@ app_license = "mit"
 
 
 doc_events = {
+    # "Purchase Order":{
+    #    "before_submit" : "franchise_erp.custom.po_serial_generator.apply_po_serials"
+    # },
    "Purchase Invoice": {
-      "validate": "franchise_erp.custom.purchase_invoice_hooks.apply_item_gst",
-    #    "validate": "franchise_erp.custom.purchase_invoice_hooks.apply_hsn_based_gst",
-    #    "before_save": ["franchise_erp.custom.purchase_invoice_hooks.update_purchase_invoice_totals"],
-    #    "before_submit": "franchise_erp.custom.purchase_invoice_hooks.before_submit",
-    "before_submit": "franchise_erp.custom.purchase_invoice_hooks.update_serial_input_gst",
-    #    "on_submit": ["franchise_erp.custom.purchase_invoice_hooks.on_submit"],
+       "before_save": "franchise_erp.custom.purchase_invoice.apply_intercompany_gst",
+       "validate": "franchise_erp.custom.purchase_invoice_hooks.apply_item_gst",
+       "before_submit": "franchise_erp.custom.purchase_invoice_hooks.update_serial_input_gst",
        "before_insert": "franchise_erp.custom.customs.set_customer_email_as_owner",
        "on_submit": "franchise_erp.custom.purchase_invoice_hooks.calculate_single_item_gst"
     },
     "Journal Entry": {
         "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
     },
-    "Sales Invoice": {
-        "before_save": ["franchise_erp.custom.sales_invoice_hooks.before_save","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
-        "before_submit": ["franchise_erp.custom.sales_invoice_validation.before_submit","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
-        "on_submit": ["franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins","franchise_erp.custom.sales_invoice_hooks.force_margin_totals_after_submit"],
-        "on_update_after_submit":"franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"
+   
+   "Sales Invoice": {
+        "before_save": "franchise_erp.custom.sales_invoice.apply_sis_pricing"
     },
+    # "Sales Invoice": {
+    #     "before_save": ["franchise_erp.custom.sales_invoice_hooks.before_save","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
+    #     "before_submit": ["franchise_erp.custom.sales_invoice_validation.before_submit","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
+    #     "on_submit": ["franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins","franchise_erp.custom.sales_invoice_hooks.force_margin_totals_after_submit"],
+    #     "on_update_after_submit":"franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"
+    # },
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
         "before_save": "franchise_erp.custom.item_master.generate_item_code",
-    }
+    },
+     "Item Group": {
+        "before_insert": "franchise_erp.custom.item_group.set_custom_group_name",
+    },
 
 
 
@@ -59,6 +66,7 @@ doc_events = {
 
 
 doctype_js = {
+    "Purchase Order": "public/js/purchase_order.js",
     "Purchase Invoice": "public/js/purchase_invoice.js",
     "SIS Debit Note Log": "public/js/debit_note_log.js",
     "SIS Configuration": "public/js/sis_configuration.js",

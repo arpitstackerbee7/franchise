@@ -121,7 +121,7 @@
   },
   {
    "fieldname": "pending_qyt",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Pending Qty"
   },
   {
@@ -131,7 +131,7 @@
   },
   {
    "fieldname": "declaration_amount",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Declaration Amount"
   },
   {
@@ -161,11 +161,12 @@
   {
    "fieldname": "lr_entry_no",
    "fieldtype": "Data",
-   "label": "LR Entry No"
+   "label": "LR Entry No",
+   "reqd": 1
   },
   {
    "fieldname": "lr_qty",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "LR Quantity"
   },
   {
@@ -175,27 +176,28 @@
   },
   {
    "fieldname": "pending_amount",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Pending Amount"
   },
   {
    "fieldname": "qyt",
-   "fieldtype": "Data",
-   "label": "Quantity"
+   "fieldtype": "Float",
+   "label": "Quantity",
+   "reqd": 1
   },
   {
    "fieldname": "pending_qtys",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Pending Quantity"
   },
   {
    "fieldname": "received_qyt",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Received Quantity"
   },
   {
    "fieldname": "amount",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Amount"
   },
   {
@@ -241,7 +243,7 @@
   },
   {
    "fieldname": "amounts",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Amount"
   },
   {
@@ -250,7 +252,7 @@
   },
   {
    "fieldname": "item_qty",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Item Qty"
   },
   {
@@ -259,7 +261,7 @@
   },
   {
    "fieldname": "ge_qty",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "GE Qty"
   }
  ],
@@ -267,7 +269,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-08 16:59:23.180402",
+ "modified": "2025-12-17 13:03:12.256324",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
