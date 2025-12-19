@@ -55,6 +55,7 @@ def all_item_group_for_silvet(doctype, txt, searchfield, start, page_len, filter
             )
             path.insert(0, name)
             name = parent
+        del path[0]
         return " -> ".join(path)
 
     results = []
