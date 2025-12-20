@@ -68,8 +68,8 @@ def generate_item_code(doc, method):
     colour = doc.custom_colour_code
     size = doc.custom_size
 
-    # if not collection or not department or not silvet or not colour:
-    #     frappe.throw("Please select Collection, Department, Silvet and Colour")
+    if not collection or not department or not silvet or not colour:
+        frappe.throw("Please select Collection, Department, Silvet and Colour")
 
     # ---------------- PREFIX BUILD ----------------
     col_prefix = collection[0].upper()

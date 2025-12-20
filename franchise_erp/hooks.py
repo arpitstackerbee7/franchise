@@ -324,7 +324,9 @@ fixtures = [
     "Custom Field",
     "Property Setter",
     "Client Script",
-    "Server Script"
+    "Server Script",
+    "City",
+    "State"
 ]
 
 
@@ -344,9 +346,24 @@ fixtures = [
 fixtures = [
     {
         "dt": "DocType",
+        # "filters": [
+        #     ["module", "=", "Franchise Erp"],
+        #     ["custom", "=", 1]
+        # ]
+    }
+]
+
+fixtures = [
+    {
+        "dt": "State",
         "filters": [
-            ["module", "=", "Franchise Erp"],
-            ["custom", "=", 1]
+            ["country", "=", "India"]
         ]
+    },
+    {
+        "dt": "City",
+        # "filters": [
+        #     ["country", "=", "India"]
+        # ]
     }
 ]
