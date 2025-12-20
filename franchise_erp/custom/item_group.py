@@ -39,7 +39,9 @@ def all_item_group_for_silvet(doctype, txt, searchfield, start, page_len, filter
             ItemGroup.parent_item_group,
             ItemGroup.lft
         )
-        .where(ItemGroup.name.like(f"%{txt}%"))
+        .where(
+            ItemGroup.name.like(f"%{txt}%")
+            )
         .orderby(ItemGroup.lft)
         .limit(page_len)
         .offset(start)
@@ -66,3 +68,44 @@ def all_item_group_for_silvet(doctype, txt, searchfield, start, page_len, filter
             results.append((g["name"], label))
 
     return results
+
+
+# @frappe.whitelist()
+# def all_item_group_for_silvet(doctype, txt, searchfield, start, page_len, filters):
+#     ItemGroup = frappe.qb.DocType("Item Group")
+
+#     base_groups = (
+#         frappe.qb.from_(ItemGroup)
+#         .select(ItemGroup.name, ItemGroup.parent_item_group)
+#         .where(
+#             (ItemGroup.is_group == 0) &
+#             (ItemGroup.name.like(f"%{txt}%"))
+#         )
+#         .limit(page_len)
+#         .offset(start)
+#     ).run(as_dict=True)
+
+#     def get_full_path(name):
+#         path = []
+#         while name:
+#             parent = frappe.db.get_value(
+#                 "Item Group",
+#                 name,
+#                 "parent_item_group"
+#             )
+#             path.insert(0, name)
+#             name = parent
+
+#         if path and path[0] == "All Item Groups":
+#             path.pop(0)
+
+#         return " → ".join(path)
+
+#     results = []
+#     for g in base_groups:
+#         results.append((
+#             g["name"],                
+#             get_full_path(g["name"])  
+#         ))
+
+#     return results

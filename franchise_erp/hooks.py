@@ -75,6 +75,7 @@ doctype_js = {
     "Incoming Logistics": "public/js/incoming_logistics.js",
     "Color": "public/js/colour_code.js",
     "Item": "public/js/item_master.js",
+    "Address":"public/js/address.js"
 }
 
 
@@ -323,7 +324,9 @@ fixtures = [
     "Custom Field",
     "Property Setter",
     "Client Script",
-    "Server Script"
+    "Server Script",
+    "City",
+    "State"
 ]
 
 
@@ -343,9 +346,24 @@ fixtures = [
 fixtures = [
     {
         "dt": "DocType",
+        # "filters": [
+        #     ["module", "=", "Franchise Erp"],
+        #     ["custom", "=", 1]
+        # ]
+    }
+]
+
+fixtures = [
+    {
+        "dt": "State",
         "filters": [
-            ["module", "=", "Franchise Erp"],
-            ["custom", "=", 1]
+            ["country", "=", "India"]
         ]
+    },
+    {
+        "dt": "City",
+        # "filters": [
+        #     ["country", "=", "India"]
+        # ]
     }
 ]

@@ -1,0 +1,5922 @@
+[
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Delhi-DEL",
+    "city": "New Delhi",
+    "city_code": "NEW",
+    "name": "New Delhi-NEW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Delhi-DEL",
+    "city": "Central Delhi",
+    "city_code": "CEN",
+    "name": "Central Delhi-CEN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Delhi-DEL",
+    "city": "North Delhi",
+    "city_code": "NOR",
+    "name": "North Delhi-NOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Delhi-DEL",
+    "city": "South Delhi",
+    "city_code": "SOU",
+    "name": "South Delhi-SOU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Delhi-DEL",
+    "city": "West Delhi",
+    "city_code": "WES",
+    "name": "West Delhi-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Delhi-DEL",
+    "city": "South West",
+    "city_code": "SOU",
+    "name": "South West-SOU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Delhi-DEL",
+    "city": "East Delhi",
+    "city_code": "EAS",
+    "name": "East Delhi-EAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Delhi-DEL",
+    "city": "North East",
+    "city_code": "NOR",
+    "name": "North East-NOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Delhi-DEL",
+    "city": "North West",
+    "city_code": "NOR",
+    "name": "North West-NOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Faridabad",
+    "city_code": "FAR",
+    "name": "Faridabad-FAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Gurgaon",
+    "city_code": "GUR",
+    "name": "Gurgaon-GUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Mohindergarh",
+    "city_code": "MOH",
+    "name": "Mohindergarh-MOH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Bhiwani",
+    "city_code": "BHI",
+    "name": "Bhiwani-BHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Rewari",
+    "city_code": "REW",
+    "name": "Rewari-REW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Rohtak",
+    "city_code": "ROH",
+    "name": "Rohtak-ROH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Jhajjar",
+    "city_code": "JHA",
+    "name": "Jhajjar-JHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Sonepat",
+    "city_code": "SON",
+    "name": "Sonepat-SON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Hissar",
+    "city_code": "HIS",
+    "name": "Hissar-HIS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Sirsa",
+    "city_code": "SIR",
+    "name": "Sirsa-SIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Fatehabad",
+    "city_code": "FAT",
+    "name": "Fatehabad-FAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Jind",
+    "city_code": "JIN",
+    "name": "Jind-JIN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Kaithal",
+    "city_code": "KAI",
+    "name": "Kaithal-KAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Karnal",
+    "city_code": "KAR",
+    "name": "Karnal-KAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Kurukshetra",
+    "city_code": "KUR",
+    "name": "Kurukshetra-KUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Panipat",
+    "city_code": "PAN",
+    "name": "Panipat-PAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Ambala",
+    "city_code": "AMB",
+    "name": "Ambala-AMB",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Panchkula",
+    "city_code": "PAN",
+    "name": "Panchkula-PAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Haryana-HAR",
+    "city": "Yamunanagar",
+    "city_code": "YAM",
+    "name": "Yamunanagar-YAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Rupnagar",
+    "city_code": "RUP",
+    "name": "Rupnagar-RUP",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Patiala",
+    "city_code": "PAT",
+    "name": "Patiala-PAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Fatehgarh Sahib",
+    "city_code": "FAT",
+    "name": "Fatehgarh Sahib-FAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Ludhiana",
+    "city_code": "LUD",
+    "name": "Ludhiana-LUD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Kapurthala",
+    "city_code": "KAP",
+    "name": "Kapurthala-KAP",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Ferozepur",
+    "city_code": "FER",
+    "name": "Ferozepur-FER",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Moga",
+    "city_code": "MOG",
+    "name": "Moga-MOG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Amritsar",
+    "city_code": "AMR",
+    "name": "Amritsar-AMR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Gurdaspur",
+    "city_code": "GUR",
+    "name": "Gurdaspur-GUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Jalandhar",
+    "city_code": "JAL",
+    "name": "Jalandhar-JAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Hoshiarpur",
+    "city_code": "HOS",
+    "name": "Hoshiarpur-HOS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Nawanshahr",
+    "city_code": "NAW",
+    "name": "Nawanshahr-NAW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Sangrur",
+    "city_code": "SAN",
+    "name": "Sangrur-SAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Bhatinda",
+    "city_code": "BHA",
+    "name": "Bhatinda-BHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Faridkot",
+    "city_code": "FAR",
+    "name": "Faridkot-FAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Mansa",
+    "city_code": "MAN",
+    "name": "Mansa-MAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Punjab-PUN",
+    "city": "Muktsar",
+    "city_code": "MUK",
+    "name": "Muktsar-MUK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chandigarh-CHA",
+    "city": "Chandigarh",
+    "city_code": "CHA",
+    "name": "Chandigarh-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Shimla",
+    "city_code": "SHI",
+    "name": "Shimla-SHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Kinnaur",
+    "city_code": "KIN",
+    "name": "Kinnaur-KIN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Lahul & Spiti",
+    "city_code": "LAH",
+    "name": "Lahul & Spiti-LAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Sirmour",
+    "city_code": "SIR",
+    "name": "Sirmour-SIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Solan",
+    "city_code": "SOL",
+    "name": "Solan-SOL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Bilaspur",
+    "city_code": "BIL",
+    "name": "Bilaspur-BIL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Una",
+    "city_code": "UNA",
+    "name": "Una-UNA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Hamirpur",
+    "city_code": "HAM",
+    "name": "Hamirpur-HAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Mandi",
+    "city_code": "MAN",
+    "name": "Mandi-MAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Kullu",
+    "city_code": "KUL",
+    "name": "Kullu-KUL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Kangra",
+    "city_code": "KAN",
+    "name": "Kangra-KAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Himachal Pradesh-HIM",
+    "city": "Chamba",
+    "city_code": "CHA",
+    "name": "Chamba-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Jammu",
+    "city_code": "JAM",
+    "name": "Jammu-JAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Doda",
+    "city_code": "DOD",
+    "name": "Doda-DOD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Udhampur",
+    "city_code": "UDH",
+    "name": "Udhampur-UDH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Badgam",
+    "city_code": "BAD",
+    "name": "Badgam-BAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Kathua",
+    "city_code": "KAT",
+    "name": "Kathua-KAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Poonch",
+    "city_code": "POO",
+    "name": "Poonch-POO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Rajouri",
+    "city_code": "RAJ",
+    "name": "Rajouri-RAJ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Srinagar",
+    "city_code": "SRI",
+    "name": "Srinagar-SRI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Kupwara",
+    "city_code": "KUP",
+    "name": "Kupwara-KUP",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Anantnag",
+    "city_code": "ANA",
+    "name": "Anantnag-ANA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Pulwana",
+    "city_code": "PUL",
+    "name": "Pulwana-PUL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Baramulla",
+    "city_code": "BAR",
+    "name": "Baramulla-BAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Leh",
+    "city_code": "LEH",
+    "name": "Leh-LEH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jammu & Kashmir-JAM",
+    "city": "Kargil",
+    "city_code": "KAR",
+    "name": "Kargil-KAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Ghaziabad",
+    "city_code": "GHA",
+    "name": "Ghaziabad-GHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Gautam Buddha Nagar",
+    "city_code": "GAU",
+    "name": "Gautam Buddha Nagar-GAU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Aligarh",
+    "city_code": "ALI",
+    "name": "Aligarh-ALI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Chandauli",
+    "city_code": "CHA",
+    "name": "Chandauli-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Etah",
+    "city_code": "ETA",
+    "name": "Etah-ETA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Bulandshahr",
+    "city_code": "BUL",
+    "name": "Bulandshahr-BUL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Moradabad",
+    "city_code": "MOR",
+    "name": "Moradabad-MOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Badaun",
+    "city_code": "BAD",
+    "name": "Badaun-BAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Hathras",
+    "city_code": "HAT",
+    "name": "Hathras-HAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Mainpuri",
+    "city_code": "MAI",
+    "name": "Mainpuri-MAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Firozabad",
+    "city_code": "FIR",
+    "name": "Firozabad-FIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Farukhabad",
+    "city_code": "FAR",
+    "name": "Farukhabad-FAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Etwah",
+    "city_code": "ETW",
+    "name": "Etwah-ETW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Chitrakoot",
+    "city_code": "CHI",
+    "name": "Chitrakoot-CHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Kanpur",
+    "city_code": "KAN",
+    "name": "Kanpur-KAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Faizabad",
+    "city_code": "FAI",
+    "name": "Faizabad-FAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Kannauj",
+    "city_code": "KAN",
+    "name": "Kannauj-KAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Unnao",
+    "city_code": "UNN",
+    "name": "Unnao-UNN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Banda",
+    "city_code": "BAN",
+    "name": "Banda-BAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Hamirpur",
+    "city_code": "HAM",
+    "name": "Hamirpur-HAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Mahoba",
+    "city_code": "MAH",
+    "name": "Mahoba-MAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Allahabad",
+    "city_code": "ALL",
+    "name": "Allahabad-ALL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Kaushambi",
+    "city_code": "KAU",
+    "name": "Kaushambi-KAU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Fatehpur",
+    "city_code": "FAT",
+    "name": "Fatehpur-FAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Ambedkar Nagar",
+    "city_code": "AMB",
+    "name": "Ambedkar Nagar-AMB",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Ghazipur",
+    "city_code": "GHA",
+    "name": "Ghazipur-GHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Varanasi",
+    "city_code": "VAR",
+    "name": "Varanasi-VAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Jyotiba Phule Nagar",
+    "city_code": "JYO",
+    "name": "Jyotiba Phule Nagar-JYO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Sant Ravidas Nagar Bhadohi",
+    "city_code": "SAN",
+    "name": "Sant Ravidas Nagar Bhadohi-SAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Mirzapur",
+    "city_code": "MIR",
+    "name": "Mirzapur-MIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Azamgarh",
+    "city_code": "AZA",
+    "name": "Azamgarh-AZA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Ballia",
+    "city_code": "BAL",
+    "name": "Ballia-BAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Jaunpur",
+    "city_code": "JAU",
+    "name": "Jaunpur-JAU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Sultanpur",
+    "city_code": "SUL",
+    "name": "Sultanpur-SUL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Sant Kabir Nagar",
+    "city_code": "SAN",
+    "name": "Sant Kabir Nagar-SAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Barabanki",
+    "city_code": "BAR",
+    "name": "Barabanki-BAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Lucknow",
+    "city_code": "LUC",
+    "name": "Lucknow-LUC",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Raibareilly",
+    "city_code": "RAI",
+    "name": "Raibareilly-RAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Pratapgarh",
+    "city_code": "PRA",
+    "name": "Pratapgarh-PRA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Sonbhadra",
+    "city_code": "SON",
+    "name": "Sonbhadra-SON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Kushinagar",
+    "city_code": "KUS",
+    "name": "Kushinagar-KUS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Hardoi",
+    "city_code": "HAR",
+    "name": "Hardoi-HAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Shahjahanpur",
+    "city_code": "SHA",
+    "name": "Shahjahanpur-SHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Bareilly",
+    "city_code": "BAR",
+    "name": "Bareilly-BAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Rampur",
+    "city_code": "RAM",
+    "name": "Rampur-RAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Almora",
+    "city_code": "ALM",
+    "name": "Almora-ALM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Nainital",
+    "city_code": "NAI",
+    "name": "Nainital-NAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Meerut",
+    "city_code": "MEE",
+    "name": "Meerut-MEE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Pauri Garhwal",
+    "city_code": "PAU",
+    "name": "Pauri Garhwal-PAU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Tehri Garhwal",
+    "city_code": "TEH",
+    "name": "Tehri Garhwal-TEH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Chamoli",
+    "city_code": "CHA",
+    "name": "Chamoli-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Rudra Prayag",
+    "city_code": "RUD",
+    "name": "Rudra Prayag-RUD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Bijnore",
+    "city_code": "BIJ",
+    "name": "Bijnore-BIJ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Saharanpur",
+    "city_code": "SAH",
+    "name": "Saharanpur-SAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Hardwar",
+    "city_code": "HAR",
+    "name": "Hardwar-HAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Muzaffarnagar",
+    "city_code": "MUZ",
+    "name": "Muzaffarnagar-MUZ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Dehradun",
+    "city_code": "DEH",
+    "name": "Dehradun-DEH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Uttarkashi",
+    "city_code": "UTT",
+    "name": "Uttarkashi-UTT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Baghpat",
+    "city_code": "BAG",
+    "name": "Baghpat-BAG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Sitapur",
+    "city_code": "SIT",
+    "name": "Sitapur-SIT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Balrampur",
+    "city_code": "BAL",
+    "name": "Balrampur-BAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Kheri",
+    "city_code": "KHE",
+    "name": "Kheri-KHE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Pilibhit",
+    "city_code": "PIL",
+    "name": "Pilibhit-PIL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Auraiya",
+    "city_code": "AUR",
+    "name": "Auraiya-AUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Champawat",
+    "city_code": "CHA",
+    "name": "Champawat-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Pithoragarh",
+    "city_code": "PIT",
+    "name": "Pithoragarh-PIT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttaranchal-UTT",
+    "city": "Bageshwar",
+    "city_code": "BAG",
+    "name": "Bageshwar-BAG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Gonda",
+    "city_code": "GON",
+    "name": "Gonda-GON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Mau",
+    "city_code": "MAU",
+    "name": "Mau-MAU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Bahraich",
+    "city_code": "BAH",
+    "name": "Bahraich-BAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Shrawasti",
+    "city_code": "SHR",
+    "name": "Shrawasti-SHR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Basti",
+    "city_code": "BAS",
+    "name": "Basti-BAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Siddharthnagar",
+    "city_code": "SID",
+    "name": "Siddharthnagar-SID",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Gorakhpur",
+    "city_code": "GOR",
+    "name": "Gorakhpur-GOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Mahrajganj",
+    "city_code": "MAH",
+    "name": "Mahrajganj-MAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Deoria",
+    "city_code": "DEO",
+    "name": "Deoria-DEO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Mathura",
+    "city_code": "MAT",
+    "name": "Mathura-MAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Agra",
+    "city_code": "AGR",
+    "name": "Agra-AGR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Jhansi",
+    "city_code": "JHA",
+    "name": "Jhansi-JHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Lalitpur",
+    "city_code": "LAL",
+    "name": "Lalitpur-LAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Uttar Pradesh-UTT",
+    "city": "Jalaun",
+    "city_code": "JAL",
+    "name": "Jalaun-JAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Alwar",
+    "city_code": "ALW",
+    "name": "Alwar-ALW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Baran",
+    "city_code": "BAR",
+    "name": "Baran-BAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Jaipur",
+    "city_code": "JAI",
+    "name": "Jaipur-JAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Dausa",
+    "city_code": "DAU",
+    "name": "Dausa-DAU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Karauli",
+    "city_code": "KAR",
+    "name": "Karauli-KAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Nagaur",
+    "city_code": "NAG",
+    "name": "Nagaur-NAG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Tonk",
+    "city_code": "TON",
+    "name": "Tonk-TON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Ajmer",
+    "city_code": "AJM",
+    "name": "Ajmer-AJM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Bhilwara",
+    "city_code": "BHI",
+    "name": "Bhilwara-BHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Rajsamand",
+    "city_code": "RAJ",
+    "name": "Rajsamand-RAJ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Pali",
+    "city_code": "PAL",
+    "name": "Pali-PAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Jalore",
+    "city_code": "JAL",
+    "name": "Jalore-JAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Sirohi",
+    "city_code": "SIR",
+    "name": "Sirohi-SIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Udaipur",
+    "city_code": "UDA",
+    "name": "Udaipur-UDA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Chittorgarh",
+    "city_code": "CHI",
+    "name": "Chittorgarh-CHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Dungarpur",
+    "city_code": "DUN",
+    "name": "Dungarpur-DUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Bharatpur",
+    "city_code": "BHA",
+    "name": "Bharatpur-BHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Swaimadhopur",
+    "city_code": "SWA",
+    "name": "Swaimadhopur-SWA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Sikar",
+    "city_code": "SIK",
+    "name": "Sikar-SIK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Ganganagar",
+    "city_code": "GAN",
+    "name": "Ganganagar-GAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Bundi",
+    "city_code": "BUN",
+    "name": "Bundi-BUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Kota",
+    "city_code": "KOT",
+    "name": "Kota-KOT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Jhalawar",
+    "city_code": "JHA",
+    "name": "Jhalawar-JHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Banswara",
+    "city_code": "BAN",
+    "name": "Banswara-BAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Dholpur",
+    "city_code": "DHO",
+    "name": "Dholpur-DHO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Churu",
+    "city_code": "CHU",
+    "name": "Churu-CHU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "JhunJhunu",
+    "city_code": "JHU",
+    "name": "JhunJhunu-JHU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Bikaner",
+    "city_code": "BIK",
+    "name": "Bikaner-BIK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Hanumangarh",
+    "city_code": "HAN",
+    "name": "Hanumangarh-HAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Jodhpur",
+    "city_code": "JOD",
+    "name": "Jodhpur-JOD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Barmer",
+    "city_code": "BAR",
+    "name": "Barmer-BAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Rajasthan-RAJ",
+    "city": "Jaisalmer",
+    "city_code": "JAI",
+    "name": "Jaisalmer-JAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Rajkot",
+    "city_code": "RAJ",
+    "name": "Rajkot-RAJ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Surat",
+    "city_code": "SUR",
+    "name": "Surat-SUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Jamnagar",
+    "city_code": "JAM",
+    "name": "Jamnagar-JAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Dohad",
+    "city_code": "DOH",
+    "name": "Dohad-DOH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Junagadh",
+    "city_code": "JUN",
+    "name": "Junagadh-JUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Porbandar",
+    "city_code": "POR",
+    "name": "Porbandar-POR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Daman & Diu-DAM",
+    "city": "Daman",
+    "city_code": "DAM",
+    "name": "Daman-DAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Surendranagar",
+    "city_code": "SUR",
+    "name": "Surendranagar-SUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Navsari",
+    "city_code": "NAV",
+    "name": "Navsari-NAV",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Ahmedabad",
+    "city_code": "AHM",
+    "name": "Ahmedabad-AHM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Bhavnagar",
+    "city_code": "BHA",
+    "name": "Bhavnagar-BHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Patan",
+    "city_code": "PAT",
+    "name": "Patan-PAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Amreli",
+    "city_code": "AMR",
+    "name": "Amreli-AMR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Kuchchh",
+    "city_code": "KUC",
+    "name": "Kuchchh-KUC",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Anand",
+    "city_code": "ANA",
+    "name": "Anand-ANA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Gandhi Nagar",
+    "city_code": "GAN",
+    "name": "Gandhi Nagar-GAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Mahesana",
+    "city_code": "MAH",
+    "name": "Mahesana-MAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Narmada",
+    "city_code": "NAR",
+    "name": "Narmada-NAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Sabarkantha",
+    "city_code": "SAB",
+    "name": "Sabarkantha-SAB",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Banaskantha",
+    "city_code": "BAN",
+    "name": "Banaskantha-BAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Kheda",
+    "city_code": "KHE",
+    "name": "Kheda-KHE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Panchmahal",
+    "city_code": "PAN",
+    "name": "Panchmahal-PAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Vadodara",
+    "city_code": "VAD",
+    "name": "Vadodara-VAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Bharuch",
+    "city_code": "BHA",
+    "name": "Bharuch-BHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "The Dangs",
+    "city_code": "THE",
+    "name": "The Dangs-THE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Gujarat-GUJ",
+    "city": "Valsad",
+    "city_code": "VAL",
+    "name": "Valsad-VAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Dadra & Nagar Haveli-DAD",
+    "city": "Dadra & Nagar Haveli",
+    "city_code": "DAD",
+    "name": "Dadra & Nagar Haveli-DAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Mumbai",
+    "city_code": "MUM",
+    "name": "Mumbai-MUM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Thane",
+    "city_code": "THA",
+    "name": "Thane-THA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Raigarh",
+    "city_code": "RAI",
+    "name": "Raigarh-RAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Goa-GOA",
+    "city": "North Goa",
+    "city_code": "NOR",
+    "name": "North Goa-NOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Goa-GOA",
+    "city": "South Goa",
+    "city_code": "SOU",
+    "name": "South Goa-SOU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Pune",
+    "city_code": "PUN",
+    "name": "Pune-PUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Satara",
+    "city_code": "SAT",
+    "name": "Satara-SAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Sholapur",
+    "city_code": "SHO",
+    "name": "Sholapur-SHO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Solapur",
+    "city_code": "SOL",
+    "name": "Solapur-SOL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Ahmednagar",
+    "city_code": "AHM",
+    "name": "Ahmednagar-AHM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Jalgaon",
+    "city_code": "JAL",
+    "name": "Jalgaon-JAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Beed",
+    "city_code": "BEE",
+    "name": "Beed-BEE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Sangli",
+    "city_code": "SAN",
+    "name": "Sangli-SAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Osmanabad",
+    "city_code": "OSM",
+    "name": "Osmanabad-OSM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Latur",
+    "city_code": "LAT",
+    "name": "Latur-LAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Gadchiroli",
+    "city_code": "GAD",
+    "name": "Gadchiroli-GAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Kolhapur",
+    "city_code": "KOL",
+    "name": "Kolhapur-KOL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Ratnagiri",
+    "city_code": "RAT",
+    "name": "Ratnagiri-RAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Sindhudurg",
+    "city_code": "SIN",
+    "name": "Sindhudurg-SIN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Aurangabad",
+    "city_code": "AUR",
+    "name": "Aurangabad-AUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Nashik",
+    "city_code": "NAS",
+    "name": "Nashik-NAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Dhule",
+    "city_code": "DHU",
+    "name": "Dhule-DHU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Nandurbar",
+    "city_code": "NAN",
+    "name": "Nandurbar-NAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Parbhani",
+    "city_code": "PAR",
+    "name": "Parbhani-PAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Nanded",
+    "city_code": "NAN",
+    "name": "Nanded-NAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Hingoli",
+    "city_code": "HIN",
+    "name": "Hingoli-HIN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Nagpur",
+    "city_code": "NAG",
+    "name": "Nagpur-NAG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Chandrapur",
+    "city_code": "CHA",
+    "name": "Chandrapur-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Bhandara",
+    "city_code": "BHA",
+    "name": "Bhandara-BHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Gondia",
+    "city_code": "GON",
+    "name": "Gondia-GON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Wardha",
+    "city_code": "WAR",
+    "name": "Wardha-WAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Buldhana",
+    "city_code": "BUL",
+    "name": "Buldhana-BUL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Akola",
+    "city_code": "AKO",
+    "name": "Akola-AKO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Washim",
+    "city_code": "WAS",
+    "name": "Washim-WAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Amraoti",
+    "city_code": "AMR",
+    "name": "Amraoti-AMR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Jalna",
+    "city_code": "JAL",
+    "name": "Jalna-JAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Maharashtra-MAH",
+    "city": "Yeotamal",
+    "city_code": "YEO",
+    "name": "Yeotamal-YEO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "East Nimar",
+    "city_code": "EAS",
+    "name": "East Nimar-EAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "West Nimar",
+    "city_code": "WES",
+    "name": "West Nimar-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Dhar",
+    "city_code": "DHA",
+    "name": "Dhar-DHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Barwani",
+    "city_code": "BAR",
+    "name": "Barwani-BAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Katni",
+    "city_code": "KAT",
+    "name": "Katni-KAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Seoni",
+    "city_code": "SEO",
+    "name": "Seoni-SEO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Indore",
+    "city_code": "IND",
+    "name": "Indore-IND",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Dewas",
+    "city_code": "DEW",
+    "name": "Dewas-DEW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Ujjain",
+    "city_code": "UJJ",
+    "name": "Ujjain-UJJ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Ratlam",
+    "city_code": "RAT",
+    "name": "Ratlam-RAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Jhabua",
+    "city_code": "JHA",
+    "name": "Jhabua-JHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Mandasur",
+    "city_code": "MAN",
+    "name": "Mandasur-MAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Neemuch",
+    "city_code": "NEE",
+    "name": "Neemuch-NEE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Betul",
+    "city_code": "BET",
+    "name": "Betul-BET",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Dindori",
+    "city_code": "DIN",
+    "name": "Dindori-DIN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Hoshangabad",
+    "city_code": "HOS",
+    "name": "Hoshangabad-HOS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Harda",
+    "city_code": "HAR",
+    "name": "Harda-HAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Bhopal",
+    "city_code": "BHO",
+    "name": "Bhopal-BHO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Vidisha",
+    "city_code": "VID",
+    "name": "Vidisha-VID",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Raisen",
+    "city_code": "RAI",
+    "name": "Raisen-RAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Shajapur",
+    "city_code": "SHA",
+    "name": "Shajapur-SHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Raigarh",
+    "city_code": "RAI",
+    "name": "Raigarh-RAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Raigarh",
+    "city_code": "RAI",
+    "name": "Raigarh-RAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Sehore",
+    "city_code": "SEH",
+    "name": "Sehore-SEH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Sagar",
+    "city_code": "SAG",
+    "name": "Sagar-SAG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Damoh",
+    "city_code": "DAM",
+    "name": "Damoh-DAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Chhatarpur",
+    "city_code": "CHH",
+    "name": "Chhatarpur-CHH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Tikamgarh",
+    "city_code": "TIK",
+    "name": "Tikamgarh-TIK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Guna",
+    "city_code": "GUN",
+    "name": "Guna-GUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Shivpuri",
+    "city_code": "SHI",
+    "name": "Shivpuri-SHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Rohtas",
+    "city_code": "ROH",
+    "name": "Rohtas-ROH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Gwalior",
+    "city_code": "GWA",
+    "name": "Gwalior-GWA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Datia",
+    "city_code": "DAT",
+    "name": "Datia-DAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Morena",
+    "city_code": "MOR",
+    "name": "Morena-MOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Bhind",
+    "city_code": "BHI",
+    "name": "Bhind-BHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Chhindwara",
+    "city_code": "CHH",
+    "name": "Chhindwara-CHH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Balaghat",
+    "city_code": "BAL",
+    "name": "Balaghat-BAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Mandla",
+    "city_code": "MAN",
+    "name": "Mandla-MAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Jabalpur",
+    "city_code": "JAB",
+    "name": "Jabalpur-JAB",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Shahdol",
+    "city_code": "SHA",
+    "name": "Shahdol-SHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Satna",
+    "city_code": "SAT",
+    "name": "Satna-SAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Umaria",
+    "city_code": "UMA",
+    "name": "Umaria-UMA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Rewa",
+    "city_code": "REW",
+    "name": "Rewa-REW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Raipur",
+    "city_code": "RAI",
+    "name": "Raipur-RAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Sidhi",
+    "city_code": "SID",
+    "name": "Sidhi-SID",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Narasinghpur",
+    "city_code": "NAR",
+    "name": "Narasinghpur-NAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Madhya Pradesh-MAD",
+    "city": "Panna",
+    "city_code": "PAN",
+    "name": "Panna-PAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Durg",
+    "city_code": "DUR",
+    "name": "Durg-DUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Rajnandgaon",
+    "city_code": "RAJ",
+    "name": "Rajnandgaon-RAJ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Kawardha",
+    "city_code": "KAW",
+    "name": "Kawardha-KAW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Korba",
+    "city_code": "KOR",
+    "name": "Korba-KOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Dhamtari",
+    "city_code": "DHA",
+    "name": "Dhamtari-DHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Mahasamund",
+    "city_code": "MAH",
+    "name": "Mahasamund-MAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Janjgir - Champa",
+    "city_code": "JAN",
+    "name": "Janjgir - Champa-JAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Bastar",
+    "city_code": "BAS",
+    "name": "Bastar-BAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Jashpur",
+    "city_code": "JAS",
+    "name": "Jashpur-JAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Dantewada",
+    "city_code": "DAN",
+    "name": "Dantewada-DAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Kanker",
+    "city_code": "KAN",
+    "name": "Kanker-KAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Bilaspur",
+    "city_code": "BIL",
+    "name": "Bilaspur-BIL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Chhattisgarh-CHH",
+    "city": "Surguja",
+    "city_code": "SUR",
+    "name": "Surguja-SUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Hyderabad",
+    "city_code": "HYD",
+    "name": "Hyderabad-HYD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Ranga Reddy",
+    "city_code": "RAN",
+    "name": "Ranga Reddy-RAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Medak",
+    "city_code": "MED",
+    "name": "Medak-MED",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Nizamabad",
+    "city_code": "NIZ",
+    "name": "Nizamabad-NIZ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Adilabad",
+    "city_code": "ADI",
+    "name": "Adilabad-ADI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Karimnagar",
+    "city_code": "KAR",
+    "name": "Karimnagar-KAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Kurnool",
+    "city_code": "KUR",
+    "name": "Kurnool-KUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Krishna",
+    "city_code": "KRI",
+    "name": "Krishna-KRI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Warangal",
+    "city_code": "WAR",
+    "name": "Warangal-WAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "East Godavari",
+    "city_code": "EAS",
+    "name": "East Godavari-EAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Khammam",
+    "city_code": "KHA",
+    "name": "Khammam-KHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Nalgonda",
+    "city_code": "NAL",
+    "name": "Nalgonda-NAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Mahboobnagar",
+    "city_code": "MAH",
+    "name": "Mahboobnagar-MAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Anantapur",
+    "city_code": "ANA",
+    "name": "Anantapur-ANA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Chittoor",
+    "city_code": "CHI",
+    "name": "Chittoor-CHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Cuddapah",
+    "city_code": "CUD",
+    "name": "Cuddapah-CUD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Vizianagaram",
+    "city_code": "VIZ",
+    "name": "Vizianagaram-VIZ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Guntur",
+    "city_code": "GUN",
+    "name": "Guntur-GUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Prakasam",
+    "city_code": "PRA",
+    "name": "Prakasam-PRA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Nellore",
+    "city_code": "NEL",
+    "name": "Nellore-NEL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Vishakhapatnam",
+    "city_code": "VIS",
+    "name": "Vishakhapatnam-VIS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "Srikakulam",
+    "city_code": "SRI",
+    "name": "Srikakulam-SRI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andhra Pradesh-AND",
+    "city": "West Godavari",
+    "city_code": "WES",
+    "name": "West Godavari-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Pondicherry-PON",
+    "city": "Yanam",
+    "city_code": "YAN",
+    "name": "Yanam-YAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Bangalore",
+    "city_code": "BAN",
+    "name": "Bangalore-BAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Tumkur",
+    "city_code": "TUM",
+    "name": "Tumkur-TUM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Kolar",
+    "city_code": "KOL",
+    "name": "Kolar-KOL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Dharwar",
+    "city_code": "DHA",
+    "name": "Dharwar-DHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Mysore",
+    "city_code": "MYS",
+    "name": "Mysore-MYS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Chamarajanagar",
+    "city_code": "CHA",
+    "name": "Chamarajanagar-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Koduru",
+    "city_code": "KOD",
+    "name": "Koduru-KOD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Mandya",
+    "city_code": "MAN",
+    "name": "Mandya-MAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Dak. Kannada",
+    "city_code": "DAK",
+    "name": "Dak. Kannada-DAK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Chikamaglur",
+    "city_code": "CHI",
+    "name": "Chikamaglur-CHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Davanagere",
+    "city_code": "DAV",
+    "name": "Davanagere-DAV",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Chikamangalur",
+    "city_code": "CHI",
+    "name": "Chikamangalur-CHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Gulbarga",
+    "city_code": "GUL",
+    "name": "Gulbarga-GUL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Chitradurga",
+    "city_code": "CHI",
+    "name": "Chitradurga-CHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Hassan",
+    "city_code": "HAS",
+    "name": "Hassan-HAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Shimoga",
+    "city_code": "SHI",
+    "name": "Shimoga-SHI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Udupi",
+    "city_code": "UDU",
+    "name": "Udupi-UDU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Haveri",
+    "city_code": "HAV",
+    "name": "Haveri-HAV",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Uttar Kannada",
+    "city_code": "UTT",
+    "name": "Uttar Kannada-UTT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Belgaum",
+    "city_code": "BEL",
+    "name": "Belgaum-BEL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Gadag",
+    "city_code": "GAD",
+    "name": "Gadag-GAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Bellary",
+    "city_code": "BEL",
+    "name": "Bellary-BEL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Raichur",
+    "city_code": "RAI",
+    "name": "Raichur-RAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Koppal",
+    "city_code": "KOP",
+    "name": "Koppal-KOP",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Bidar",
+    "city_code": "BID",
+    "name": "Bidar-BID",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Bagalkot",
+    "city_code": "BAG",
+    "name": "Bagalkot-BAG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Karnataka-KAR",
+    "city": "Bijapur",
+    "city_code": "BIJ",
+    "name": "Bijapur-BIJ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Chennai",
+    "city_code": "CHE",
+    "name": "Chennai-CHE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Thiruvallur",
+    "city_code": "THI",
+    "name": "Thiruvallur-THI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Vellore",
+    "city_code": "VEL",
+    "name": "Vellore-VEL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Viluppuram",
+    "city_code": "VIL",
+    "name": "Viluppuram-VIL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Tiruvallur",
+    "city_code": "TIR",
+    "name": "Tiruvallur-TIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Kancheepuram",
+    "city_code": "KAN",
+    "name": "Kancheepuram-KAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Cuddalore",
+    "city_code": "CUD",
+    "name": "Cuddalore-CUD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Karur",
+    "city_code": "KAR",
+    "name": "Karur-KAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Tiruvannamalai",
+    "city_code": "TIR",
+    "name": "Tiruvannamalai-TIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Pondicherry-PON",
+    "city": "Pondicherry",
+    "city_code": "PON",
+    "name": "Pondicherry-PON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Tiruchirappalli",
+    "city_code": "TIR",
+    "name": "Tiruchirappalli-TIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Ariyalur",
+    "city_code": "ARI",
+    "name": "Ariyalur-ARI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Thanjavur",
+    "city_code": "THA",
+    "name": "Thanjavur-THA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Nagapattinam",
+    "city_code": "NAG",
+    "name": "Nagapattinam-NAG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Virudhunagar",
+    "city_code": "VIR",
+    "name": "Virudhunagar-VIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Pondicherry-PON",
+    "city": "Karaikal",
+    "city_code": "KAR",
+    "name": "Karaikal-KAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Thiruvarur",
+    "city_code": "THI",
+    "name": "Thiruvarur-THI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Perambalur",
+    "city_code": "PER",
+    "name": "Perambalur-PER",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Coimbatore",
+    "city_code": "COI",
+    "name": "Coimbatore-COI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Pudukottai",
+    "city_code": "PUD",
+    "name": "Pudukottai-PUD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Sivaganga",
+    "city_code": "SIV",
+    "name": "Sivaganga-SIV",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Ramanathapuram",
+    "city_code": "RAM",
+    "name": "Ramanathapuram-RAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Tirunelveli",
+    "city_code": "TIR",
+    "name": "Tirunelveli-TIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Dindigul",
+    "city_code": "DIN",
+    "name": "Dindigul-DIN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Madurai",
+    "city_code": "MAD",
+    "name": "Madurai-MAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Theni",
+    "city_code": "THE",
+    "name": "Theni-THE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Erode",
+    "city_code": "ERO",
+    "name": "Erode-ERO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Thoothukkudi",
+    "city_code": "THO",
+    "name": "Thoothukkudi-THO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Kanyakumari",
+    "city_code": "KAN",
+    "name": "Kanyakumari-KAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Dharmapuri",
+    "city_code": "DHA",
+    "name": "Dharmapuri-DHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Salem",
+    "city_code": "SAL",
+    "name": "Salem-SAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "Namakkal",
+    "city_code": "NAM",
+    "name": "Namakkal-NAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tamil Nadu-TAM",
+    "city": "The Nilgiri",
+    "city_code": "THE",
+    "name": "The Nilgiri-THE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Kannur",
+    "city_code": "KAN",
+    "name": "Kannur-KAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Wayanad",
+    "city_code": "WAY",
+    "name": "Wayanad-WAY",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Alappuzha",
+    "city_code": "ALA",
+    "name": "Alappuzha-ALA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Kozhikode",
+    "city_code": "KOZ",
+    "name": "Kozhikode-KOZ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Kasargode",
+    "city_code": "KAS",
+    "name": "Kasargode-KAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Pondicherry-PON",
+    "city": "Mahe",
+    "city_code": "MAH",
+    "name": "Mahe-MAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Malapuram",
+    "city_code": "MAL",
+    "name": "Malapuram-MAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Palakkad",
+    "city_code": "PAL",
+    "name": "Palakkad-PAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Thrissur",
+    "city_code": "THR",
+    "name": "Thrissur-THR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Ernakulam",
+    "city_code": "ERN",
+    "name": "Ernakulam-ERN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Kottayam",
+    "city_code": "KOT",
+    "name": "Kottayam-KOT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Lakshdweep-LAK",
+    "city": "Kavarathy",
+    "city_code": "KAV",
+    "name": "Kavarathy-KAV",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Lakshdweep-LAK",
+    "city": "Kadarmath",
+    "city_code": "KAD",
+    "name": "Kadarmath-KAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Lakshdweep-LAK",
+    "city": "Kalpenthi",
+    "city_code": "KAL",
+    "name": "Kalpenthi-KAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Lakshdweep-LAK",
+    "city": "Kiltan",
+    "city_code": "KIL",
+    "name": "Kiltan-KIL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Lakshdweep-LAK",
+    "city": "Minicoy",
+    "city_code": "MIN",
+    "name": "Minicoy-MIN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Iduki",
+    "city_code": "IDU",
+    "name": "Iduki-IDU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Trivandrum",
+    "city_code": "TRI",
+    "name": "Trivandrum-TRI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Pathanamthitta",
+    "city_code": "PAT",
+    "name": "Pathanamthitta-PAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Kerala-KER",
+    "city": "Kollam",
+    "city_code": "KOL",
+    "name": "Kollam-KOL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Calcutta",
+    "city_code": "CAL",
+    "name": "Calcutta-CAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "South 24 Parganas",
+    "city_code": "SOU",
+    "name": "South 24 Parganas-SOU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "North 24 Parganas",
+    "city_code": "NOR",
+    "name": "North 24 Parganas-NOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Uttar Dinajpur",
+    "city_code": "UTT",
+    "name": "Uttar Dinajpur-UTT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Dakshin Dinajpur",
+    "city_code": "DAK",
+    "name": "Dakshin Dinajpur-DAK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Purulia",
+    "city_code": "PUR",
+    "name": "Purulia-PUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Bardhaman",
+    "city_code": "BAR",
+    "name": "Bardhaman-BAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Howrah",
+    "city_code": "HOW",
+    "name": "Howrah-HOW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Hooghly",
+    "city_code": "HOO",
+    "name": "Hooghly-HOO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Nadiad",
+    "city_code": "NAD",
+    "name": "Nadiad-NAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Medinipur",
+    "city_code": "MED",
+    "name": "Medinipur-MED",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Bankura",
+    "city_code": "BAN",
+    "name": "Bankura-BAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Midnapur",
+    "city_code": "MID",
+    "name": "Midnapur-MID",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Birbhum",
+    "city_code": "BIR",
+    "name": "Birbhum-BIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Malda",
+    "city_code": "MAL",
+    "name": "Malda-MAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "West Dinajpur",
+    "city_code": "WES",
+    "name": "West Dinajpur-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Darjeeling",
+    "city_code": "DAR",
+    "name": "Darjeeling-DAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Jalpaiguri",
+    "city_code": "JAL",
+    "name": "Jalpaiguri-JAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Coochbehar",
+    "city_code": "COO",
+    "name": "Coochbehar-COO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Sikkim-SIK",
+    "city": "East Sikkim",
+    "city_code": "EAS",
+    "name": "East Sikkim-EAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Sikkim-SIK",
+    "city": "West Sikkim",
+    "city_code": "WES",
+    "name": "West Sikkim-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Sikkim-SIK",
+    "city": "North Sikkim",
+    "city_code": "NOR",
+    "name": "North Sikkim-NOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Sikkim-SIK",
+    "city": "South Sikkim",
+    "city_code": "SOU",
+    "name": "South Sikkim-SOU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "West Bengal-WES",
+    "city": "Murshidabad",
+    "city_code": "MUR",
+    "name": "Murshidabad-MUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andaman Nicobar-AND",
+    "city": "A&N Islands",
+    "city_code": "A&N",
+    "name": "A&N Islands-A&N",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Andaman Nicobar-AND",
+    "city": "Car Nicobar",
+    "city_code": "CAR",
+    "name": "Car Nicobar-CAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Puri",
+    "city_code": "PUR",
+    "name": "Puri-PUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Kendrapara",
+    "city_code": "KEN",
+    "name": "Kendrapara-KEN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Kordha",
+    "city_code": "KOR",
+    "name": "Kordha-KOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Jagatsinghapur",
+    "city_code": "JAG",
+    "name": "Jagatsinghapur-JAG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Jajapur",
+    "city_code": "JAJ",
+    "name": "Jajapur-JAJ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Nayagarh",
+    "city_code": "NAY",
+    "name": "Nayagarh-NAY",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Sonapur",
+    "city_code": "SON",
+    "name": "Sonapur-SON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Debagarh",
+    "city_code": "DEB",
+    "name": "Debagarh-DEB",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Anugul",
+    "city_code": "ANU",
+    "name": "Anugul-ANU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Bhadrak",
+    "city_code": "BHA",
+    "name": "Bhadrak-BHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Cuttack",
+    "city_code": "CUT",
+    "name": "Cuttack-CUT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Rayagada",
+    "city_code": "RAY",
+    "name": "Rayagada-RAY",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Baleshwar",
+    "city_code": "BAL",
+    "name": "Baleshwar-BAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Mayurbhanj",
+    "city_code": "MAY",
+    "name": "Mayurbhanj-MAY",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Kendujhar",
+    "city_code": "KEN",
+    "name": "Kendujhar-KEN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Dhenkanal",
+    "city_code": "DHE",
+    "name": "Dhenkanal-DHE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Bargarh",
+    "city_code": "BAR",
+    "name": "Bargarh-BAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Ganjam",
+    "city_code": "GAN",
+    "name": "Ganjam-GAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Baudh",
+    "city_code": "BAU",
+    "name": "Baudh-BAU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Gajapati",
+    "city_code": "GAJ",
+    "name": "Gajapati-GAJ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Kandhamal",
+    "city_code": "KAN",
+    "name": "Kandhamal-KAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Koraput",
+    "city_code": "KOR",
+    "name": "Koraput-KOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Malkangiri",
+    "city_code": "MAL",
+    "name": "Malkangiri-MAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Naupada",
+    "city_code": "NAU",
+    "name": "Naupada-NAU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Nabarangapur",
+    "city_code": "NAB",
+    "name": "Nabarangapur-NAB",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Kalahandi",
+    "city_code": "KAL",
+    "name": "Kalahandi-KAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Bolangir",
+    "city_code": "BOL",
+    "name": "Bolangir-BOL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Sambalpur",
+    "city_code": "SAM",
+    "name": "Sambalpur-SAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Jharsuguda",
+    "city_code": "JHA",
+    "name": "Jharsuguda-JHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Orissa-ORI",
+    "city": "Sundargarh",
+    "city_code": "SUN",
+    "name": "Sundargarh-SUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Kamrup",
+    "city_code": "KAM",
+    "name": "Kamrup-KAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Nalbari",
+    "city_code": "NAL",
+    "name": "Nalbari-NAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Barpeta",
+    "city_code": "BAR",
+    "name": "Barpeta-BAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Bongaigaon",
+    "city_code": "BON",
+    "name": "Bongaigaon-BON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Nagaon",
+    "city_code": "NAG",
+    "name": "Nagaon-NAG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Marigaon",
+    "city_code": "MAR",
+    "name": "Marigaon-MAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Karbi Anglong",
+    "city_code": "KAR",
+    "name": "Karbi Anglong-KAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Golaghat",
+    "city_code": "GOL",
+    "name": "Golaghat-GOL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Goalpara",
+    "city_code": "GOA",
+    "name": "Goalpara-GOA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Dhubri",
+    "city_code": "DHU",
+    "name": "Dhubri-DHU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Kokrajhar",
+    "city_code": "KOK",
+    "name": "Kokrajhar-KOK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Sonitpur",
+    "city_code": "SON",
+    "name": "Sonitpur-SON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Darranga",
+    "city_code": "DAR",
+    "name": "Darranga-DAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Lakhimpur",
+    "city_code": "LAK",
+    "name": "Lakhimpur-LAK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Jorhat",
+    "city_code": "JOR",
+    "name": "Jorhat-JOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Sibsagar",
+    "city_code": "SIB",
+    "name": "Sibsagar-SIB",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Dibrugarh",
+    "city_code": "DIB",
+    "name": "Dibrugarh-DIB",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Dhemaji",
+    "city_code": "DHE",
+    "name": "Dhemaji-DHE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Tinsukia",
+    "city_code": "TIN",
+    "name": "Tinsukia-TIN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Chacher",
+    "city_code": "CHA",
+    "name": "Chacher-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Karimganj",
+    "city_code": "KAR",
+    "name": "Karimganj-KAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "Hailakandi",
+    "city_code": "HAI",
+    "name": "Hailakandi-HAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Assam-ASS",
+    "city": "North Cacher Hills",
+    "city_code": "NOR",
+    "name": "North Cacher Hills-NOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "West Kameng",
+    "city_code": "WES",
+    "name": "West Kameng-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "East Kameng",
+    "city_code": "EAS",
+    "name": "East Kameng-EAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "West Siang",
+    "city_code": "WES",
+    "name": "West Siang-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "Upper Siang",
+    "city_code": "UPP",
+    "name": "Upper Siang-UPP",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "East Siang",
+    "city_code": "EAS",
+    "name": "East Siang-EAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "Lower Subansiri",
+    "city_code": "LOW",
+    "name": "Lower Subansiri-LOW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "Papum Pare",
+    "city_code": "PAP",
+    "name": "Papum Pare-PAP",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "Upper Subansiri",
+    "city_code": "UPP",
+    "name": "Upper Subansiri-UPP",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "Lohit",
+    "city_code": "LOH",
+    "name": "Lohit-LOH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "Tirap",
+    "city_code": "TIR",
+    "name": "Tirap-TIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "Changlang",
+    "city_code": "CHA",
+    "name": "Changlang-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Arunachal Pradesh-ARU",
+    "city": "Dibang Valley",
+    "city_code": "DIB",
+    "name": "Dibang Valley-DIB",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Meghalaya-MEG",
+    "city": "East Khasi Hills",
+    "city_code": "EAS",
+    "name": "East Khasi Hills-EAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Meghalaya-MEG",
+    "city": "Ri Bhoi",
+    "city_code": "RI ",
+    "name": "Ri Bhoi-RI ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Meghalaya-MEG",
+    "city": "Jaintia Hills",
+    "city_code": "JAI",
+    "name": "Jaintia Hills-JAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Meghalaya-MEG",
+    "city": "West Garo Hills",
+    "city_code": "WES",
+    "name": "West Garo Hills-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Meghalaya-MEG",
+    "city": "West Khasi Hills",
+    "city_code": "WES",
+    "name": "West Khasi Hills-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Meghalaya-MEG",
+    "city": "South Garo Hills",
+    "city_code": "SOU",
+    "name": "South Garo Hills-SOU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Meghalaya-MEG",
+    "city": "East Garo Hills",
+    "city_code": "EAS",
+    "name": "East Garo Hills-EAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Manipur-MAN",
+    "city": "Imphal",
+    "city_code": "IMP",
+    "name": "Imphal-IMP",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Manipur-MAN",
+    "city": "Ukhrul",
+    "city_code": "UKH",
+    "name": "Ukhrul-UKH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Manipur-MAN",
+    "city": "Chandel",
+    "city_code": "CHA",
+    "name": "Chandel-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Manipur-MAN",
+    "city": "Thoubal",
+    "city_code": "THO",
+    "name": "Thoubal-THO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Manipur-MAN",
+    "city": "Senapati",
+    "city_code": "SEN",
+    "name": "Senapati-SEN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Manipur-MAN",
+    "city": "Churachandpur",
+    "city_code": "CHU",
+    "name": "Churachandpur-CHU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Manipur-MAN",
+    "city": "Tamenglong",
+    "city_code": "TAM",
+    "name": "Tamenglong-TAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Manipur-MAN",
+    "city": "Bishenpur",
+    "city_code": "BIS",
+    "name": "Bishenpur-BIS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Manipur-MAN",
+    "city": "BISHENPUR",
+    "city_code": "BIS",
+    "name": "BISHENPUR-BIS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Mizoram-MIZ",
+    "city": "Aizwal",
+    "city_code": "AIZ",
+    "name": "Aizwal-AIZ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Mizoram-MIZ",
+    "city": "Kolasib",
+    "city_code": "KOL",
+    "name": "Kolasib-KOL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Mizoram-MIZ",
+    "city": "Sherchip",
+    "city_code": "SHE",
+    "name": "Sherchip-SHE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Mizoram-MIZ",
+    "city": "Champhai",
+    "city_code": "CHA",
+    "name": "Champhai-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Mizoram-MIZ",
+    "city": "Saiha",
+    "city_code": "SAI",
+    "name": "Saiha-SAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Mizoram-MIZ",
+    "city": "Lungleh",
+    "city_code": "LUN",
+    "name": "Lungleh-LUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Mizoram-MIZ",
+    "city": "Lawngtlai",
+    "city_code": "LAW",
+    "name": "Lawngtlai-LAW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Nagaland-NAG",
+    "city": "Kohima",
+    "city_code": "KOH",
+    "name": "Kohima-KOH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Nagaland-NAG",
+    "city": "Phek",
+    "city_code": "PHE",
+    "name": "Phek-PHE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Nagaland-NAG",
+    "city": "Dimapur",
+    "city_code": "DIM",
+    "name": "Dimapur-DIM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Nagaland-NAG",
+    "city": "Mokokchung",
+    "city_code": "MOK",
+    "name": "Mokokchung-MOK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Nagaland-NAG",
+    "city": "Tuengsang",
+    "city_code": "TUE",
+    "name": "Tuengsang-TUE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Nagaland-NAG",
+    "city": "Zunehboto",
+    "city_code": "ZUN",
+    "name": "Zunehboto-ZUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Nagaland-NAG",
+    "city": "Mon",
+    "city_code": "MON",
+    "name": "Mon-MON",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Nagaland-NAG",
+    "city": "Wokha",
+    "city_code": "WOK",
+    "name": "Wokha-WOK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tripura-TRI",
+    "city": "North Tripura",
+    "city_code": "NOR",
+    "name": "North Tripura-NOR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tripura-TRI",
+    "city": "West Tripura",
+    "city_code": "WES",
+    "name": "West Tripura-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tripura-TRI",
+    "city": "South Tripura",
+    "city_code": "SOU",
+    "name": "South Tripura-SOU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Tripura-TRI",
+    "city": "Dhalai",
+    "city_code": "DHA",
+    "name": "Dhalai-DHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Patna",
+    "city_code": "PAT",
+    "name": "Patna-PAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Bhojpur",
+    "city_code": "BHO",
+    "name": "Bhojpur-BHO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Nalanda",
+    "city_code": "NAL",
+    "name": "Nalanda-NAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Buxar",
+    "city_code": "BUX",
+    "name": "Buxar-BUX",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Kaimur",
+    "city_code": "KAI",
+    "name": "Kaimur-KAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Sheikhpura",
+    "city_code": "SHE",
+    "name": "Sheikhpura-SHE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Jahanabad",
+    "city_code": "JAH",
+    "name": "Jahanabad-JAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Gaya",
+    "city_code": "GAY",
+    "name": "Gaya-GAY",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Nawada",
+    "city_code": "NAW",
+    "name": "Nawada-NAW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Kodarma",
+    "city_code": "KOD",
+    "name": "Kodarma-KOD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Munger",
+    "city_code": "MUN",
+    "name": "Munger-MUN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Lakhisarai",
+    "city_code": "LAK",
+    "name": "Lakhisarai-LAK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Kishanganj",
+    "city_code": "KIS",
+    "name": "Kishanganj-KIS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Jamui",
+    "city_code": "JAM",
+    "name": "Jamui-JAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Bhagalpur",
+    "city_code": "BHA",
+    "name": "Bhagalpur-BHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Banka",
+    "city_code": "BAN",
+    "name": "Banka-BAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Dumka",
+    "city_code": "DUM",
+    "name": "Dumka-DUM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Pakaur",
+    "city_code": "PAK",
+    "name": "Pakaur-PAK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Deoghar",
+    "city_code": "DEO",
+    "name": "Deoghar-DEO",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Aurangabad",
+    "city_code": "AUR",
+    "name": "Aurangabad-AUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Chatra",
+    "city_code": "CHA",
+    "name": "Chatra-CHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Grahwa",
+    "city_code": "GRA",
+    "name": "Grahwa-GRA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Giridih",
+    "city_code": "GIR",
+    "name": "Giridih-GIR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Bokaro",
+    "city_code": "BOK",
+    "name": "Bokaro-BOK",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Sahebganj",
+    "city_code": "SAH",
+    "name": "Sahebganj-SAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Palamu",
+    "city_code": "PAL",
+    "name": "Palamu-PAL",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Hazaribagh",
+    "city_code": "HAZ",
+    "name": "Hazaribagh-HAZ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Dhanbad",
+    "city_code": "DHA",
+    "name": "Dhanbad-DHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Ranchi",
+    "city_code": "RAN",
+    "name": "Ranchi-RAN",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Purbi Singbhum",
+    "city_code": "PUR",
+    "name": "Purbi Singbhum-PUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Paschimi Singhbhum",
+    "city_code": "PAS",
+    "name": "Paschimi Singhbhum-PAS",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Gumla",
+    "city_code": "GUM",
+    "name": "Gumla-GUM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Jharkhand-JHA",
+    "city": "Lohardaga",
+    "city_code": "LOH",
+    "name": "Lohardaga-LOH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Muzaffarpur",
+    "city_code": "MUZ",
+    "name": "Muzaffarpur-MUZ",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Saran",
+    "city_code": "SAR",
+    "name": "Saran-SAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Siwan",
+    "city_code": "SIW",
+    "name": "Siwan-SIW",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Gopalganj",
+    "city_code": "GOP",
+    "name": "Gopalganj-GOP",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Vaishali",
+    "city_code": "VAI",
+    "name": "Vaishali-VAI",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Araria",
+    "city_code": "ARA",
+    "name": "Araria-ARA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Sitamarhi",
+    "city_code": "SIT",
+    "name": "Sitamarhi-SIT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Sheohar",
+    "city_code": "SHE",
+    "name": "Sheohar-SHE",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "West Champaran",
+    "city_code": "WES",
+    "name": "West Champaran-WES",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Purba Champaran",
+    "city_code": "PUR",
+    "name": "Purba Champaran-PUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Darbhanga",
+    "city_code": "DAR",
+    "name": "Darbhanga-DAR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Madhubani",
+    "city_code": "MAD",
+    "name": "Madhubani-MAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Saharsa",
+    "city_code": "SAH",
+    "name": "Saharsa-SAH",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Saupal",
+    "city_code": "SAU",
+    "name": "Saupal-SAU",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Samastipur",
+    "city_code": "SAM",
+    "name": "Samastipur-SAM",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Begusarai",
+    "city_code": "BEG",
+    "name": "Begusarai-BEG",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Khagaria",
+    "city_code": "KHA",
+    "name": "Khagaria-KHA",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Madhepura",
+    "city_code": "MAD",
+    "name": "Madhepura-MAD",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Purnia",
+    "city_code": "PUR",
+    "name": "Purnia-PUR",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  },
+  {
+    "doctype": "City",
+    "country": "India",
+    "state": "Bihar-BIH",
+    "city": "Katihar",
+    "city_code": "KAT",
+    "name": "Katihar-KAT",
+    "docstatus": 0,
+    "modified": "2025-12-20 14:28:20"
+  }
+]
