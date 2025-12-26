@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:TPL-IL-{#####}-{FY}",
  "creation": "2025-12-08 15:52:05.518736",
  "default_view": "List",
  "doctype": "DocType",
@@ -20,6 +21,7 @@
   "mode",
   "lr_document_no",
   "status",
+  "gate_entry_no",
   "column_break_cred",
   "entry_no",
   "site",
@@ -114,6 +116,8 @@
    "label": "LR, Document No"
   },
   {
+   "allow_in_quick_entry": 1,
+   "allow_on_submit": 1,
    "default": "Yes",
    "fieldname": "gate_entry",
    "fieldtype": "Data",
@@ -160,7 +164,8 @@
    "label": "LR, Date"
   },
   {
-   "default": "Issued",
+   "allow_in_quick_entry": 1,
+   "allow_on_submit": 1,
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
@@ -301,17 +306,29 @@
   {
    "fieldname": "section_break_rlzu",
    "fieldtype": "Section Break"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "allow_on_submit": 1,
+   "fieldname": "gate_entry_no",
+   "fieldtype": "Data",
+   "label": "Gate Entry No."
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2025-12-23 17:49:31.147312",
+ "links": [
+  {
+   "link_doctype": "Gate Entry",
+   "link_fieldname": "incoming_logistics"
+  }
+ ],
+ "modified": "2025-12-26 16:58:44.261117",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
- "naming_rule": "Autoincrement",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -332,5 +349,18 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Blue",
+   "title": "Issued"
+  },
+  {
+   "color": "Green",
+   "title": "Received"
+  },
+  {
+   "color": "Pink",
+   "title": "Paid"
+  }
+ ]
 }
