@@ -6,7 +6,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "item_name"
+  "item_name",
+  "purchase_order",
+  "purchase_order_item"
  ],
  "fields": [
   {
@@ -16,12 +18,23 @@
    "label": "Item Name",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "purchase_order",
+   "fieldtype": "Link",
+   "label": "Purchase Order",
+   "options": "Purchase Order"
+  },
+  {
+   "fieldname": "purchase_order_item",
+   "fieldtype": "Data",
+   "label": "Purchase Order Item"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-26 10:48:18.373822",
+ "modified": "2025-12-26 14:39:17.331278",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics Item",

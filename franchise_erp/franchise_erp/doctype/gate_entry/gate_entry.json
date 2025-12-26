@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:TPL-GE-{#####}-{FY}",
  "creation": "2025-12-24 20:20:55.359453",
  "default_view": "List",
  "doctype": "DocType",
@@ -19,6 +20,7 @@
   "column_break_cred",
   "gate_entry",
   "site",
+  "incoming_logistics",
   "section_break_rlzu",
   "lr_entry_no",
   "pending_qty",
@@ -28,13 +30,6 @@
   "column_break_dmpn",
   "lr_quantity",
   "pending_amount",
-  "gate_details_section",
-  "gate_qty",
-  "gate_amount",
-  "column_break_hmwf",
-  "received_qty",
-  "column_break_uyae",
-  "gate_pending_qty",
   "others_section",
   "remarks",
   "section_break_rsit",
@@ -137,14 +132,6 @@
    "label": "Declaration Amount"
   },
   {
-   "fieldname": "column_break_hmwf",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_uyae",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "others_section",
    "fieldtype": "Section Break",
    "label": "Others"
@@ -197,31 +184,6 @@
    "label": "Pending Amount"
   },
   {
-   "fieldname": "gate_details_section",
-   "fieldtype": "Section Break",
-   "label": "Gate Details"
-  },
-  {
-   "fieldname": "gate_qty",
-   "fieldtype": "Float",
-   "label": "Quantity"
-  },
-  {
-   "fieldname": "received_qty",
-   "fieldtype": "Float",
-   "label": "Received Quantity"
-  },
-  {
-   "fieldname": "gate_pending_qty",
-   "fieldtype": "Float",
-   "label": "Pending Quantity"
-  },
-  {
-   "fieldname": "gate_amount",
-   "fieldtype": "Float",
-   "label": "Amount"
-  },
-  {
    "fieldname": "section_break_rsit",
    "fieldtype": "Section Break"
   },
@@ -230,17 +192,22 @@
    "fieldtype": "Table",
    "label": "Received Details",
    "options": "Gate Entry Table"
+  },
+  {
+   "fieldname": "incoming_logistics",
+   "fieldtype": "Data",
+   "label": "Incoming Logistics"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-26 10:28:24.291953",
+ "modified": "2025-12-26 15:27:12.446957",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
- "naming_rule": "Autoincrement",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

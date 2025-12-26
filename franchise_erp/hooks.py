@@ -64,8 +64,13 @@ doc_events = {
     # "Item Group Tree": {
     #     "validate": "franchise_erp.custom.item_group_tree.validate_unique_combination"
     # }
-
+     "Gate Entry": {
+        "on_submit": "franchise_erp.custom.gate_entry.on_submit",
+        "on_cancel": "franchise_erp.custom.gate_entry.on_cancel"
+    }
 }
+
+
 
 doctype_js = {
     "Purchase Order": "public/js/purchase_order.js",
@@ -74,7 +79,6 @@ doctype_js = {
     "SIS Configuration": "public/js/sis_configuration.js",
     "Sales Invoice": "public/js/sales_invoice.js",
     "User": "public/js/user_validation.js",
-    "Incoming Logistics": "public/js/incoming_logistics.js",
     "Color": "public/js/colour_code.js",
     "Item": "public/js/item_master.js",
     "Address":"public/js/address.js",
