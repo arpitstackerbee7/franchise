@@ -58,8 +58,7 @@ doc_events = {
         "before_save": "franchise_erp.custom.item_master.generate_item_code",
     },
     "Item Group": {
-        "validate": "franchise_erp.custom.item_group.validate_same_parent",
-        "before_insert": ["franchise_erp.custom.item_group.set_hash_name","franchise_erp.custom.item_group.force_display_name"],        
+        "validate": "franchise_erp.custom.item_group.validate_same_parent"
     },
     # "Item Group Tree": {
     #     "validate": "franchise_erp.custom.item_group_tree.validate_unique_combination"
@@ -335,50 +334,47 @@ app_include_js = [
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-fixtures = [
-    "Custom Field",
-    "Property Setter",
-    "Client Script",
-    "Server Script",
-    "City",
-    "State"
-]
+# fixtures = [
+#     "Custom Field",
+#     "Property Setter",
+#     "Client Script",
+#     "Server Script",
+#     "City",
+#     "State"
+# ]
 
 
+# fixtures = [
+#     {
+#         "dt": "Custom Field",
+#         "filters": [["name", "=", "User-company"]],
+#     }
+# ]
 fixtures = [
-    {
-        "dt": "Custom Field",
-        "filters": [["name", "=", "User-company"]],
-    }
-]
-fixtures = [
-
-        {"dt": "Workflow"}, 
-        {"dt": "Workflow State"},
-    {"dt": "Workflow Action Master"},
+        {"dt": "Property Setter"}
         ]
 
-fixtures = [
-    {
-        "dt": "DocType",
-        # "filters": [
-        #     ["module", "=", "Franchise Erp"],
-        #     ["custom", "=", 1]
-        # ]
-    }
-]
+# fixtures = [
+#     {
+#         "dt": "DocType",
+#         # "filters": [
+#         #     ["module", "=", "Franchise Erp"],
+#         #     ["custom", "=", 1]
+#         # ]
+#     }
+# ]
 
-fixtures = [
-    {
-        "dt": "State",
-        "filters": [
-            ["country", "=", "India"]
-        ]
-    },
-    {
-        "dt": "City",
-        # "filters": [
-        #     ["country", "=", "India"]
-        # ]
-    }
-]
+# fixtures = [
+#     {
+#         "dt": "State",
+#         "filters": [
+#             ["country", "=", "India"]
+#         ]
+#     },
+#     {
+#         "dt": "City",
+#         # "filters": [
+#         #     ["country", "=", "India"]
+#         # ]
+#     }
+# ]

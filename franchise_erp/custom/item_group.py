@@ -36,18 +36,6 @@ def get_item_group_parents(child_group):
     return result
 
 
-import frappe
-import uuid
-
-
-def set_hash_name(doc, method=None):
-    """
-    Force unique DB name (hash based)
-    """
-    if not doc.name:
-        doc.name = uuid.uuid4().hex
-
-
 def validate_same_parent(doc, method=None):
     """
     Block same item_group_name OR same custom_code under same parent
@@ -55,21 +43,6 @@ def validate_same_parent(doc, method=None):
     """
 
     parent = doc.parent_item_group or "All Item Groups"
-
-    # ---- NAME DUPLICATE CHECK ----
-    name_exists = frappe.db.exists(
-        "Item Group",
-        {
-            "parent_item_group": parent,
-            "item_group_name": doc.item_group_name,
-            "name": ["!=", doc.name]
-        }
-    )
-
-    if name_exists:
-        frappe.throw(
-            f"Item Group Name '{doc.item_group_name}' already exists under '{parent}'"
-        )
 
     # ---- CUSTOM CODE DUPLICATE CHECK ----
     if doc.custom_code:
@@ -87,15 +60,6 @@ def validate_same_parent(doc, method=None):
                 f"Item Group Code '{doc.custom_code}' already exists under '{parent}'"
             )
 
-
-
-
-def force_display_name(doc, method):
-    if not doc.custom_display_name and doc.item_group_name:
-        doc.custom_display_name = doc.item_group_name
-
-
-import frappe
 
 @frappe.whitelist()
 def get_child_item_groups(doctype, txt, searchfield, start, page_len, filters):
@@ -145,42 +109,3 @@ def get_item_group_path_limited(item_group, max_parents=3):
 
     return " > ".join(parents + [child])
 
-
-
-
-
-
-
-
-
-# custom doctype
-import frappe
-
-def before_insert(doc, method):
-    """
-    User enters: Festive
-    System saves:
-      item_group_name = Festive__1, Festive__2 ...
-    Tree/UI shows only: Festive
-    """
-
-    if not doc.custom_display_name:
-        return
-
-    base = doc.custom_display_name.strip()
-
-    # find existing with same base
-    existing = frappe.db.sql(
-        """
-        SELECT item_group_name
-        FROM `tabItem Group`
-        WHERE item_group_name LIKE %s
-        """,
-        (base + "%",),
-        as_dict=True
-    )
-
-    if not existing:
-        doc.item_group_name = base
-    else:
-        doc.item_group_name = f"{base}__{len(existing)+1}"
