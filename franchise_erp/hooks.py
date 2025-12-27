@@ -74,8 +74,6 @@ doc_events = {
 doctype_js = {
     "Purchase Order": "public/js/purchase_order.js",
     "Purchase Invoice": "public/js/purchase_invoice.js",
-    "SIS Debit Note Log": "public/js/debit_note_log.js",
-    "SIS Configuration": "public/js/sis_configuration.js",
     "Sales Invoice": "public/js/sales_invoice.js",
     "User": "public/js/user_validation.js",
     "Color": "public/js/colour_code.js",
@@ -114,7 +112,6 @@ after_migrate = [
 
 app_include_js = [
     "/assets/franchise_erp/js/back_date_disabled.js",
-      "/assets/franchise_erp/js/item_group_tree.js"
     ]
 
 
