@@ -15,13 +15,13 @@
   "transporter",
   "invoice_date",
   "gate_entry",
+  "gate_entry_no",
   "column_break_kknq",
   "type",
   "consignor",
   "mode",
   "lr_document_no",
   "status",
-  "gate_entry_no",
   "column_break_cred",
   "entry_no",
   "site",
@@ -144,6 +144,7 @@
    "fieldname": "site",
    "fieldtype": "Link",
    "label": "Site",
+   "mandatory_depends_on": "type == \"Sales Invoice\"",
    "options": "Address"
   },
   {
@@ -312,7 +313,8 @@
    "allow_on_submit": 1,
    "fieldname": "gate_entry_no",
    "fieldtype": "Data",
-   "label": "Gate Entry No."
+   "label": "Gate Entry No.",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -324,7 +326,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2025-12-26 16:58:44.261117",
+ "modified": "2025-12-27 16:00:20.555855",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

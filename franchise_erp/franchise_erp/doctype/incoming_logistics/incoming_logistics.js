@@ -177,37 +177,34 @@ frappe.ui.form.on('Incoming Logistics', {
     }
 });
 
+frappe.ui.form.on("Incoming Logistics", {
 
-frappe.ui.form.on('Incoming Logistics', {
     type: function(frm) {
-        // Show Site only for Sales Return
-        if (frm.doc.type === 'Sales Return') {
-            frm.set_df_property('site', 'hidden', 0);
-            frm.trigger('set_site_query'); // set query when Type changes
-        } else {
-            frm.set_df_property('site', 'hidden', 1);
-            frm.set_value('site', null);
-        }
+        toggle_site_field(frm);
     },
-    consignor: function(frm) {
-        if (frm.doc.type === 'Sales Return') {
-            frm.trigger('set_site_query'); // update site options when consignor changes
-        }
-    },
-    set_site_query: function(frm) {
-        if (frm.doc.consignor) {
-            frm.set_query('site', function() {
-                return {
-                    filters: {
-                        link_doctype: 'Supplier',      // Addresses linked to Supplier
-                        link_name: frm.doc.consignor,  // Selected consignor
-                        address_type: 'Shipping'       // Only Shipping addresses
-                    }
-                };
-            });
-        }
+
+    onload: function(frm) {
+        toggle_site_field(frm);
     }
+
 });
+
+function toggle_site_field(frm) {
+
+    if (frm.doc.type === "Sales Return") {
+        // show + mandatory
+        frm.set_df_property("site", "hidden", 0);
+        frm.set_df_property("site", "reqd", 1);
+    } else {
+        // hide + not mandatory
+        frm.set_df_property("site", "hidden", 1);
+        frm.set_df_property("site", "reqd", 0);
+        frm.set_value("site", "");
+    }
+}
+
+
+
 frappe.ui.form.on("Incoming Logistics", {
     refresh(frm) {
 
@@ -247,6 +244,17 @@ frappe.ui.form.on("Incoming Logistics", {
 
 frappe.ui.form.on("Incoming Logistics", {
 
+    // Form load hote hi today set karo (only for new doc)
+    onload(frm) {
+        if (frm.is_new()) {
+            const today = frappe.datetime.get_today();
+
+            frm.set_value("lr_date", today);
+            frm.set_value("invoice_date", today);
+            frm.set_value("date", today);
+        }
+    },
+
     lr_date(frm) {
         validate_date_not_future(frm, "lr_date");
     },
@@ -276,3 +284,6 @@ function validate_date_not_future(frm, fieldname) {
         }
     }
 }
+
+
+

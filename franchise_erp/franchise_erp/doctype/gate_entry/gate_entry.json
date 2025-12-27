@@ -30,6 +30,10 @@
   "column_break_dmpn",
   "lr_quantity",
   "pending_amount",
+  "section_break_nzss",
+  "scan_barcode",
+  "section_break_ejse",
+  "box_barcodes",
   "others_section",
   "remarks",
   "section_break_rsit",
@@ -176,7 +180,8 @@
   {
    "fieldname": "pending_qty",
    "fieldtype": "Float",
-   "label": "Pending Qty"
+   "label": "Pending Qty",
+   "read_only": 1
   },
   {
    "fieldname": "pending_amount",
@@ -195,15 +200,37 @@
   },
   {
    "fieldname": "incoming_logistics",
+   "fieldtype": "Link",
+   "label": "Incoming Logistics",
+   "options": "Incoming Logistics"
+  },
+  {
+   "fieldname": "section_break_ejse",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "box_barcodes",
+   "fieldtype": "Table",
+   "label": "Box Barcode",
+   "options": "Gate Entry Box Barcode",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_nzss",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "scan_barcode",
    "fieldtype": "Data",
-   "label": "Incoming Logistics"
+   "label": "Scan Barcode",
+   "options": "Barcode"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-26 15:27:12.446957",
+ "modified": "2025-12-27 15:47:36.286264",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

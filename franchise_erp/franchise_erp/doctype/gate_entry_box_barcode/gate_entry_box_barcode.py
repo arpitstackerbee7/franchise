@@ -5,5 +5,6 @@
 from frappe.model.document import Document
 
 
-class GateEntry1(Document):
+class GateEntryBoxBarcode(Document):
 	pass
+

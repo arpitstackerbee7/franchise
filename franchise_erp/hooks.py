@@ -29,9 +29,7 @@ app_license = "mit"
 
 
 doc_events = {
-    "Purchase Order":{
-    #    "before_submit" : "franchise_erp.custom.purchase_order.create_po_serials"
-    },
+
    "Purchase Invoice": {
        "before_save": "franchise_erp.custom.purchase_invoice.apply_intercompany_gst",
        "validate": "franchise_erp.custom.purchase_invoice_hooks.apply_item_gst",
