@@ -89,6 +89,7 @@ doctype_js = {
     "Item": "public/js/item_master.js",
     "Address":"public/js/address.js",
     "Supplier": "public/js/supplier.js",
+    "Promotional Scheme":"public/js/promotional_scheme.js",
 }
 
 
