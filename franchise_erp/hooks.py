@@ -60,9 +60,9 @@ doc_events = {
 #         "before_insert": ["franchise_erp.custom.item_group.set_hash_name","franchise_erp.custom.item_group.force_display_name"],
         
     },
-    "Supplier": {
-        "validate": "franchise_erp.custom.supplier.validate_supplier"
-    },
+    # "Supplier": {
+    #     "validate": "franchise_erp.custom.supplier.validate_supplier"
+    # },
     "Purchase Order": {
         "validate": "franchise_erp.custom.purchase_order.validate_purchase_order"
     },
