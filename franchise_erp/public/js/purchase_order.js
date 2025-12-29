@@ -113,12 +113,14 @@ frappe.ui.form.on("Purchase Order", {
         if (!frm.doc.supplier) {
             frm.set_value("custom_agent_supplier", null);
             frm.set_value("custom_transporter", null);
+            frm.set_value("custom_transporter", null);
             return;
         }
 
         frappe.db.get_value(
             "Supplier",
             frm.doc.supplier,
+            ["custom_is_agent", "is_transporter","custom_agent_supplier","custom_transporter"],
             ["custom_is_agent", "is_transporter","custom_agent_supplier","custom_transporter"],
             (r) => {
                 // If the supplier is an agent, then set the Agent as the Supplier as well.
@@ -131,7 +133,9 @@ frappe.ui.form.on("Purchase Order", {
                 // If the supplier is a transporter, then set the Transporter as the Supplier.
                 if (r.is_transporter) {
                     frm.set_value("custom_transporter", r.custom_transporter);
+                    frm.set_value("custom_transporter", r.custom_transporter);
                 } else {
+                    frm.set_value("custom_transporter", null);
                     frm.set_value("custom_transporter", null);
                 }
             }
