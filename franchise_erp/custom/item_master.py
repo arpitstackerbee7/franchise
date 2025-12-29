@@ -109,16 +109,39 @@ def generate_item_code(doc, method):
     })
 
     # ---------------- SERIAL NO SERIES ----------------
-    first_letter = frappe.db.get_value(
+    # Get first (or only) record from TZU Setting
+    tzu_record = frappe.db.get_value(
         "TZU Setting",
-        {},
-        "serialno_series"
-    ) or "T"
+        filters={},  # empty filter gets first record (if any)
+        fieldname=["serialno_series", "serial_no_uom", "batch_uom"],
+        as_dict=True
+    )
 
-    random_series = random.randint(10000, 99999)
+    if not tzu_record:
+        frappe.throw("No TZU Setting record found.")
 
-    doc.has_serial_no = 1
-    doc.serial_no_series = f"{first_letter}{random_series}.#####"
+    first_letter = tzu_record.serialno_series or "T"
+    serial_uom = tzu_record.serial_no_uom
+    batch_uom = tzu_record.batch_uom
+
+    random_series = random.randint(100000, 999999)
+
+    # doc.has_serial_no = 1
+    # doc.serial_no_series = f"{first_letter}{random_series}.#####"
+    # Apply Serial No / Batch No logic
+    if doc.stock_uom == serial_uom:
+        doc.has_serial_no = 1
+        doc.serial_no_series = f"{first_letter}{random_series}.#####"
+
+    elif doc.stock_uom == batch_uom:
+        doc.has_batch_no = 1
+        doc.create_new_batch = 1
+        doc.batch_number_series = f"{first_letter}{random_series}.#####"
+
+    else:
+        # Fallback: always create serial no
+        doc.has_serial_no = 1
+        doc.serial_no_series = f"{first_letter}{random_series}.#####"
 
 def get_next_series(base_code):
     """
