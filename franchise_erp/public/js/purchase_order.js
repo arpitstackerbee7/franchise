@@ -20,6 +20,7 @@
 // });
 
 frappe.ui.form.on("Purchase Order", {
+
     supplier(frm) {
         if (!frm.doc.supplier) {
             frm.set_value("custom_agent_supplier", null);
@@ -30,24 +31,32 @@ frappe.ui.form.on("Purchase Order", {
         frappe.db.get_value(
             "Supplier",
             frm.doc.supplier,
-            ["custom_is_agent", "is_transporter","custom_agent_supplier","custom_transporter_supplier"],
-            (r) => {
-                console.log("tst------------",r)
-                // If the supplier is an agent, then set the Agent as the Supplier as well.
-                if (r.custom_is_agent) {
-                    frm.set_value("custom_agent_supplier", r.custom_agent_supplier);
-                } else {
-                    frm.set_value("custom_agent_supplier", null);
-                }
+            [
+                "custom_is_agent",
+                "is_transporter",
+                "custom_agent_supplier",
+                "custom_transporter_supplier"
+            ]
+        ).then(r => {
+            const d = r.message || {};
 
-                // If the supplier is a transporter, then set the Transporter as the Supplier.
-                if (r.is_transporter) {
-                    frm.set_value("custom_transporter_supplier", r.custom_transporter_supplier);
-                } else {
-                    frm.set_value("custom_transporter_supplier", null);
-                }
+            // Agent logic
+            if (d.custom_is_agent) {
+                frm.set_value("custom_agent_supplier", d.custom_agent_supplier);
+            } else {
+                frm.set_value("custom_agent_supplier", null);
             }
-    refresh: async function (frm) {
+
+            // Transporter logic
+            if (d.is_transporter) {
+                frm.set_value("custom_transporter_supplier", d.custom_transporter_supplier);
+            } else {
+                frm.set_value("custom_transporter_supplier", null);
+            }
+        });
+    },
+
+    async refresh(frm) {
 
         // 1️⃣ Sirf Submitted PO
         if (frm.doc.docstatus !== 1) return;
@@ -96,6 +105,7 @@ frappe.ui.form.on("Purchase Order", {
         );
     }
 });
+
 
 
 frappe.ui.form.on("Purchase Order", {
