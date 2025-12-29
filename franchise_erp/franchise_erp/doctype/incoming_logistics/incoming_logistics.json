@@ -53,7 +53,6 @@
   "others",
   "others_section",
   "remarks",
-  "section_break_clwb",
   "gate_entry_box_barcode"
  ],
  "fields": [
@@ -319,13 +318,9 @@
    "read_only": 1
   },
   {
-   "fieldname": "section_break_clwb",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "gate_entry_box_barcode",
    "fieldtype": "Table",
-   "label": "Gate Entry Box Barcodes",
+   "label": "Gate Entry Box Barcode",
    "options": "Gate Entry Box Barcode"
   }
  ],
@@ -338,7 +333,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2025-12-29 15:26:37.744449",
+ "modified": "2025-12-29 17:35:26.940214",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

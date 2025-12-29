@@ -221,7 +221,7 @@
   {
    "fieldname": "gate_entry_box_barcode",
    "fieldtype": "Table",
-   "label": "Gate Entry Box Barcodes",
+   "label": "Gate Entry Box Barcode",
    "options": "Gate Entry Box Barcode"
   }
  ],
@@ -229,7 +229,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-29 15:06:22.948659",
+ "modified": "2025-12-29 17:34:53.569416",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
