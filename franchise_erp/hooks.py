@@ -66,7 +66,6 @@ doc_events = {
     "Purchase Order": {
         "validate": "franchise_erp.custom.purchase_order.validate_purchase_order"
     },
-    },
     # "Item Group Tree": {
     #     "validate": "franchise_erp.custom.item_group_tree.validate_unique_combination"
     # }
