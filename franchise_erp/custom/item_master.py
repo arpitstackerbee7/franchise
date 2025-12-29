@@ -143,6 +143,8 @@ def generate_item_code(doc, method):
         doc.has_serial_no = 1
         doc.serial_no_series = f"{first_letter}{random_series}.#####"
 
+        
+
 def get_next_series(base_code):
     """
     Always returns NEXT AVAILABLE INTEGER series
