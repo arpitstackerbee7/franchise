@@ -1,7 +1,8 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-12-08 16:49:37.418498",
+ "autoname": "format:TPL-GE-{#####}-{FY}",
+ "creation": "2025-12-24 20:20:55.359453",
  "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -10,44 +11,33 @@
   "amended_from",
   "general_section",
   "owner_site",
-  "entry_no",
-  "consignor",
+  "date",
   "document_no",
   "column_break_kknq",
   "type",
-  "date",
-  "site",
+  "consignor",
   "document_date",
-  "transport_information_section",
+  "column_break_cred",
+  "gate_entry",
+  "site",
+  "incoming_logistics",
+  "section_break_rlzu",
   "lr_entry_no",
-  "lr_qty",
-  "declaration_amount",
+  "pending_qty",
   "column_break_vrba",
   "lr_entry_date",
-  "pending_qyt",
+  "declaration_amount",
+  "column_break_dmpn",
+  "lr_quantity",
   "pending_amount",
-  "charge_information_section",
-  "qyt",
-  "pending_qtys",
-  "column_break_hmwf",
-  "received_qyt",
-  "amount",
+  "section_break_nzss",
+  "scan_barcode",
+  "section_break_ejse",
+  "box_barcodes",
   "others_section",
   "remarks",
-  "received_details_section",
-  "entry_nos",
-  "column_break_kees",
-  "entry_date",
-  "column_break_qpey",
-  "document_nos",
-  "column_break_xsyr",
-  "document_dates",
-  "column_break_jakg",
-  "amounts",
-  "column_break_xpbt",
-  "item_qty",
-  "column_break_yabo",
-  "ge_qty"
+  "section_break_rsit",
+  "received_details"
  ],
  "fields": [
   {
@@ -59,7 +49,7 @@
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Gate Entry",
+   "options": "Incoming Logistics",
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
@@ -71,22 +61,26 @@
   },
   {
    "fieldname": "owner_site",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Owner Site",
+   "options": "Company",
+   "read_only": 1,
    "reqd": 1
   },
   {
-   "fieldname": "entry_no",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "default": "Yes",
+   "fieldname": "gate_entry",
    "fieldtype": "Data",
-   "in_list_view": 1,
    "label": "Gate Entry No",
    "reqd": 1
-  },
-  {
-   "fieldname": "consignor",
-   "fieldtype": "Data",
-   "label": "Consignor"
   },
   {
    "fieldname": "column_break_kknq",
@@ -94,24 +88,32 @@
   },
   {
    "fieldname": "type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Type",
-   "options": "Procurement: Receipts",
+   "options": "Incoming Logistics Type",
+   "read_only": 1,
    "reqd": 1
   },
   {
-   "fieldname": "date",
-   "fieldtype": "Date",
-   "label": "Date",
-   "reqd": 1
+   "fieldname": "consignor",
+   "fieldtype": "Link",
+   "label": "Consignor",
+   "options": "Supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cred",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "site",
-   "fieldtype": "Data",
-   "label": "Site"
+   "fieldtype": "Link",
+   "label": "Site",
+   "options": "Address",
+   "read_only": 1
   },
   {
-   "fieldname": "transport_information_section",
+   "fieldname": "section_break_rlzu",
    "fieldtype": "Section Break",
    "label": "LR Information"
   },
@@ -120,23 +122,18 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "pending_qyt",
-   "fieldtype": "Float",
-   "label": "Pending Qty"
+   "fieldname": "lr_quantity",
+   "fieldtype": "Data",
+   "label": "LR Quantity"
   },
   {
-   "fieldname": "charge_information_section",
-   "fieldtype": "Section Break",
-   "label": "Gate Details"
+   "fieldname": "column_break_dmpn",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "declaration_amount",
    "fieldtype": "Float",
    "label": "Declaration Amount"
-  },
-  {
-   "fieldname": "column_break_hmwf",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "others_section",
@@ -147,6 +144,16 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Incoming Logistics",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "document_no",
@@ -161,18 +168,20 @@
   {
    "fieldname": "lr_entry_no",
    "fieldtype": "Data",
-   "label": "LR Entry No",
+   "label": "LR Entry No.",
    "reqd": 1
-  },
-  {
-   "fieldname": "lr_qty",
-   "fieldtype": "Float",
-   "label": "LR Quantity"
   },
   {
    "fieldname": "lr_entry_date",
    "fieldtype": "Date",
-   "label": "LR Entry Date"
+   "label": "LR Entry Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pending_qty",
+   "fieldtype": "Float",
+   "label": "Pending Qty",
+   "read_only": 1
   },
   {
    "fieldname": "pending_amount",
@@ -180,99 +189,52 @@
    "label": "Pending Amount"
   },
   {
-   "fieldname": "qyt",
-   "fieldtype": "Float",
-   "label": "Quantity",
-   "reqd": 1
+   "fieldname": "section_break_rsit",
+   "fieldtype": "Section Break"
   },
   {
-   "fieldname": "pending_qtys",
-   "fieldtype": "Float",
-   "label": "Pending Quantity"
+   "fieldname": "received_details",
+   "fieldtype": "Table",
+   "label": "Received Details",
+   "options": "Gate Entry Table"
   },
   {
-   "fieldname": "received_qyt",
-   "fieldtype": "Float",
-   "label": "Received Quantity"
+   "fieldname": "incoming_logistics",
+   "fieldtype": "Link",
+   "label": "Incoming Logistics",
+   "options": "Incoming Logistics"
   },
   {
-   "fieldname": "amount",
-   "fieldtype": "Float",
-   "label": "Amount"
+   "fieldname": "section_break_ejse",
+   "fieldtype": "Section Break"
   },
   {
-   "fieldname": "received_details_section",
-   "fieldtype": "Section Break",
-   "label": "Received Details"
+   "fieldname": "box_barcodes",
+   "fieldtype": "Table",
+   "label": "Box Barcode",
+   "options": "Gate Entry Box Barcode",
+   "read_only": 1
   },
   {
-   "fieldname": "entry_nos",
+   "fieldname": "section_break_nzss",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "scan_barcode",
    "fieldtype": "Data",
-   "label": "Entry No"
-  },
-  {
-   "fieldname": "column_break_kees",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "entry_date",
-   "fieldtype": "Date",
-   "label": "Entry Date"
-  },
-  {
-   "fieldname": "column_break_qpey",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "document_nos",
-   "fieldtype": "Data",
-   "label": "Document No"
-  },
-  {
-   "fieldname": "column_break_xsyr",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "document_dates",
-   "fieldtype": "Date",
-   "label": "Document Date"
-  },
-  {
-   "fieldname": "column_break_jakg",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "amounts",
-   "fieldtype": "Float",
-   "label": "Amount"
-  },
-  {
-   "fieldname": "column_break_xpbt",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "item_qty",
-   "fieldtype": "Float",
-   "label": "Item Qty"
-  },
-  {
-   "fieldname": "column_break_yabo",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "ge_qty",
-   "fieldtype": "Float",
-   "label": "GE Qty"
+   "label": "Scan Barcode",
+   "options": "Barcode"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-17 13:03:12.256324",
+ "modified": "2025-12-27 15:47:36.286264",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

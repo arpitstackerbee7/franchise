@@ -12,6 +12,7 @@ frappe.ui.form.on("Supplier", {
 
         // ✅ Transporter Supplier filter
         frm.set_query("custom_transporter_supplier", () => {
+        frm.set_query("custom_transporter", function() {
             return {
                 filters: {
                     is_transporter: 1
@@ -19,4 +20,5 @@ frappe.ui.form.on("Supplier", {
             };
         });
     }
+});
 });

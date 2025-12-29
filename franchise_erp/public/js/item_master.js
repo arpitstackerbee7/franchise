@@ -23,6 +23,7 @@ frappe.ui.form.on("Item", {
     }
 });
 
+// fetch according to custom_silvet
 frappe.ui.form.on('Item', {
     custom_silvet(frm) {
         console.log("Silvet selected:", frm.doc.custom_silvet);
@@ -47,6 +48,13 @@ frappe.ui.form.on('Item', {
     }
 });
 
+// end fetch according to custom_silvet
+
+
+
+
+
+
 // frappe.ui.form.on('Item', {
 //     setup(frm) {
 //         frm.set_query("custom_silvet", function () {
@@ -60,6 +68,8 @@ frappe.ui.form.on('Item', {
 // });
 
 
+// main code
+
 frappe.ui.form.on('Item', {
     onload(frm) {
         frm.set_query("custom_silvet", function () {
@@ -69,6 +79,20 @@ frappe.ui.form.on('Item', {
         });
     }
 });
+// frappe.ui.form.on('Item', {
+//     setup: function(frm) {
+//         frm.fields_dict.custom_silvet.get_query = function(doc, cdt, cdn) {
+//             return {
+//                 query: "franchise_erp.custom.item_group.get_dropdown_options"
+//             }
+//         }
+//     }
+// });
+
+
+// end main code
+
+
     // frappe.ui.form.on("Item", {
     //     custom_silvet(frm) {
     //         if (!frm.doc.custom_silvet) return;

@@ -29,9 +29,7 @@ app_license = "mit"
 
 
 doc_events = {
-    # "Purchase Order":{
-    #    "before_submit" : "franchise_erp.custom.po_serial_generator.apply_po_serials"
-    # },
+
    "Purchase Invoice": {
        "before_save": "franchise_erp.custom.purchase_invoice.apply_intercompany_gst",
        "validate": "franchise_erp.custom.purchase_invoice_hooks.apply_item_gst",
@@ -52,13 +50,14 @@ doc_events = {
     #     "on_submit": ["franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins","franchise_erp.custom.sales_invoice_hooks.force_margin_totals_after_submit"],
     #     "on_update_after_submit":"franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"
     # },
+
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
         "before_save": "franchise_erp.custom.item_master.generate_item_code",
     },
     "Item Group": {
         "validate": "franchise_erp.custom.item_group.validate_same_parent",
-        "before_insert": ["franchise_erp.custom.item_group.set_hash_name","franchise_erp.custom.item_group.force_display_name"],
+#         "before_insert": ["franchise_erp.custom.item_group.set_hash_name","franchise_erp.custom.item_group.force_display_name"],
         
     },
     "Supplier": {
@@ -67,24 +66,35 @@ doc_events = {
     "Purchase Order": {
         "validate": "franchise_erp.custom.purchase_order.validate_purchase_order"
     },
-
+    },
+    # "Item Group Tree": {
+    #     "validate": "franchise_erp.custom.item_group_tree.validate_unique_combination"
+    # }
+     "Gate Entry": {
+        "on_submit": "franchise_erp.custom.gate_entry.on_submit",
+        "on_cancel": "franchise_erp.custom.gate_entry.on_cancel"
+    }
 }
+
+
 
 doctype_js = {
     "Purchase Order": "public/js/purchase_order.js",
     "Purchase Invoice": "public/js/purchase_invoice.js",
-    "SIS Debit Note Log": "public/js/debit_note_log.js",
-    "SIS Configuration": "public/js/sis_configuration.js",
     "Sales Invoice": "public/js/sales_invoice.js",
     "User": "public/js/user_validation.js",
-    "Incoming Logistics": "public/js/incoming_logistics.js",
     "Color": "public/js/colour_code.js",
     "Item": "public/js/item_master.js",
     "Address":"public/js/address.js",
     "Supplier": "public/js/supplier.js",
-    "Purchase Order": "public/js/purchase_order.js",
 }
 
+
+# franchise_erp/hooks.py
+
+# override_whitelisted_methods = {
+#     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"
+# }
 
 # override_whitelisted_methods = {
 #     "franchise_erp.custom.customs.get_user_role_profiles": 
@@ -107,8 +117,9 @@ after_migrate = [
 
 # app_include_js = "public/js/back_date_disabled.js"
 
-app_include_js = ["/assets/franchise_erp/js/back_date_disabled.js"]
-
+app_include_js = [
+    "/assets/franchise_erp/js/back_date_disabled.js",
+    ]
 
 
 
@@ -327,50 +338,47 @@ app_include_js = ["/assets/franchise_erp/js/back_date_disabled.js"]
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-fixtures = [
-    "Custom Field",
-    "Property Setter",
-    "Client Script",
-    "Server Script",
-    "City",
-    "State"
-]
+# fixtures = [
+#     "Custom Field",
+#     "Property Setter",
+#     "Client Script",
+#     "Server Script",
+#     "City",
+#     "State"
+# ]
 
 
+# fixtures = [
+#     {
+#         "dt": "Custom Field",
+#         "filters": [["name", "=", "User-company"]],
+#     }
+# ]
 fixtures = [
-    {
-        "dt": "Custom Field",
-        "filters": [["name", "=", "User-company"]],
-    }
-]
-fixtures = [
-
-        {"dt": "Workflow"}, 
-        {"dt": "Workflow State"},
-    {"dt": "Workflow Action Master"},
+        {"dt": "Property Setter"}
         ]
 
-fixtures = [
-    {
-        "dt": "DocType",
-        # "filters": [
-        #     ["module", "=", "Franchise Erp"],
-        #     ["custom", "=", 1]
-        # ]
-    }
-]
+# fixtures = [
+#     {
+#         "dt": "DocType",
+#         # "filters": [
+#         #     ["module", "=", "Franchise Erp"],
+#         #     ["custom", "=", 1]
+#         # ]
+#     }
+# ]
 
-fixtures = [
-    {
-        "dt": "State",
-        "filters": [
-            ["country", "=", "India"]
-        ]
-    },
-    {
-        "dt": "City",
-        # "filters": [
-        #     ["country", "=", "India"]
-        # ]
-    }
-]
+# fixtures = [
+#     {
+#         "dt": "State",
+#         "filters": [
+#             ["country", "=", "India"]
+#         ]
+#     },
+#     {
+#         "dt": "City",
+#         # "filters": [
+#         #     ["country", "=", "India"]
+#         # ]
+#     }
+# ]

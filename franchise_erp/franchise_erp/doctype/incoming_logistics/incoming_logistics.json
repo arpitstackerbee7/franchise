@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:TPL-IL-{#####}-{FY}",
  "creation": "2025-12-08 15:52:05.518736",
  "default_view": "List",
  "doctype": "DocType",
@@ -14,7 +15,7 @@
   "transporter",
   "invoice_date",
   "gate_entry",
-  "supplier",
+  "gate_entry_no",
   "column_break_kknq",
   "type",
   "consignor",
@@ -29,15 +30,15 @@
   "purchase_no",
   "transport_information_section",
   "maintain_bale_wise_qty",
+  "section_break_rlzu",
   "received_qty",
-  "station_to",
+  "station_from",
+  "vehicle_no",
   "column_break_vrba",
   "lr_quantity",
-  "pending_qyt",
-  "vehicle_no",
+  "station_to",
   "column_break_dmpn",
   "unit",
-  "station_from",
   "policy_no",
   "charge_information_section",
   "to_pay",
@@ -75,9 +76,10 @@
   },
   {
    "fieldname": "owner_site",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Owner Site",
+   "options": "Company",
    "reqd": 1
   },
   {
@@ -85,12 +87,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Entry No",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "consignor",
-   "fieldtype": "Data",
-   "label": "Consignor"
+   "fieldtype": "Link",
+   "label": "Consignor",
+   "options": "Supplier"
   },
   {
    "fieldname": "transporter",
@@ -113,6 +116,8 @@
    "label": "LR, Document No"
   },
   {
+   "allow_in_quick_entry": 1,
+   "allow_on_submit": 1,
    "default": "Yes",
    "fieldname": "gate_entry",
    "fieldtype": "Data",
@@ -137,8 +142,10 @@
   },
   {
    "fieldname": "site",
-   "fieldtype": "Data",
-   "label": "Site"
+   "fieldtype": "Link",
+   "label": "Site",
+   "mandatory_depends_on": "type == \"Sales Invoice\"",
+   "options": "Address"
   },
   {
    "fieldname": "mode",
@@ -158,10 +165,12 @@
    "label": "LR, Date"
   },
   {
+   "allow_in_quick_entry": 1,
+   "allow_on_submit": 1,
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Received\nInspection Pending\nInspected\nAccepted\nRejected\nPutaway Pending\nStored"
+   "options": "Issued\nReceived\nPaid"
   },
   {
    "fieldname": "transport_information_section",
@@ -186,8 +195,9 @@
   },
   {
    "fieldname": "station_from",
-   "fieldtype": "Data",
-   "label": "Station From"
+   "fieldtype": "Link",
+   "label": "Station From",
+   "options": "City"
   },
   {
    "fieldname": "vehicle_no",
@@ -199,20 +209,17 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "Box",
    "fieldname": "unit",
    "fieldtype": "Link",
    "label": "Unit",
    "options": "UOM"
   },
   {
-   "fieldname": "pending_qyt",
-   "fieldtype": "Data",
-   "label": "Pending Qty"
-  },
-  {
    "fieldname": "station_to",
-   "fieldtype": "Data",
-   "label": "Station To"
+   "fieldtype": "Link",
+   "label": "Station To",
+   "options": "City"
   },
   {
    "fieldname": "policy_no",
@@ -286,12 +293,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "supplier",
-   "fieldtype": "Data",
-   "label": "Supplier",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_cred",
    "fieldtype": "Column Break"
   },
@@ -302,16 +303,34 @@
   {
    "fieldname": "column_break_uyae",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_rlzu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "allow_on_submit": 1,
+   "fieldname": "gate_entry_no",
+   "fieldtype": "Data",
+   "label": "Gate Entry No.",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2025-12-17 12:45:35.066470",
+ "links": [
+  {
+   "link_doctype": "Gate Entry",
+   "link_fieldname": "incoming_logistics"
+  }
+ ],
+ "modified": "2025-12-27 16:00:20.555855",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -332,5 +351,18 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Blue",
+   "title": "Issued"
+  },
+  {
+   "color": "Green",
+   "title": "Received"
+  },
+  {
+   "color": "Pink",
+   "title": "Paid"
+  }
+ ]
 }

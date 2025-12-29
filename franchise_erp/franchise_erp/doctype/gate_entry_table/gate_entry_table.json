@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-26 10:22:25.139957",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "entry_no",
+  "entry_date",
+  "document_no",
+  "document_date",
+  "amounts",
+  "item_qty",
+  "ge_qty"
+ ],
+ "fields": [
+  {
+   "fieldname": "entry_no",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Entry No."
+  },
+  {
+   "fieldname": "entry_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Entry Date"
+  },
+  {
+   "fieldname": "document_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Document No."
+  },
+  {
+   "fieldname": "document_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Document Date"
+  },
+  {
+   "fieldname": "amounts",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Amount"
+  },
+  {
+   "fieldname": "item_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Item Qty"
+  },
+  {
+   "fieldname": "ge_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "GE Qty"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-26 10:28:19.141809",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Gate Entry Table",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
