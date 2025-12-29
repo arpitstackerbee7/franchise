@@ -1,0 +1,197 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-29 18:11:46.546211",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "item",
+  "column_break_afbs",
+  "name1",
+  "column_break_qacb",
+  "qty",
+  "column_break_yilw",
+  "mrp",
+  "section_break_dbrt",
+  "disc",
+  "column_break_czxo",
+  "sale",
+  "column_break_wyrm",
+  "ogst_p",
+  "column_break_naps",
+  "ogst_v",
+  "section_break_cmsn",
+  "net",
+  "column_break_mnpb",
+  "mar_p",
+  "column_break_zayj",
+  "mar_v",
+  "column_break_szqg",
+  "base",
+  "section_break_cqfa",
+  "igst_p",
+  "column_break_bjzq",
+  "igst_v",
+  "column_break_qetb",
+  "inv",
+  "column_break_cpap"
+ ],
+ "fields": [
+  {
+   "fieldname": "item",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item"
+  },
+  {
+   "fieldname": "column_break_afbs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "name1",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "column_break_qacb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Qty"
+  },
+  {
+   "fieldname": "column_break_yilw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mrp",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "MRP"
+  },
+  {
+   "fieldname": "section_break_dbrt",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "disc",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Disc %"
+  },
+  {
+   "fieldname": "column_break_czxo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sale",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Sale"
+  },
+  {
+   "fieldname": "column_break_wyrm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ogst_p",
+   "fieldtype": "Float",
+   "label": "OGST %"
+  },
+  {
+   "fieldname": "column_break_naps",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ogst_v",
+   "fieldtype": "Currency",
+   "label": "OGST Val"
+  },
+  {
+   "fieldname": "section_break_cmsn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "net",
+   "fieldtype": "Currency",
+   "label": "Net Sale"
+  },
+  {
+   "fieldname": "column_break_mnpb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mar_p",
+   "fieldtype": "Float",
+   "label": "Margin %"
+  },
+  {
+   "fieldname": "column_break_zayj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mar_v",
+   "fieldtype": "Currency",
+   "label": "Margin Val"
+  },
+  {
+   "fieldname": "column_break_szqg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "base",
+   "fieldtype": "Currency",
+   "label": "Base"
+  },
+  {
+   "fieldname": "section_break_cqfa",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "igst_p",
+   "fieldtype": "Float",
+   "label": "IGST %"
+  },
+  {
+   "fieldname": "column_break_bjzq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "igst_v",
+   "fieldtype": "Currency",
+   "label": "IGST Val"
+  },
+  {
+   "fieldname": "column_break_qetb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "inv",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Invoice Value"
+  },
+  {
+   "fieldname": "column_break_cpap",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-29 18:22:17.967840",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "SIS Processed Sales Invoice Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
