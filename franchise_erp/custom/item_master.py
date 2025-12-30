@@ -1,4 +1,6 @@
 import frappe
+import random
+import re
 
 @frappe.whitelist()
 def get_next_item_no():
@@ -6,8 +8,7 @@ def get_next_item_no():
     count = frappe.db.count("Item")
     return count + 1
 
-import frappe
-import random
+
 
 def get_item_group_code(value, label):
 
@@ -22,7 +23,7 @@ def get_item_group_code(value, label):
     )
     if code:
         return code
-
+    
 import re
 def extract_uom_list(value):
     """
@@ -42,7 +43,7 @@ def extract_uom_list(value):
                 continue
 
             # Fetch actual UOM from UOM Detail
-            uom = frappe.db.get_value("UOM Detail", rowname, "uom_name")
+            uom = frappe.db.get_value("UOM Detail", rowname, "uom")
             if uom:
                 uoms.append(uom.strip())
 
@@ -59,15 +60,13 @@ def get_uoms_from_tzu(parentfield):
             "parent": tzu.name,
             "parentfield": parentfield
         },
-        pluck="uom_name"  # make sure this is the correct fieldname in UOM Detail
+        pluck="uom"  # make sure this is the correct fieldname in UOM Detail
     )
     return [u.strip() for u in rows if u]
 
 
-
-
 def generate_item_code(doc, method):
-
+    
     # --------------------------------------------------
     # Trigger fields
     # --------------------------------------------------
@@ -150,12 +149,10 @@ def generate_item_code(doc, method):
    # --------------------------------------------------
     # TZU SETTING (FIXED)
     # --------------------------------------------------
+     # Fetch TZU Setting
     tzu = frappe.get_single("TZU Setting")
-
-    # Usage
-    serial_uom_list = get_uoms_from_tzu("serial_no_uom")  # child table fieldname in TZU Setting
+    serial_uom_list = get_uoms_from_tzu("serial_no_uom")
     batch_uom_list = get_uoms_from_tzu("batch_uom")
-
     stock_uom = (doc.stock_uom or "").strip()
 
     # RESET FLAGS
@@ -168,9 +165,6 @@ def generate_item_code(doc, method):
     prefix = tzu.serialno_series or "T"
     random_series = random.randint(100000, 999999)
 
-    # --------------------------------------------------
-    # FINAL MATCHING LOGIC (AS YOU WANT)
-    # --------------------------------------------------
     if stock_uom in serial_uom_list:
         doc.has_serial_no = 1
         doc.serial_no_series = f"{prefix}{random_series}.#####"
@@ -182,12 +176,12 @@ def generate_item_code(doc, method):
 
     else:
         frappe.throw(
-        f"""
-        Stock UOM <b>{stock_uom}</b> is not configured in TZU Setting.<br><br>
-        <b>Serial No UOMs:</b> {", ".join(serial_uom_list) or "None"}<br>
-        <b>Batch UOMs:</b> {", ".join(batch_uom_list) or "None"}
-        """
-    )
+            f"""
+            Stock UOM <b>{stock_uom}</b> is not configured in TZU Setting.<br><br>
+            <b>Serial No UOMs:</b> {', '.join(serial_uom_list) or 'None'}<br>
+            <b>Batch UOMs:</b> {', '.join(batch_uom_list) or 'None'}
+            """
+        )
 
 
 
