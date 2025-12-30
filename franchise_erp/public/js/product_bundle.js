@@ -45,7 +45,8 @@ frappe.ui.form.on('Product Bundle', {
     
                         frappe.model.set_value(row.doctype, row.name, "item_code", item_details.item_code);
                         frappe.model.set_value(row.doctype, row.name, "description", item_details.description);
-                        frappe.model.set_value(row.doctype, row.name, "custom_serial_no", item_details.name);    
+                        frappe.model.set_value(row.doctype, row.name, "custom_serial_no", item_details.name);
+                        frappe.model.set_value(row.doctype, row.name, "qty", 1);
                         frm.refresh_field('items');
                     }
                 }

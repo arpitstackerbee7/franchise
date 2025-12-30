@@ -43,7 +43,8 @@ doc_events = {
    
    "Sales Invoice": {
         "before_save": ["franchise_erp.custom.sales_invoice.apply_sis_pricing",
-        "franchise_erp.custom.promotional_scheme.apply_promotions"
+        "franchise_erp.custom.promotional_scheme.apply_promotions",
+        "franchise_erp.custom.sales_invoice.update_packed_items_serial_no"
         ]
     },
     "Purchase Order": {

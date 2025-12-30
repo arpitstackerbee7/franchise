@@ -187,3 +187,21 @@ def get_item_tax_template(gst_percent):
     else:
         return "GST 0%"  # Default fallback
 
+
+def update_packed_items_serial_no(doc, method):
+    for item in doc.items:
+        product_bundle = frappe.get_value("Product Bundle", {"new_item_code": item.item_code}, "name")
+        
+        if product_bundle:
+            product_bundle_items = frappe.get_all(
+                "Product Bundle Item",
+                filters={"parent": product_bundle},
+                fields=["item_code", "custom_serial_no"],
+                order_by="idx asc"  # Ensure the order is maintained
+            )
+
+            # Assign serial numbers row by row
+            for packed_item, bundle_item in zip(doc.packed_items, product_bundle_items):
+                packed_item.serial_no = bundle_item["custom_serial_no"]
+
+frappe.whitelist()(update_packed_items_serial_no)
