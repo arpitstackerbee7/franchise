@@ -53,8 +53,12 @@ doc_events = {
     },
     "Purchase Receipt": {
         "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_to_grn",
-        "on_submit": "franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
-        "on_cancel": "franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel"
+        "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
+                      "franchise_erp.custom.purchase_reciept.on_submit"],
+
+        "on_cancel": "franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel",
+
+
     },
     
     # "Sales Invoice": {

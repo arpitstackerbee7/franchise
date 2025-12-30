@@ -134,3 +134,41 @@ function validate_not_future(frm, fieldname) {
         frm.set_value(fieldname, today);
     }
 }
+
+
+frappe.ui.form.on("Gate Entry", {
+    refresh(frm) {
+        // Only Submitted Gate Entry
+        if (frm.doc.docstatus !== 1) return;
+
+        // Check if Purchase Order is linked
+        if (!frm.doc.purchase_order) {
+            frappe.msgprint("Purchase Order not linked with this Gate Entry");
+            return;
+        }
+
+        // Check if Purchase Receipt already exists
+        if (frm.doc.received_details && frm.doc.received_details.length > 0) {
+            // Don't show button if data already mapped
+            return;
+        }
+
+        frm.add_custom_button(
+            __("Create Purchase Receipt"),
+            () => {
+                frappe.call({
+                    method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.create_purchase_receipt",
+                    args: {
+                        gate_entry: frm.doc.name
+                    },
+                    callback(r) {
+                        if (r.message) {
+                            frappe.set_route("Form", "Purchase Receipt", r.message);
+                        }
+                    }
+                });
+            },
+            __("Create")
+        );
+    }
+});

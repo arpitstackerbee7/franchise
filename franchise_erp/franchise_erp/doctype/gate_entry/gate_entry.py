@@ -113,3 +113,49 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
     frappe.db.commit()
 
     return "UPDATED"
+
+
+import frappe
+from frappe.model.mapper import get_mapped_doc
+
+
+@frappe.whitelist()
+def create_purchase_receipt(gate_entry):
+    gate_entry_doc = frappe.get_doc("Gate Entry", gate_entry)
+
+    if not gate_entry_doc.purchase_order:
+        frappe.throw("Purchase Order is not linked in Gate Entry")
+
+    # 🔥 Map Purchase Order → Purchase Receipt
+    pr = get_mapped_doc(
+        "Purchase Order",
+        gate_entry_doc.purchase_order,
+        {
+            "Purchase Order": {
+                "doctype": "Purchase Receipt",
+                "field_map": {
+                    "name": "purchase_order"
+                }
+            },
+            "Purchase Order Item": {
+                "doctype": "Purchase Receipt Item",
+                "field_map": {
+                    "name": "purchase_order_item",
+                    "parent": "purchase_order"
+                }
+            }
+        }
+    )
+
+    # 🔹 Custom Linking
+    pr.custom_gate_entry = gate_entry_doc.name
+    pr.posting_date = gate_entry_doc.date
+    pr.set_posting_time = 1
+
+    # Optional but useful
+    pr.supplier = gate_entry_doc.consignor
+    pr.company = gate_entry_doc.owner_site
+
+    pr.insert(ignore_permissions=True)
+
+    return pr.name
