@@ -1,7 +1,8 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-12-18 18:53:42.778542",
+ "creation": "2025-12-30 10:54:34.647794",
+ "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -14,8 +15,7 @@
   {
    "fieldname": "serialno_series",
    "fieldtype": "Data",
-   "label": "Serial No Series",
-   "unique": 1
+   "label": "Serial No Series"
   },
   {
    "default": "Nos",
@@ -40,20 +40,19 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "issingle": 1,
  "links": [],
- "modified": "2025-12-29 18:22:00.890473",
+ "modified": "2025-12-30 10:54:34.647794",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
- "owner": "sis@sis.com",
+ "owner": "Administrator",
  "permissions": [
   {
    "delete": 1,
    "email": 1,
-   "export": 1,
    "print": 1,
    "read": 1,
-   "report": 1,
    "role": "System Manager",
    "select": 1,
    "share": 1,
@@ -62,10 +61,8 @@
   {
    "delete": 1,
    "email": 1,
-   "export": 1,
    "print": 1,
    "read": 1,
-   "report": 1,
    "role": "Accounts User",
    "select": 1,
    "share": 1,
