@@ -74,6 +74,9 @@ doc_events = {
         "on_submit": "franchise_erp.custom.gate_entry.on_submit",
         "on_cancel": "franchise_erp.custom.gate_entry.on_cancel"
     },
+    "Product Bundle":{
+        "after_insert":"franchise_erp.custom.product_bundle.set_product_bundle_series"
+    }
 
 }
 
@@ -90,6 +93,7 @@ doctype_js = {
     "Address":"public/js/address.js",
     "Supplier": "public/js/supplier.js",
     "Promotional Scheme":"public/js/promotional_scheme.js",
+    "Product Bundle": "public/js/product_bundle.js"
 }
 
 
