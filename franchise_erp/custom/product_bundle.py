@@ -27,5 +27,14 @@ def set_product_bundle_series(doc, method=None):
         )
 
         if not exists:
+            # ✅ Persist value in DB
+            frappe.db.set_value(
+                "Product Bundle",
+                doc.name,
+                "custom_bundle_serial_no",
+                series
+            )
+
+            # Also set in memory (for current request)
             doc.custom_bundle_serial_no = series
             break

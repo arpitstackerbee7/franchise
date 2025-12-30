@@ -1,3 +1,46 @@
+
+frappe.ui.form.on('Sales Invoice', {
+    custom_scan_product_bundle(frm) {
+        if (!frm.doc.custom_scan_product_bundle) return;
+
+        let bundle_serial = frm.doc.custom_scan_product_bundle.trim();
+
+        frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+                doctype: "Product Bundle",
+                filters: {
+                    custom_bundle_serial_no: bundle_serial
+                },
+                fieldname: ["new_item_code"]
+            },
+            callback(r) {
+                if (!r.message || !r.message.new_item_code) {
+                    frappe.msgprint(__('No Item found for scanned bundle serial'));
+                    frm.set_value('custom_scan_product_bundle', '');
+                    return;
+                }
+
+                let item_code = r.message.new_item_code;
+
+                // Find empty row or create new
+                let row = frm.doc.items.find(d => !d.item_code);
+                if (!row) row = frm.add_child('items');
+
+                // 🔥 THIS IS THE KEY FIX
+                frappe.model.set_value(row.doctype, row.name, 'item_code', item_code);
+
+                // qty AFTER item is set
+                frappe.model.set_value(row.doctype, row.name, 'qty', row.qty || 1);
+
+                frm.refresh_field('items');
+
+                frm.set_value('custom_scan_product_bundle', '');
+            }
+        });
+    }
+});
+
 frappe.ui.form.on('Sales Invoice Item', {
     item_code: function(frm, cdt, cdn) {
         apply_discount_hide(frm, cdt, cdn);
@@ -41,16 +84,6 @@ function apply_discount_hide(frm, cdt, cdn) {
         }
     );
 }
-
-// frappe.ui.form.on("Sales Invoice", {
-//     refresh(frm) {
-//         frm.refresh_field("items");
-//     },
-//     onload_post_render(frm) {
-//         frm.refresh_field("items");
-//     }
-// });
-
 // frappe.ui.form.on("Sales Invoice Item", {
 //     custom_margins_: function(frm, cdt, cdn) {
 //         frm.refresh_field("items");
