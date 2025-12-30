@@ -66,68 +66,30 @@ def get_uoms_from_tzu(parentfield):
 
 
 def generate_item_code(doc, method):
-    
-    # --------------------------------------------------
-    # Trigger fields
-    # --------------------------------------------------
-    watched_fields = [
-        "custom_group_collection",
-        "custom_departments",
-        "custom_silvet",
-        "custom_colour_code",
-        "custom_size"
-    ]
 
-    is_new = doc.is_new()
-    changed = is_new
-
-    if not is_new:
-        prev = frappe.get_doc("Item", doc.name)
-        for f in watched_fields:
-            if getattr(prev, f, None) != getattr(doc, f, None):
-                changed = True
-                break
-
-    if not changed or not doc.is_stock_item:
+    if not doc.is_stock_item:
         return
 
-    # --------------------------------------------------
-    # Required validations
-    # --------------------------------------------------
-    collection = doc.custom_group_collection
-    department = doc.custom_departments
-    silvet = doc.custom_silvet
-    colour = doc.custom_colour_code
+    # 🔒 RUN ONLY ON CREATE
+    if not doc.is_new():
+        return
 
-    if not all([collection, department, silvet, colour]):
+    if not all([
+        doc.custom_group_collection,
+        doc.custom_departments,
+        doc.custom_silvet,
+        doc.custom_colour_code
+    ]):
         frappe.throw(
             "Please select Collection, Department, Silhouette and Colour"
         )
 
-    # --------------------------------------------------
-    # Fetch Item Group Codes
-    # --------------------------------------------------
-    collection_code = get_item_group_code(collection, "COLLECTION")
-    department_code = get_item_group_code(department, "DEPARTMENT")
-    silvet_code = get_item_group_code(silvet, "SILVET")
+    collection_code = get_item_group_code(doc.custom_group_collection, "COLLECTION")
+    department_code = get_item_group_code(doc.custom_departments, "DEPARTMENT")
+    silvet_code = get_item_group_code(doc.custom_silvet, "SILVET")
 
-    if not collection_code:
-        frappe.throw(f"Custom Code missing in Collection Item Group: {collection}")
-
-    if not department_code:
-        frappe.throw(f"Custom Code missing in Department Item Group: {department}")
-
-    if not silvet_code:
-        frappe.throw(f"Custom Code missing in Silvet Item Group: {silvet}")
-
-    # --------------------------------------------------
-    # Item Code Build
-    # --------------------------------------------------
-    base_code = f"{collection_code}-{department_code}-{silvet_code}-{colour}"
+    base_code = f"{collection_code}-{department_code}-{silvet_code}-{doc.custom_colour_code}"
     next_series = get_next_series(base_code)
-
-    doc.flags.ignore_validate_update_after_submit = True
-    doc.flags.ignore_mandatory = True
 
     item_code = f"{base_code}-{next_series}"
     while frappe.db.exists("Item", item_code):
@@ -136,26 +98,37 @@ def generate_item_code(doc, method):
 
     doc.item_code = item_code
 
-    # --------------------------------------------------
-    # Barcode Auto Create
-    # --------------------------------------------------
-    doc.barcodes = []
+
+def create_item_barcode(doc, method):
+
+    if not doc.is_stock_item:
+        return
+
+    # Already exists → skip
+    if frappe.db.exists("Item Barcode", {
+        "parent": doc.name,
+        "barcode": doc.item_code
+    }):
+        return
+
     doc.append("barcodes", {
         "barcode": doc.item_code,
         "barcode_type": "UPC-A",
         "uom": doc.stock_uom or "Nos"
     })
 
-   # --------------------------------------------------
-    # TZU SETTING (FIXED)
-    # --------------------------------------------------
-     # Fetch TZU Setting
+    doc.save(ignore_permissions=True)
+
+def apply_tzu_setting(doc, method):
+
+    if not doc.is_stock_item:
+        return
+
     tzu = frappe.get_single("TZU Setting")
     serial_uom_list = get_uoms_from_tzu("serial_no_uom")
     batch_uom_list = get_uoms_from_tzu("batch_uom")
     stock_uom = (doc.stock_uom or "").strip()
 
-    # RESET FLAGS
     doc.has_serial_no = 0
     doc.has_batch_no = 0
     doc.create_new_batch = 0
@@ -173,15 +146,6 @@ def generate_item_code(doc, method):
         doc.has_batch_no = 1
         doc.create_new_batch = 1
         doc.batch_number_series = f"{prefix}{random_series}.#####"
-
-    else:
-        frappe.throw(
-            f"""
-            Stock UOM <b>{stock_uom}</b> is not configured in TZU Setting.<br><br>
-            <b>Serial No UOMs:</b> {', '.join(serial_uom_list) or 'None'}<br>
-            <b>Batch UOMs:</b> {', '.join(batch_uom_list) or 'None'}
-            """
-        )
 
 
 

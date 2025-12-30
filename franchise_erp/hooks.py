@@ -47,6 +47,7 @@ doc_events = {
         "franchise_erp.custom.sales_invoice.update_packed_items_serial_no"
         ]
     },
+
     "Purchase Order": {
         "on_submit": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit"
     },
@@ -68,8 +69,10 @@ doc_events = {
     # },
 
    "Item": {
-        "before_insert": "franchise_erp.custom.item_master.generate_item_code"
-   },
+        "before_insert": "franchise_erp.custom.item_master.generate_item_code",
+        "after_insert": "franchise_erp.custom.item_master.create_item_barcode",
+        "before_save": "franchise_erp.custom.item_master.apply_tzu_setting"
+    },
     "Item Group": {
         "validate": "franchise_erp.custom.item_group.validate_same_parent",
 #         "before_insert": ["franchise_erp.custom.item_group.set_hash_name","franchise_erp.custom.item_group.force_display_name"],
