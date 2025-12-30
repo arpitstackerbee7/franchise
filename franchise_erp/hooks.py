@@ -47,12 +47,14 @@ doc_events = {
     },
 
     "Purchase Order": {
-        "on_submit": "franchise_erp.custom.po_serial_utils.generate_serials_on_po_submit"
+        "on_submit": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
+        "validate": "franchise_erp.custom.purchase_order.validate_purchase_order"
+
     },
     "Purchase Receipt": {
-        "before_save": "franchise_erp.custom.pr_serial_utils.assign_serials_to_grn",
-        "on_submit": "franchise_erp.custom.pr_serial_utils.lock_serials_on_grn_submit",
-        "on_cancel": "franchise_erp.custom.pr_serial_utils.restore_serials_on_grn_cancel"
+        "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_to_grn",
+        "on_submit": "franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
+        "on_cancel": "franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel"
     },
     
     # "Sales Invoice": {
@@ -73,9 +75,7 @@ doc_events = {
     # "Supplier": {
     #     "validate": "franchise_erp.custom.supplier.validate_supplier"
     # },
-    "Purchase Order": {
-        "validate": "franchise_erp.custom.purchase_order.validate_purchase_order"
-    },
+    
     
     # "Item Group Tree": {
     #     "validate": "franchise_erp.custom.item_group_tree.validate_unique_combination"
