@@ -13,4 +13,5 @@ class TZUSetting(Document):
 		if len(self.product_bundle_series) >self.enter_series_length:
 			frappe.throw(f"Product Bundle Series Length can not be greater than {self.enter_series_length}")
 	
+
 	
