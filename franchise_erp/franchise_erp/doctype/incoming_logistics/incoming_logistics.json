@@ -37,9 +37,11 @@
   "column_break_vrba",
   "lr_quantity",
   "station_to",
+  "lr_attachment",
   "column_break_dmpn",
   "unit",
   "policy_no",
+  "sales_invoice_attachment",
   "charge_information_section",
   "to_pay",
   "charged_weight",
@@ -322,6 +324,16 @@
    "fieldtype": "Table",
    "label": "Gate Entry Box Barcode",
    "options": "Gate Entry Box Barcode"
+  },
+  {
+   "fieldname": "lr_attachment",
+   "fieldtype": "Attach",
+   "label": "LR Attachment"
+  },
+  {
+   "fieldname": "sales_invoice_attachment",
+   "fieldtype": "Attach",
+   "label": "Sales Invoice Attachment"
   }
  ],
  "grid_page_length": 50,
@@ -333,7 +345,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2025-12-29 17:35:26.940214",
+ "modified": "2025-12-29 18:56:12.613142",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

@@ -226,7 +226,8 @@ frappe.ui.form.on("Incoming Logistics", {
                     invoice_no: frm.doc.invoice_no,
                     type: frm.doc.type,
                     date: frm.doc.date,
-                    gate_entry_box_barcode: frm.doc.gate_entry_box_barcode 
+                    gate_entry_box_barcode: frm.doc.gate_entry_box_barcode,
+                    lr_quantity: frm.doc.received_qty - frm.doc.lr_quantity 
                 };
 
                 frappe.set_route("Form", "Gate Entry", "new-gate-entry");

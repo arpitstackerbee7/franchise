@@ -18,23 +18,23 @@ frappe.ui.form.on("Gate Entry", {
                     incoming_logistics: frm.doc.incoming_logistics
                 },
                 callback: function(r) {
-                    frm.clear_table("box_barcodes");
+                    frm.clear_table("gate_entry_box_barcode");
 
                     if (r.message) {
                         r.message.forEach(row => {
-                            let child = frm.add_child("box_barcodes");
+                            let child = frm.add_child("gate_entry_box_barcode");
                             child.box_barcode = row.box_barcode;
                             child.incoming_logistics_no = row.incoming_logistics_no;
                             child.status = row.status;
                         });
                     }
 
-                    frm.refresh_field("box_barcodes");
+                    frm.refresh_field("gate_entry_box_barcode");
                 }
             });
         } else {
-            frm.clear_table("box_barcodes");
-            frm.refresh_field("box_barcodes");
+            frm.clear_table("gate_entry_box_barcode");
+            frm.refresh_field("gate_entry_box_barcode");
         }
     }
 });
@@ -46,7 +46,7 @@ frappe.ui.form.on("Gate Entry", {
         let barcode = frm.doc.scan_barcode;
         if (!barcode) return;
 
-        let row = frm.doc.box_barcodes.find(
+        let row = frm.doc.gate_entry_box_barcode.find(
             r => r.box_barcode === barcode
         );
 
@@ -73,12 +73,12 @@ frappe.ui.form.on("Gate Entry", {
         frappe.call({
             method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.mark_box_barcode_received",
             args: {
-                incoming_logistics_no: frm.doc.incoming_logistics,
-                box_barcode: barcode
+                box_barcode: barcode,
+                incoming_logistics_no: frm.doc.incoming_logistics
             },
             callback: function() {
                 row.status = "Received";
-                frm.refresh_field("box_barcodes");
+                frm.refresh_field("gate_entry_box_barcode");
 
                 frappe.show_alert({
                     message: "Box marked as Received",
@@ -90,6 +90,7 @@ frappe.ui.form.on("Gate Entry", {
         });
     }
 });
+
 
 // set current date and disabled futur date
 frappe.ui.form.on("Gate Entry", {
