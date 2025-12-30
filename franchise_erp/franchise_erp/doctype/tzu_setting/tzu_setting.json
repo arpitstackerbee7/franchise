@@ -8,10 +8,13 @@
  "field_order": [
   "serialno_series",
   "serial_no_uom",
-  "batch_uom",
-  "item_name",
   "product_bundle_series",
-  "enter_series_length"
+  "box_barcode_series",
+  "column_break_dltx",
+  "item_name",
+  "batch_uom",
+  "enter_series_length",
+  "box_barcode_series_length"
  ],
  "fields": [
   {
@@ -48,13 +51,27 @@
    "fieldtype": "Int",
    "label": "Enter Series Length ",
    "length": 1
+  },
+  {
+   "fieldname": "box_barcode_series",
+   "fieldtype": "Data",
+   "label": "Box Barcode Series"
+  },
+  {
+   "fieldname": "column_break_dltx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "box_barcode_series_length",
+   "fieldtype": "Int",
+   "label": "Box Barcode Series Length"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-12-30 12:09:35.648037",
+ "modified": "2025-12-30 20:04:04.808510",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",

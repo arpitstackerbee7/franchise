@@ -8,14 +8,16 @@
   "box_barcode",
   "status",
   "incoming_logistics_no",
-  "total_barcode",
-  "amended_from"
+  "total_barcode_qty",
+  "amended_from",
+  "scan_date_time"
  ],
  "fields": [
   {
    "fieldname": "incoming_logistics_no",
    "fieldtype": "Data",
-   "label": "Incoming Logistics No"
+   "label": "Incoming Logistics No",
+   "read_only": 1
   },
   {
    "fieldname": "status",
@@ -40,19 +42,28 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Box Barcode"
+   "label": "Box Barcode",
+   "read_only": 1
   },
   {
-   "fieldname": "total_barcode",
-   "fieldtype": "Data",
-   "label": "Total Barcode"
+   "fieldname": "scan_date_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Scan Date Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_barcode_qty",
+   "fieldtype": "Int",
+   "label": "Total Box Barcode Qty",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-12-29 17:43:06.131506",
+ "modified": "2025-12-30 20:27:02.116756",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry Box Barcode",

@@ -77,42 +77,40 @@ import frappe
 
 @frappe.whitelist()
 def mark_box_barcode_received(box_barcode, incoming_logistics_no):
-    if not box_barcode or not incoming_logistics_no:
-        frappe.throw("Barcode or Incoming Logistics No missing")
 
-    # Match BOTH barcode + incoming logistics
-    docname = frappe.db.get_value(
+    if not box_barcode or not incoming_logistics_no:
+        frappe.throw("Missing barcode or Incoming Logistics No")
+
+    # Find matching child row
+    row = frappe.db.get_value(
         "Gate Entry Box Barcode",
         {
             "box_barcode": box_barcode,
             "incoming_logistics_no": incoming_logistics_no
         },
-        "name"
+        ["name", "status"],
+        as_dict=True
     )
 
-    if not docname:
-        frappe.throw("Invalid Box Barcode for this Incoming Logistics")
+    if not row:
+        frappe.throw("Invalid Box Barcode")
 
-    current_status = frappe.db.get_value(
-        "Gate Entry Box Barcode",
-        docname,
-        "status"
-    )
+    if row.status == "Received":
+        frappe.throw("Box already Received")
 
-    if current_status == "Received":
-        frappe.throw("This box is already Received")
-
-    # Update status
+    # Update status + scan datetime
     frappe.db.set_value(
         "Gate Entry Box Barcode",
-        docname,
-        "status",
-        "Received"
+        row.name,
+        {
+            "status": "Received",
+            "scan_date_time": frappe.utils.now_datetime()
+        }
     )
 
     frappe.db.commit()
 
-    return "UPDATED"
+    return "OK"
 
 
 import frappe

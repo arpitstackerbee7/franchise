@@ -14,5 +14,12 @@ class TZUSetting(Document):
 		if len(self.product_bundle_series) >self.enter_series_length:
 			frappe.throw(f"Product Bundle Series Length can not be greater than {self.enter_series_length}")
 	
+		if self.box_barcode_series_length is not None and self.box_barcode_series_length > 9:
+			frappe.throw("Box Barcode Series Length cannot be greater than 1")
 
+		if self.box_barcode_series and self.box_barcode_series_length:
+			if len(self.box_barcode_series) > self.box_barcode_series_length:
+				frappe.throw(
+					f"Box Barcode Series Length cannot be greater than {self.box_barcode_series_length}"
+				)
 
