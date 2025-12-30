@@ -46,7 +46,6 @@ doc_events = {
         "franchise_erp.custom.promotional_scheme.apply_promotions"
         ]
     },
-
     "Purchase Order": {
         "on_submit": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
         "validate": "franchise_erp.custom.purchase_order.validate_purchase_order"
