@@ -198,7 +198,7 @@ function show_invoice_dialog(frm) {
                         <th>Realized Sale</th>
                         <th>Output GST%</th>
                         <th>Output GST Value</th>
-                        <th>Net Sale Value</th>
+                        <th>Taxable Value</th>
                         <th>Margin%</th>
                         <th>Margin Value</th>
                         <th>INV Base Value</th>
