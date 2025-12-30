@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-12-30 15:52:57.335552",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "purchase_term",
+  "default"
+ ],
+ "fields": [
+  {
+   "fieldname": "purchase_term",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Purchase Term",
+   "options": "Purchase Term Template"
+  },
+  {
+   "default": "0",
+   "fieldname": "default",
+   "fieldtype": "Check",
+   "label": "Default"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-30 15:53:47.891647",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Supplier Purchase Terms",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
