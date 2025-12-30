@@ -75,41 +75,6 @@
 
 frappe.ui.form.on("Purchase Order", {
 
-    supplier(frm) {
-        if (!frm.doc.supplier) {
-            frm.set_value("custom_agent_supplier", null);
-            frm.set_value("custom_transporter", null);
-            return;
-        }
-
-        frappe.db.get_value(
-            "Supplier",
-            frm.doc.supplier,
-            [
-                "custom_is_agent",
-                "is_transporter",
-                "custom_agent_supplier",
-                "custom_transporter"
-            ]
-        ).then(r => {
-            const d = r.message || {};
-
-            // Agent logic
-            if (d.custom_is_agent) {
-                frm.set_value("custom_agent_supplier", d.custom_agent_supplier);
-            } else {
-                frm.set_value("custom_agent_supplier", null);
-            }
-
-            // Transporter logic
-            if (d.is_transporter) {
-                frm.set_value("custom_transporter", d.custom_transporter);
-            } else {
-                frm.set_value("custom_transporter", null);
-            }
-        });
-    },
-
     async refresh(frm) {
 
         // 1️⃣ Sirf Submitted PO
@@ -167,39 +132,6 @@ frappe.ui.form.on("Purchase Order", {
                 });
             },
             __("Create")
-        );
-    }
-});
-
-
-
-frappe.ui.form.on("Purchase Order", {
-    supplier(frm) {
-        if (!frm.doc.supplier) {
-            frm.set_value("custom_agent_supplier", null);
-            frm.set_value("custom_transporter", null);
-            return;
-        }
-
-        frappe.db.get_value(
-            "Supplier",
-            frm.doc.supplier,
-            ["custom_is_agent", "is_transporter","custom_agent_supplier","custom_transporter"],
-            (r) => {
-                // If the supplier is an agent, then set the Agent as the Supplier as well.
-                if (r.custom_is_agent) {
-                    frm.set_value("custom_agent_supplier", r.custom_agent_supplier);
-                } else {
-                    frm.set_value("custom_agent_supplier", null);
-                }
-
-                // If the supplier is a transporter, then set the Transporter as the Supplier.
-                if (r.is_transporter) {
-                    frm.set_value("custom_transporter", r.custom_transporter);
-                } else {
-                    frm.set_value("custom_transporter", null);
-                }
-            }
         );
     }
 });

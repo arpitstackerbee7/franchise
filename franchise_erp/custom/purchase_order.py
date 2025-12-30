@@ -21,10 +21,25 @@ def generate_serials_on_po_submit(doc, method):
             frappe.db.set_value("Purchase Order Item", item.name, "custom_generated_serials", item.custom_generated_serials)
 
 
-def validate_purchase_order(doc, method):
+# def apply_purchase_term(doc, method):
+#     if not doc.custom_purchase_term:
+#         return
 
-    if doc.custom_agent_supplier and doc.custom_agent_supplier != doc.supplier:
-        pass  # allowed
+#     term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
 
-    if doc.custom_transporter and doc.custom_transporter != doc.supplier:
-        pass  # allowed           
+#     for item in doc.items:
+#         if not item.custom_original_rate:
+#             item.custom_original_rate = item.rate
+
+#         rate = item.custom_original_rate
+
+#         for row in sorted(term.charges, key=lambda x: x.seq):
+#             if row.charge_type == "Rate Diff":
+#                 rate += row.value
+
+#             elif row.charge_type == "Discount":
+#                 rate -= (rate * row.value / 100)
+
+#         item.rate = rate
+#         item.amount = rate * item.qty
+#         item.net_amount = item.amount
