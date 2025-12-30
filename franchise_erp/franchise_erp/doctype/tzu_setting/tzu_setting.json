@@ -18,18 +18,16 @@
    "label": "Serial No Series"
   },
   {
-   "default": "Nos",
    "fieldname": "serial_no_uom",
-   "fieldtype": "Link",
+   "fieldtype": "Table MultiSelect",
    "label": "Serial No UOM",
-   "options": "UOM"
+   "options": "UOM Detail"
   },
   {
-   "default": "Meter",
    "fieldname": "batch_uom",
-   "fieldtype": "Link",
+   "fieldtype": "Table MultiSelect",
    "label": "Batch UOM",
-   "options": "UOM"
+   "options": "UOM Detail"
   },
   {
    "fieldname": "item_name",
@@ -42,7 +40,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-12-30 10:54:34.647794",
+ "modified": "2025-12-30 11:17:23.806830",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",

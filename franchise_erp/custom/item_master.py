@@ -24,9 +24,53 @@ def get_item_group_code(value, label):
         return code
 
 import re
+def extract_uom_list(value):
+    """
+    Handles Table MultiSelect where Options = UOM Detail
+    Value contains UOM Detail DOCNAMES
+    """
+
+    if not value:
+        return []
+
+    uoms = []
+
+    # Table MultiSelect always returns list
+    if isinstance(value, list):
+        for rowname in value:
+            if not rowname:
+                continue
+
+            # Fetch actual UOM from UOM Detail
+            uom = frappe.db.get_value("UOM Detail", rowname, "uom_name")
+            if uom:
+                uoms.append(uom.strip())
+
+    return uoms
+
+def get_uoms_from_tzu(parentfield):
+    """
+    Fetch UOMs from TZU Setting child table
+    """
+    tzu = frappe.get_single("TZU Setting")
+    rows = frappe.get_all(
+        "UOM Detail",
+        filters={
+            "parent": tzu.name,
+            "parentfield": parentfield
+        },
+        pluck="uom_name"  # make sure this is the correct fieldname in UOM Detail
+    )
+    return [u.strip() for u in rows if u]
+
+
+
 
 def generate_item_code(doc, method):
 
+    # --------------------------------------------------
+    # Trigger fields
+    # --------------------------------------------------
     watched_fields = [
         "custom_group_collection",
         "custom_departments",
@@ -45,36 +89,29 @@ def generate_item_code(doc, method):
                 changed = True
                 break
 
-    if not changed:
+    if not changed or not doc.is_stock_item:
         return
-    if not doc.is_stock_item:
-        return 
-    # ---------------- REQUIRED ----------------
+
+    # --------------------------------------------------
+    # Required validations
+    # --------------------------------------------------
     collection = doc.custom_group_collection
     department = doc.custom_departments
     silvet = doc.custom_silvet
     colour = doc.custom_colour_code
 
-    if not collection or not department or not silvet or not colour:
-        frappe.throw("Please select Collection, Department, Silhouette and Colour")
+    if not all([collection, department, silvet, colour]):
+        frappe.throw(
+            "Please select Collection, Department, Silhouette and Colour"
+        )
 
-    # ---------------- FETCH CODES (WITH DEBUG) ----------------
+    # --------------------------------------------------
+    # Fetch Item Group Codes
+    # --------------------------------------------------
     collection_code = get_item_group_code(collection, "COLLECTION")
     department_code = get_item_group_code(department, "DEPARTMENT")
-    silvet_code = get_item_group_code(silvet, "SILVET")         
+    silvet_code = get_item_group_code(silvet, "SILVET")
 
-    # ---------------- DEBUG LOG ----------------
-    frappe.log_error(
-        f"""
-        COLLECTION : {collection} → {collection_code}
-        DEPARTMENT : {department} → {department_code}
-        SILVET     : {silvet} → {silvet_code}
-        COLOUR     : {colour}
-        """,
-        "ITEM CODE BUILD DEBUG"
-    )
-
-    # ---------------- VALIDATION ----------------
     if not collection_code:
         frappe.throw(f"Custom Code missing in Collection Item Group: {collection}")
 
@@ -84,23 +121,25 @@ def generate_item_code(doc, method):
     if not silvet_code:
         frappe.throw(f"Custom Code missing in Silvet Item Group: {silvet}")
 
-    # ---------------- PREFIX BUILD ----------------
+    # --------------------------------------------------
+    # Item Code Build
+    # --------------------------------------------------
     base_code = f"{collection_code}-{department_code}-{silvet_code}-{colour}"
-
-    # ---------------- NEXT SERIES ----------------
     next_series = get_next_series(base_code)
 
-    # ---------------- ITEM CODE ----------------
     doc.flags.ignore_validate_update_after_submit = True
     doc.flags.ignore_mandatory = True
 
-    doc.item_code = f"{base_code}-{next_series}"
-
-    while frappe.db.exists("Item", doc.item_code):
+    item_code = f"{base_code}-{next_series}"
+    while frappe.db.exists("Item", item_code):
         next_series += 1
-        doc.item_code = f"{base_code}-{next_series}"
+        item_code = f"{base_code}-{next_series}"
 
-    # ---------------- BARCODE ----------------
+    doc.item_code = item_code
+
+    # --------------------------------------------------
+    # Barcode Auto Create
+    # --------------------------------------------------
     doc.barcodes = []
     doc.append("barcodes", {
         "barcode": doc.item_code,
@@ -108,42 +147,49 @@ def generate_item_code(doc, method):
         "uom": doc.stock_uom or "Nos"
     })
 
-    # ---------------- SERIAL NO SERIES ----------------
-    # Get first (or only) record from TZU Setting
-    tzu_record = frappe.db.get_value(
-        "TZU Setting",
-        filters={},  # empty filter gets first record (if any)
-        fieldname=["serialno_series", "serial_no_uom", "batch_uom"],
-        as_dict=True
-    )
+   # --------------------------------------------------
+    # TZU SETTING (FIXED)
+    # --------------------------------------------------
+    tzu = frappe.get_single("TZU Setting")
 
-    if not tzu_record:
-        frappe.throw("No TZU Setting record found.")
+    # Usage
+    serial_uom_list = get_uoms_from_tzu("serial_no_uom")  # child table fieldname in TZU Setting
+    batch_uom_list = get_uoms_from_tzu("batch_uom")
 
-    first_letter = tzu_record.serialno_series or "T"
-    serial_uom = tzu_record.serial_no_uom
-    batch_uom = tzu_record.batch_uom
+    stock_uom = (doc.stock_uom or "").strip()
 
+    # RESET FLAGS
+    doc.has_serial_no = 0
+    doc.has_batch_no = 0
+    doc.create_new_batch = 0
+    doc.serial_no_series = ""
+    doc.batch_number_series = ""
+
+    prefix = tzu.serialno_series or "T"
     random_series = random.randint(100000, 999999)
 
-    # doc.has_serial_no = 1
-    # doc.serial_no_series = f"{first_letter}{random_series}.#####"
-    # Apply Serial No / Batch No logic
-    if doc.stock_uom == serial_uom:
+    # --------------------------------------------------
+    # FINAL MATCHING LOGIC (AS YOU WANT)
+    # --------------------------------------------------
+    if stock_uom in serial_uom_list:
         doc.has_serial_no = 1
-        doc.serial_no_series = f"{first_letter}{random_series}.#####"
+        doc.serial_no_series = f"{prefix}{random_series}.#####"
 
-    elif doc.stock_uom == batch_uom:
+    elif stock_uom in batch_uom_list:
         doc.has_batch_no = 1
         doc.create_new_batch = 1
-        doc.batch_number_series = f"{first_letter}{random_series}.#####"
+        doc.batch_number_series = f"{prefix}{random_series}.#####"
 
     else:
-        # Fallback: always create serial no
-        doc.has_serial_no = 1
-        doc.serial_no_series = f"{first_letter}{random_series}.#####"
+        frappe.throw(
+        f"""
+        Stock UOM <b>{stock_uom}</b> is not configured in TZU Setting.<br><br>
+        <b>Serial No UOMs:</b> {", ".join(serial_uom_list) or "None"}<br>
+        <b>Batch UOMs:</b> {", ".join(batch_uom_list) or "None"}
+        """
+    )
 
-        
+
 
 def get_next_series(base_code):
     """
