@@ -45,6 +45,16 @@ doc_events = {
         "before_save": ["franchise_erp.custom.sales_invoice.apply_sis_pricing",
         "franchise_erp.custom.promotional_scheme.apply_promotions"]
     },
+
+    "Purchase Order": {
+        "on_submit": "franchise_erp.custom.po_serial_utils.generate_serials_on_po_submit"
+    },
+    "Purchase Receipt": {
+        "before_save": "franchise_erp.custom.pr_serial_utils.assign_serials_to_grn",
+        "on_submit": "franchise_erp.custom.pr_serial_utils.lock_serials_on_grn_submit",
+        "on_cancel": "franchise_erp.custom.pr_serial_utils.restore_serials_on_grn_cancel"
+    },
+    
     # "Sales Invoice": {
     #     "before_save": ["franchise_erp.custom.sales_invoice_hooks.before_save","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
     #     "before_submit": ["franchise_erp.custom.sales_invoice_validation.before_submit","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
@@ -392,13 +402,3 @@ fixtures = [
 
 
 
-doc_events = {
-    "Purchase Order": {
-        "on_submit": "franchise_erp.custom.po_serial_utils.generate_serials_on_po_submit"
-    },
-    "Purchase Receipt": {
-        "before_save": "franchise_erp.custom.pr_serial_utils.assign_serials_to_grn",
-        "on_submit": "franchise_erp.custom.pr_serial_utils.lock_serials_on_grn_submit",
-        "on_cancel": "franchise_erp.custom.pr_serial_utils.restore_serials_on_grn_cancel"
-    }
-}
