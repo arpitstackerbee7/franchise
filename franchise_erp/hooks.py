@@ -385,3 +385,16 @@ fixtures = [
 #         # ]
 #     }
 # ]
+
+
+
+doc_events = {
+    "Purchase Order": {
+        "on_submit": "franchise_erp.custom.po_serial_utils.generate_serials_on_po_submit"
+    },
+    "Purchase Receipt": {
+        "before_save": "franchise_erp.custom.pr_serial_utils.assign_serials_to_grn",
+        "on_submit": "franchise_erp.custom.pr_serial_utils.lock_serials_on_grn_submit",
+        "on_cancel": "franchise_erp.custom.pr_serial_utils.restore_serials_on_grn_cancel"
+    }
+}
