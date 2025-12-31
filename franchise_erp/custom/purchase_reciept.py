@@ -1,34 +1,31 @@
 
 import frappe
 
-def assign_serials_to_grn(doc, method):
-    for item in doc.items:
-        if item.purchase_order_item and not item.serial_no:
-            po_item = frappe.get_doc("Purchase Order Item", item.purchase_order_item)
-            
-            if not po_item.custom_generated_serials:
-                continue
-
-            all_serials = [s.strip() for s in po_item.custom_generated_serials.split("\n") if s.strip()]
-            used_serials = [s.strip() for s in (po_item.custom_used_serials or "").split("\n") if s.strip()]
-            
-            available = [s for s in all_serials if s not in used_serials]
-            
-            qty = int(item.qty)
-            if qty > len(available):
-                frappe.throw(f"Row {item.idx}: Only {len(available)} serial numbers are remaining in the Purchase Order.")
-
-
-            selected = available[:qty]
-            item.serial_no = "\n".join(selected)
-
 def lock_serials_on_grn_submit(doc, method):
     for item in doc.items:
-        if item.purchase_order_item and item.serial_no:
-            current_used = frappe.db.get_value("Purchase Order Item", item.purchase_order_item, "custom_used_serials") or ""
-            new_list = (current_used.split("\n") if current_used else []) + item.serial_no.split("\n")
-            updated_used = "\n".join([s.strip() for s in new_list if s.strip()])
-            frappe.db.set_value("Purchase Order Item", item.purchase_order_item, "custom_used_serials", updated_used)
+        if not item.purchase_order_item or not item.serial_no:
+            continue
+
+        # Fetch PO Item
+        po_item = frappe.db.get_value("Purchase Order Item",item.purchase_order_item,
+            ["custom_generated_serials","custom_used_serials"],as_dict=True)
+
+        if not po_item or not po_item.custom_generated_serials:
+            continue
+
+        all_serials = set(s.strip()for s in po_item.custom_generated_serials.split("\n") if s.strip())
+
+        used_existing = set(s.strip() for s in (po_item.custom_used_serials or "").split("\n") if s.strip())
+
+        used_new = set(s.strip() for s in item.serial_no.split("\n") if s.strip())
+
+        used_final = used_existing | used_new
+        unused_final = all_serials - used_final
+
+        frappe.db.set_value("Purchase Order Item",item.purchase_order_item,
+            {"custom_used_serials": "\n".join(sorted(used_final)),"custom_unused_serials": "\n".join(sorted(unused_final))}
+        )
+
 
 def restore_serials_on_grn_cancel(doc, method):
     for item in doc.items:
@@ -165,6 +162,172 @@ def on_submit(doc, method):
         )
 
     gate_entry.save(ignore_permissions=True)
+
+@frappe.whitelist()
+def validate_po_serial(scanned_serial, po_items):
+    """
+    Validate scanned serial:
+    1. Must exist in custom_generated_serials
+    2. Must NOT exist in custom_used_serials
+    """
+
+    if isinstance(po_items, str):
+        po_items = frappe.parse_json(po_items)
+
+    for poi in po_items:
+        values = frappe.db.get_value(
+            "Purchase Order Item",
+            poi,
+            ["custom_generated_serials", "custom_used_serials"],
+            as_dict=True
+        )
+
+        if not values or not values.custom_generated_serials:
+            continue
+
+        generated_serials = [
+            s.strip() for s in values.custom_generated_serials.split("\n")
+            if s.strip()
+        ]
+
+        used_serials = [
+            s.strip() for s in (values.custom_used_serials or "").split("\n")
+            if s.strip()
+        ]
+
+        # ❌ Already used serial validation
+        if scanned_serial in used_serials:
+            frappe.throw(
+                f"Serial No <b>{scanned_serial}</b> is already used and cannot be scanned again"
+            )
+
+        # ✅ Valid serial
+        if scanned_serial in generated_serials:
+            return {
+                "purchase_order_item": poi
+            }
+
+    # ❌ Serial not found in PO
+    frappe.throw(
+        f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
+    )
+
+def validate_item(doc, method=None):
+
+    # 🔹 Step 1: Check if ANY row has Purchase Order
+    po_ids = {row.purchase_order for row in doc.items if row.purchase_order}
+
+    # 🔹 If no PO in entire PR → skip validation
+    if not po_ids:
+        return
+
+    # 🔹 Step 2: Validate ALL rows against PO(s)
+    for row in doc.items:
+
+        if not row.purchase_order or not row.item_code:
+            continue
+
+        # 🔹 Fetch PO Item details
+        po_item = frappe.db.get_value(
+            "Purchase Order Item",
+            {
+                "parent": row.purchase_order,
+                "item_code": row.item_code
+            },
+            ["qty", "received_qty"],
+            as_dict=True
+        )
+
+        # 🔴 Item not found in PO
+        if not po_item:
+            frappe.throw(
+                f"Row {row.idx}: Item <b>{row.item_code}</b> does not belong to "
+                f"Purchase Order <b>{row.purchase_order}</b>"
+            )
+
+        # 🔹 Calculate remaining qty
+        remaining_qty = (po_item.qty or 0) - (po_item.received_qty or 0)
+
+        # 🔴 Qty validation
+        if row.qty > remaining_qty:
+            frappe.throw(
+                f"Row {row.idx}: Entered Qty <b>{row.qty}</b> is greater than "
+                f"remaining PO Qty <b>{remaining_qty}</b> "
+                f"for Item <b>{row.item_code}</b>"
+            )
+
+def assign_serials_from_po_on_submit(doc, method=None):
+    """
+    On submit of Purchase Receipt:
+    - Fetch serials from PO.custom_unused_serials
+    - If empty → fallback to PO.custom_generated_serials
+    - Assign serials based on qty
+    - Avoid duplicates & already scanned serials
+    """
+
+    for row in doc.items:
+
+        # 🔹 Skip if no PO item or qty
+        if not row.purchase_order_item or not row.qty:
+            continue
+
+        # 🔹 Fetch both fields
+        po_item = frappe.db.get_value(
+            "Purchase Order Item",
+            row.purchase_order_item,
+            ["custom_unused_serials", "custom_generated_serials"],
+            as_dict=True
+        )
+
+        if not po_item:
+            continue
+
+        # 🔹 Priority: unused → generated
+        source_serials = (
+            po_item.custom_unused_serials
+            or po_item.custom_generated_serials
+        )
+
+        if not source_serials:
+            frappe.throw(
+                f"No serial numbers found in Purchase Order for item {row.item_code}"
+            )
+
+        po_serial_list = [
+            s.strip() for s in source_serials.split("\n") if s.strip()
+        ]
+
+        # 🔹 Already scanned serials in PR
+        existing_serials = []
+        if row.serial_no:
+            existing_serials = [
+                s.strip() for s in row.serial_no.split("\n") if s.strip()
+            ]
+
+        # 🔹 Remove already used serials
+        available_serials = [
+            s for s in po_serial_list if s not in existing_serials
+        ]
+
+        # 🔹 Required serial count
+        required_qty = int(row.qty) - len(existing_serials)
+
+        if required_qty <= 0:
+            continue
+
+        # 🔹 Fetch required serials only
+        fetched_serials = available_serials[:required_qty]
+
+        if len(fetched_serials) < required_qty:
+            frappe.throw(
+                f"Not enough serial numbers available in Purchase Order for item {row.item_code}"
+            )
+
+        # 🔹 Merge existing + fetched
+        final_serials = existing_serials + fetched_serials
+
+        row.serial_no = "\n".join(final_serials)
+
 
 def on_cancel(doc, method):
         if not doc.custom_gate_entry:

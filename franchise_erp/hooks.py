@@ -53,9 +53,11 @@ doc_events = {
         "before_save": "franchise_erp.custom.purchase_order.apply_purchase_term_freight"
     },
     "Purchase Receipt": {
-        "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_to_grn",
+        "validate":"franchise_erp.custom.purchase_reciept.validate_item",
+        "before_submit": "franchise_erp.custom.purchase_reciept.assign_serials_from_po_on_submit",
         "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
-                      "franchise_erp.custom.purchase_reciept.on_submit"],
+                      "franchise_erp.custom.purchase_reciept.on_submit",
+                      ],
 
         "on_cancel": ["franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel",
                        "franchise_erp.custom.purchase_reciept.on_cancel" ]
@@ -95,7 +97,8 @@ doctype_js = {
     "Address":"public/js/address.js",
     "Supplier": "public/js/supplier.js",
     "Promotional Scheme":"public/js/promotional_scheme.js",
-    "Product Bundle": "public/js/product_bundle.js"
+    "Product Bundle": "public/js/product_bundle.js",
+    "Purchase Receipt":"public/js/purchase_receipt.js"
 }
 
 
