@@ -1,10 +1,10 @@
 frappe.ui.form.on("Purchase Receipt", {
-    scan_barcode(frm) {
-        let scanned_serial = frm.doc.scan_barcode;
+    custom_scan_serial_no(frm) {
+        let scanned_serial = frm.doc.custom_scan_serial_no;
         if (!scanned_serial) return;
 
         // ===============================
-        // 1️⃣ Duplicate scan prevention  scan_barcode
+        // 1️⃣ Duplicate scan prevention  custom_scan_serial_no
         // ===============================
         let already_scanned = false;
 
@@ -54,7 +54,7 @@ frappe.ui.form.on("Purchase Receipt", {
                 frm.refresh_field("items");
             },
             always() {
-        frm.set_value("scan_barcode", "");
+        frm.set_value("custom_scan_serial_no", "");
     }
         });
     }
