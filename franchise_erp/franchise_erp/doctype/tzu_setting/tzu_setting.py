@@ -23,3 +23,4 @@ class TZUSetting(Document):
 					f"Box Barcode Series Length cannot be greater than {self.box_barcode_series_length}"
 				)
 
+

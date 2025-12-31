@@ -96,6 +96,7 @@ frappe.ui.form.on("Gate Entry", {
             }
         });
     },
+    
 
     //BLOCK SUBMIT IF ANY BOX IS PENDING
     before_submit(frm) {

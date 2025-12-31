@@ -122,13 +122,20 @@ frappe.ui.form.on("Purchase Order", {
         frm.add_custom_button(
             __("Incoming Logistics"),
             () => {
+                let total_qty = 0;
+
+                // 🔹 Sum all item quantities from PO
+                (frm.doc.items || []).forEach(row => {
+                    total_qty += flt(row.qty);
+                });
                 frappe.new_doc("Incoming Logistics", {
                     purchase_no: frm.doc.name,
                     consignor: frm.doc.supplier,
                     type: "Purchase",
                     owner_site: frm.doc.company,
                     transporter: transporter,
-                    gate_entry: "Yes"
+                    gate_entry: "Yes",
+                    received_qty: total_qty,
                 });
             },
             __("Create")

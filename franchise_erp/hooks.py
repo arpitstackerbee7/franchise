@@ -43,13 +43,13 @@ doc_events = {
    
    "Sales Invoice": {
         "before_save": ["franchise_erp.custom.sales_invoice.apply_sis_pricing",
-        "franchise_erp.custom.promotional_scheme.apply_promotions",
-        "franchise_erp.custom.sales_invoice.update_packed_items_serial_no"
+        # "franchise_erp.custom.promotional_scheme.apply_promotions"
         ]
     },
-
     "Purchase Order": {
-        "on_submit": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit"
+        "on_submit": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
+        # "validate": "franchise_erp.custom.purchase_order.validate_purchase_order"
+
     },
     "Purchase Receipt": {
         "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_to_grn",
@@ -60,13 +60,7 @@ doc_events = {
 
 
     },
-    
-    # "Sales Invoice": {
-    #     "before_save": ["franchise_erp.custom.sales_invoice_hooks.before_save","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
-    #     "before_submit": ["franchise_erp.custom.sales_invoice_validation.before_submit","franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"],
-    #     "on_submit": ["franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins","franchise_erp.custom.sales_invoice_hooks.force_margin_totals_after_submit"],
-    #     "on_update_after_submit":"franchise_erp.custom.reset_custom_margins_si_pi.reset_custom_margins"
-    # },
+
 
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
@@ -82,18 +76,20 @@ doc_events = {
     #     "validate": "franchise_erp.custom.supplier.validate_supplier"
     # },
     
-    # "Item Group Tree": {
-    #     "validate": "franchise_erp.custom.item_group_tree.validate_unique_combination"
-    # }
+    
+ 
      "Gate Entry": {
         "on_submit": "franchise_erp.custom.gate_entry.on_submit",
-        "on_cancel": "franchise_erp.custom.gate_entry.on_cancel"
+        "on_cancel": "franchise_erp.custom.gate_entry.on_cancel",
+         "after_insert": "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.set_document_no"
     },
     "Product Bundle":{
         "after_insert":"franchise_erp.custom.product_bundle.set_product_bundle_series"
     }
 
 }
+
+
 
 
 doctype_js = {

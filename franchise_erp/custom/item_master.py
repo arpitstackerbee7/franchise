@@ -124,11 +124,17 @@ def apply_tzu_setting(doc, method):
     if not doc.is_stock_item:
         return
 
+    if not doc.stock_uom:
+        frappe.throw("Stock UOM is mandatory for Stock Item")
+
     tzu = frappe.get_single("TZU Setting")
+
     serial_uom_list = get_uoms_from_tzu("serial_no_uom")
     batch_uom_list = get_uoms_from_tzu("batch_uom")
+
     stock_uom = (doc.stock_uom or "").strip()
 
+    # RESET FLAGS
     doc.has_serial_no = 0
     doc.has_batch_no = 0
     doc.create_new_batch = 0
@@ -138,15 +144,26 @@ def apply_tzu_setting(doc, method):
     prefix = tzu.serialno_series or "T"
     random_series = random.randint(100000, 999999)
 
+    # ✅ SERIAL MATCH
     if stock_uom in serial_uom_list:
         doc.has_serial_no = 1
         doc.serial_no_series = f"{prefix}{random_series}.#####"
 
+    # ✅ BATCH MATCH
     elif stock_uom in batch_uom_list:
         doc.has_batch_no = 1
         doc.create_new_batch = 1
         doc.batch_number_series = f"{prefix}{random_series}.#####"
 
+    #NOT CONFIGURED → BLOCK SAVE
+    else:
+        frappe.throw(
+            f"""
+            Stock UOM <b>{stock_uom}</b> is not configured.<br><br>
+            <b>Serial No UOMs:</b> {", ".join(serial_uom_list) or "None"}<br>
+            <b>Batch UOMs:</b> {", ".join(batch_uom_list) or "None"}
+            """
+        )
 
 
 def get_next_series(base_code):

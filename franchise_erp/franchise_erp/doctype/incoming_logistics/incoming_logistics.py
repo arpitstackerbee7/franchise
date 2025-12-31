@@ -48,6 +48,7 @@ class IncomingLogistics(Document):
             row.status = "Pending"
 
 
+
     # def on_submit(self):
     #     self.create_gate_entry_box_barcodes()
 

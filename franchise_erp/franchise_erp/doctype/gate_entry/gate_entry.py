@@ -113,6 +113,7 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
     return "OK"
 
 
+
 import frappe
 from frappe.model.mapper import get_mapped_doc
 
@@ -157,3 +158,13 @@ def create_purchase_receipt(gate_entry):
     pr.insert(ignore_permissions=True)
 
     return pr.name
+
+
+def set_document_no(doc, method):
+    if not doc.document_no:
+        frappe.db.set_value(
+            doc.doctype,
+            doc.name,
+            "document_no",
+            doc.name
+        )

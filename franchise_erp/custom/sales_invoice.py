@@ -132,6 +132,8 @@ def calculate_sis_values(customer, rate):
 #     doc.calculate_taxes_and_totals()
     
 
+from frappe.utils import flt
+
 def apply_sis_pricing(doc, method=None):
 
     if not doc.customer:
@@ -139,14 +141,20 @@ def apply_sis_pricing(doc, method=None):
 
     for item in doc.items:
 
-        # 🔒 STEP 1: Already calculated? Then SKIP
-        if item.custom_sis_calculated:
+        # 🟢 Old qty from DB (None if new row)
+        old_qty = item.get_db_value("qty")
+
+        # 🔒 CASE 1: Already calculated AND qty NOT changed → SKIP
+        if item.custom_sis_calculated and old_qty is not None and flt(item.qty) == flt(old_qty):
             continue
 
-        if not item.rate:
-            continue
+        # 🟢 No rate? Skip
+        # if not item.rate:
+        #     continue
 
-        # Call SIS calculation
+        # 🔁 Call SIS calculation ONLY when:
+        # - New row
+        # - OR qty changed
         d = calculate_sis_values(doc.customer, item.rate)
 
         if not d:
@@ -171,11 +179,12 @@ def apply_sis_pricing(doc, method=None):
             d.get("gst_percent", 0)
         )
 
-        # 🔒 MARK AS CALCULATED
+        # 🔒 Mark calculated
         item.custom_sis_calculated = 1
 
-    # Tax recalculation (safe)
+    # 🔁 Recalculate taxes safely
     doc.calculate_taxes_and_totals()
+
 
 def get_item_tax_template(gst_percent):
     if gst_percent == 5:
