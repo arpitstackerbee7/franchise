@@ -17,6 +17,7 @@
   "type",
   "consignor",
   "document_date",
+  "status",
   "column_break_cred",
   "gate_entry",
   "site",
@@ -234,6 +235,13 @@
    "fieldtype": "Link",
    "label": "Purchase order ",
    "options": "Purchase Order"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSubmitted\nPartially Received\nFully Received\nCancelled"
   }
  ],
  "grid_page_length": 50,
@@ -245,7 +253,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2025-12-31 13:07:23.478951",
+ "modified": "2025-12-31 18:35:17.060136",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
@@ -270,5 +278,26 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Blue",
+   "title": "Draft"
+  },
+  {
+   "color": "Green",
+   "title": "Submitted"
+  },
+  {
+   "color": "Orange",
+   "title": "Partially Received"
+  },
+  {
+   "color": "Purple",
+   "title": "Fully Received"
+  },
+  {
+   "color": "Red",
+   "title": "Cancelled"
+  }
+ ]
 }

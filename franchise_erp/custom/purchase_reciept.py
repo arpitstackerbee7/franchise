@@ -76,34 +76,88 @@ def restore_serials_on_grn_cancel(doc, method):
 #     gate_entry.save(ignore_permissions=True)
 
 
+# def on_submit(doc, method):
+#     if not doc.custom_gate_entry:
+#         return
+
+#     gate_entry = frappe.get_doc("Gate Entry", doc.custom_gate_entry)
+
+#     # 🔢 Total Qty of Purchase Receipt
+#     total_qty = sum(item.qty for item in doc.items)
+
+#     # ➕ ALWAYS APPEND NEW ROW (NO CLEAR)
+#     row = gate_entry.append("received_details", {})
+
+#     # Purchase Receipt info
+#     row.document_no = doc.name
+#     row.document_date = doc.posting_date
+#     row.item_qty = total_qty
+#     row.amounts = doc.total
+
+#     # Gate Entry mapping
+#     row.entry_no = gate_entry.name
+#     row.entry_date = gate_entry.date
+#     row.ge_qty = gate_entry.lr_quantity
+
+#     # 🔢 Optional: update cumulative totals
+#     if hasattr(gate_entry, "total_qty"):
+#         gate_entry.total_qty = sum(
+#             (d.item_qty or 0) for d in gate_entry.received_details
+#         )
+
+#     if hasattr(gate_entry, "total"):
+#         gate_entry.total = sum(
+#             (d.amounts or 0) for d in gate_entry.received_details
+#         )
+
+#     gate_entry.save(ignore_permissions=True)
+
+
+# purchase_receipt.py
+
 def on_submit(doc, method):
     if not doc.custom_gate_entry:
         return
 
     gate_entry = frappe.get_doc("Gate Entry", doc.custom_gate_entry)
 
-    # 🔢 Total Qty of Purchase Receipt
-    total_qty = sum(item.qty for item in doc.items)
+    # 🔢 Current PR Total Qty
+    pr_total_qty = sum(item.qty for item in doc.items)
 
-    # ➕ ALWAYS APPEND NEW ROW (NO CLEAR)
+    # ➕ Append new received row (NO CLEAR)
     row = gate_entry.append("received_details", {})
 
     # Purchase Receipt info
     row.document_no = doc.name
     row.document_date = doc.posting_date
-    row.item_qty = total_qty
+    row.item_qty = pr_total_qty
     row.amounts = doc.total
 
-    # Gate Entry mapping
+    # Gate Entry info
     row.entry_no = gate_entry.name
     row.entry_date = gate_entry.date
     row.ge_qty = gate_entry.lr_quantity
 
-    # 🔢 Optional: update cumulative totals
+    # 🔢 Total Received Qty till now
+    total_received_qty = sum(
+        (d.item_qty or 0) for d in gate_entry.received_details
+    )
+
+    # 🔢 PO Total Qty
+    po_total_qty = 0
+    if gate_entry.purchase_order:
+        po = frappe.get_doc("Purchase Order", gate_entry.purchase_order)
+        po_total_qty = sum(item.qty for item in po.items)
+
+    # 🔄 Update Gate Entry Status
+    if total_received_qty >= po_total_qty:
+        gate_entry.status = "Fully Received"
+    else:
+        gate_entry.status = "Partially Received"
+
+    # 🔢 Optional cumulative fields
     if hasattr(gate_entry, "total_qty"):
-        gate_entry.total_qty = sum(
-            (d.item_qty or 0) for d in gate_entry.received_details
-        )
+        gate_entry.total_qty = total_received_qty
 
     if hasattr(gate_entry, "total"):
         gate_entry.total = sum(
