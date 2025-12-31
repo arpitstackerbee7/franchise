@@ -86,6 +86,6 @@ class IncomingLogistics(Document):
             self.append(table_field, {
                 "incoming_logistics_no": self.name,
                 "box_barcode": f"{box_series}-{random_5_digit}-{box_no}",
-                "total_barcode": qty,
+                "total_barcode_qty": qty,
                 "status": "Pending"
             })
