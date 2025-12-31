@@ -12,8 +12,18 @@ class GateEntry(Document):
         if not self.document_no:
             # Directly set in the doc to avoid extra DB call
             self.document_no = self.name
+    # gate_entry.py
+
+    def on_save(doc, method):
+        # Jab tak submit nahi hua
+        if doc.docstatus == 0:
+            if doc.status != "Draft":
+                doc.status = "Draft"
+
 
     def on_submit(self):
+        self.status = "Submitted"
+
         """Triggered when Gate Entry is submitted"""
         if not self.incoming_logistics:
             frappe.throw("Incoming Logistics is required")
@@ -25,7 +35,9 @@ class GateEntry(Document):
         il_doc.gate_entry_no = self.name
 
         il_doc.save(ignore_permissions=True)
-        frappe.db.commit()  # Ensure changes are saved immediately
+        frappe.db.commit() 
+        # gate_entry.py
+
 
     def on_cancel(self):
         """Triggered when Gate Entry is cancelled"""
