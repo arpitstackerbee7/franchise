@@ -26,18 +26,21 @@ frappe.ui.form.on("Item", {
 // fetch according to custom_silvet
 frappe.ui.form.on('Item', {
     custom_silvet(frm) {
-        console.log("Silvet selected:", frm.doc.custom_silvet);
+        // If custom_silvet is empty, clear dependent fields
+        if (!frm.doc.custom_silvet) {
+            frm.set_value('custom_departments', '');
+            frm.set_value('custom_group_collection', '');
+            frm.set_value('item_group', '');
+            return;
+        }
 
-        if (!frm.doc.custom_silvet) return;
-
+        // If custom_silvet has a value, fetch parent groups
         frappe.call({
             method: 'franchise_erp.custom.item_group.get_item_group_parents',
             args: {
                 child_group: frm.doc.custom_silvet
             },
             callback: function (r) {
-                console.log("Server response:", r.message);
-
                 if (!r.message) return;
 
                 frm.set_value('custom_departments', r.message.department || '');
@@ -48,24 +51,9 @@ frappe.ui.form.on('Item', {
     }
 });
 
+
 // end fetch according to custom_silvet
 
-
-
-
-
-
-// frappe.ui.form.on('Item', {
-//     setup(frm) {
-//         frm.set_query("custom_silvet", function () {
-//             return {
-//                 filters: {
-//                     is_group: 0
-//                 }
-//             };
-//         });
-//     }
-// });
 
 
 // main code
