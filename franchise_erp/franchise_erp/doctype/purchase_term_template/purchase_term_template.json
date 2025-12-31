@@ -9,7 +9,6 @@
   "active",
   "term_name",
   "trade_group",
-  "gst_template",
   "purchase_term_charges"
  ],
  "fields": [
@@ -31,12 +30,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "gst_template",
-   "fieldtype": "Link",
-   "label": "GST Template",
-   "options": "Purchase Taxes and Charges Template"
-  },
-  {
    "default": "0",
    "fieldname": "active",
    "fieldtype": "Check",
@@ -52,7 +45,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-30 15:35:23.085308",
+ "modified": "2025-12-31 10:37:25.488769",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Purchase Term Template",
