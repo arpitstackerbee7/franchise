@@ -61,7 +61,6 @@ doc_events = {
                        "franchise_erp.custom.purchase_reciept.on_cancel" ]
         
 
-
     },
 
    "Item": {
