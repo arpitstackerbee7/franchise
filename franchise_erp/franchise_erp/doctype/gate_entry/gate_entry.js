@@ -26,6 +26,8 @@ frappe.ui.form.on("Gate Entry", {
                             child.box_barcode = row.box_barcode;
                             child.incoming_logistics_no = row.incoming_logistics_no;
                             child.status = row.status;
+                            child.total_barcode_qty = row.total_barcode_qty;
+                            child.scan_date_time = row.scan_date_time;
                         });
                     }
 
@@ -42,7 +44,8 @@ frappe.ui.form.on("Gate Entry", {
 
 // scan box barcode
 frappe.ui.form.on("Gate Entry", {
-    scan_barcode: function(frm) {
+
+    scan_barcode(frm) {
         let barcode = frm.doc.scan_barcode;
         if (!barcode) return;
 
@@ -76,18 +79,37 @@ frappe.ui.form.on("Gate Entry", {
                 box_barcode: barcode,
                 incoming_logistics_no: frm.doc.incoming_logistics
             },
-            callback: function() {
+            callback: function(r) {
+
+                // update child row locally
                 row.status = "Received";
+                row.scan_date_time = frappe.datetime.now_datetime();
+
                 frm.refresh_field("gate_entry_box_barcode");
 
                 frappe.show_alert({
-                    message: "Box marked as Received",
+                    message: __("Box marked as Received"),
                     indicator: "green"
                 });
 
                 frm.set_value("scan_barcode", "");
             }
         });
+    },
+    
+
+    //BLOCK SUBMIT IF ANY BOX IS PENDING
+    before_submit(frm) {
+        let pending = frm.doc.gate_entry_box_barcode.filter(
+            r => r.status !== "Received"
+        );
+
+        if (pending.length > 0) {
+            frappe.throw(
+                `You cannot submit Gate Entry.<br>
+                 Pending Boxes: <b>${pending.length}</b>`
+            );
+        }
     }
 });
 

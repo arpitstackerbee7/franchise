@@ -116,7 +116,7 @@
   {
    "fieldname": "lr_document_no",
    "fieldtype": "Data",
-   "label": "LR, Document No"
+   "label": "LR Document No"
   },
   {
    "allow_in_quick_entry": 1,
@@ -194,7 +194,7 @@
   {
    "fieldname": "received_qty",
    "fieldtype": "Data",
-   "label": "Received Qty"
+   "label": "Quantity as per Invoice"
   },
   {
    "fieldname": "station_from",
@@ -292,7 +292,7 @@
   {
    "fieldname": "purchase_no",
    "fieldtype": "Data",
-   "label": "Purchase No",
+   "label": "Purchase Order No",
    "read_only": 1
   },
   {
@@ -345,7 +345,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2025-12-29 18:56:12.613142",
+ "modified": "2025-12-31 11:11:32.631297",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

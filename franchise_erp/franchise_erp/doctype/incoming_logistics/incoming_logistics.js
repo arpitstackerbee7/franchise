@@ -227,8 +227,10 @@ frappe.ui.form.on("Incoming Logistics", {
                     type: frm.doc.type,
                     date: frm.doc.date,
                     gate_entry_box_barcode: frm.doc.gate_entry_box_barcode,
-                    lr_quantity: frm.doc.received_qty - frm.doc.lr_quantity,
+                    lr_quantity: frm.doc.lr_quantity,
                     purchase_order: frm.doc.purchase_no,
+                    lr_entry_no:frm.doc.lr_document_no,
+                    declaration_amount:frm.doc.declaration_amount
                 };
 
                 frappe.set_route("Form", "Gate Entry", "new-gate-entry");
@@ -242,6 +244,7 @@ frappe.ui.form.on("Incoming Logistics", {
     //     }
     // }
 });
+
 
 
 
