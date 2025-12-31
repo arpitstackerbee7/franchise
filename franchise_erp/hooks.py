@@ -49,8 +49,8 @@ doc_events = {
     },
     "Purchase Order": {
         "on_submit": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
-        # "validate": "franchise_erp.custom.purchase_order.validate_purchase_order"
-
+        "before_validate": ["franchise_erp.custom.purchase_order.apply_purchase_term"],
+        "before_save": "franchise_erp.custom.purchase_order.apply_purchase_term_freight"
     },
     "Purchase Receipt": {
         "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_to_grn",
@@ -58,10 +58,7 @@ doc_events = {
                       "franchise_erp.custom.purchase_reciept.on_submit"],
 
         "on_cancel": "franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel",
-
-
     },
-
 
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
@@ -131,6 +128,10 @@ app_include_js = [
     ]
 
 
+
+doctype_tree_js = {
+    "Item Group": "public/js/item_group_tree.js"
+}
 
 # include js, css files in header of web template
 # web_include_css = "/assets/franchise_erp/css/franchise_erp.css"
