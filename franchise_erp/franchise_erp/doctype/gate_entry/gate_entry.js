@@ -157,13 +157,12 @@ function validate_not_future(frm, fieldname) {
     }
 }
 
-
 frappe.ui.form.on("Gate Entry", {
     refresh(frm) {
-        // Sirf Submitted Gate Entry par
+        // Only Submitted Gate Entry
         if (frm.doc.docstatus !== 1) return;
 
-        // PO mandatory
+        // Purchase Order mandatory
         if (!frm.doc.purchase_order) return;
 
         frappe.db.get_doc("Purchase Order", frm.doc.purchase_order).then(po => {
@@ -173,7 +172,7 @@ frappe.ui.form.on("Gate Entry", {
                 let ordered_qty = flt(item.qty);
                 let received_qty = flt(item.received_qty);
 
-                // 🔥 Difference check
+                // Show button if partial qty pending
                 if (ordered_qty !== received_qty) {
                     show_button = true;
                 }
@@ -190,9 +189,11 @@ frappe.ui.form.on("Gate Entry", {
                             gate_entry: frm.doc.name
                         },
                         callback(r) {
-                            if (r.message) {
-                                frappe.set_route("Form", "Purchase Receipt", r.message);
-                            }
+                            if (!r.message) return;
+
+                            // 🔥 IMPORTANT PART
+                            let doc = frappe.model.sync(r.message)[0];
+                            frappe.set_route("Form", doc.doctype, doc.name);
                         }
                     });
                 },
@@ -201,7 +202,6 @@ frappe.ui.form.on("Gate Entry", {
         });
     }
 });
-
 
 
 frappe.ui.form.on("Gate Entry", {

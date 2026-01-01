@@ -101,7 +101,9 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
     frappe.db.commit()
 
     return "OK"
-   
+
+
+
 from frappe.model.mapper import get_mapped_doc
 import frappe
 
@@ -113,17 +115,12 @@ def create_purchase_receipt(gate_entry):
         frappe.throw("Purchase Order is not linked in Gate Entry")
 
     def update_item(source, target, source_parent):
-        # Keep qty empty so user can fill manually
-        target.qty = 1  # ❌ do NOT set 0
+        target.qty = 0
         target.received_qty = 0
         target.stock_qty = 0
-
-        # Clear serial_no
         target.serial_no = ""
-
         return target
 
-    # Map Purchase Order → Purchase Receipt
     pr = get_mapped_doc(
         "Purchase Order",
         gate_entry_doc.purchase_order,
@@ -139,19 +136,20 @@ def create_purchase_receipt(gate_entry):
                     "parent": "purchase_order",
                 },
                 "postprocess": update_item,
-                "condition": lambda doc: True
             }
         }
     )
 
-    # Custom linking from Gate Entry
+    # Gate Entry linking
     pr.custom_gate_entry = gate_entry_doc.name
     pr.posting_date = gate_entry_doc.date
     pr.set_posting_time = 1
     pr.supplier = gate_entry_doc.consignor
     pr.company = gate_entry_doc.owner_site
 
-    # ✅ Insert in draft mode, let user fill qty & serial_no
-    pr.insert(ignore_permissions=True)
+    # 🔥 VERY IMPORTANT
+    pr.name = None
+    pr.__islocal = 1
 
-    return pr.name
+    return pr.as_dict()
+
