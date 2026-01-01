@@ -1,7 +1,8 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-12-29 18:11:46.247441",
+ "autoname": "field:bottom_fabric",
+ "creation": "2026-01-01 12:50:19.328580",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -13,16 +14,18 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Bottom Fabric",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-29 18:23:01.486974",
+ "modified": "2026-01-01 13:30:34.922649",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Bottom Fabric",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

@@ -131,3 +131,32 @@ class IncomingLogistics(Document):
                 "total_barcode_qty": qty,
                 "status": "Pending"
             })
+
+
+    def validate(self):
+        self.validate_unique_lr_per_transporter()
+
+    def validate_unique_lr_per_transporter(self):
+        # Skip if values missing
+        if not self.transporter or not self.lr_document_no:
+            return
+
+        duplicate = frappe.db.exists(
+            "Incoming Logistics",
+            {
+                "transporter": self.transporter,
+                "lr_document_no": self.lr_document_no,
+                "name": ["!=", self.name],
+                "docstatus": ["<", 2]   # Draft + Submitted
+            }
+        )
+
+        if duplicate:
+            frappe.throw(
+                title="Duplicate LR Document No",
+                msg=(
+                    f"LR Document No <b>{self.lr_document_no}</b> "
+                    f"already exists for Transporter <b>{self.transporter}</b>.<br><br>"
+                    "Please use a different LR Document No."
+                )
+            )

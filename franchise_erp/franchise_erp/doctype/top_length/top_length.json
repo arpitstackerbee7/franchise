@@ -1,7 +1,8 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-12-29 18:11:45.202022",
+ "autoname": "field:top_length",
+ "creation": "2026-01-01 12:50:18.157482",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -13,16 +14,18 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Top Length",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-29 18:24:23.183829",
+ "modified": "2026-01-01 13:34:21.484605",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Top Length",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {

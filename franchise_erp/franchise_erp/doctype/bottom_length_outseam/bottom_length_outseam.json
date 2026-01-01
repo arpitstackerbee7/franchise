@@ -1,7 +1,8 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-12-29 18:11:44.989173",
+ "autoname": "field:bottom_length_outseam",
+ "creation": "2026-01-01 12:50:17.952276",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -13,16 +14,18 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Bottom Length Outseam",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-29 18:24:47.467296",
+ "modified": "2026-01-01 13:35:31.442795",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Bottom Length Outseam",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
