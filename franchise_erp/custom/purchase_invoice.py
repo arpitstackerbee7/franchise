@@ -1,5 +1,6 @@
 import frappe
 from frappe.utils import flt
+from frappe.utils import add_days
 
 def apply_intercompany_gst(doc, method=None):
 
@@ -54,3 +55,16 @@ def apply_intercompany_gst(doc, method=None):
     # -----------------------------
     doc.set_taxes()
     doc.calculate_taxes_and_totals()
+
+def set_due_date(doc, method):
+    if not doc.supplier or not doc.posting_date:
+        return
+
+    supplier_days = frappe.db.get_value(
+        "Supplier",
+        doc.supplier,
+        "custom_invoice_due_date_based_on"
+    )
+
+    if supplier_days:
+        doc.due_date = add_days(doc.posting_date, int(supplier_days))

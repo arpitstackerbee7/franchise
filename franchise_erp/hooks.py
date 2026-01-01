@@ -32,7 +32,8 @@ doc_events = {
 
    "Purchase Invoice": {
        "before_save": "franchise_erp.custom.purchase_invoice.apply_intercompany_gst",
-       "validate": "franchise_erp.custom.purchase_invoice_hooks.apply_item_gst",
+       "validate": ["franchise_erp.custom.purchase_invoice_hooks.apply_item_gst",
+                    "franchise_erp.custom.purchase_invoice.set_due_date"],
        "before_submit": "franchise_erp.custom.purchase_invoice_hooks.update_serial_input_gst",
        "before_insert": "franchise_erp.custom.customs.set_customer_email_as_owner",
        "on_submit": "franchise_erp.custom.purchase_invoice_hooks.calculate_single_item_gst"
