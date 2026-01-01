@@ -375,15 +375,15 @@ fixtures = [
         {"dt": "Property Setter"}
         ]
 
-# fixtures = [
-#     {
-#         "dt": "DocType",
-#         # "filters": [
-#         #     ["module", "=", "Franchise Erp"],
-#         #     ["custom", "=", 1]
-#         # ]
-#     }
-# ]
+fixtures = [
+    {
+        "dt": "DocType",
+        "filters": [
+            ["module", "=", "Franchise Erp"],
+            ["custom", "=", 0]
+        ]
+    }
+]
 
 # fixtures = [
 #     {

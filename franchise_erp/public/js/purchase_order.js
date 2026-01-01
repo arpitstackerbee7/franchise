@@ -91,7 +91,7 @@ frappe.ui.form.on("Purchase Order", {
         );
 
         const gate_entry_enabled = supplier_res?.message?.custom_gate_entry;
-        const transporter = supplier_res?.message?.custom_transporter || null;
+        const transporter = supplier_res?.message?.custom_transporter;
 
         // 4️⃣ Agar Supplier master me Gate Entry unchecked hai
         if (!gate_entry_enabled) {

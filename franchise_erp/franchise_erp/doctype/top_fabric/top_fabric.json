@@ -2,11 +2,12 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:top_fabric",
- "creation": "2026-01-01 12:50:19.539436",
+ "creation": "2026-01-01 15:18:38.391666",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "top_fabric"
+  "top_fabric",
+  "amended_from"
  ],
  "fields": [
   {
@@ -16,12 +17,23 @@
    "label": "Top Fabric",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Top Fabric",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-01-01 13:29:26.762767",
+ "modified": "2026-01-01 15:38:01.850955",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Top Fabric",
@@ -45,5 +57,7 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1
 }
