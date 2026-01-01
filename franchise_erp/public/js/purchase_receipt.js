@@ -8,6 +8,11 @@ frappe.ui.form.on("Purchase Receipt", {
                 row.qty = 0;
             }
         });
+        (frm.doc.items || []).forEach(row => {
+            if (row.purchase_order_item) {
+                row.serial_no = "";
+            }
+        });
 
         frm.refresh_field("items");
     },

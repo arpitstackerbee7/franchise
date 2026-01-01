@@ -101,8 +101,7 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
     frappe.db.commit()
 
     return "OK"
-
-
+   
 from frappe.model.mapper import get_mapped_doc
 import frappe
 
@@ -114,68 +113,45 @@ def create_purchase_receipt(gate_entry):
         frappe.throw("Purchase Order is not linked in Gate Entry")
 
     def update_item(source, target, source_parent):
-        remaining_qty = (source.qty or 0) - (source.received_qty or 0)
+        # Keep qty empty so user can fill manually
+        target.qty = 1  # ❌ do NOT set 0
+        target.received_qty = 0
+        target.stock_qty = 0
 
-        # ❌ Nothing to receive
-        if remaining_qty <= 0:
-            return None
+        # Clear serial_no
+        target.serial_no = ""
 
-        # ✅ Qty set
-        target.qty = remaining_qty
-        target.received_qty = remaining_qty
-        target.stock_qty = remaining_qty * (source.conversion_factor or 1)
+        return target
 
-        # ✅ SERIAL FIX (USING custom_generated_serials)
-        if source.custom_generated_serials:
-            serial_list = [
-                s.strip()
-                for s in source.custom_generated_serials.split("\n")
-                if s.strip()
-            ]
-
-            # Qty ke basis par serials lo
-            allowed_serials = serial_list[:int(remaining_qty)]
-
-            target.serial_no = "\n".join(allowed_serials)
-        else:
-            target.serial_no = None
-
+    # Map Purchase Order → Purchase Receipt
     pr = get_mapped_doc(
         "Purchase Order",
         gate_entry_doc.purchase_order,
         {
             "Purchase Order": {
                 "doctype": "Purchase Receipt",
-                "field_map": {
-                    "name": "purchase_order"
-                }
+                "field_map": {"name": "purchase_order"}
             },
             "Purchase Order Item": {
                 "doctype": "Purchase Receipt Item",
                 "field_map": {
                     "name": "purchase_order_item",
-                    "parent": "purchase_order"
+                    "parent": "purchase_order",
                 },
                 "postprocess": update_item,
-                "condition": lambda doc: (doc.qty or 0) > (doc.received_qty or 0)
+                "condition": lambda doc: True
             }
         }
     )
 
-    return pr
-
-
-    # 🔗 Custom linking
+    # Custom linking from Gate Entry
     pr.custom_gate_entry = gate_entry_doc.name
     pr.posting_date = gate_entry_doc.date
     pr.set_posting_time = 1
     pr.supplier = gate_entry_doc.consignor
     pr.company = gate_entry_doc.owner_site
 
+    # ✅ Insert in draft mode, let user fill qty & serial_no
     pr.insert(ignore_permissions=True)
+
     return pr.name
-
-
-
-
-
