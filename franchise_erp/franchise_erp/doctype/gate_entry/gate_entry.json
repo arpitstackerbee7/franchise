@@ -166,8 +166,8 @@
   {
    "fieldname": "lr_entry_no",
    "fieldtype": "Data",
-   "label": "LR Entry No.",
-   "reqd": 1
+   "hidden": 1,
+   "label": "LR Entry No."
   },
   {
    "fieldname": "lr_entry_date",
@@ -248,7 +248,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-01-01 11:55:33.879545",
+ "modified": "2026-01-01 12:11:01.034392",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
