@@ -108,3 +108,55 @@ function apply_gst_on_items(frm) {
         });
     });
 }
+
+frappe.ui.form.on("Purchase Invoice", {
+    supplier(frm) {
+        calculate_due_date(frm);
+    },
+    posting_date(frm) {
+        calculate_due_date(frm);
+    },
+    bill_date(frm) {
+        calculate_due_date(frm);
+    }
+});
+
+function calculate_due_date(frm) {
+    if (!frm.doc.supplier) return;
+
+    frappe.db.get_value(
+        "Supplier",
+        frm.doc.supplier,
+        [
+            "custom_invoice_due_date_based_on",
+            "custom_invoice_due_date_days"
+        ]
+    ).then(r => {
+        if (!r.message) return;
+
+        let based_on = r.message.custom_invoice_due_date_based_on;
+        let days = cint(r.message.custom_invoice_due_date_days || 0);
+
+        if (!days) return;
+
+        let base_date = null;
+
+        if (based_on === "Posting Date" && frm.doc.posting_date) {
+            base_date = frm.doc.posting_date;
+        }
+
+        if (based_on === "Supplier Invoice Date" && frm.doc.bill_date) {
+            base_date = frm.doc.bill_date;
+        }
+
+        if (!base_date) return;
+
+        // 🔑 Run AFTER ERPNext internal logic
+        frappe.after_ajax(() => {
+            setTimeout(() => {
+                let due_date = frappe.datetime.add_days(base_date, days);
+                frm.set_value("due_date", due_date);
+            }, 300);
+        });
+    });
+}
