@@ -7,8 +7,6 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_2avj",
-  "amended_from",
   "general_section",
   "owner_site",
   "date",
@@ -39,13 +37,10 @@
   "others_section",
   "remarks",
   "section_break_rsit",
-  "received_details"
+  "received_details",
+  "amended_from"
  ],
  "fields": [
-  {
-   "fieldname": "section_break_2avj",
-   "fieldtype": "Section Break"
-  },
   {
    "fieldname": "amended_from",
    "fieldtype": "Link",
@@ -253,7 +248,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-01-01 11:48:09.791853",
+ "modified": "2026-01-01 11:55:33.879545",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

@@ -16,8 +16,6 @@ class GateEntry(Document):
 
     def on_save(doc, method):
         # Jab tak submit nahi hua
-        if doc.docstatus == 0:
-            if doc.status != "Draft":
                 doc.status = "Draft"
 
 
@@ -40,28 +38,28 @@ class GateEntry(Document):
 
 
     def on_cancel(self):
-    """Triggered when Gate Entry is cancelled"""
+        """Triggered when Gate Entry is cancelled"""
 
-    # ✅ Update Gate Entry status
-    if hasattr(self, "status"):
-        frappe.db.set_value(
-            self.doctype,
-            self.name,
-            "status",
-            "Cancelled"
-        )
+        # ✅ Update Gate Entry status
+        if hasattr(self, "status"):
+            frappe.db.set_value(
+                self.doctype,
+                self.name,
+                "status",
+                "Cancelled"
+            )
 
-    # 🔁 Revert Incoming Logistics
-    if not self.incoming_logistics:
-        return
+        # 🔁 Revert Incoming Logistics
+        if not self.incoming_logistics:
+            return
 
-    il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
+        il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
 
-    il_doc.status = "Issued"
-    il_doc.gate_entry_no = None
+        il_doc.status = "Issued"
+        il_doc.gate_entry_no = None
 
-    il_doc.save(ignore_permissions=True)
-    frappe.db.commit()
+        il_doc.save(ignore_permissions=True)
+        frappe.db.commit()
 
 
 # fetch box barcode list
