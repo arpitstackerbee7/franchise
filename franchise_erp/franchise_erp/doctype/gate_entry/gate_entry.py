@@ -103,9 +103,8 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
     return "OK"
 
 
-
-
 from frappe.model.mapper import get_mapped_doc
+import frappe
 
 @frappe.whitelist()
 def create_purchase_receipt(gate_entry):
@@ -117,14 +116,25 @@ def create_purchase_receipt(gate_entry):
     def update_item(source, target, source_parent):
         remaining_qty = (source.qty or 0) - (source.received_qty or 0)
 
+        # ❌ Skip item if nothing left
         if remaining_qty <= 0:
-            return None   # ❌ item skip ho jayega
+            return None
 
+        # ✅ Set qty
         target.qty = remaining_qty
         target.received_qty = remaining_qty
         target.stock_qty = remaining_qty * (source.conversion_factor or 1)
-        target.serial_no = None
-        
+
+        # ✅ FIX SERIAL NO ISSUE
+        if source.serial_no:
+            serial_list = [
+                s.strip() for s in source.serial_no.split("\n") if s.strip()
+            ]
+
+            # qty ke basis par serial_no trim karo
+            target.serial_no = "\n".join(serial_list[:int(remaining_qty)])
+        else:
+            target.serial_no = None
 
     pr = get_mapped_doc(
         "Purchase Order",
