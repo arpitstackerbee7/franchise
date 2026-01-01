@@ -135,6 +135,8 @@ def create_purchase_receipt(gate_entry):
         target.qty = remaining_qty
         target.received_qty = remaining_qty
         target.stock_qty = remaining_qty * (source.conversion_factor or 1)
+        target.serial_no = None
+        
 
     pr = get_mapped_doc(
         "Purchase Order",
