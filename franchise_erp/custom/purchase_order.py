@@ -124,3 +124,110 @@ def get_freight_account(company):
         )
 
     return account
+
+
+
+# import frappe
+# import json
+# from frappe.model.mapper import get_mapped_doc
+# from frappe.utils import flt
+
+# @frappe.whitelist()
+# def make_purchase_receipt_with_gate_entry(source_name, target_doc=None, args=None):
+#     if args is None:
+#         args = {}
+#     if isinstance(args, str):
+#         args = json.loads(args)
+
+#     # 🔥 VALIDATION: Submitted Gate Entry must exist
+#     gate_entries = frappe.get_all(
+#         "Gate Entry",
+#         filters={
+#             "purchase_order": source_name,
+#             "docstatus": 1
+#         },
+#         pluck="name"
+#     )
+
+#     if not gate_entries:
+#         frappe.throw(
+#             f"No Submitted Gate Entry found for Purchase Order {source_name}"
+#         )
+
+#     has_unit_price_items = frappe.db.get_value(
+#         "Purchase Order",
+#         source_name,
+#         "has_unit_price_items"
+#     )
+
+#     def is_unit_price_row(source):
+#         return has_unit_price_items and source.qty == 0
+
+#     def update_item(obj, target, source_parent):
+#         remaining_qty = flt(obj.qty) - flt(obj.received_qty)
+
+#         if remaining_qty <= 0:
+#             return
+
+#         target.qty = remaining_qty
+#         target.stock_qty = remaining_qty * flt(obj.conversion_factor)
+#         target.amount = remaining_qty * flt(obj.rate)
+#         target.base_amount = (
+#             remaining_qty * flt(obj.rate) * flt(source_parent.conversion_rate)
+#         )
+
+#     def select_item(d):
+#         filtered_items = args.get("filtered_children", [])
+#         return d.name in filtered_items if filtered_items else True
+
+#     doc = get_mapped_doc(
+#         "Purchase Order",
+#         source_name,
+#         {
+#             "Purchase Order": {
+#                 "doctype": "Purchase Receipt",
+#                 "field_map": {
+#                     "supplier_warehouse": "supplier_warehouse",
+#                 },
+#                 "validation": {
+#                     "docstatus": ["=", 1],
+#                 },
+#             },
+#             "Purchase Order Item": {
+#                 "doctype": "Purchase Receipt Item",
+#                 "field_map": {
+#                     "name": "purchase_order_item",
+#                     "parent": "purchase_order",
+#                 },
+#                 "postprocess": update_item,
+#                 "condition": lambda doc: (
+#                     True if is_unit_price_row(doc)
+#                     else abs(doc.received_qty) < abs(doc.qty)
+#                 )
+#                 and doc.delivered_by_supplier != 1
+#                 and select_item(doc),
+#             },
+#         },
+#         target_doc,
+#     )
+
+#     # 🔥 PASS GATE ENTRY ID (first submitted one)
+#     doc.custom_gate_entry = gate_entries[0]
+
+#     return doc
+
+
+# @frappe.whitelist()
+# def get_purchase_orders_with_gate_entry():
+#     return frappe.db.sql("""
+#         SELECT DISTINCT po.name
+#         FROM `tabPurchase Order` po
+#         INNER JOIN `tabGate Entry` ge
+#             ON ge.purchase_order = po.name
+#         WHERE
+#             ge.docstatus = 1
+#             AND po.docstatus = 1
+#             AND po.per_received < 99.99
+#             AND po.status NOT IN ('Closed', 'On Hold')
+#     """, as_dict=True)
+

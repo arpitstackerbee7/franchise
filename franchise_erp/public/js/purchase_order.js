@@ -1,89 +1,13 @@
-// frappe.ui.form.on("Purchase Order", {
-//     refresh(frm) {
-
-//         if (frm.doc.docstatus !== 1) return;
-
-//         frm.add_custom_button(
-//             __("Incoming Logistics"),
-//             () => {
-//                 frappe.new_doc("Incoming Logistics", {
-//                     purchase_no: frm.doc.name,   // ✅ Incoming Logistics fieldname
-//                     consignor: frm.doc.supplier,    // ✅ Incoming Logistics fieldname
-//                     type: 'Purchase',
-//                     owner_site: frm.doc.company,
-//                     transporter: frm.doc.custom_transporter || null   // auto fill
-//                 });
-//             },
-//             __("Create")
-//         );
-//     }
-// });
-
-// frappe.ui.form.on("Purchase Order", {
-//     refresh: async function (frm) {
-
-//         // 1️⃣ Sirf Submitted PO
-//         if (frm.doc.docstatus !== 1) return;
-
-//         // 2️⃣ Check Incoming Logistics exist ya nahi
-//         const res = await frappe.db.get_value(
-//             "Incoming Logistics",
-//             { purchase_no: frm.doc.name },
-//             "name"
-//         );
-
-//         // 3️⃣ Agar exist karti hai → button mat dikhao
-//         if (res && res.message && res.message.name) {
-//             return;
-//         }
-
-//         // 4️⃣ Button dikhao
-//         frm.add_custom_button(
-//             __("Incoming Logistics"),
-//             async () => {
-
-//                 let transporter = null;
-//                 let gate_entry = "No";
-
-//                 if (frm.doc.supplier) {
-//                     const r = await frappe.db.get_value(
-//                         "Supplier",
-//                         frm.doc.supplier,
-//                         ["custom_transporter", "custom_gate_entry"]
-//                     );
-
-//                     transporter = r?.message?.custom_transporter || null;
-//                     gate_entry = r?.message?.custom_gate_entry ? "Yes" : "No";
-//                 }
-
-//                 frappe.new_doc("Incoming Logistics", {
-//                     purchase_no: frm.doc.name,
-//                     consignor: frm.doc.supplier,
-//                     type: "Purchase",
-//                     owner_site: frm.doc.company,
-//                     transporter: transporter,
-//                     gate_entry: gate_entry
-//                 });
-//             },
-//             __("Create")
-//         );
-//     }
-// });
-
-
-
 
 frappe.ui.form.on("Purchase Order", {
 
     async refresh(frm) {
 
-        // 1️⃣ Sirf Submitted PO
+        // 1️⃣ Only Submitted PO
         if (frm.doc.docstatus !== 1) return;
-
-        // 2️⃣ Supplier mandatory
         if (!frm.doc.supplier) return;
 
-        // 3️⃣ Supplier se custom_gate_entry & transporter lao
+        // 2️⃣ Supplier config
         const supplier_res = await frappe.db.get_value(
             "Supplier",
             frm.doc.supplier,
@@ -93,52 +17,61 @@ frappe.ui.form.on("Purchase Order", {
         const gate_entry_enabled = supplier_res?.message?.custom_gate_entry;
         const transporter = supplier_res?.message?.custom_transporter;
 
-        // 4️⃣ Agar Supplier master me Gate Entry unchecked hai
         if (!gate_entry_enabled) {
             frappe.msgprint({
                 title: __("Gate Entry Disabled"),
-                message: __(
-                    "Incoming Logistics cannot be created.<br><br>" +
-                    "Please go to <b>Supplier </b> and enable <b>Gate Entry</b>."
-                ),
+                message: __("Please enable <b>Gate Entry</b> in Supplier"),
                 indicator: "orange"
             });
             return;
         }
 
-        // 5️⃣ Check Incoming Logistics already exist ya nahi
-        const il_res = await frappe.db.get_value(
-            "Incoming Logistics",
-            { purchase_no: frm.doc.name },
-            "name"
-        );
+        // 3️⃣ PO Total Qty
+        let po_total_qty = 0;
+        (frm.doc.items || []).forEach(row => {
+            po_total_qty += flt(row.qty);
+        });
 
-        // 6️⃣ Agar already exist karti hai → button mat dikhao
-        if (il_res && il_res.message && il_res.message.name) {
-            return;
-        }
+        // 4️⃣ Get TOTAL received qty from Incoming Logistics
+        const il_list = await frappe.db.get_list("Incoming Logistics", {
+            filters: {
+                purchase_no: frm.doc.name,
+                docstatus: 1
+            },
+            fields: ["received_qty"]
+        });
 
-        // 7️⃣ Button dikhao
+        let total_received_qty = 0;
+        (il_list || []).forEach(row => {
+            total_received_qty += flt(row.received_qty);
+        });
+
+        // 5️⃣ Remaining Qty
+        let pending_qty = po_total_qty - total_received_qty;
+
+        // ❌ Fully received → no button
+        if (pending_qty <= 0) return;
+
+        // ✅ Partial received → show button
         frm.add_custom_button(
             __("Incoming Logistics"),
             () => {
-                let total_qty = 0;
-
-                // 🔹 Sum all item quantities from PO
-                (frm.doc.items || []).forEach(row => {
-                    total_qty += flt(row.qty);
-                });
                 frappe.new_doc("Incoming Logistics", {
                     purchase_no: frm.doc.name,
                     consignor: frm.doc.supplier,
                     type: "Purchase",
                     owner_site: frm.doc.company,
                     transporter: transporter,
-                    gate_entry: "Yes",
-                    received_qty: total_qty,
+                    gate_entry: "Yes"
                 });
             },
             __("Create")
         );
+
+        // Optional info
+        // frm.dashboard.add_comment(
+        //     __("Pending Qty : {0}", [pending_qty]),
+        //     "blue"
+        // );
     }
 });
