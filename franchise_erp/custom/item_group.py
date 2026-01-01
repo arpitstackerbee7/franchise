@@ -1,40 +1,6 @@
 
 import frappe
 
-# @frappe.whitelist()
-# def get_item_group_parents(child_group):
-#     result = {
-#         "department": None,
-#         "collection": None,
-#         "main_group": None
-#     }
-
-#     if not child_group:
-#         return result
-
-#     def get_parent_name(group):
-#         if not group:
-#             return None
-#         parent = frappe.db.get_value("Item Group", group, "parent_item_group")
-#         if not parent:
-#             return None
-#         # return readable name
-#         return frappe.db.get_value("Item Group", parent, "name")
-
-#     # Level 1
-#     result["department"] = get_parent_name(child_group)
-
-#     # Level 2
-#     parent_1 = frappe.db.get_value("Item Group", child_group, "parent_item_group")
-#     result["collection"] = get_parent_name(parent_1)
-
-#     # Level 3
-#     parent_2 = frappe.db.get_value("Item Group", parent_1, "parent_item_group") if parent_1 else None
-#     result["main_group"] = get_parent_name(parent_2)
-
-#     frappe.logger().info(f"Item Group Parents (Names): {result}")
-#     return result
-
 @frappe.whitelist()
 def get_item_group_parents(child_group):
     result = {
@@ -49,26 +15,60 @@ def get_item_group_parents(child_group):
     def get_parent_name(group):
         if not group:
             return None
-        # Get parent ID
         parent = frappe.db.get_value("Item Group", group, "parent_item_group")
         if not parent:
             return None
-        # Get human-readable item_group_name like tree
-        return frappe.db.get_value("Item Group", parent, "item_group_name")
+        # return readable name
+        return frappe.db.get_value("Item Group", parent, "name")
 
-    # Level 1 (direct parent)
+    # Level 1
     result["department"] = get_parent_name(child_group)
 
-    # Level 2 (grandparent)
+    # Level 2
     parent_1 = frappe.db.get_value("Item Group", child_group, "parent_item_group")
     result["collection"] = get_parent_name(parent_1)
 
-    # Level 3 (great-grandparent)
+    # Level 3
     parent_2 = frappe.db.get_value("Item Group", parent_1, "parent_item_group") if parent_1 else None
     result["main_group"] = get_parent_name(parent_2)
 
     frappe.logger().info(f"Item Group Parents (Names): {result}")
     return result
+
+# @frappe.whitelist()
+# def get_item_group_parents(child_group):
+#     result = {
+#         "department": None,
+#         "collection": None,
+#         "main_group": None
+#     }
+
+#     if not child_group:
+#         return result
+
+#     def get_parent_name(group):
+#         if not group:
+#             return None
+#         # Get parent ID
+#         parent = frappe.db.get_value("Item Group", group, "parent_item_group")
+#         if not parent:
+#             return None
+#         # Get human-readable item_group_name like tree
+#         return frappe.db.get_value("Item Group", parent, "item_group_name")
+
+#     # Level 1 (direct parent)
+#     result["department"] = get_parent_name(child_group)
+
+#     # Level 2 (grandparent)
+#     parent_1 = frappe.db.get_value("Item Group", child_group, "parent_item_group")
+#     result["collection"] = get_parent_name(parent_1)
+
+#     # Level 3 (great-grandparent)
+#     parent_2 = frappe.db.get_value("Item Group", parent_1, "parent_item_group") if parent_1 else None
+#     result["main_group"] = get_parent_name(parent_2)
+
+#     frappe.logger().info(f"Item Group Parents (Names): {result}")
+#     return result
 
 # def validate_same_parent(doc, method=None):
 #     """

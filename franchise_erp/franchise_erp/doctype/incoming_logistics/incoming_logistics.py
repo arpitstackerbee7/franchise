@@ -51,15 +51,52 @@ class IncomingLogistics(Document):
 
   
 
+    # def create_gate_entry_box_barcodes(self):
+    #     qty = int(self.lr_quantity or 0)
+
+    #     if qty <= 0:
+    #         return
+
+    #     table_field = "gate_entry_box_barcode"
+
+    #     # 🔒 DB level duplicate protection
+    #     existing = frappe.db.count(
+    #         "Gate Entry Box Barcode",
+    #         {"incoming_logistics_no": self.name}
+    #     )
+    #     if existing > 0:
+    #         return
+
+    #     # 🔹 Get series from TZU Setting
+    #     box_series = frappe.db.get_single_value(
+    #         "TZU Setting",
+    #         "box_barcode_series"
+    #     )
+
+    #     if not box_series:
+    #         frappe.throw("Box Barcode Series not configured in TZU Setting")
+
+    #     # 🔹 Padding logic
+    #     random_5_digit = random.randint(10000, 99999)
+    #     padding = max(2, len(str(qty)))
+
+    #     for i in range(qty):
+    #         box_no = str(i + 1).zfill(padding)
+
+    #         self.append(table_field, {
+    #             "incoming_logistics_no": self.name,
+    #             "box_barcode": f"{box_series}-{random_5_digit}-{box_no}",
+    #             "total_barcode_qty": qty,
+    #             "status": "Pending"
+    #         })
+
+
     def create_gate_entry_box_barcodes(self):
         qty = int(self.lr_quantity or 0)
-
         if qty <= 0:
             return
 
-        table_field = "gate_entry_box_barcode"
-
-        # 🔒 DB level duplicate protection
+        # 🔒 Prevent duplicate creation
         existing = frappe.db.count(
             "Gate Entry Box Barcode",
             {"incoming_logistics_no": self.name}
@@ -67,25 +104,30 @@ class IncomingLogistics(Document):
         if existing > 0:
             return
 
-        # 🔹 Get series from TZU Setting
-        box_series = frappe.db.get_single_value(
+        # 🔹 Get prefix from TZU Setting (IG)
+        prefix = frappe.db.get_single_value(
             "TZU Setting",
             "box_barcode_series"
         )
 
-        if not box_series:
+        if not prefix:
             frappe.throw("Box Barcode Series not configured in TZU Setting")
 
-        # 🔹 Padding logic
-        random_5_digit = random.randint(10000, 99999)
+        # 🔹 Extract numeric part from Incoming Logistics name
+        # TPL-IL-00125-2025-2026 → 00125
+        try:
+            series_no = self.name.split("-")[2]
+        except Exception:
+            frappe.throw("Invalid Incoming Logistics Naming Series")
+
         padding = max(2, len(str(qty)))
 
         for i in range(qty):
             box_no = str(i + 1).zfill(padding)
 
-            self.append(table_field, {
+            self.append("gate_entry_box_barcode", {
                 "incoming_logistics_no": self.name,
-                "box_barcode": f"{box_series}-{random_5_digit}-{box_no}",
+                "box_barcode": f"{prefix}-{series_no}-{box_no}",
                 "total_barcode_qty": qty,
                 "status": "Pending"
             })

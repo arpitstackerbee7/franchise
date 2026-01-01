@@ -202,3 +202,17 @@ frappe.ui.form.on("Gate Entry", {
     }
 });
 
+
+
+frappe.ui.form.on("Gate Entry", {
+    refresh(frm) {
+        //Remove Add Row
+        frm.set_df_property(
+            "gate_entry_box_barcode",
+            "cannot_add_rows",
+            true
+        );
+
+        
+    }
+});

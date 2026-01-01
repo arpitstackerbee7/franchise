@@ -130,7 +130,8 @@
   {
    "fieldname": "declaration_amount",
    "fieldtype": "Float",
-   "label": "Declaration Amount"
+   "label": "Declaration Amount",
+   "reqd": 1
   },
   {
    "fieldname": "others_section",
@@ -222,8 +223,7 @@
    "fieldname": "gate_entry_box_barcode",
    "fieldtype": "Table",
    "label": "Gate Entry Box Barcode",
-   "options": "Gate Entry Box Barcode",
-   "read_only": 1
+   "options": "Gate Entry Box Barcode"
   },
   {
    "fieldname": "purchase_order",
@@ -248,7 +248,11 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
+<<<<<<< Updated upstream
  "modified": "2026-01-01 11:55:33.879545",
+=======
+ "modified": "2025-12-31 20:15:34.274829",
+>>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

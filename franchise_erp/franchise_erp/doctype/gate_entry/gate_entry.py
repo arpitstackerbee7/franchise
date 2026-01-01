@@ -177,3 +177,8 @@ def create_purchase_receipt(gate_entry):
 
     pr.insert(ignore_permissions=True)
     return pr.name
+
+
+
+
+
