@@ -170,8 +170,8 @@
   {
    "fieldname": "lr_entry_no",
    "fieldtype": "Data",
-   "hidden": 1,
-   "label": "LR Entry No."
+   "label": "LR Entry No.",
+   "reqd": 1
   },
   {
    "fieldname": "lr_entry_date",
@@ -253,7 +253,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2025-12-31 17:39:35.418382",
+ "modified": "2026-01-01 11:12:39.497983",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
@@ -279,14 +279,6 @@
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": [
-  {
-   "color": "Blue",
-   "title": "Draft"
-  },
-  {
-   "color": "Green",
-   "title": "Submitted"
-  },
   {
    "color": "Orange",
    "title": "Partially Received"
