@@ -3,63 +3,43 @@
 
 import frappe
 from frappe.model.document import Document
-
+import frappe
+from frappe.model.document import Document
 
 class GateEntry(Document):
 
     def before_save(self):
-        """Set document_no as the doc name if not already set"""
+        # 🔹 Document No set
         if not self.document_no:
-            # Directly set in the doc to avoid extra DB call
             self.document_no = self.name
-    # gate_entry.py
 
-    def on_save(doc, method):
-        # Jab tak submit nahi hua
-                doc.status = "Draft"
-
+        # 🔹 Jab tak submit nahi hua
+        if self.docstatus == 0:
+            self.status = "Draft"
 
     def on_submit(self):
+        # 🔹 Submit par status
         self.status = "Submitted"
 
-        """Triggered when Gate Entry is submitted"""
         if not self.incoming_logistics:
             frappe.throw("Incoming Logistics is required")
 
         il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
-
-        # Update Incoming Logistics fields
         il_doc.status = "Received"
         il_doc.gate_entry_no = self.name
-
         il_doc.save(ignore_permissions=True)
-        frappe.db.commit() 
-        # gate_entry.py
-
 
     def on_cancel(self):
-        """Triggered when Gate Entry is cancelled"""
+        # 🔹 Cancel par status
+        self.status = "Cancelled"
 
-        # ✅ Update Gate Entry status
-        if hasattr(self, "status"):
-            frappe.db.set_value(
-                self.doctype,
-                self.name,
-                "status",
-                "Cancelled"
-            )
-
-        # 🔁 Revert Incoming Logistics
         if not self.incoming_logistics:
             return
 
         il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
-
         il_doc.status = "Issued"
         il_doc.gate_entry_no = None
-
         il_doc.save(ignore_permissions=True)
-        frappe.db.commit()
 
 
 # fetch box barcode list
