@@ -198,7 +198,7 @@ def validate_po_serial(scanned_serial, po_items):
         # ❌ Already used serial validation
         if scanned_serial in used_serials:
             frappe.throw(
-                f"Serial No <b>{scanned_serial}</b> is already used and cannot be scanned again"
+                f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> is already used"
             )
 
         # ✅ Valid serial
@@ -214,46 +214,42 @@ def validate_po_serial(scanned_serial, po_items):
 
 def validate_item(doc, method=None):
 
-    # 🔹 Step 1: Check if ANY row has Purchase Order
-    po_ids = {row.purchase_order for row in doc.items if row.purchase_order}
-
-    # 🔹 If no PO in entire PR → skip validation
-    if not po_ids:
+    # 🔹 Check if ANY row has PO
+    po_present = any(row.purchase_order for row in doc.items)
+    if not po_present:
         return
 
-    # 🔹 Step 2: Validate ALL rows against PO(s)
     for row in doc.items:
 
-        if not row.purchase_order or not row.item_code:
-            continue
+        # 🔴 PO mandatory once any row has PO
 
-        # 🔹 Fetch PO Item details
+        # 🔴 Item must be linked to PO Item
+        if not row.purchase_order_item:
+            frappe.throw(
+                f"Row {row.idx}: Item <b>{row.item_code}</b> does not belong to "
+                f"Purchase Order"
+            )
+
+        # 🔹 Fetch PO Item qty
         po_item = frappe.db.get_value(
             "Purchase Order Item",
-            {
-                "parent": row.purchase_order,
-                "item_code": row.item_code
-            },
+            row.purchase_order_item,
             ["qty", "received_qty"],
             as_dict=True
         )
 
-        # 🔴 Item not found in PO
         if not po_item:
             frappe.throw(
-                f"Row {row.idx}: Item <b>{row.item_code}</b> does not belong to "
-                f"Purchase Order <b>{row.purchase_order}</b>"
+                f"Row {row.idx}: Invalid Purchase Order Item reference"
             )
 
-        # 🔹 Calculate remaining qty
         remaining_qty = (po_item.qty or 0) - (po_item.received_qty or 0)
 
         # 🔴 Qty validation
         if row.qty > remaining_qty:
             frappe.throw(
-                f"Row {row.idx}: Entered Qty <b>{row.qty}</b> is greater than "
-                f"remaining PO Qty <b>{remaining_qty}</b> "
-                f"for Item <b>{row.item_code}</b>"
+                f"Row {row.idx}: Entered Qty <b>{row.qty}</b> exceeds "
+                f"remaining PO Qty <b>{remaining_qty}</b>"
             )
 
 def assign_serials_from_po_on_submit(doc, method=None):
