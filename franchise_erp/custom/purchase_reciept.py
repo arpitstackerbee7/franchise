@@ -204,6 +204,9 @@ def assign_serials_from_po_on_submit(doc, method=None):
             continue
 
         # 🔹 Priority: unused → generated
+        if not po_item.custom_generated_serials:
+            return
+            
         source_serials = (
             po_item.custom_unused_serials
             or po_item.custom_generated_serials

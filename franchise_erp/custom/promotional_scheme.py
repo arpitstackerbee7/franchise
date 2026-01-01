@@ -214,12 +214,17 @@ def apply_buy_n_get_x_percent_off(doc, items, n, percent):
 
 def recalc_totals(doc):
     for row in doc.items:
-        row.amount = flt(row.rate * row.qty) - flt(row.discount_amount or 0)
-        row.base_amount = flt(row.base_rate * row.qty) - flt(row.discount_amount or 0)
+        qty = flt(row.qty or 0)
+
+        rate = flt(row.rate or 0)
+        base_rate = flt(row.base_rate or row.rate or 0)
+
+        discount = flt(row.discount_amount or 0)
+
+        row.amount = flt((rate * qty) - discount)
+        row.base_amount = flt((base_rate * qty) - discount)
 
     doc.calculate_taxes_and_totals()
-
-
 # ============================================================
 # UTIL
 # ============================================================

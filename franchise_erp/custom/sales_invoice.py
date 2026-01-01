@@ -214,3 +214,51 @@ def update_packed_items_serial_no(doc, method):
                 packed_item.serial_no = bundle_item["custom_serial_no"]
 
 frappe.whitelist()(update_packed_items_serial_no)
+
+def validate_item_from_so(doc, method=None):
+
+    # 🔹 Skip if no row is linked to Sales Order
+    if not any(row.sales_order for row in doc.items):
+        return
+
+    for row in doc.items:
+
+        # 🔴 SO Item mandatory
+        if not row.so_detail:
+            frappe.throw(
+                f"Row {row.idx}: Item <b>{row.item_code}</b> is not linked to Sales Order"
+            )
+
+        # 🔹 Get Sales Order Item Qty
+        so_item = frappe.db.get_value(
+            "Sales Order Item",
+            row.so_detail,
+            "qty"
+        )
+
+        if not so_item:
+            frappe.throw(f"Row {row.idx}: Invalid Sales Order Item reference")
+
+        so_qty = flt(so_item)
+
+        # 🔹 Get TOTAL invoiced qty (Draft + Submitted, excluding current doc)
+        invoiced_qty = frappe.db.sql("""
+            SELECT COALESCE(SUM(sii.qty), 0)
+            FROM `tabSales Invoice Item` sii
+            JOIN `tabSales Invoice` si ON si.name = sii.parent
+            WHERE
+                sii.so_detail = %s
+                AND si.name != %s
+                AND si.docstatus IN (1)
+        """, (row.so_detail, doc.name))[0][0]
+
+        invoiced_qty = flt(invoiced_qty)
+
+        remaining_qty = so_qty - invoiced_qty
+
+        # 🔴 Validation
+        if flt(row.qty) > remaining_qty:
+            frappe.throw(
+                f"Row {row.idx}: Entered Qty <b>{row.qty}</b> exceeds "
+                f"remaining Sales Order Qty <b>{remaining_qty}</b>"
+            )
