@@ -211,6 +211,7 @@ def validate_po_serial(scanned_serial, po_items):
         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
     )
 
+
 def validate_item(doc, method=None):
 
     # 🔹 Check if ANY row has PO
@@ -326,49 +327,6 @@ def assign_serials_from_po_on_submit(doc, method=None):
         final_serials = existing_serials + fetched_serials
 
         row.serial_no = "\n".join(final_serials)
-
-
-# def on_cancel(doc, method):
-#         if not doc.custom_gate_entry:
-#             return
-
-#         gate_entry = frappe.get_doc("Gate Entry", doc.custom_gate_entry)
-
-#         # 🔥 Remove only THIS PR related rows from child table
-#         gate_entry.received_details = [
-#             d for d in gate_entry.received_details
-#             if d.document_no != doc.name
-#         ]
-
-#         # 🔢 Recalculate total received qty after removal
-#         total_received_qty = sum(
-#             (d.item_qty or 0) for d in gate_entry.received_details
-#         )
-
-#         # 🔢 PO total qty
-#         po_total_qty = 0
-#         if gate_entry.purchase_order:
-#             po = frappe.get_doc("Purchase Order", gate_entry.purchase_order)
-#             po_total_qty = sum(item.qty for item in po.items)
-
-#         # 🔄 Update Gate Entry Status
-#         if total_received_qty == 0:
-#             gate_entry.status = "Submitted"
-#         elif total_received_qty < po_total_qty:
-#             gate_entry.status = "Partially Received"
-#         else:
-#             gate_entry.status = "Fully Received"
-
-#         # 🔢 Optional cumulative fields
-#         if hasattr(gate_entry, "total_qty"):
-#             gate_entry.total_qty = total_received_qty
-
-#         if hasattr(gate_entry, "total"):
-#             gate_entry.total = sum(
-#                 (d.amounts or 0) for d in gate_entry.received_details
-#             )
-
-#         gate_entry.save(ignore_permissions=True)
 
 
 def on_cancel(doc, method):

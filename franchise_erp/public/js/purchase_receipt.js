@@ -154,6 +154,7 @@ function open_gate_entry_mapper(frm) {
         },
     });
 }
+
 function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
     frappe.call({
         method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_po_items_from_gate_entry",
@@ -161,15 +162,18 @@ function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
             gate_entry_name: gate_entry
         },
         freeze: true,
-        callback: function(r) {
+        callback: function (r) {
             if (!r.exc && r.message && r.message.length) {
 
-                // ✅ Clear existing child table (including blank row)
-                frm.clear_table("items");
+                // 🧹 Remove default empty row
+                if (frm.doc.items?.length === 1 && !frm.doc.items[0].item_code) {
+                    frm.clear_table("items");
+                }
 
-                // Add items from Gate Entry
-                r.message.forEach(function(item) {
-                    frm.add_child("items", item);
+                // ➕ Append new rows
+                r.message.forEach(item => {
+                    let row = frm.add_child("items");
+                    Object.assign(row, item);
                 });
 
                 frm.refresh_field("items");
