@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "naming_series:",
- "creation": "2026-01-02 13:08:49.346364",
+ "creation": "2026-01-02 15:21:24.673670",
  "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -42,16 +42,6 @@
   "amended_from"
  ],
  "fields": [
-  {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Incoming Logistics",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
-  },
   {
    "fieldname": "general_section",
    "fieldtype": "Section Break",
@@ -234,6 +224,16 @@
    "fieldtype": "Select",
    "label": "Naming Series",
    "options": "TPL-GE-.#####.-.FY."
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Gate Entry",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
@@ -245,7 +245,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-01-02 13:40:11.115356",
+ "modified": "2026-01-02 15:25:01.551994",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

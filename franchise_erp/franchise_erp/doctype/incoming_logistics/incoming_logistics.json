@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "naming_series:",
- "creation": "2026-01-02 13:08:48.765778",
+ "creation": "2026-01-02 15:21:24.064694",
  "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -352,7 +352,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-02 13:40:01.688041",
+ "modified": "2026-01-02 15:23:51.725102",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
