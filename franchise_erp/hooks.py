@@ -81,8 +81,10 @@ doc_events = {
     # },
     "Product Bundle":{
         "after_insert":"franchise_erp.custom.product_bundle.set_product_bundle_series"
+    },
+    "Payment Entry":{
+        "on_submit":"franchise_erp.custom.payment_entry.apply_early_payment_discount"
     }
-
 }
 
 
