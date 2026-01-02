@@ -55,3 +55,23 @@ def apply_intercompany_gst(doc, method=None):
     # -----------------------------
     doc.set_taxes()
     doc.calculate_taxes_and_totals()
+
+from frappe.utils import  getdate
+
+def set_buffer_due_date(doc, method):
+    if not doc.supplier or not doc.due_date:
+        return
+
+    buffer_days = frappe.db.get_value(
+        "Supplier",
+        doc.supplier,
+        "custom_buffer_time_allowed"
+    )
+
+    if not buffer_days:
+        return
+
+    # Ensure date object
+    due_date = getdate(doc.due_date)
+
+    doc.custom_buffer_due_date = add_days(due_date, int(buffer_days))
