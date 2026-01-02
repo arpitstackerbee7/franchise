@@ -144,16 +144,6 @@
    "label": "Remarks"
   },
   {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Incoming Logistics",
-   "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
-  },
-  {
    "fieldname": "document_no",
    "fieldtype": "Data",
    "label": "Document No"
