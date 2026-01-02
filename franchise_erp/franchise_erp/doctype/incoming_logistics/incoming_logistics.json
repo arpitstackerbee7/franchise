@@ -1,8 +1,8 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:TPL-IL-{#####}-{FY}",
- "creation": "2025-12-08 15:52:05.518736",
+ "autoname": "naming_series:",
+ "creation": "2026-01-02 13:08:48.765778",
  "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -28,6 +28,7 @@
   "invoice_no",
   "lr_date",
   "purchase_no",
+  "naming_series",
   "transport_information_section",
   "maintain_bale_wise_qty",
   "section_break_rlzu",
@@ -291,9 +292,9 @@
   },
   {
    "fieldname": "purchase_no",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Purchase Order No",
-   "options": "Purchase Order"
+   "read_only": 1
   },
   {
    "fieldname": "column_break_cred",
@@ -334,6 +335,12 @@
    "fieldname": "sales_invoice_attachment",
    "fieldtype": "Attach",
    "label": "Sales Invoice Attachment"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "TPL-IL-.#####.-.FY."
   }
  ],
  "grid_page_length": 50,
@@ -345,11 +352,11 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-01 16:15:32.553978",
+ "modified": "2026-01-02 13:40:01.688041",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
- "naming_rule": "Expression",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

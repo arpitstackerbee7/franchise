@@ -10,8 +10,8 @@ class GateEntry(Document):
 
     def before_save(self):
         # 🔹 Document No set
-        if not self.document_no:
-            self.document_no = self.name
+        # if not self.document_no:
+        #     self.document_no = self.name
 
         # 🔹 Jab tak submit nahi hua
         if self.docstatus == 0:
