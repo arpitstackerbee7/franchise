@@ -3,6 +3,8 @@
 
 import frappe
 from frappe.model.document import Document
+from frappe.model.mapper import get_mapped_doc
+
 
 class GateEntry(Document):
     def before_save(self):
@@ -96,9 +98,6 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
 
 
 
-from frappe.model.mapper import get_mapped_doc
-import frappe
-
 @frappe.whitelist()
 def create_purchase_receipt(gate_entry):
     gate_entry_doc = frappe.get_doc("Gate Entry", gate_entry)
@@ -146,66 +145,92 @@ def create_purchase_receipt(gate_entry):
     return pr.as_dict()
 
 import frappe
-from frappe.utils import flt
 
 @frappe.whitelist()
 def get_po_items_from_gate_entry(gate_entry_name):
-    """
-    Returns Purchase Order items linked to the Gate Entry,
-    mapped to Purchase Receipt fields with qty set to 0.
-    """
+
     ge = frappe.get_doc("Gate Entry", gate_entry_name)
 
     if not ge.purchase_order:
         frappe.throw(f"Gate Entry {ge.name} is not linked to any Purchase Order")
 
-    # Fetch relevant fields from PO items
     po_items = frappe.get_all(
         "Purchase Order Item",
         filters={"parent": ge.purchase_order},
         fields=[
+            "name",                     # 🔑 purchase_order_item
             "item_code",
             "item_name",
+            "description",
             "schedule_date",
             "expected_delivery_date",
-            "description",
             "qty",
             "uom",
+            "stock_uom",
+            "conversion_factor",
             "price_list_rate",
             "last_purchase_rate",
             "rate",
+            "base_rate",
             "amount",
+            "base_amount",
+            "warehouse",
             "gst_treatment",
             "custom_base_rate_new",
             "apply_tds",
             "taxable_value",
-            "warehouse"
+            "expense_account",
+            "cost_center"
         ]
     )
 
-    # Map PO items to PR items
     pr_items = []
+
     for item in po_items:
-        pr_item = {
-            "item_code": item.get("item_code"),
-            "item_name": item.get("item_name"),
-            "schedule_date": item.get("schedule_date"),
-            "expected_delivery_date": item.get("expected_delivery_date"),
-            "description": item.get("description"),
-            "qty": 0,  # Set qty to 0 for PR
-            "uom": item.get("uom"),
-            "price_list_rate": item.get("price_list_rate"),
-            "last_purchase_rate": item.get("last_purchase_rate"),
-            "rate": item.get("rate"),
-            "amount": item.get("amount"),
-            "gst_treatment": item.get("gst_treatment"),
-            "custom_base_rate_new": item.get("custom_base_rate_new"),
-            "apply_tds": item.get("apply_tds"),
-            "taxable_value": item.get("taxable_value"),
-            "warehouse": item.get("warehouse"),
-            "custom_bulk_gate_entry": ge.name,
-            "purchase_order": ge.purchase_order
-        }
-        pr_items.append(pr_item)
+        pr_items.append({
+
+            # 🧾 Item details
+            "item_code": item.item_code,
+            "item_name": item.item_name,
+            "description": item.description,
+
+            # 📅 Dates
+            "schedule_date": item.schedule_date,
+            "expected_delivery_date": item.expected_delivery_date,
+
+            # 📦 Qty (Gate Entry case)
+            "qty": 0,
+            "uom": item.uom,
+            "stock_uom": item.stock_uom,
+            "conversion_factor": item.conversion_factor or 1,
+
+            # 💰 Rates
+            "price_list_rate": item.price_list_rate,
+            "last_purchase_rate": item.last_purchase_rate,
+            "rate": item.rate,
+            "base_rate": item.base_rate,
+
+            # 🧮 Amounts (qty = 0 → amount MUST be 0)
+            "amount": 0,
+            "base_amount": 0,
+
+            # 🏬 Accounting
+            "warehouse": item.warehouse,
+            "expense_account": item.expense_account,
+            "cost_center": item.cost_center,
+
+            # 🧾 Tax
+            "gst_treatment": item.gst_treatment,
+            "custom_base_rate_new": item.custom_base_rate_new,
+            "apply_tds": item.apply_tds,
+            "taxable_value": item.taxable_value,
+
+            # 🔗 PO Linking (CRITICAL)
+            "purchase_order": ge.purchase_order,
+            "purchase_order_item": item.name,
+
+            # 🚪 Gate Entry reference
+            "custom_bulk_gate_entry": ge.name
+        })
 
     return pr_items

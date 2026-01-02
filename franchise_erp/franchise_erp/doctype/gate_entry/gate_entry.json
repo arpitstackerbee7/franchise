@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "format:TPL-GE-{#####}-{FY}",
- "creation": "2026-01-02 18:06:06.380355",
+ "creation": "2026-01-02 22:39:58.720291",
  "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -242,7 +242,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-01-02 18:11:39.504904",
+ "modified": "2026-01-02 23:14:42.525996",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
