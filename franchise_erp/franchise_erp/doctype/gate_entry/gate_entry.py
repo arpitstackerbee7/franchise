@@ -3,19 +3,14 @@
 
 import frappe
 from frappe.model.document import Document
-import frappe
-from frappe.model.document import Document
 
 class GateEntry(Document):
 
     def before_save(self):
-        # 🔹 Document No set
-        # if not self.document_no:
-        #     self.document_no = self.name
+        if not self.status or self.docstatus == 0:
+    if self.status not in ["Submitted", "Cancelled"]:
+        self.status = "Draft"
 
-        # 🔹 Jab tak submit nahi hua
-        if self.docstatus == 0:
-            self.status = "Draft"
 
     def on_submit(self):
         # 🔹 Submit par status
