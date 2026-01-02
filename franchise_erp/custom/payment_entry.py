@@ -67,17 +67,18 @@ def apply_early_payment_discount(doc, method):
         )
 
         # 📘 Create Debit Note
-        create_discount_debit_note(pi, discount)
+        create_discount_debit_note(pi, discount, pi.company)
 
 
 
 
-def create_discount_debit_note(pi, discount_amount):
+def create_discount_debit_note(pi, discount_amount, company):
 
     template_name = frappe.db.get_value(
         "Journal Entry Template",
         {
-            "voucher_type": "Debit Note"
+            "voucher_type": "Debit Note",
+            "company": company
         },
         "name"
     )
@@ -123,3 +124,4 @@ def create_discount_debit_note(pi, discount_amount):
         )
 
     je.insert()
+    je.submit()
