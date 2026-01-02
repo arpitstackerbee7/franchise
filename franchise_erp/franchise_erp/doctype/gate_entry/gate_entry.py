@@ -153,3 +153,67 @@ def create_purchase_receipt(gate_entry):
 
     return pr.as_dict()
 
+import frappe
+from frappe.utils import flt
+
+@frappe.whitelist()
+def get_po_items_from_gate_entry(gate_entry_name):
+    """
+    Returns Purchase Order items linked to the Gate Entry,
+    mapped to Purchase Receipt fields with qty set to 0.
+    """
+    ge = frappe.get_doc("Gate Entry", gate_entry_name)
+
+    if not ge.purchase_order:
+        frappe.throw(f"Gate Entry {ge.name} is not linked to any Purchase Order")
+
+    # Fetch relevant fields from PO items
+    po_items = frappe.get_all(
+        "Purchase Order Item",
+        filters={"parent": ge.purchase_order},
+        fields=[
+            "item_code",
+            "item_name",
+            "schedule_date",
+            "expected_delivery_date",
+            "description",
+            "qty",
+            "uom",
+            "price_list_rate",
+            "last_purchase_rate",
+            "rate",
+            "amount",
+            "gst_treatment",
+            "custom_base_rate_new",
+            "apply_tds",
+            "taxable_value",
+            "warehouse"
+        ]
+    )
+
+    # Map PO items to PR items
+    pr_items = []
+    for item in po_items:
+        pr_item = {
+            "item_code": item.get("item_code"),
+            "item_name": item.get("item_name"),
+            "schedule_date": item.get("schedule_date"),
+            "expected_delivery_date": item.get("expected_delivery_date"),
+            "description": item.get("description"),
+            "qty": 0,  # Set qty to 0 for PR
+            "uom": item.get("uom"),
+            "price_list_rate": item.get("price_list_rate"),
+            "last_purchase_rate": item.get("last_purchase_rate"),
+            "rate": item.get("rate"),
+            "amount": item.get("amount"),
+            "gst_treatment": item.get("gst_treatment"),
+            "custom_base_rate_new": item.get("custom_base_rate_new"),
+            "apply_tds": item.get("apply_tds"),
+            "taxable_value": item.get("taxable_value"),
+            "warehouse": item.get("warehouse"),
+            "custom_bulk_gate_entry": ge.name,
+            "purchase_order": ge.purchase_order
+        }
+        pr_items.append(pr_item)
+
+    return pr_items

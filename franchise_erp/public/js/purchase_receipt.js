@@ -86,46 +86,94 @@ frappe.ui.form.on("Purchase Receipt", {
 });
 
 
-// frappe.ui.form.on("Purchase Receipt", {
-//     refresh(frm) {
-// if (!this.frm.doc.is_return && this.frm.doc.status !== "Closed") {
-//     if (this.frm.doc.docstatus === 0) {
-//         this.frm.add_custom_button(
-//             __("Purchase Order"),
-//             function () {
-//                 if (!me.frm.doc.supplier) {
-//                     frappe.throw({
-//                         title: __("Mandatory"),
-//                         message: __("Please Select a Supplier"),
-//                     });
-//                 }
+frappe.ui.form.on("Purchase Receipt", {
+    refresh(frm) {
+        if (frm.doc.docstatus === 0) {
+            frm.add_custom_button(
+                __("Gate Entry"),
+                () => open_gate_entry_mapper(frm),
+                __("Get Items From")
+            );
+        }
+    },
+});
 
-//                 erpnext.utils.map_current_doc({
-//                     method: "franchise_erp.custom.purchase_order.make_purchase_receipt_with_gate_entry",
-//                     source_doctype: "Purchase Order",
-//                     target: me.frm,
+function open_gate_entry_mapper(frm) {
+    // 🔒 Mandatory supplier
+    if (!frm.doc.supplier) {
+        frappe.throw({
+            title: __("Mandatory"),
+            message: __("Please select Supplier first"),
+        });
+    }
 
-//                     setters: {
-//                         supplier: me.frm.doc.supplier,
-//                         schedule_date: undefined,
-//                     },
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Gate Entry",
+        target: frm,
 
-//                     get_query_filters: {
-//                         docstatus: 1,
-//                         status: ["not in", ["Closed", "On Hold"]],
-//                         per_received: ["<", 99.99],
-//                         company: me.frm.doc.company,
-//                         has_submitted_gate_entry: 1   // 👈 custom filter
-//                     },
+        // ❌ REMOVE non-existing setters
+        setters: {
+            purchase_order: undefined,
+        },
 
-//                     allow_child_item_selection: true,
-//                     child_fieldname: "items",
-//                     child_columns: ["item_code", "item_name", "qty", "received_qty"],
-//                 });
-//             },
-//             __("Get Items From")
-//         );
-//     }
-// }
-//     }
-// });
+        add_filters_group: 1,
+        date_field: "posting_date",
+
+        columns: [
+            {
+                fieldname: "name",
+                label: __("Gate Entry"),
+                fieldtype: "Link",
+                options: "Gate Entry",
+            },
+            "purchase_order",
+            "owner_site",
+        ],
+
+        get_query() {
+            return {
+                filters: {
+                    docstatus: 1,
+                    consignor: frm.doc.supplier,
+                },
+            };
+        },
+
+        action(selections) {
+            if (!selections || !selections.length) {
+                frappe.msgprint(__("Please select at least one Gate Entry"));
+                return;
+            }
+
+            // 🔁 Map Gate Entries one-by-one
+            selections.forEach((gate_entry) => {
+                map_gate_entry_to_purchase_receipt(frm, gate_entry);
+            });
+
+            this.dialog.hide();
+        },
+    });
+}
+function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_po_items_from_gate_entry",
+        args: {
+            gate_entry_name: gate_entry
+        },
+        freeze: true,
+        callback: function(r) {
+            if (!r.exc && r.message && r.message.length) {
+
+                // ✅ Clear existing child table (including blank row)
+                frm.clear_table("items");
+
+                // Add items from Gate Entry
+                r.message.forEach(function(item) {
+                    frm.add_child("items", item);
+                });
+
+                frm.refresh_field("items");
+            }
+        }
+    });
+}

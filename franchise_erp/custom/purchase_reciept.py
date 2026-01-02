@@ -37,56 +37,130 @@ def restore_serials_on_grn_cancel(doc, method):
             frappe.db.set_value("Purchase Order Item", item.purchase_order_item, "custom_used_serials", "\n".join(remaining))
 
 
+# def on_submit(doc, method):
+#     if not doc.custom_gate_entry:
+#         return
+
+#     gate_entry = frappe.get_doc("Gate Entry", doc.custom_gate_entry)
+
+#     # 🔢 Current PR Total Qty
+#     pr_total_qty = sum(item.qty for item in doc.items)
+
+#     # ➕ Append new received row (NO CLEAR)
+#     row = gate_entry.append("received_details", {})
+
+#     # Purchase Receipt info
+#     row.document_no = doc.name
+#     row.document_date = doc.posting_date
+#     row.item_qty = pr_total_qty
+#     row.amounts = doc.total
+
+#     # Gate Entry info
+#     row.entry_no = gate_entry.name
+#     row.entry_date = gate_entry.date
+#     row.ge_qty = gate_entry.lr_quantity
+
+#     # 🔢 Total Received Qty till now
+#     total_received_qty = sum(
+#         (d.item_qty or 0) for d in gate_entry.received_details
+#     )
+
+#     # 🔢 PO Total Qty
+#     po_total_qty = 0
+#     if gate_entry.purchase_order:
+#         po = frappe.get_doc("Purchase Order", gate_entry.purchase_order)
+#         po_total_qty = sum(item.qty for item in po.items)
+
+#     # 🔄 Update Gate Entry Status
+#     if total_received_qty >= po_total_qty:
+#         gate_entry.status = "Fully Received"
+#     else:
+#         gate_entry.status = "Partially Received"
+
+#     # 🔢 Optional cumulative fields
+#     if hasattr(gate_entry, "total_qty"):
+#         gate_entry.total_qty = total_received_qty
+
+#     if hasattr(gate_entry, "total"):
+#         gate_entry.total = sum(
+#             (d.amounts or 0) for d in gate_entry.received_details
+#         )
+
+#     gate_entry.save(ignore_permissions=True)
+
+
 def on_submit(doc, method):
-    if not doc.custom_gate_entry:
-        return
+    # 🔹 Collect all Gate Entry IDs from PR level and item level
+    gate_entry_ids = set()
 
-    gate_entry = frappe.get_doc("Gate Entry", doc.custom_gate_entry)
+    if getattr(doc, "custom_gate_entry", None):
+        gate_entry_ids.add(doc.custom_gate_entry)
 
-    # 🔢 Current PR Total Qty
-    pr_total_qty = sum(item.qty for item in doc.items)
+    for item in doc.items:
+        if getattr(item, "custom_bulk_gate_entry", None):
+            gate_entry_ids.add(item.custom_bulk_gate_entry)
 
-    # ➕ Append new received row (NO CLEAR)
-    row = gate_entry.append("received_details", {})
+    # 🔹 Process each Gate Entry
+    for ge_id in gate_entry_ids:
+        gate_entry = frappe.get_doc("Gate Entry", ge_id)
 
-    # Purchase Receipt info
-    row.document_no = doc.name
-    row.document_date = doc.posting_date
-    row.item_qty = pr_total_qty
-    row.amounts = doc.total
+        # 🔹 Current PR total qty for this Gate Entry
+        pr_total_qty = 0
+        for item in doc.items:
+            if getattr(item, "custom_bulk_gate_entry", None) == ge_id:
+                pr_total_qty += item.qty
 
-    # Gate Entry info
-    row.entry_no = gate_entry.name
-    row.entry_date = gate_entry.date
-    row.ge_qty = gate_entry.lr_quantity
+        # If doc-level custom_gate_entry matches this ge_id, add full PR qty
+        if getattr(doc, "custom_gate_entry", None) == ge_id:
+            pr_total_qty += sum(item.qty for item in doc.items)
 
-    # 🔢 Total Received Qty till now
-    total_received_qty = sum(
-        (d.item_qty or 0) for d in gate_entry.received_details
-    )
-
-    # 🔢 PO Total Qty
-    po_total_qty = 0
-    if gate_entry.purchase_order:
-        po = frappe.get_doc("Purchase Order", gate_entry.purchase_order)
-        po_total_qty = sum(item.qty for item in po.items)
-
-    # 🔄 Update Gate Entry Status
-    if total_received_qty >= po_total_qty:
-        gate_entry.status = "Fully Received"
-    else:
-        gate_entry.status = "Partially Received"
-
-    # 🔢 Optional cumulative fields
-    if hasattr(gate_entry, "total_qty"):
-        gate_entry.total_qty = total_received_qty
-
-    if hasattr(gate_entry, "total"):
-        gate_entry.total = sum(
-            (d.amounts or 0) for d in gate_entry.received_details
+        # ➕ Append new received row if not already appended
+        # Prevent duplicate entries for same PR
+        existing_row = next(
+            (d for d in gate_entry.received_details if d.document_no == doc.name),
+            None
         )
 
-    gate_entry.save(ignore_permissions=True)
+        if not existing_row:
+            row = gate_entry.append("received_details", {})
+
+            row.document_no = doc.name
+            row.document_date = doc.posting_date
+            row.item_qty = pr_total_qty
+            row.amounts = doc.total
+
+            row.entry_no = gate_entry.name
+            row.entry_date = gate_entry.date
+            row.ge_qty = gate_entry.lr_quantity
+
+        # 🔢 Total Received Qty till now
+        total_received_qty = sum(
+            (d.item_qty or 0) for d in gate_entry.received_details
+        )
+
+        # 🔢 PO Total Qty
+        po_total_qty = 0
+        if gate_entry.purchase_order:
+            po = frappe.get_doc("Purchase Order", gate_entry.purchase_order)
+            po_total_qty = sum(item.qty for item in po.items)
+
+        # 🔄 Update Gate Entry Status
+        if total_received_qty >= po_total_qty:
+            gate_entry.status = "Fully Received"
+        else:
+            gate_entry.status = "Partially Received"
+
+        # 🔢 Optional cumulative fields
+        if hasattr(gate_entry, "total_qty"):
+            gate_entry.total_qty = total_received_qty
+
+        if hasattr(gate_entry, "total"):
+            gate_entry.total = sum(
+                (d.amounts or 0) for d in gate_entry.received_details
+            )
+
+        gate_entry.save(ignore_permissions=True)
+
 
 @frappe.whitelist()
 def validate_po_serial(scanned_serial, po_items):
@@ -137,45 +211,46 @@ def validate_po_serial(scanned_serial, po_items):
         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
     )
 
-def validate_item(doc, method=None):
+# def validate_item(doc, method=None):
 
-    # 🔹 Check if ANY row has PO
-    po_present = any(row.purchase_order for row in doc.items)
-    if not po_present:
-        return
+#     # 🔹 Check if ANY row has PO
+#     po_present = any(row.purchase_order for row in doc.items)
+#     if not po_present:
+#         return
 
-    for row in doc.items:
+#     for row in doc.items:
 
-        # 🔴 PO mandatory once any row has PO
+#         # 🔴 PO mandatory once any row has PO
 
-        # 🔴 Item must be linked to PO Item
-        if not row.purchase_order_item:
-            frappe.throw(
-                f"Row {row.idx}: Item <b>{row.item_code}</b> does not belong to "
-                f"Purchase Order"
-            )
+#         # 🔴 Item must be linked to PO Item
+#         if not row.purchase_order_item:
+#             frappe.throw(
+#                 f"Row {row.idx}: Item <b>{row.item_code}</b> does not belong to "
+#                 f"Purchase Order"
+                
+#             )
 
-        # 🔹 Fetch PO Item qty
-        po_item = frappe.db.get_value(
-            "Purchase Order Item",
-            row.purchase_order_item,
-            ["qty", "received_qty"],
-            as_dict=True
-        )
+#         # 🔹 Fetch PO Item qty
+#         po_item = frappe.db.get_value(
+#             "Purchase Order Item",
+#             row.purchase_order_item,
+#             ["qty", "received_qty"],
+#             as_dict=True
+#         )
 
-        if not po_item:
-            frappe.throw(
-                f"Row {row.idx}: Invalid Purchase Order Item reference"
-            )
+#         if not po_item:
+#             frappe.throw(
+#                 f"Row {row.idx}: Invalid Purchase Order Item reference"
+#             )
 
-        remaining_qty = (po_item.qty or 0) - (po_item.received_qty or 0)
+#         remaining_qty = (po_item.qty or 0) - (po_item.received_qty or 0)
 
-        # 🔴 Qty validation
-        if row.qty > remaining_qty:
-            frappe.throw(
-                f"Row {row.idx}: Entered Qty <b>{row.qty}</b> exceeds "
-                f"remaining PO Qty <b>{remaining_qty}</b>"
-            )
+#         # 🔴 Qty validation
+#         if row.qty > remaining_qty:
+#             frappe.throw(
+#                 f"Row {row.idx}: Entered Qty <b>{row.qty}</b> exceeds "
+#                 f"remaining PO Qty <b>{remaining_qty}</b>"
+#             )
 
 def assign_serials_from_po_on_submit(doc, method=None):
     """
@@ -253,19 +328,71 @@ def assign_serials_from_po_on_submit(doc, method=None):
         row.serial_no = "\n".join(final_serials)
 
 
+# def on_cancel(doc, method):
+#         if not doc.custom_gate_entry:
+#             return
+
+#         gate_entry = frappe.get_doc("Gate Entry", doc.custom_gate_entry)
+
+#         # 🔥 Remove only THIS PR related rows from child table
+#         gate_entry.received_details = [
+#             d for d in gate_entry.received_details
+#             if d.document_no != doc.name
+#         ]
+
+#         # 🔢 Recalculate total received qty after removal
+#         total_received_qty = sum(
+#             (d.item_qty or 0) for d in gate_entry.received_details
+#         )
+
+#         # 🔢 PO total qty
+#         po_total_qty = 0
+#         if gate_entry.purchase_order:
+#             po = frappe.get_doc("Purchase Order", gate_entry.purchase_order)
+#             po_total_qty = sum(item.qty for item in po.items)
+
+#         # 🔄 Update Gate Entry Status
+#         if total_received_qty == 0:
+#             gate_entry.status = "Submitted"
+#         elif total_received_qty < po_total_qty:
+#             gate_entry.status = "Partially Received"
+#         else:
+#             gate_entry.status = "Fully Received"
+
+#         # 🔢 Optional cumulative fields
+#         if hasattr(gate_entry, "total_qty"):
+#             gate_entry.total_qty = total_received_qty
+
+#         if hasattr(gate_entry, "total"):
+#             gate_entry.total = sum(
+#                 (d.amounts or 0) for d in gate_entry.received_details
+#             )
+
+#         gate_entry.save(ignore_permissions=True)
+
+
 def on_cancel(doc, method):
-        if not doc.custom_gate_entry:
-            return
+    # 🔹 Collect all Gate Entry IDs from PR level and item level
+    gate_entry_ids = set()
 
-        gate_entry = frappe.get_doc("Gate Entry", doc.custom_gate_entry)
+    if getattr(doc, "custom_gate_entry", None):
+        gate_entry_ids.add(doc.custom_gate_entry)
 
-        # 🔥 Remove only THIS PR related rows from child table
+    for item in doc.items:
+        if getattr(item, "custom_bulk_gate_entry", None):
+            gate_entry_ids.add(item.custom_bulk_gate_entry)
+
+    # 🔹 Process each Gate Entry
+    for ge_id in gate_entry_ids:
+        gate_entry = frappe.get_doc("Gate Entry", ge_id)
+
+        # 🔥 Remove only THIS PR related rows from received_details
         gate_entry.received_details = [
             d for d in gate_entry.received_details
             if d.document_no != doc.name
         ]
 
-        # 🔢 Recalculate total received qty after removal
+        # 🔢 Total received qty after removal
         total_received_qty = sum(
             (d.item_qty or 0) for d in gate_entry.received_details
         )
@@ -294,4 +421,3 @@ def on_cancel(doc, method):
             )
 
         gate_entry.save(ignore_permissions=True)
-
