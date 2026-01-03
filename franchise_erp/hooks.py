@@ -378,19 +378,19 @@ doctype_tree_js = {
 #         "filters": [["name", "=", "User-company"]],
 #     }
 # ]
-fixtures = [
-        {"dt": "Property Setter"}
-        ]
+# fixtures = [
+#         {"dt": "Property Setter"}
+#         ]
 
-fixtures = [
-    {
-        "dt": "DocType",
-        "filters": [
-            ["module", "=", "Franchise Erp"],
-            ["custom", "=", 0]
-        ]
-    }
-]
+# fixtures = [
+#     {
+#         "dt": "DocType",
+#         "filters": [
+#             ["module", "=", "Franchise Erp"],
+#             ["custom", "=", 0]
+#         ]
+#     }
+# ]
 
 # fixtures = [
 #     {
