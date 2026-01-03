@@ -324,3 +324,16 @@ frappe.ui.form.on('Sales Invoice', {
         }
     }
 });
+
+frappe.ui.form.on("Sales Invoice", {
+    setup(frm) {
+        frm.set_query("custom_agent", function () {
+            return {
+                filters: {
+                    custom_is_agent: 1
+                }
+            };
+        });
+    }
+});
+
