@@ -105,7 +105,8 @@ doctype_js = {
     "Promotional Scheme":"public/js/promotional_scheme.js",
     "Product Bundle": "public/js/product_bundle.js",
     "Purchase Receipt":"public/js/purchase_receipt.js",
-    "Sales Order":"public/js/sales_order.js"
+    "Sales Order":"public/js/sales_order.js",
+    "Customer":"public/js/customer.js"
 }
 
 
