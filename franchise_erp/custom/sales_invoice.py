@@ -325,3 +325,27 @@ def create_inter_company_purchase_receipt(sales_invoice):
     # pr.submit()
 
     return pr.name
+
+
+import frappe
+from frappe.utils import getdate, today
+
+def validate_overdue_invoice(doc, method):
+    # Only for new Sales Invoice
+    if doc.is_new() and doc.customer:
+        overdue_invoice = frappe.db.exists(
+            "Sales Invoice",
+            {
+                "customer": doc.customer,
+                "status": "Overdue",
+                "due_date": ("<", getdate(today())),
+                "docstatus": 1
+            }
+        )
+
+        if overdue_invoice:
+            frappe.throw(
+                title="Overdue Invoice Exists",
+                msg="Please clear your previous overdue invoice before creating a new Sales Invoice."
+            )
+
