@@ -1,56 +1,55 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-12-08 15:50:03.919961",
+ "creation": "2026-01-03 11:46:27.642230",
  "default_view": "List",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_2avj",
-  "amended_from",
   "general_section",
   "owner_site",
   "entry_no",
-  "consignor",
   "transporter",
-  "stock_point",
-  "document_date",
+  "consignee",
   "column_break_kknq",
   "type",
+  "stock_point",
   "date",
-  "site",
-  "mode",
   "document_no",
+  "column_break_sgwy",
+  "sales_order_no",
+  "document_date",
+  "mode",
+  "site",
   "transport_information_section",
   "quantity",
   "station_from",
   "vehicle_no",
-  "distancein_km",
   "column_break_vrba",
   "unit",
   "station_to",
+  "distancein_km",
+  "column_break_wwjj",
   "policy_no",
   "delivery_date",
   "charge_information_section",
   "to_pay",
   "actual_weight",
   "freight_charges",
-  "declaration_amount",
-  "document_amount",
   "column_break_hmwf",
   "rate",
   "charged_weight",
+  "declaration_amount",
+  "document_amount",
+  "column_break_drha",
   "others_charges",
-  "total_amount",
   "completion_time",
+  "total_amount",
   "others_section",
-  "item_barcode"
+  "item_barcode",
+  "amended_from"
  ],
  "fields": [
-  {
-   "fieldname": "section_break_2avj",
-   "fieldtype": "Section Break"
-  },
   {
    "fieldname": "amended_from",
    "fieldtype": "Link",
@@ -79,11 +78,6 @@
    "in_list_view": 1,
    "label": "Entry No",
    "reqd": 1
-  },
-  {
-   "fieldname": "consignor",
-   "fieldtype": "Data",
-   "label": "Consignor"
   },
   {
    "fieldname": "transporter",
@@ -254,13 +248,37 @@
    "fieldname": "item_barcode",
    "fieldtype": "Barcode",
    "label": "Item Barcode"
+  },
+  {
+   "fieldname": "column_break_sgwy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wwjj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_drha",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_order_no",
+   "fieldtype": "Link",
+   "label": "Sales Order No",
+   "options": "Sales Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consignee",
+   "fieldtype": "Data",
+   "label": "Consignee"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-08 15:51:08.398436",
+ "modified": "2026-01-03 12:10:26.130516",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
