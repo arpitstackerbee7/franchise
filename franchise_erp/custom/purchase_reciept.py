@@ -379,3 +379,13 @@ def on_cancel(doc, method):
             )
 
         gate_entry.save(ignore_permissions=True)
+
+@frappe.whitelist()
+def get_item_by_barcode(barcode):
+    """Return item_code for a barcode"""
+    if not barcode:
+        return None
+    item = frappe.db.get_value("Item Barcode", {"barcode": barcode}, "parent")
+    if not item:
+        return None
+    return {"item_code": item}

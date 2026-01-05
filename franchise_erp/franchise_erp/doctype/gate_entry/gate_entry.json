@@ -38,6 +38,7 @@
   "remarks",
   "section_break_rsit",
   "received_details",
+  "purchase_order_id",
   "amended_from"
  ],
  "fields": [
@@ -227,6 +228,13 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "purchase_order_id",
+   "fieldtype": "Table",
+   "label": "Purchase Order ID",
+   "options": "Purchase Order ID",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -242,7 +250,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-01-02 23:14:42.525996",
+ "modified": "2026-01-05 12:02:12.953312",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

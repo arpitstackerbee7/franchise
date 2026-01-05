@@ -57,7 +57,8 @@
   "others",
   "others_section",
   "remarks",
-  "gate_entry_box_barcode"
+  "gate_entry_box_barcode",
+  "purchase_order_id"
  ],
  "fields": [
   {
@@ -224,7 +225,8 @@
    "fieldname": "station_to",
    "fieldtype": "Link",
    "label": "Station To",
-   "options": "City"
+   "options": "City",
+   "read_only": 1
   },
   {
    "fieldname": "policy_no",
@@ -274,7 +276,7 @@
   {
    "fieldname": "others",
    "fieldtype": "Data",
-   "label": "Others"
+   "label": "Additional Charges"
   },
   {
    "fieldname": "total_amount",
@@ -330,12 +332,14 @@
   {
    "fieldname": "lr_attachment",
    "fieldtype": "Attach",
-   "label": "LR Attachment"
+   "label": "LR Attachment",
+   "reqd": 1
   },
   {
    "fieldname": "sales_invoice_attachment",
    "fieldtype": "Attach",
-   "label": "Sales Invoice Attachment"
+   "label": "Sales Invoice Attachment",
+   "reqd": 1
   },
   {
    "fieldname": "naming_series",

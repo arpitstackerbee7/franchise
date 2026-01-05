@@ -17,9 +17,7 @@ frappe.ui.form.on("Incoming Logistics", {
                 }
             };
         });
-    },
 
-    refresh(frm) {
         frm.set_query("consignor", function() {
             return {
                 filters: {
@@ -27,17 +25,119 @@ frappe.ui.form.on("Incoming Logistics", {
                 }
             };
         });
+
+        if (frm.doc.docstatus === 0) {
+            frm.add_custom_button(
+                __("Fetch Purchase Order ID"),
+                () => open_purchase_order_mapper(frm),
+                __("Get Items From")
+            );
+        }
+
+        // ✅ Sirf Submitted doc
+        if (frm.doc.docstatus !== 1) return;
+
+        // ❌ Agar status "Received" hai → button mat dikhao
+        if (frm.doc.status === "Received") return;
+
+        frm.add_custom_button(
+            __("Create Gate Entry"),
+            function () {
+
+                frappe.route_options = {
+                    incoming_logistics: frm.doc.name,
+                    owner_site: frm.doc.owner_site,
+                    consignor: frm.doc.consignor,
+                    transporter: frm.doc.transporter,
+                    invoice_no: frm.doc.invoice_no,
+                    type: frm.doc.type,
+                    date: frm.doc.date,
+                    gate_entry_box_barcode: frm.doc.gate_entry_box_barcode,
+                    lr_quantity: frm.doc.lr_quantity,
+                    purchase_order: frm.doc.purchase_no,
+                    document_no:frm.doc.lr_document_no,
+                    declaration_amount:frm.doc.declaration_amount,
+                    purchase_order_id: frm.doc.purchase_order_id
+                };
+
+                frappe.set_route("Form", "Gate Entry", "new-gate-entry");
+            },
+            __("Actions")
+        );
     },
     owner_site(frm) {
         if (frm.doc.owner_site) {
             fetch_company_city(frm);
         }
     },
-
     consignor(frm) {
         if (frm.doc.consignor) {
             fetch_supplier_city(frm);
         }
+    },
+    charged_weight(frm) {
+        calculate_freight_and_total(frm);
+    },
+
+    rate(frm) {
+        calculate_freight_and_total(frm);
+    },
+
+    others(frm) {
+        calculate_total(frm);
+    },
+
+    freight(frm) {
+        calculate_total(frm);
+    },
+    type: function(frm) {
+        toggle_site_field(frm);
+    },
+    to_pay(frm) {
+        frm.trigger('toggle_pay_fields');
+    },
+    lr_date(frm) {
+        validate_date_not_future(frm, "lr_date");
+    },
+
+    invoice_date(frm) {
+        validate_date_not_future(frm, "invoice_date");
+    },
+    date(frm) {
+        validate_date_not_future(frm, "date");
+    },
+    onload(frm) {
+        if (frm.is_new()) {
+            const today = frappe.datetime.get_today();
+
+            frm.set_value("lr_date", today);
+            frm.set_value("invoice_date", today);
+            frm.set_value("date", today);
+        }
+
+        if (!frm.doc.to_pay) {
+            frm.set_value('to_pay', 'Yes');
+        }
+        frm.trigger('toggle_pay_fields');
+
+        toggle_site_field(frm);
+    },
+    toggle_pay_fields(frm) {
+        const hide_fields = [
+            'rate',
+            'actual_weight',
+            'charged_weight',
+            'freight',
+            'others',
+            'declaration_amount',
+            'total_amount'
+        ];
+
+        const hide = frm.doc.to_pay === 'No';
+
+        hide_fields.forEach(field => {
+            frm.set_df_property(field, 'hidden', hide);
+        });
     }
 });
 
@@ -59,7 +159,7 @@ async function fetch_company_city(frm) {
         );
 
         if (addr?.message?.custom_citytown) {
-            frm.set_value("station_from", addr.message.custom_citytown);
+            frm.set_value("station_to", addr.message.custom_citytown);
         }
     }
 }
@@ -82,29 +182,10 @@ async function fetch_supplier_city(frm) {
         );
 
         if (addr?.message?.custom_citytown) {
-            frm.set_value("station_to", addr.message.custom_citytown);
+            frm.set_value("station_from", addr.message.custom_citytown);
         }
     }
 }
-frappe.ui.form.on('Incoming Logistics', {
-
-    charged_weight(frm) {
-        calculate_freight_and_total(frm);
-    },
-
-    rate(frm) {
-        calculate_freight_and_total(frm);
-    },
-
-    others(frm) {
-        calculate_total(frm);
-    },
-
-    freight(frm) {
-        calculate_total(frm);
-    }
-});
-
 
 function calculate_freight_and_total(frm) {
 
@@ -129,66 +210,6 @@ function calculate_total(frm) {
     frm.set_value('total_amount', total);
 }
 
-
-frappe.ui.form.on('Incoming Logistics', {
-    onload(frm) {
-        const today = frappe.datetime.get_today();
-
-        ['date', 'invoice_date', 'lr_date'].forEach(field => {
-
-            // Default today
-            if (!frm.doc[field]) {
-                frm.set_value(field, today);
-            }
-
-            // Disable future dates in calendar
-            frm.fields_dict[field].df.options = `max:${today}`;
-            frm.fields_dict[field].refresh();
-        });
-    },
-    onload(frm) {
-        // default Yes agar blank ho
-        if (!frm.doc.to_pay) {
-            frm.set_value('to_pay', 'Yes');
-        }
-        frm.trigger('toggle_pay_fields');
-    },
-
-    to_pay(frm) {
-        frm.trigger('toggle_pay_fields');
-    },
-
-    toggle_pay_fields(frm) {
-        const hide_fields = [
-            'rate',
-            'actual_weight',
-            'charged_weight',
-            'freight',
-            'others',
-            'declaration_amount',
-            'total_amount'
-        ];
-
-        const hide = frm.doc.to_pay === 'No';
-
-        hide_fields.forEach(field => {
-            frm.set_df_property(field, 'hidden', hide);
-        });
-    }
-});
-
-frappe.ui.form.on("Incoming Logistics", {
-
-    type: function(frm) {
-        toggle_site_field(frm);
-    },
-
-    onload: function(frm) {
-        toggle_site_field(frm);
-    }
-
-});
-
 function toggle_site_field(frm) {
 
     if (frm.doc.type === "Sales Return") {
@@ -202,77 +223,6 @@ function toggle_site_field(frm) {
         frm.set_value("site", "");
     }
 }
-
-
-
-frappe.ui.form.on("Incoming Logistics", {
-    refresh(frm) {
-
-        // ✅ Sirf Submitted doc
-        if (frm.doc.docstatus !== 1) return;
-
-        // ❌ Agar status "Received" hai → button mat dikhao
-        if (frm.doc.status === "Received") return;
-
-        frm.add_custom_button(
-            __("Create Gate Entry"),
-            function () {
-
-                frappe.route_options = {
-                    incoming_logistics: frm.doc.name,
-                    owner_site: frm.doc.owner_site,
-                    consignor: frm.doc.consignor,
-                    transporter: frm.doc.transporter,
-                    invoice_no: frm.doc.invoice_no,
-                    type: frm.doc.type,
-                    date: frm.doc.date,
-                    gate_entry_box_barcode: frm.doc.gate_entry_box_barcode,
-                    lr_quantity: frm.doc.lr_quantity,
-                    purchase_order: frm.doc.purchase_no,
-                    document_no:frm.doc.lr_document_no,
-                    declaration_amount:frm.doc.declaration_amount
-                };
-
-                frappe.set_route("Form", "Gate Entry", "new-gate-entry");
-            },
-            __("Actions")
-        );
-    },
-    //  onload(frm) {
-    //     if (frm.doc.incoming_logistics) {
-    //         frm.set_df_property("incoming_logistics", "read_only", 1);
-    //     }
-    // }
-});
-
-
-
-
-frappe.ui.form.on("Incoming Logistics", {
-
-    // Form load hote hi today set karo (only for new doc)
-    onload(frm) {
-        if (frm.is_new()) {
-            const today = frappe.datetime.get_today();
-
-            frm.set_value("lr_date", today);
-            frm.set_value("invoice_date", today);
-            frm.set_value("date", today);
-        }
-    },
-
-    lr_date(frm) {
-        validate_date_not_future(frm, "lr_date");
-    },
-
-    invoice_date(frm) {
-        validate_date_not_future(frm, "invoice_date");
-    },
-
-    date(frm) {
-        validate_date_not_future(frm, "date");
-    }
-});
 
 // Reusable function
 function validate_date_not_future(frm, fieldname) {
@@ -291,5 +241,76 @@ function validate_date_not_future(frm, fieldname) {
     }
 }
 
+function open_purchase_order_mapper(frm) {
 
+    // 🔒 Mandatory Consignor
+    if (!frm.doc.consignor) {
+        frappe.throw({
+            title: __("Mandatory"),
+            message: __("Please select consignor first"),
+        });
+    }
 
+    // 🔒 Mandatory Owner Site
+    if (!frm.doc.owner_site) {
+        frappe.throw({
+            title: __("Mandatory"),
+            message: __("Please select Owner Site first"),
+        });
+    }
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Purchase Order",
+        target: frm,
+
+        setters: {
+            supplier: frm.doc.consignor,
+            company: frm.doc.owner_site,
+        },
+
+        add_filters_group: 1,
+        date_field: "transaction_date",
+
+        columns: [
+            {
+                fieldname: "name",
+                label: __("Purchase Order"),
+                fieldtype: "Link",
+                options: "Purchase Order",
+            },
+            "supplier",
+            "company",
+            "schedule_date",
+        ],
+
+        get_query() {
+            return {
+                filters: {
+                    docstatus: 1,
+                    status: "To Receive and Bill",
+                    supplier: frm.doc.consignor,
+                    company: frm.doc.owner_site,
+                },
+            };
+        },
+
+        action(selections) {
+            if (!selections || !selections.length) {
+                frappe.msgprint(__("Please select at least one Purchase Order"));
+                return;
+            }
+
+            // 🧹 Clear existing Purchase Order child rows
+            frm.clear_table("purchase_order_id");
+
+            // ➕ Add one row per selected PO
+            selections.forEach(po => {
+                let row = frm.add_child("purchase_order_id");
+                row.purchase_order = po;
+            });
+
+            frm.refresh_field("purchase_order_id");
+            this.dialog.hide();
+        },
+    });
+}
