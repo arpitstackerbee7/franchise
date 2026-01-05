@@ -29,6 +29,7 @@
   "lr_date",
   "purchase_no",
   "naming_series",
+  "sales_inovice_no",
   "transport_information_section",
   "maintain_bale_wise_qty",
   "section_break_rlzu",
@@ -341,6 +342,12 @@
    "fieldtype": "Select",
    "label": "Naming Series",
    "options": "TPL-IL-.#####.-.FY."
+  },
+  {
+   "fieldname": "sales_inovice_no",
+   "fieldtype": "Link",
+   "label": "Sales inovice No",
+   "options": "Sales Invoice"
   }
  ],
  "grid_page_length": 50,
@@ -352,7 +359,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-02 17:08:40.745802",
+ "modified": "2026-01-05 11:14:00.725394",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

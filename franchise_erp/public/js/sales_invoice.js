@@ -325,17 +325,6 @@ frappe.ui.form.on('Sales Invoice', {
     }
 });
 
-frappe.ui.form.on("Sales Invoice", {
-    setup(frm) {
-        frm.set_query("custom_agent", function () {
-            return {
-                filters: {
-                    custom_is_agent: 1
-                }
-            };
-        });
-    }
-});
 
 
 frappe.ui.form.on("Sales Invoice", {
@@ -374,4 +363,36 @@ function calculate_due_date(frm) {
             });
         }
     );
+}
+
+
+frappe.ui.form.on("Sales Invoice", {
+    refresh(frm) {
+        toggle_incoming_logistic_button(frm);
+    },
+
+    is_return(frm) {   // 👈 if your field is `s_return`, replace is_return with s_return
+        toggle_incoming_logistic_button(frm);
+    }
+});
+
+function toggle_incoming_logistic_button(frm) {
+    // Remove button first (avoid duplicates)
+    frm.remove_custom_button("Incoming Logistic");
+
+    // Show button only when Return is checked
+    if (frm.doc.is_return) {   // or frm.doc.s_return
+        frm.add_custom_button(
+            __("Incoming Logistic"),
+            () => {
+                // Example action
+                frappe.new_doc("Incoming Logistics", {
+                    sales_invoice: frm.doc.name,
+                    consignor: frm.doc.customer,
+                    sales_inovice_no: frm.doc.name,
+                    transporter:frm.doc.transporter,
+                });
+            }
+        );
+    }
 }
