@@ -395,12 +395,35 @@ def get_item_by_barcode(barcode):
 
 
 
+# def fix_pr_totals(doc, method):
+#     if not doc.custom_source_sales_invoice:
+#         return
+
+#     si = frappe.get_doc("Sales Invoice", doc.custom_source_sales_invoice)
+
+#     for pr_item in doc.items:
+#         si_item = next(
+#             (i for i in si.items if i.item_code == pr_item.item_code),
+#             None
+#         )
+#         if not si_item:
+#             continue
+
+#         rate = si_item.net_rate or si_item.rate
+#         pr_item.rate = rate
+#         pr_item.price_list_rate = rate
+#         pr_item.net_rate = rate
+
+#     doc.calculate_taxes_and_totals()
 def fix_pr_totals(doc, method):
     if not doc.custom_source_sales_invoice:
         return
 
+    doc.flags.ignore_validate_update_after_submit = True
+
     si = frappe.get_doc("Sales Invoice", doc.custom_source_sales_invoice)
 
+    # ---------------- ITEM RATE FIX ----------------
     for pr_item in doc.items:
         si_item = next(
             (i for i in si.items if i.item_code == pr_item.item_code),
@@ -410,8 +433,42 @@ def fix_pr_totals(doc, method):
             continue
 
         rate = si_item.net_rate or si_item.rate
-        pr_item.rate = rate
-        pr_item.price_list_rate = rate
-        pr_item.net_rate = rate
+
+        frappe.db.set_value(
+            "Purchase Receipt Item",
+            pr_item.name,
+            {
+                "rate": rate,
+                "price_list_rate": rate,
+                "net_rate": rate
+            }
+        )
 
     doc.calculate_taxes_and_totals()
+
+    # ---------------- TOTAL INPUT GST ----------------
+    total_gst = 0
+    for tax in doc.taxes:
+        if tax.account_head and "Input" in tax.account_head:
+            total_gst += tax.tax_amount or 0
+
+    if not total_gst or not doc.net_total:
+        return
+
+    # ---------------- UPDATE CUSTOM FIELDS ----------------
+    for item in doc.items:
+        single_rate = item.net_rate
+
+        item_gst = (item.net_amount / doc.net_total) * total_gst
+        single_item_gst = round(item_gst / item.qty, 2)
+
+        frappe.db.set_value(
+            "Purchase Receipt Item",
+            item.name,
+            {
+                "custom_single_item_rate": single_rate,
+                "custom_single_item_input_gst_amount": single_item_gst
+            }
+        )
+
+    frappe.db.commit()

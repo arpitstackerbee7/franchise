@@ -12,11 +12,7 @@ def round2(v):
 # On submit hook for Journal Entry
 # -----------------------------
 def process_journal_entry(doc, method=None):
-    """
-    This should be attached to Journal Entry on_submit.
-    It finds all accounts lines with custom_penalty_invoice (except 'Summary')
-    and saves those Sales Invoices into SIS Processed Sales Invoice.
-    """
+
     # Ensure this runs only for Credit Note JE (as in your logic)
     if getattr(doc, "voucher_type", "") != "Credit Note":
         return
@@ -42,9 +38,9 @@ def process_journal_entry(doc, method=None):
 # -----------------------------
 # Save full invoice with rounding
 # -----------------------------
-def save_full_invoice(company, journal_doc, sales_invoice_name):
-    # Fetch Sales Invoice doc
-    si = frappe.get_doc("Sales Invoice", sales_invoice_name)
+def save_full_invoice(company, journal_doc, delivery_note_name):
+    # Fetch Delivery Note doc
+    si = frappe.get_doc("Delivery Note", delivery_note_name)
 
     # Fetch SIS Configuration for this company
     sis_config = frappe.db.get_value(
@@ -158,12 +154,12 @@ def save_full_invoice(company, journal_doc, sales_invoice_name):
         tig += igst_v
         tiv += inv_val
 
-        # Mark Sales Invoice Item as processed (fields you already had)
+        # Mark Delivery Note Item as processed (fields you already had)
         try:
-            frappe.db.set_value("Sales Invoice Item", it.get("name"),
+            frappe.db.set_value("Delivery Note Item", it.get("name"),
                                 {"custom_sis_processed": 1, "custom_sis_processed_on": now_datetime()})
         except Exception:
-            frappe.log_error(f"Could not update Sales Invoice Item {it.get('name')} for SI {si.name}")
+            frappe.log_error(f"Could not update Delivery Note Item {it.get('name')} for SI {si.name}")
 
     # Assign totals to parent (rounded)
     parent.total_qty = float(round2(tq))
