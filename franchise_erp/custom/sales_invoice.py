@@ -280,52 +280,93 @@ def create_inter_company_purchase_receipt(sales_invoice):
         {"represents_company": si.company},
         "name"
     )
-
     if not supplier:
         frappe.throw("Internal Supplier not found")
 
     pr = frappe.new_doc("Purchase Receipt")
     pr.supplier = supplier
     pr.company = si.represents_company
-    pr.set_posting_time = 1
+    pr.custom_source_sales_invoice = si.name
     pr.posting_date = si.posting_date
+    pr.set_posting_time = 1
     pr.posting_time = si.posting_time
 
-    # 🔗 Safe reference
-    pr.source_sales_invoice = si.name
-
-    # ✅ Customer/Company ka warehouse
-    target_warehouse = frappe.db.get_value(
-        "Company",
-        pr.company,
-        "custom_default_warehouse"
+    warehouse = frappe.get_value(
+        "Warehouse",
+        {"company": pr.company, "is_group": 0},
+        "name"
     )
+    if not warehouse:
+        frappe.throw("Warehouse not found")
 
-    # 🔁 Fallback agar default na ho
-    if not target_warehouse:
-        target_warehouse = frappe.get_value(
-            "Warehouse",
-            {"company": pr.company, "is_group": 0},
+    total_qty = 0
+    for item in si.items:
+        rate = item.net_rate or item.rate
+
+        pr.append("items", {
+            "item_code": item.item_code,
+            "item_name": item.item_name,
+            "qty": item.qty,
+            "uom": item.uom,
+            "rate": rate,
+            "price_list_rate": rate,
+            "warehouse": warehouse
+        })
+        total_qty += item.qty
+
+    # Save PR first
+    pr.run_method("set_missing_values")
+    pr.run_method("calculate_taxes_and_totals")
+    pr.save(ignore_permissions=True)
+
+    # 🔥 FIX ITEM LEVEL VALUES (INDENTATION FIXED)
+    for si_item in si.items:
+        pr_item_name = frappe.get_value(
+            "Purchase Receipt Item",
+            {
+                "parent": pr.name,
+                "item_code": si_item.item_code
+            },
             "name"
         )
 
-    if not target_warehouse:
-        frappe.throw(f"No warehouse found for company {pr.company}")
+        if not pr_item_name:
+            continue
 
-    for item in si.items:
-        pr.append("items", {
-            "item_code": item.item_code,
-            "qty": item.qty,
-            "uom": item.uom,
-            "rate": item.rate,
-            "warehouse": target_warehouse
+        taxable_rate = si_item.net_rate or si_item.rate
+        taxable_amount = taxable_rate * si_item.qty
+
+        frappe.db.set_value("Purchase Receipt Item", pr_item_name, {
+            "price_list_rate": taxable_rate,
+            "rate": taxable_rate,
+            "net_rate": taxable_rate,
+
+            "amount": taxable_amount,
+            "net_amount": taxable_amount,
+
+            "base_price_list_rate": taxable_rate,
+            "base_rate": taxable_rate,
+            "base_net_rate": taxable_rate,
+
+            "base_amount": taxable_amount,
+            "base_net_amount": taxable_amount
         })
 
-    pr.insert()
-    # pr.submit()
+    # 🔥 HEADER TOTAL OVERRIDE
+    frappe.db.set_value("Purchase Receipt", pr.name, {
+        "total": si.net_total,
+        "net_total": si.net_total,
+        "grand_total": si.grand_total,
+        "base_grand_total": si.base_grand_total,
+        "rounded_total": si.rounded_total or si.grand_total,
+        "total_qty": total_qty
+    })
 
+    frappe.db.commit()
     return pr.name
 
+
+#end
 
 import frappe
 from frappe.utils import getdate, today

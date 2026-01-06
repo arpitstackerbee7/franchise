@@ -61,12 +61,15 @@ doc_events = {
         "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_from_po_on_submit",
         "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
                       "franchise_erp.custom.purchase_reciept.on_submit",
+                       "franchise_erp.custom.purchase_reciept.fix_pr_totals"
                       ],
 
         "on_cancel": ["franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel",
-                       "franchise_erp.custom.purchase_reciept.on_cancel" ]
-        
+                       "franchise_erp.custom.purchase_reciept.on_cancel" ],
+    
 
+
+        
     },
 
    "Item": {
@@ -92,7 +95,12 @@ doc_events = {
     },
     "Customer": {
         "before_save": "franchise_erp.custom.customer.before_save"
+    },
+    "Item Price": {
+        "validate": "franchise_erp.custom.item_price.validate_item_price"
     }
+
+
 }
 
 
@@ -254,9 +262,11 @@ doctype_tree_js = {
 # ---------------
 # Override standard doctype classes
 
-override_doctype_class = {
-    "Customer": "franchise_erp.custom.customer.CustomCustomer"
-}
+# override_doctype_class = {
+# 	# "ToDo": "custom_app.overrides.CustomToDo"
+#     "Item Group": "franchise_erp.overrides.item_group.CustomItemGroup"
+
+# }
 
 # Document Events
 # ---------------

@@ -389,3 +389,29 @@ def get_item_by_barcode(barcode):
     if not item:
         return None
     return {"item_code": item}
+
+
+
+
+
+
+def fix_pr_totals(doc, method):
+    if not doc.custom_source_sales_invoice:
+        return
+
+    si = frappe.get_doc("Sales Invoice", doc.custom_source_sales_invoice)
+
+    for pr_item in doc.items:
+        si_item = next(
+            (i for i in si.items if i.item_code == pr_item.item_code),
+            None
+        )
+        if not si_item:
+            continue
+
+        rate = si_item.net_rate or si_item.rate
+        pr_item.rate = rate
+        pr_item.price_list_rate = rate
+        pr_item.net_rate = rate
+
+    doc.calculate_taxes_and_totals()

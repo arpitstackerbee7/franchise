@@ -300,30 +300,67 @@ function calculate_sis(frm, cdt, cdn) {
 
 
 
+
 // arpit
 frappe.ui.form.on('Sales Invoice', {
     refresh(frm) {
         if (frm.doc.docstatus === 1) {
-            frm.add_custom_button(
-                __('Inter Company GRN'),
-                function () {
-                    frappe.call({
-                        method: "franchise_erp.custom.sales_invoice.create_inter_company_purchase_receipt",
-                        args: {
-                            sales_invoice: frm.doc.name
-                        },
-                        callback(r) {
-                            if (r.message) {
-                                frappe.set_route("Form", "Purchase Receipt", r.message);
-                            }
+            frm.add_custom_button(__('Inter Company GRN'), function() {
+                frappe.call({
+                    method: "franchise_erp.custom.sales_invoice.create_inter_company_purchase_receipt",
+                    args: { sales_invoice: frm.doc.name },
+                    callback: function(r) {
+                        if (r.message) {
+                            frappe.set_route("Form", "Purchase Receipt", r.message);
                         }
-                    });
-                },
-                __('Create')
-            );
+                    }
+                });
+            }, __('Create'));
         }
     }
 });
+frappe.ui.form.on("Sales Invoice", {
+    refresh(frm) {
+        // Only after submit
+        if (frm.doc.docstatus !== 1) return;
+
+        frm.add_custom_button(
+            __("Inter Company GRN"),
+            () => {
+                // Prepare items from Sales Invoice
+                let pr_items = (frm.doc.items || []).map(row => ({
+                    item_code: row.item_code,
+                    item_name: row.item_name,
+                    qty: row.qty,
+                    uom: row.uom,
+                    stock_uom: row.stock_uom,
+                    conversion_factor: row.conversion_factor,
+                    rate: row.rate,
+                    amount: row.amount,
+                    warehouse: row.warehouse,
+                    sales_invoice_item: row.name   // optional reference
+                }));
+
+                // Create new Purchase Receipt
+                frappe.new_doc("Purchase Receipt", {
+                    supplier: frm.doc.customer,          // inter-company supplier
+                    company: frm.doc.company,
+                    posting_date: frm.doc.posting_date,
+                    posting_time: frm.doc.posting_time,
+                    set_posting_time: 1,
+
+                    // Reference
+                    bill_no: frm.doc.name,
+                    remarks: `Inter Company GRN against Sales Invoice ${frm.doc.name}`,
+
+                    items: pr_items
+                });
+            },
+            __("Create")
+        );
+    }
+});
+
 
 
 
