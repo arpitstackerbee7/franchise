@@ -1,0 +1,223 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-01-06 21:26:20.026799",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "document_type",
+  "update_existing_role",
+  "column_break_pstf",
+  "role",
+  "column_break_rxdb",
+  "level",
+  "section_break_dirj",
+  "select_",
+  "create_",
+  "cancel_",
+  "email_",
+  "export_",
+  "column_break_znzr",
+  "read_",
+  "delete_",
+  "amend_",
+  "report_",
+  "share_",
+  "column_break_lrmk",
+  "write_",
+  "submit_",
+  "print_",
+  "import_",
+  "section_break_urq2",
+  "amended_from",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Document Type",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "update_existing_role",
+   "fieldtype": "Check",
+   "is_virtual": 1,
+   "label": "Update Existing Role"
+  },
+  {
+   "fieldname": "column_break_pstf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Role",
+   "options": "Role",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_rxdb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "level",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Level",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_dirj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "select_",
+   "fieldtype": "Check",
+   "label": "Select"
+  },
+  {
+   "default": "0",
+   "fieldname": "create_",
+   "fieldtype": "Check",
+   "label": "Create"
+  },
+  {
+   "default": "0",
+   "fieldname": "cancel_",
+   "fieldtype": "Check",
+   "label": "Cancel"
+  },
+  {
+   "default": "0",
+   "fieldname": "email_",
+   "fieldtype": "Check",
+   "label": "Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "export_",
+   "fieldtype": "Check",
+   "label": "Export"
+  },
+  {
+   "fieldname": "column_break_znzr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "read_",
+   "fieldtype": "Check",
+   "label": "Read"
+  },
+  {
+   "default": "0",
+   "fieldname": "delete_",
+   "fieldtype": "Check",
+   "label": "Delete"
+  },
+  {
+   "default": "0",
+   "fieldname": "amend_",
+   "fieldtype": "Check",
+   "label": "Amend"
+  },
+  {
+   "default": "0",
+   "fieldname": "report_",
+   "fieldtype": "Check",
+   "label": "Report"
+  },
+  {
+   "default": "0",
+   "fieldname": "share_",
+   "fieldtype": "Check",
+   "label": "Share"
+  },
+  {
+   "fieldname": "column_break_lrmk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "write_",
+   "fieldtype": "Check",
+   "label": "Write"
+  },
+  {
+   "default": "0",
+   "fieldname": "submit_",
+   "fieldtype": "Check",
+   "label": "Submit"
+  },
+  {
+   "default": "0",
+   "fieldname": "print_",
+   "fieldtype": "Check",
+   "label": "Print"
+  },
+  {
+   "default": "0",
+   "fieldname": "import_",
+   "fieldtype": "Check",
+   "label": "Import"
+  },
+  {
+   "fieldname": "section_break_urq2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "NAFED Role Permission Manager",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "NAFED Role Permission Manager",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-01-06 21:26:20.026799",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "TZU Role Permission Manager",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
