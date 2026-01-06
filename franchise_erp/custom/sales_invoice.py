@@ -271,10 +271,111 @@ def validate_item_from_so(doc, method=None):
 
 
 #arpit
+# @frappe.whitelist()
+# def create_inter_company_purchase_receipt(sales_invoice):
+#     si = frappe.get_doc("Sales Invoice", sales_invoice)
+
+#     supplier = frappe.get_value(
+#         "Supplier",
+#         {"represents_company": si.company},
+#         "name"
+#     )
+#     if not supplier:
+#         frappe.throw("Internal Supplier not found")
+
+#     pr = frappe.new_doc("Purchase Receipt")
+#     pr.supplier = supplier
+#     pr.company = si.represents_company
+#     pr.custom_source_sales_invoice = si.name
+#     pr.posting_date = si.posting_date
+#     pr.set_posting_time = 1
+#     pr.posting_time = si.posting_time
+
+#     warehouse = frappe.get_value(
+#         "Warehouse",
+#         {"company": pr.company, "is_group": 0},
+#         "name"
+#     )
+#     if not warehouse:
+#         frappe.throw("Warehouse not found")
+
+#     total_qty = 0
+#     for item in si.items:
+#         rate = item.net_rate or item.rate
+
+#         pr.append("items", {
+#             "item_code": item.item_code,
+#             "item_name": item.item_name,
+#             "qty": item.qty,
+#             "uom": item.uom,
+#             "rate": rate,
+#             # "price_list_rate": rate,
+#             "warehouse": warehouse
+#         })
+#         total_qty += item.qty
+
+#     # Save PR first
+#     pr.run_method("set_missing_values")
+#     pr.run_method("calculate_taxes_and_totals")
+#     pr.save(ignore_permissions=True)
+
+#     # 🔥 FIX ITEM LEVEL VALUES (INDENTATION FIXED)
+#     for si_item in si.items:
+#         pr_item_name = frappe.get_value(
+#             "Purchase Receipt Item",
+#             {
+#                 "parent": pr.name,
+#                 "item_code": si_item.item_code
+#             },
+#             "name"
+#         )
+
+#         if not pr_item_name:
+#             continue
+
+#         taxable_rate = si_item.net_rate or si_item.rate
+#         taxable_amount = taxable_rate * si_item.qty
+
+#         frappe.db.set_value("Purchase Receipt Item", pr_item_name, {
+#             "price_list_rate": taxable_rate,
+#             "rate": taxable_rate,
+#             "net_rate": taxable_rate,
+
+#             "amount": taxable_amount,
+#             "net_amount": taxable_amount,
+
+#             "base_price_list_rate": taxable_rate,
+#             "base_rate": taxable_rate,
+#             "base_net_rate": taxable_rate,
+
+#             "base_amount": taxable_amount,
+#             "base_net_amount": taxable_amount
+#         })
+
+#     # 🔥 HEADER TOTAL OVERRIDE
+#     frappe.db.set_value("Purchase Receipt", pr.name, {
+#         "total": si.net_total,
+#         "net_total": si.net_total,
+#         "grand_total": si.grand_total,
+#         "base_grand_total": si.base_grand_total,
+#         "rounded_total": si.rounded_total or si.grand_total,
+#         "total_qty": total_qty
+#     })
+
+#     frappe.db.commit()
+#     return pr.name
+
+import frappe
+from frappe.utils import flt
+
+
 @frappe.whitelist()
 def create_inter_company_purchase_receipt(sales_invoice):
     si = frappe.get_doc("Sales Invoice", sales_invoice)
 
+    # -------------------------------
+    # Get Internal Supplier
+    # -------------------------------
     supplier = frappe.get_value(
         "Supplier",
         {"represents_company": si.company},
@@ -283,6 +384,9 @@ def create_inter_company_purchase_receipt(sales_invoice):
     if not supplier:
         frappe.throw("Internal Supplier not found")
 
+    # -------------------------------
+    # Create Purchase Receipt
+    # -------------------------------
     pr = frappe.new_doc("Purchase Receipt")
     pr.supplier = supplier
     pr.company = si.represents_company
@@ -291,6 +395,9 @@ def create_inter_company_purchase_receipt(sales_invoice):
     pr.set_posting_time = 1
     pr.posting_time = si.posting_time
 
+    # -------------------------------
+    # Warehouse
+    # -------------------------------
     warehouse = frappe.get_value(
         "Warehouse",
         {"company": pr.company, "is_group": 0},
@@ -300,26 +407,34 @@ def create_inter_company_purchase_receipt(sales_invoice):
         frappe.throw("Warehouse not found")
 
     total_qty = 0
+
+    # -------------------------------
+    # Append Items (DISCOUNTED RATE)
+    # -------------------------------
     for item in si.items:
-        rate = item.net_rate or item.rate
+        discounted_rate = item.net_rate or item.rate
 
         pr.append("items", {
             "item_code": item.item_code,
             "item_name": item.item_name,
             "qty": item.qty,
             "uom": item.uom,
-            "rate": rate,
-            "price_list_rate": rate,
+            "rate": discounted_rate,
             "warehouse": warehouse
         })
+
         total_qty += item.qty
 
-    # Save PR first
+    # -------------------------------
+    # Save PR
+    # -------------------------------
     pr.run_method("set_missing_values")
     pr.run_method("calculate_taxes_and_totals")
     pr.save(ignore_permissions=True)
 
-    # 🔥 FIX ITEM LEVEL VALUES (INDENTATION FIXED)
+    # -------------------------------
+    # Fix Item Level Amounts (GST SAFE)
+    # -------------------------------
     for si_item in si.items:
         pr_item_name = frappe.get_value(
             "Purchase Receipt Item",
@@ -333,26 +448,25 @@ def create_inter_company_purchase_receipt(sales_invoice):
         if not pr_item_name:
             continue
 
-        taxable_rate = si_item.net_rate or si_item.rate
-        taxable_amount = taxable_rate * si_item.qty
+        discounted_rate = si_item.net_rate or si_item.rate
+        amount = discounted_rate * si_item.qty
 
         frappe.db.set_value("Purchase Receipt Item", pr_item_name, {
-            "price_list_rate": taxable_rate,
-            "rate": taxable_rate,
-            "net_rate": taxable_rate,
-
-            "amount": taxable_amount,
-            "net_amount": taxable_amount,
-
-            "base_price_list_rate": taxable_rate,
-            "base_rate": taxable_rate,
-            "base_net_rate": taxable_rate,
-
-            "base_amount": taxable_amount,
-            "base_net_amount": taxable_amount
+            "price_list_rate": discounted_rate,
+            "rate": discounted_rate,
+            "net_rate": discounted_rate,
+            "amount": amount,
+            "net_amount": amount,
+            "base_price_list_rate": discounted_rate,
+            "base_rate": discounted_rate,
+            "base_net_rate": discounted_rate,
+            "base_amount": amount,
+            "base_net_amount": amount
         })
 
-    # 🔥 HEADER TOTAL OVERRIDE
+    # -------------------------------
+    # Header Totals Override
+    # -------------------------------
     frappe.db.set_value("Purchase Receipt", pr.name, {
         "total": si.net_total,
         "net_total": si.net_total,
@@ -362,8 +476,123 @@ def create_inter_company_purchase_receipt(sales_invoice):
         "total_qty": total_qty
     })
 
+    # -------------------------------
+    # 🔥 CREATE / UPDATE STANDARD BUYING PRICE = 100
+    # -------------------------------
+    for si_item in si.items:
+        create_standard_buying_item_price(
+            item_code=si_item.item_code,
+            source_price_list=si.selling_price_list
+        )
+
     frappe.db.commit()
     return pr.name
+
+
+
+@frappe.whitelist()
+def create_standard_buying_item_price(item_code, source_price_list):
+    """
+    Create OR Update Standard Buying Item Price
+    using rate from given source price list
+    """
+
+    # ----------------------------------
+    # Get Standard Buying Price List
+    # ----------------------------------
+    target_price_list = frappe.db.get_value(
+        "Buying Settings", None, "buying_price_list"
+    )
+
+    if not target_price_list:
+        frappe.throw("Standard Buying Price List not configured")
+
+    # ----------------------------------
+    # Fetch source Item Price
+    # ----------------------------------
+    source_ip = frappe.get_all(
+        "Item Price",
+        filters={
+            "item_code": item_code,
+            "price_list": source_price_list
+        },
+        fields=[
+            "price_list_rate",
+            "currency",
+            "uom",
+            "valid_from",
+            "valid_upto"
+        ],
+        order_by="modified desc",
+        limit=1
+    )
+
+    if not source_ip:
+        frappe.throw(
+            f"Item Price not found in <b>{source_price_list}</b>"
+        )
+
+    source_ip = source_ip[0]
+
+    # ----------------------------------
+    # Check existing Standard Buying
+    # ----------------------------------
+    existing_ip = frappe.get_all(
+        "Item Price",
+        filters={
+            "item_code": item_code,
+            "price_list": target_price_list,
+            "buying": 1,
+            "currency": source_ip.currency,
+            "uom": source_ip.uom
+        },
+        fields=["name"],
+        limit=1
+    )
+
+    # ----------------------------------
+    # UPDATE if exists
+    # ----------------------------------
+    if existing_ip:
+        ip = frappe.get_doc("Item Price", existing_ip[0].name)
+
+        ip.price_list_rate = source_ip.price_list_rate
+        ip.valid_from = source_ip.valid_from
+        ip.valid_upto = source_ip.valid_upto
+
+        ip.save(ignore_permissions=True)
+
+        frappe.msgprint(
+            f"Standard Buying Item Price <b>updated</b> for {item_code}",
+            alert=True
+        )
+
+        return ip.name
+
+    # ----------------------------------
+    # CREATE if not exists
+    # ----------------------------------
+    ip = frappe.new_doc("Item Price")
+    ip.item_code = item_code
+    ip.price_list = target_price_list
+    ip.price_list_rate = source_ip.price_list_rate
+    ip.currency = source_ip.currency
+    ip.uom = source_ip.uom
+    ip.valid_from = source_ip.valid_from
+    ip.valid_upto = source_ip.valid_upto
+
+    ip.buying = 1
+    ip.selling = 0
+
+    ip.insert(ignore_permissions=True)
+
+    frappe.msgprint(
+        f"Standard Buying Item Price <b>created</b> for {item_code}",
+        alert=True
+    )
+
+    return ip.name
+
 
 
 #end
