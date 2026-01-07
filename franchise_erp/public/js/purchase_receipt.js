@@ -154,6 +154,7 @@ function map_gate_entry_to_purchase_receipt(frm, gate_entry, purchase_order) {
         callback: function (res) {
             (res.message || []).forEach(item => {
                 let row = frm.add_child("items");
+
                 row.item_code = item.item_code;
                 row.item_name = item.item_name;
                 row.stock_uom = item.stock_uom;
@@ -162,10 +163,12 @@ function map_gate_entry_to_purchase_receipt(frm, gate_entry, purchase_order) {
                 row.rate = item.rate;
                 row.warehouse = item.warehouse;
 
-                // 🔗 optional links
+                // 🔗 PO links
                 row.purchase_order = purchase_order;
                 row.purchase_order_item = item.name;
-                row.custom_gate_entry = gate_entry;
+
+                // ✅ Gate Entry mapping
+                row.custom_bulk_gate_entry = gate_entry;
             });
 
             frm.refresh_field("items");
