@@ -7,13 +7,10 @@ from frappe.model.mapper import get_mapped_doc
 
 
 class GateEntry(Document):
-    def before_save(self):
-        if self.is_new() and not self.status:
-            self.status = "Draft"
             
     def on_submit(self):
-        # 🔹 Submit par status
         self.status = "Submitted"
+        self.db_update()  # <<<<< ADD THIS LINE
 
         if not self.incoming_logistics:
             frappe.throw("Incoming Logistics is required")
@@ -24,8 +21,8 @@ class GateEntry(Document):
         il_doc.save(ignore_permissions=True)
 
     def on_cancel(self):
-        # 🔹 Cancel par status
         self.status = "Cancelled"
+        self.db_update()  # <<<<< ADD THIS LINE
 
         if not self.incoming_logistics:
             return
@@ -34,7 +31,6 @@ class GateEntry(Document):
         il_doc.status = "Issued"
         il_doc.gate_entry_no = None
         il_doc.save(ignore_permissions=True)
-
 
 # fetch box barcode list
 @frappe.whitelist()
@@ -97,140 +93,94 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
     return "OK"
 
 
+# @frappe.whitelist()
+# def create_purchase_receipt(gate_entry):
+#     gate_entry_doc = frappe.get_doc("Gate Entry", gate_entry)
+
+#     if not gate_entry_doc.purchase_order:
+#         frappe.throw("Purchase Order is not linked in Gate Entry")
+
+#     def update_item(source, target, source_parent):
+#         target.qty = 0
+#         target.received_qty = 0
+#         target.stock_qty = 0
+#         target.serial_no = ""
+#         return target
+
+#     pr = get_mapped_doc(
+#         "Purchase Order",
+#         gate_entry_doc.purchase_order,
+#         {
+#             "Purchase Order": {
+#                 "doctype": "Purchase Receipt",
+#                 "field_map": {"name": "purchase_order"}
+#             },
+#             "Purchase Order Item": {
+#                 "doctype": "Purchase Receipt Item",
+#                 "field_map": {
+#                     "name": "purchase_order_item",
+#                     "parent": "purchase_order",
+#                 },
+#                 "postprocess": update_item,
+#             }
+#         }
+#     )
+
+#     # Gate Entry linking
+#     pr.custom_gate_entry = gate_entry_doc.name
+#     pr.posting_date = gate_entry_doc.date
+#     pr.set_posting_time = 1
+#     pr.supplier = gate_entry_doc.consignor
+#     pr.company = gate_entry_doc.owner_site
+
+#     # 🔥 VERY IMPORTANT
+#     pr.name = None
+#     pr.__islocal = 1
+
+#     return pr.as_dict()
+
 
 @frappe.whitelist()
-def create_purchase_receipt(gate_entry):
-    gate_entry_doc = frappe.get_doc("Gate Entry", gate_entry)
+def get_gate_entry_with_pos(supplier=None):
+    filters = {"docstatus": 1}
+    if supplier:
+        filters["consignor"] = supplier
 
-    if not gate_entry_doc.purchase_order:
-        frappe.throw("Purchase Order is not linked in Gate Entry")
-
-    def update_item(source, target, source_parent):
-        target.qty = 0
-        target.received_qty = 0
-        target.stock_qty = 0
-        target.serial_no = ""
-        return target
-
-    pr = get_mapped_doc(
-        "Purchase Order",
-        gate_entry_doc.purchase_order,
-        {
-            "Purchase Order": {
-                "doctype": "Purchase Receipt",
-                "field_map": {"name": "purchase_order"}
-            },
-            "Purchase Order Item": {
-                "doctype": "Purchase Receipt Item",
-                "field_map": {
-                    "name": "purchase_order_item",
-                    "parent": "purchase_order",
-                },
-                "postprocess": update_item,
-            }
-        }
+    gate_entries = frappe.get_all(
+        "Gate Entry",
+        filters=filters,
+        fields=["name", "owner_site"]
     )
 
-    # Gate Entry linking
-    pr.custom_gate_entry = gate_entry_doc.name
-    pr.posting_date = gate_entry_doc.date
-    pr.set_posting_time = 1
-    pr.supplier = gate_entry_doc.consignor
-    pr.company = gate_entry_doc.owner_site
+    result = []
 
-    # 🔥 VERY IMPORTANT
-    pr.name = None
-    pr.__islocal = 1
+    for ge in gate_entries:
+        ge_doc = frappe.get_doc("Gate Entry", ge.name)
+        # Check if Purchase Orders exist in the child table
+        if ge_doc.get("purchase_order_id"):
+            for po in ge_doc.get("purchase_order_id"):
+                result.append({
+                    "gate_entry": ge.name,
+                    "purchase_order": po.purchase_order,
+                    "owner_site": ge.owner_site
+                })
 
-    return pr.as_dict()
-
-import frappe
+    return result
 
 @frappe.whitelist()
-def get_po_items_from_gate_entry(gate_entry_name):
-
-    ge = frappe.get_doc("Gate Entry", gate_entry_name)
-
-    if not ge.purchase_order:
-        frappe.throw(f"Gate Entry {ge.name} is not linked to any Purchase Order")
-
+def get_po_items(purchase_order):
     po_items = frappe.get_all(
         "Purchase Order Item",
-        filters={"parent": ge.purchase_order},
+        filters={"parent": purchase_order},
         fields=[
-            "name",                     # 🔑 purchase_order_item
+            "name",          # PO Item name (needed for link)
             "item_code",
             "item_name",
-            "description",
-            "schedule_date",
-            "expected_delivery_date",
-            "qty",
-            "uom",
             "stock_uom",
             "conversion_factor",
-            "price_list_rate",
-            "last_purchase_rate",
-            "rate",
-            "base_rate",
-            "amount",
-            "base_amount",
-            "warehouse",
-            "gst_treatment",
-            "custom_base_rate_new",
-            "apply_tds",
-            "taxable_value",
-            "expense_account",
-            "cost_center"
+            "rate",         # ✅ add this
+            "uom",
+            "warehouse"
         ]
     )
-
-    pr_items = []
-
-    for item in po_items:
-        pr_items.append({
-
-            # 🧾 Item details
-            "item_code": item.item_code,
-            "item_name": item.item_name,
-            "description": item.description,
-
-            # 📅 Dates
-            "schedule_date": item.schedule_date,
-            "expected_delivery_date": item.expected_delivery_date,
-
-            # 📦 Qty (Gate Entry case)
-            "qty": 0,
-            "uom": item.uom,
-            "stock_uom": item.stock_uom,
-            "conversion_factor": item.conversion_factor or 1,
-
-            # 💰 Rates
-            "price_list_rate": item.price_list_rate,
-            "last_purchase_rate": item.last_purchase_rate,
-            "rate": item.rate,
-            "base_rate": item.base_rate,
-
-            # 🧮 Amounts (qty = 0 → amount MUST be 0)
-            "amount": 0,
-            "base_amount": 0,
-
-            # 🏬 Accounting
-            "warehouse": item.warehouse,
-            "expense_account": item.expense_account,
-            "cost_center": item.cost_center,
-
-            # 🧾 Tax
-            "gst_treatment": item.gst_treatment,
-            "custom_base_rate_new": item.custom_base_rate_new,
-            "apply_tds": item.apply_tds,
-            "taxable_value": item.taxable_value,
-
-            # 🔗 PO Linking (CRITICAL)
-            "purchase_order": ge.purchase_order,
-            "purchase_order_item": item.name,
-
-            # 🚪 Gate Entry reference
-            "custom_bulk_gate_entry": ge.name
-        })
-
-    return pr_items
+    return po_items

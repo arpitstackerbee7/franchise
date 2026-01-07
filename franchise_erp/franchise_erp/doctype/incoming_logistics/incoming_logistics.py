@@ -14,33 +14,71 @@ from frappe.model.document import Document, flt
 
 class IncomingLogistics(Document):
 
+    def on_submit(self):
+        # Loop through all linked Purchase Orders
+        for po_link in self.purchase_order_id:
+            if not po_link.purchase_order:
+                continue
+
+            # Get the Purchase Order document
+            po = frappe.get_doc("Purchase Order", po_link.purchase_order)
+
+            # Loop through items in PO and map Incoming Logistics ID
+            for po_item in po.items:
+                po_item.custom_incoming_logistic = self.name
+
+            # Save the PO with updated field
+            po.save(ignore_permissions=True)
+
     def validate(self):
+    # Existing validation
         self.validate_unique_lr_per_transporter()
-        if not self.purchase_no or not self.received_qty:
+
+        # ❗ Purchase Order now comes from CHILD TABLE
+        if not self.purchase_order_id or not self.received_qty:
             return
 
-        # 🔹 Get Purchase Order
-        po = frappe.get_doc("Purchase Order", self.purchase_no)
+        # Collect unique Purchase Orders from child table
+        purchase_orders = {
+            row.purchase_order
+            for row in self.purchase_order_id
+            if row.purchase_order
+        }
 
-        # 🔹 PO Total Qty
+        # Safety check
+        if not purchase_orders:
+            return
+
+        # Assumption: One PO per Incoming Logistics
+        purchase_order = list(purchase_orders)[0]
+
+        # 🔹 Fetch Purchase Order
+        po = frappe.get_doc("Purchase Order", purchase_order)
+
+        # 🔹 Total PO Quantity
         po_total_qty = sum(flt(item.qty) for item in po.items)
 
-        # 🔹 Already received qty (from previous Incoming Logistics)
+        # 🔹 Already received qty from PREVIOUS Incoming Logistics
         already_received = frappe.db.sql("""
-            SELECT SUM(received_qty)
-            FROM `tabIncoming Logistics`
-            WHERE purchase_no = %s
-            AND docstatus = 1
-            AND name != %s
-        """, (self.purchase_no, self.name))[0][0] or 0
+            SELECT SUM(il.received_qty)
+            FROM `tabIncoming Logistics` il
+            INNER JOIN `tabPurchase Order ID` poi
+                ON poi.parent = il.name
+            WHERE poi.purchase_order = %s
+            AND il.docstatus = 1
+            AND il.name != %s
+        """, (purchase_order, self.name))[0][0] or 0
 
+        # 🔹 Total including current document
         total_received = already_received + flt(self.received_qty)
 
         # ❌ Validation
         if total_received > po_total_qty:
             frappe.throw(
-                f"Received Qty ({total_received}) cannot be greater than Purchase Order Qty ({po_total_qty})"
+                f"Received Qty ({total_received}) cannot be greater than "
+                f"Purchase Order Qty ({po_total_qty})"
             )
+
 
 
     def before_submit(self):

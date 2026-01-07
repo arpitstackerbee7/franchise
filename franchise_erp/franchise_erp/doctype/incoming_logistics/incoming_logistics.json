@@ -27,7 +27,6 @@
   "site",
   "invoice_no",
   "lr_date",
-  "purchase_no",
   "naming_series",
   "sales_inovice_no",
   "transport_information_section",
@@ -294,12 +293,6 @@
    "label": "Remarks"
   },
   {
-   "fieldname": "purchase_no",
-   "fieldtype": "Data",
-   "label": "Purchase Order No",
-   "read_only": 1
-  },
-  {
    "fieldname": "column_break_cred",
    "fieldtype": "Column Break"
   },
@@ -351,7 +344,14 @@
    "fieldname": "sales_inovice_no",
    "fieldtype": "Link",
    "label": "Sales inovice No",
-   "options": "Sales Invoice"
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "purchase_order_id",
+   "fieldtype": "Table",
+   "label": "Purchase order Id",
+   "options": "Purchase Order ID"
   }
  ],
  "grid_page_length": 50,
@@ -363,7 +363,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-05 11:14:00.725394",
+ "modified": "2026-01-07 22:06:09.030873",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
