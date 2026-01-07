@@ -1,24 +1,24 @@
 import frappe
 from frappe.utils import flt, cint
 
-
-
 @frappe.whitelist()
 def calculate_sis_values(customer, rate):
-
     # ---------------- BASIC CHECK ----------------
     if not customer or not rate:
-        return None   # ❌ silently skip
+        return None
 
-    # ---------------- SKIP FOR CUSTOMER / BRANCH LOGIN ----------------
-    user_type = frappe.db.get_value("User", frappe.session.user, "user_type")
+    user_type = frappe.db.get_value(
+        "User", frappe.session.user, "user_type"
+    )
     if user_type == "Website User":
         return None
 
     # ---------------- CUSTOMER → COMPANY ----------------
-    company = frappe.db.get_value("Customer", customer, "represents_company")
+    company = frappe.db.get_value(
+        "Customer", customer, "represents_company"
+    )
     if not company:
-        return None   # ✅ Branch flow → skip logic
+        return None
 
     # ---------------- SIS CONFIG ----------------
     c = frappe.get_value(
@@ -27,13 +27,13 @@ def calculate_sis_values(customer, rate):
         [
             "output_gst_min_net_rate",
             "output_gst_max_net_rate",
-            "fresh_margin"
+            "fresh_margin",
         ],
-        as_dict=True
+        as_dict=True,
     )
 
     if not c:
-        return None   # ❌ no config → skip
+        return None
 
     rate = flt(rate)
 
@@ -46,12 +46,12 @@ def calculate_sis_values(customer, rate):
         gst_percent = 12
 
     # ---------------- GST INCLUSIVE SPLIT ----------------
-    net_sale_value = flt(rate * 100 / (100 + gst_percent), 2)
+    net_sale_value = flt((rate * 100) / (100 + gst_percent), 2)
     gst_value = flt(rate - net_sale_value, 2)
 
     # ---------------- MARGIN (ON MRP) ----------------
     margin_percent = flt(c.fresh_margin)
-    margin_amount = flt(rate * margin_percent / 100, 2)
+    margin_amount = flt((rate * margin_percent) / 100, 2)
 
     # ---------------- FINAL TAXABLE VALUE ----------------
     taxable_value = flt(net_sale_value - margin_amount, 2)
@@ -62,10 +62,59 @@ def calculate_sis_values(customer, rate):
         "margin_percent": margin_percent,
         "margin_amount": margin_amount,
         "net_sale_value": net_sale_value,
-        "taxable_value": taxable_value
+        "taxable_value": taxable_value,
     }
 
+def apply_sis_pricing(doc, method=None):
+    if not doc.customer:
+        return
 
+    for item in doc.items:
+        old_qty = item.get_db_value("qty")
+
+        # Skip if already calculated & qty unchanged
+        if (
+            item.custom_sis_calculated
+            and old_qty is not None
+            and flt(item.qty) == flt(old_qty)
+        ):
+            continue
+
+        if not item.rate:
+            continue
+
+        d = calculate_sis_values(doc.customer, item.rate)
+        if not d:
+            continue
+
+        # -------- CUSTOM DISPLAY FIELDS --------
+        item.custom_output_gst_ = d.get("gst_percent", 0)
+        item.custom_output_gst_value = d.get("output_gst_value", 0)
+        item.custom_net_sale_value = d.get("net_sale_value", 0)
+        item.custom_margins_ = d.get("margin_percent", 0)
+        item.custom_margin_amount = d.get("margin_amount", 0)
+        item.custom_total_invoice_amount = d.get("taxable_value", 0)
+
+        # -------- FINAL SELLING RATE (GST EXCLUSIVE) --------
+        item.rate = d.get("taxable_value", 0)
+
+        # -------- ITEM TAX TEMPLATE --------
+        item.item_tax_template = get_item_tax_template(
+            d.get("gst_percent", 0)
+        )
+
+        item.custom_sis_calculated = 1
+
+    # Recalculate ERPNext taxes
+    doc.calculate_taxes_and_totals()
+
+def get_item_tax_template(gst_percent):
+    if gst_percent == 5:
+        return "GST 5%"
+    elif gst_percent == 18:
+        return "GST 18%"
+    else:
+        return "GST 0%"
 
 # def apply_sis_pricing(doc, method=None):
 
@@ -132,69 +181,6 @@ def calculate_sis_values(customer, rate):
 #     doc.calculate_taxes_and_totals()
     
 
-from frappe.utils import flt
-
-def apply_sis_pricing(doc, method=None):
-
-    if not doc.customer:
-        return
-
-    for item in doc.items:
-
-        # 🟢 Old qty from DB (None if new row)
-        old_qty = item.get_db_value("qty")
-
-        # 🔒 CASE 1: Already calculated AND qty NOT changed → SKIP
-        if item.custom_sis_calculated and old_qty is not None and flt(item.qty) == flt(old_qty):
-            continue
-
-        # 🟢 No rate? Skip
-        # if not item.rate:
-        #     continue
-
-        # 🔁 Call SIS calculation ONLY when:
-        # - New row
-        # - OR qty changed
-        d = calculate_sis_values(doc.customer, item.rate)
-
-        if not d:
-            continue
-
-        # ✅ Populate custom fields
-        item.custom_output_gst_ = d.get("gst_percent", 0)
-        item.custom_output_gst_value = d.get("output_gst_value", 0)
-        item.custom_margins_ = d.get("margin_percent", 0)
-        item.custom_margin_amount = d.get("margin_amount", 0)
-        item.custom_net_sale_value = d.get("net_sale_value", 0)
-        item.custom_total_invoice_amount = d.get("taxable_value", 0)
-
-        # GST EXCLUSIVE RATE
-        item.rate = d.get("taxable_value", 0)
-        item.net_rate = item.rate
-        item.amount = flt(item.rate * item.qty)
-        item.net_amount = item.amount
-
-        # GST slab
-        item.item_tax_template = get_item_tax_template(
-            d.get("gst_percent", 0)
-        )
-
-        # 🔒 Mark calculated
-        item.custom_sis_calculated = 1
-
-    # 🔁 Recalculate taxes safely
-    doc.calculate_taxes_and_totals()
-
-
-def get_item_tax_template(gst_percent):
-    if gst_percent == 5:
-        return "GST 5%"
-    elif gst_percent == 12:
-        return "GST 12%"
-    elif gst_percent == 18:
-        return "GST 18%"
-    else:
-        return "GST 0%"  # Default fallback
 
 
 def update_packed_items_serial_no(doc, method):
