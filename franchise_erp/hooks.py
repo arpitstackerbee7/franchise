@@ -153,7 +153,18 @@ after_migrate = [
 
 app_include_js = [
     "/assets/franchise_erp/js/back_date_disabled.js",
+    "/assets/franchise_erp/js/session_company.js?v=120"
     ]
+
+   
+
+
+
+# # OR if you want it only in Desk (not in website)
+# desk_include_js = [
+#     "/assets/franchise_erp/js/session_company.js"
+# ]
+
 
 
 
