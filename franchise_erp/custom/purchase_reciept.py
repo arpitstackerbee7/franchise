@@ -211,31 +211,28 @@ def validate_po_serial(scanned_serial, po_items):
         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
     )
 
-
 def validate_item(doc, method=None):
-
     # 🔹 Check if ANY row has PO
     po_present = any(row.purchase_order for row in doc.items)
     if not po_present:
         return
 
     for row in doc.items:
+        if not row.purchase_order:
+            continue  # skip rows without a PO
 
-        # 🔴 PO mandatory once any row has PO
-
-        # 🔴 Item must be linked to PO Item
+        # 🔴 PO Item must be linked to this PO
         if not row.purchase_order_item:
             frappe.throw(
                 f"Row {row.idx}: Item <b>{row.item_code}</b> does not belong to "
                 f"Purchase Order"
-                
             )
 
-        # 🔹 Fetch PO Item qty
+        # Fetch PO Item details and parent PO
         po_item = frappe.db.get_value(
             "Purchase Order Item",
             row.purchase_order_item,
-            ["qty", "received_qty"],
+            ["parent", "qty", "received_qty"],
             as_dict=True
         )
 
@@ -244,9 +241,14 @@ def validate_item(doc, method=None):
                 f"Row {row.idx}: Invalid Purchase Order Item reference"
             )
 
+        if po_item.parent != row.purchase_order:
+            frappe.throw(
+                f"Row {row.idx}: Item <b>{row.item_code}</b> does not belong to "
+                f"Purchase Order <b>{row.purchase_order}</b>"
+            )
+
         remaining_qty = (po_item.qty or 0) - (po_item.received_qty or 0)
 
-        # 🔴 Qty validation
         if row.qty > remaining_qty:
             frappe.throw(
                 f"Row {row.idx}: Entered Qty <b>{row.qty}</b> exceeds "

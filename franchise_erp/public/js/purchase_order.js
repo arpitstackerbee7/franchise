@@ -32,13 +32,13 @@ frappe.ui.form.on("Purchase Order", {
             po_total_qty += flt(row.qty);
         });
 
-        // 4️⃣ Get TOTAL received qty from Incoming Logistics
-        const il_list = await frappe.db.get_list("Incoming Logistics", {
+        // 🔴 CHANGE #1 — Incoming Logistics ❌ parent se nahi
+        // 🔴 CHANGE #2 — CHILD TABLE "Purchase Order ID" se qty uthao
+        const il_list = await frappe.db.get_list("Purchase Order ID", {
             filters: {
-                purchase_no: frm.doc.name,
+                purchase_order: frm.doc.name,   // 🔴 CHANGED
                 docstatus: 1
             },
-            fields: ["received_qty"]
         });
 
         let total_received_qty = 0;
@@ -53,25 +53,35 @@ frappe.ui.form.on("Purchase Order", {
         if (pending_qty <= 0) return;
 
         // ✅ Partial received → show button
-        frm.add_custom_button(
-            __("Incoming Logistics"),
-            () => {
-                frappe.new_doc("Incoming Logistics", {
-                    purchase_no: frm.doc.name,
-                    consignor: frm.doc.supplier,
-                    type: "Purchase",
-                    owner_site: frm.doc.company,
-                    transporter: transporter,
-                    gate_entry: "Yes"
-                });
-            },
-            __("Create")
-        );
+        // frm.add_custom_button(
+        //     __("Incoming Logistics"),
+        //     () => {
+        //         frappe.new_doc("Incoming Logistics", {
 
-        // Optional info
-        // frm.dashboard.add_comment(
-        //     __("Pending Qty : {0}", [pending_qty]),
-        //     "blue"
+        //             // 🔴 CHANGE #3 — REMOVE this (parent field)
+        //             // purchase_no: frm.doc.name,
+
+        //             consignor: frm.doc.supplier,
+        //             type: "Purchase",
+        //             owner_site: frm.doc.company,
+        //             transporter: transporter,
+        //             gate_entry: "Yes",
+
+        //             // 🔴 CHANGE #4 — PO ko CHILD TABLE me map karo
+        //             purchase_order_id: [
+        //                 {
+        //                     purchase_order: frm.doc.name,
+        //                     pending_qty: pending_qty
+        //                 }
+        //             ]
+        //         });
+        //     },
+        //     __("Create")
         // );
+        // Optional info
+        frm.dashboard.add_comment(
+            __("Pending Qty : {0}", [pending_qty]),
+            "blue"
+        );
     }
 });

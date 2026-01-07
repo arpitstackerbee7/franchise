@@ -125,6 +125,45 @@ def get_freight_account(company):
 
     return account
 
+import frappe
+
+@frappe.whitelist()
+def get_gate_entry_with_po_child(doctype, txt, filters, page_length=20, start=0):
+    """
+    Returns Gate Entries for MultiSelectDialog
+    """
+    return frappe.db.sql("""
+        SELECT
+            ge.name AS name,
+            IFNULL(ge.purchase_order_id, '') AS purchase_order_id,
+            IFNULL(ge.purchase_order, '') AS purchase_order,
+            IFNULL(ge.owner_site, '') AS owner_site
+        FROM `tabGate Entry` ge
+        WHERE ge.docstatus = 1
+        AND ge.consignor = %(consignor)s
+    """, filters, as_dict=True)
+
+
+@frappe.whitelist()
+def get_items_from_gate_entry(gate_entry_name):
+    """
+    Returns all items linked to a Gate Entry
+    """
+    items = frappe.db.get_all(
+        'Gate Entry Item',
+        filters={'parent': gate_entry_name},
+        fields=['item_code', 'qty', 'purchase_order', 'purchase_order_item']
+    )
+
+    # Ensure all values are strings or numbers
+    for item in items:
+        item['item_code'] = item.get('item_code') or ''
+        item['qty'] = item.get('qty') or 0
+        item['purchase_order'] = item.get('purchase_order') or ''
+        item['purchase_order_item'] = item.get('purchase_order_item') or ''
+
+    return items
+
 
 
 # import frappe

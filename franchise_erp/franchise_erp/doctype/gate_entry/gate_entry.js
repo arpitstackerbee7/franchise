@@ -157,62 +157,56 @@ function validate_not_future(frm, fieldname) {
     }
 }
 
-frappe.ui.form.on("Gate Entry", {
-    refresh(frm) {
-        // Only Submitted Gate Entry
-        if (frm.doc.docstatus !== 1) return;
+// frappe.ui.form.on("Gate Entry", {
+//     refresh(frm) {
+//         // Only Submitted Gate Entry
+//         if (frm.doc.docstatus !== 1) return;
 
-        // Purchase Order mandatory
-        if (!frm.doc.purchase_order) return;
+//         // Child table mandatory
+//         if (!frm.doc.purchase_order_id || !frm.doc.purchase_order_id.length) return;
 
-        frappe.db.get_doc("Purchase Order", frm.doc.purchase_order).then(po => {
-            let show_button = false;
+//         let show_button = false;
+//         let promises = [];
 
-            (po.items || []).forEach(item => {
-                let ordered_qty = flt(item.qty);
-                let received_qty = flt(item.received_qty);
+//         // 🔥 loop child table POs
+//         (frm.doc.purchase_order_id || []).forEach(row => {
+//             if (!row.purchase_order) return;
 
-                // Show button if partial qty pending
-                if (ordered_qty !== received_qty) {
-                    show_button = true;
-                }
-            });
+//             promises.push(
+//                 frappe.db.get_doc("Purchase Order", row.purchase_order).then(po => {
+//                     (po.items || []).forEach(item => {
+//                         let ordered_qty = flt(item.qty);
+//                         let received_qty = flt(item.received_qty);
 
-            if (!show_button) return;
+//                         if (ordered_qty !== received_qty) {
+//                             show_button = true;
+//                         }
+//                     });
+//                 })
+//             );
+//         });
 
-            frm.add_custom_button(
-                __("Create Purchase Receipt"),
-                () => {
-                    frappe.call({
-                        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.create_purchase_receipt",
-                        args: {
-                            gate_entry: frm.doc.name
-                        },
-                        callback(r) {
-                            if (!r.message) return;
+//         Promise.all(promises).then(() => {
+//             if (!show_button) return;
 
-                            // 🔥 IMPORTANT PART
-                            let doc = frappe.model.sync(r.message)[0];
-                            frappe.set_route("Form", doc.doctype, doc.name);
-                        }
-                    });
-                },
-                __("Create")
-            );
-        });
-    }
-});
+//             frm.add_custom_button(
+//                 __("Create Purchase Receipt"),
+//                 () => {
+//                     frappe.call({
+//                         method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.create_purchase_receipt",
+//                         args: {
+//                             gate_entry: frm.doc.name
+//                         },
+//                         callback(r) {
+//                             if (!r.message) return;
 
-
-frappe.ui.form.on("Gate Entry", {
-    refresh(frm) {
-        //Remove Add Row
-        frm.set_df_property(
-            "gate_entry_box_barcode",
-            "cannot_add_rows",
-            true
-        );
-
-        
-    }
-});
+//                             let doc = frappe.model.sync(r.message)[0];
+//                             frappe.set_route("Form", doc.doctype, doc.name);
+//                         }
+//                     });
+//                 },
+//                 __("Create")
+//             );
+//         });
+//     }
+// });

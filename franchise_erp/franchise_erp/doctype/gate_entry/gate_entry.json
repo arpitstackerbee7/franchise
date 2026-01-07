@@ -20,7 +20,6 @@
   "gate_entry",
   "site",
   "incoming_logistics",
-  "purchase_order",
   "section_break_rlzu",
   "lr_entry_no",
   "declaration_amount",
@@ -207,12 +206,6 @@
    "options": "Gate Entry Box Barcode"
   },
   {
-   "fieldname": "purchase_order",
-   "fieldtype": "Link",
-   "label": "Purchase order ",
-   "options": "Purchase Order"
-  },
-  {
    "allow_on_submit": 1,
    "fieldname": "status",
    "fieldtype": "Select",
@@ -233,8 +226,7 @@
    "fieldname": "purchase_order_id",
    "fieldtype": "Table",
    "label": "Purchase Order ID",
-   "options": "Purchase Order ID",
-   "read_only": 1
+   "options": "Purchase Order ID"
   }
  ],
  "grid_page_length": 50,
@@ -243,14 +235,10 @@
  "links": [
   {
    "link_doctype": "Purchase Receipt",
-   "link_fieldname": "custom_gate_entry"
-  },
-  {
-   "link_doctype": "Purchase Receipt",
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-01-05 12:02:12.953312",
+ "modified": "2026-01-06 18:33:10.320321",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
