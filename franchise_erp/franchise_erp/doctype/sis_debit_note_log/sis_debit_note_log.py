@@ -363,6 +363,150 @@ def get_item_input_gst(item_code, company):
     )
 
     return gst_percent, gst_amount_per_item, single_item_rate
+
+
+# @frappe.whitelist()
+# def fetch_invoices(company, from_date=None, to_date=None):
+#     # -------------------------------------------------------------------
+#     # FETCH CONFIG VALUES
+#     # -------------------------------------------------------------------
+#     fresh_margin, discounted_margin, period_type, auto_credit_note_percent, discount_threshold = frappe.db.get_value(
+#         "SIS Configuration",
+#         {"company": company},
+#         ["fresh_margin", "discounted_margin", "sis_debit_note_creation_period", "auto_credit_note_percent", "discount_threshold"]
+#     )
+
+#     if not period_type:
+#         frappe.throw(_("Please set Debit Note Creation Period in SIS Configuration"))
+
+#     fresh_margin = to_decimal(fresh_margin or 0)
+#     discounted_margin = to_decimal(discounted_margin or 0)
+#     auto_credit_note_percent = to_decimal(auto_credit_note_percent or 0)
+#     discount_threshold = to_decimal(discount_threshold or 0)
+
+#     # -------------------------------------------------------------------
+#     # CLEAN DATE INPUTS
+#     # -------------------------------------------------------------------
+#     if not from_date or from_date in ["", "null"]:
+#         from_date = None
+
+#     if not to_date or to_date in ["", "null"]:
+#         to_date = None
+
+#     # -------------------------------------------------------------------
+#     # SET DATE RANGE USING PERIOD TYPE
+#     # -------------------------------------------------------------------
+#     if period_type == "Fortnightly":
+#         from_date, to_date = get_period_dates("Fortnightly")
+#     else:
+#         if not from_date or not to_date:
+#             from_date, to_date = get_period_dates(period_type)
+
+#     from_date = getdate(from_date)
+#     to_date = getdate(to_date)
+
+#     frappe.log_error("DATE_RANGE_USED", f"From: {from_date}, To: {to_date}, Period: {period_type}")
+
+#     # -------------------------------------------------------------------
+#     # FETCH SALES INVOICE DATA
+#     # -------------------------------------------------------------------
+#     invoices = frappe.db.sql("""
+#         SELECT 
+#             dn.name AS name,
+#             dn.posting_date,
+#             dn.posting_time,
+#             dn.customer,
+#             dni.name AS sii_name,
+#             dni.item_code,
+#             dni.item_name,
+#             dni.qty,
+#             dni.rate,
+#             dni.price_list_rate,
+#             dni.discount_percentage,
+#             (dni.qty * dni.price_list_rate) AS total_amount,
+#             ((dni.qty * dni.price_list_rate) * dni.discount_percentage / 100) AS discount_amount,
+#             ((dni.qty * dni.price_list_rate) - ((dni.qty * dni.price_list_rate) * dni.discount_percentage / 100)) AS net_amount
+#         FROM `tabDelivery Note` AS dn
+#         JOIN `tabDelivery Note Item` AS dni ON dni.parent = dn.name
+#         WHERE 
+#             dn.company = %s
+#             AND dn.posting_date BETWEEN %s AND %s
+#             AND dn.docstatus = 1
+#         ORDER BY dn.posting_date DESC, dn.posting_time DESC, dn.name, dni.idx
+#     """, (company, from_date, to_date), as_dict=True)
+
+
+
+#     processed = []
+
+#     # -------------------------------------------------------------------
+#     # PROCESS EACH ITEM
+#     # -------------------------------------------------------------------
+#     for r in invoices:
+#         net_amount = to_decimal(r.get("net_amount") or 0)
+
+#         # -----------------------------
+#         # OUTPUT GST SLAB LOGIC
+#         # -----------------------------
+#         if net_amount <= Decimal("2500"):
+#             gst_percent = Decimal("5.0")
+#         else:
+#             gst_percent = Decimal("18.0")
+
+#         out_put_gst_value = net_amount * gst_percent / (100 + gst_percent)
+#         net_sale_value = net_amount - out_put_gst_value
+
+#         discount_percentage = to_decimal(r.get("discount_percentage") or 0)
+#         margin_percent = discounted_margin if discount_percentage > 0 else fresh_margin
+#         margin_amount = (net_amount * margin_percent) / Decimal(100)
+#         inv_base_value = net_sale_value - margin_amount
+
+#         # -----------------------------
+#         # INPUT GST FROM PURCHASE
+#         # -----------------------------
+#         item_code = r.get("item_code")
+#         st_percent, gst_amount_per_item, single_item_rate = get_item_input_gst(item_code, company)
+
+#         input_gst_value = gst_amount_per_item 
+#         custom_invoice_amount = single_item_rate
+#         # -----------------------------
+#         # TOTAL SERIAL VALUE = base + gst
+#         # -----------------------------
+#         total_serial_invoice_value = custom_invoice_amount + input_gst_value
+
+#         # -----------------------------
+#         # CD/DN Difference
+#         # -----------------------------
+#         invoice_value = inv_base_value + input_gst_value
+#         cd_dn_value = total_serial_invoice_value - invoice_value
+#         # cd_dn_value = invoice_value - total_serial_invoice_value
+#         # -----------------------------
+#         # STORE PROCESSED VALUES
+#         # -----------------------------
+#         r["gst_percent"] = float(gst_percent)
+#         r["gst_amount"] = round2(out_put_gst_value)
+#         r["net_sale_value"] = round2(net_sale_value)
+#         r["inv_base_value"] = round2(inv_base_value)
+#         r["in_put_gst_value"] = round2(input_gst_value)
+#         r["base_value"] = round2(net_sale_value)
+#         r["margin_percent"] = float(margin_percent)
+#         r["margin_amount"] = round2(margin_amount)
+#         r["total_amount"] = round2(to_decimal(r.get("total_amount") or 0))
+#         r["discount_amount"] = round2(to_decimal(r.get("discount_amount") or 0))
+#         r["net_amount"] = round2(net_amount)
+#         r["invoice_value"] = round2(invoice_value)
+#         r["debit_note"] = round2(cd_dn_value)
+
+#         processed.append(r)
+
+#     return {
+#         "invoice_list": processed,
+#         "period_type": period_type,
+#         "from_date": str(from_date),
+#         "to_date": str(to_date)
+#     }
+
+
 @frappe.whitelist()
 def fetch_invoices(company, from_date=None, to_date=None):
     # -------------------------------------------------------------------
@@ -371,7 +515,13 @@ def fetch_invoices(company, from_date=None, to_date=None):
     fresh_margin, discounted_margin, period_type, auto_credit_note_percent, discount_threshold = frappe.db.get_value(
         "SIS Configuration",
         {"company": company},
-        ["fresh_margin", "discounted_margin", "sis_debit_note_creation_period", "auto_credit_note_percent", "discount_threshold"]
+        [
+            "fresh_margin",
+            "discounted_margin",
+            "sis_debit_note_creation_period",
+            "auto_credit_note_percent",
+            "discount_threshold",
+        ]
     )
 
     if not period_type:
@@ -385,28 +535,42 @@ def fetch_invoices(company, from_date=None, to_date=None):
     # -------------------------------------------------------------------
     # CLEAN DATE INPUTS
     # -------------------------------------------------------------------
-    if not from_date or from_date in ["", "null"]:
-        from_date = None
-
-    if not to_date or to_date in ["", "null"]:
-        to_date = None
+    from_date = None if not from_date or from_date in ["", "null"] else from_date
+    to_date = None if not to_date or to_date in ["", "null"] else to_date
 
     # -------------------------------------------------------------------
-    # SET DATE RANGE USING PERIOD TYPE
+    # SET DATE RANGE (🔥 FIXED LOGIC)
     # -------------------------------------------------------------------
-    if period_type == "Fortnightly":
-        from_date, to_date = get_period_dates("Fortnightly")
-    else:
+    if period_type == "Date Range":
+
+        # FALLBACK: fetch dates from SIS Configuration
         if not from_date or not to_date:
-            from_date, to_date = get_period_dates(period_type)
+            from_date, to_date = frappe.db.get_value(
+                "SIS Configuration",
+                {"company": company},
+                ["from_date", "to_date"]
+            )
+
+        if not from_date or not to_date:
+            frappe.throw(_("Please select From Date and To Date"))
+
+    else:
+        from_date, to_date = get_period_dates(period_type)
+
 
     from_date = getdate(from_date)
     to_date = getdate(to_date)
 
-    frappe.log_error("DATE_RANGE_USED", f"From: {from_date}, To: {to_date}, Period: {period_type}")
+    if from_date > to_date:
+        frappe.throw(_("From Date cannot be greater than To Date"))
+
+    frappe.log_error(
+        "DATE_RANGE_USED",
+        f"From: {from_date}, To: {to_date}, Period: {period_type}"
+    )
 
     # -------------------------------------------------------------------
-    # FETCH SALES INVOICE DATA
+    # FETCH DELIVERY NOTE DATA
     # -------------------------------------------------------------------
     invoices = frappe.db.sql("""
         SELECT 
@@ -424,16 +588,14 @@ def fetch_invoices(company, from_date=None, to_date=None):
             (dni.qty * dni.price_list_rate) AS total_amount,
             ((dni.qty * dni.price_list_rate) * dni.discount_percentage / 100) AS discount_amount,
             ((dni.qty * dni.price_list_rate) - ((dni.qty * dni.price_list_rate) * dni.discount_percentage / 100)) AS net_amount
-        FROM `tabDelivery Note` AS dn
-        JOIN `tabDelivery Note Item` AS dni ON dni.parent = dn.name
+        FROM `tabDelivery Note` dn
+        JOIN `tabDelivery Note Item` dni ON dni.parent = dn.name
         WHERE 
             dn.company = %s
             AND dn.posting_date BETWEEN %s AND %s
             AND dn.docstatus = 1
         ORDER BY dn.posting_date DESC, dn.posting_time DESC, dn.name, dni.idx
     """, (company, from_date, to_date), as_dict=True)
-
-
 
     processed = []
 
@@ -443,14 +605,8 @@ def fetch_invoices(company, from_date=None, to_date=None):
     for r in invoices:
         net_amount = to_decimal(r.get("net_amount") or 0)
 
-        # -----------------------------
-        # OUTPUT GST SLAB LOGIC
-        # -----------------------------
-        if net_amount <= Decimal("2500"):
-            gst_percent = Decimal("5.0")
-        else:
-            gst_percent = Decimal("18.0")
-
+        # OUTPUT GST
+        gst_percent = Decimal("5.0") if net_amount <= Decimal("2500") else Decimal("18.0")
         out_put_gst_value = net_amount * gst_percent / (100 + gst_percent)
         net_sale_value = net_amount - out_put_gst_value
 
@@ -459,41 +615,28 @@ def fetch_invoices(company, from_date=None, to_date=None):
         margin_amount = (net_amount * margin_percent) / Decimal(100)
         inv_base_value = net_sale_value - margin_amount
 
-        # -----------------------------
-        # INPUT GST FROM PURCHASE
-        # -----------------------------
+        # INPUT GST
         item_code = r.get("item_code")
         st_percent, gst_amount_per_item, single_item_rate = get_item_input_gst(item_code, company)
 
-        input_gst_value = gst_amount_per_item 
-        custom_invoice_amount = single_item_rate
-        # -----------------------------
-        # TOTAL SERIAL VALUE = base + gst
-        # -----------------------------
-        total_serial_invoice_value = custom_invoice_amount + input_gst_value
-
-        # -----------------------------
-        # CD/DN Difference
-        # -----------------------------
-        invoice_value = inv_base_value + input_gst_value
+        total_serial_invoice_value = single_item_rate + gst_amount_per_item
+        invoice_value = inv_base_value + gst_amount_per_item
         cd_dn_value = total_serial_invoice_value - invoice_value
-        # cd_dn_value = invoice_value - total_serial_invoice_value
-        # -----------------------------
-        # STORE PROCESSED VALUES
-        # -----------------------------
-        r["gst_percent"] = float(gst_percent)
-        r["gst_amount"] = round2(out_put_gst_value)
-        r["net_sale_value"] = round2(net_sale_value)
-        r["inv_base_value"] = round2(inv_base_value)
-        r["in_put_gst_value"] = round2(input_gst_value)
-        r["base_value"] = round2(net_sale_value)
-        r["margin_percent"] = float(margin_percent)
-        r["margin_amount"] = round2(margin_amount)
-        r["total_amount"] = round2(to_decimal(r.get("total_amount") or 0))
-        r["discount_amount"] = round2(to_decimal(r.get("discount_amount") or 0))
-        r["net_amount"] = round2(net_amount)
-        r["invoice_value"] = round2(invoice_value)
-        r["debit_note"] = round2(cd_dn_value)
+
+        r.update({
+            "gst_percent": float(gst_percent),
+            "gst_amount": round2(out_put_gst_value),
+            "net_sale_value": round2(net_sale_value),
+            "inv_base_value": round2(inv_base_value),
+            "in_put_gst_value": round2(gst_amount_per_item),
+            "margin_percent": float(margin_percent),
+            "margin_amount": round2(margin_amount),
+            "total_amount": round2(to_decimal(r.get("total_amount") or 0)),
+            "discount_amount": round2(to_decimal(r.get("discount_amount") or 0)),
+            "net_amount": round2(net_amount),
+            "invoice_value": round2(invoice_value),
+            "debit_note": round2(cd_dn_value),
+        })
 
         processed.append(r)
 
@@ -501,8 +644,9 @@ def fetch_invoices(company, from_date=None, to_date=None):
         "invoice_list": processed,
         "period_type": period_type,
         "from_date": str(from_date),
-        "to_date": str(to_date)
+        "to_date": str(to_date),
     }
+
 
 # ======================================================
 #       PERIOD DATE CALCULATION LOGIC

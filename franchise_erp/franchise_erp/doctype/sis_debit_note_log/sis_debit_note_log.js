@@ -13,6 +13,8 @@ frappe.ui.form.on("SIS Debit Note Log", {
 
         // Clear old value
         frm.set_value("sis_debit_note_creation_period", "");
+        frm.set_value("from_date", "");
+        frm.set_value("to_date", "");
 
         frappe.call({
             method: "frappe.client.get",
@@ -29,6 +31,10 @@ frappe.ui.form.on("SIS Debit Note Log", {
                         "sis_debit_note_creation_period",
                         config.sis_debit_note_creation_period
                     );
+                    if (config.sis_debit_note_creation_period === "Date Range") {
+                        frm.set_value("from_date", config.from_date);
+                        frm.set_value("to_date", config.to_date);
+                    }
                 } else {
                     frappe.msgprint("No SIS Configuration found for this company.");
                 }

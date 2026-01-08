@@ -23,11 +23,12 @@
    "reqd": 1
   },
   {
+   "depends_on": "eval:doc.sis_debit_note_creation_period == \"Date Range\"\n",
    "fieldname": "from_date",
    "fieldtype": "Date",
-   "hidden": 1,
    "in_list_view": 1,
-   "label": "From Date"
+   "label": "From Date",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_klfj",
@@ -36,9 +37,9 @@
   {
    "fieldname": "to_date",
    "fieldtype": "Date",
-   "hidden": 1,
    "in_list_view": 1,
-   "label": "To Date"
+   "label": "To Date",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_qtrl",
@@ -58,7 +59,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-27 12:38:55.180590",
+ "modified": "2026-01-08 12:44:07.232297",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "SIS Debit Note Log",
