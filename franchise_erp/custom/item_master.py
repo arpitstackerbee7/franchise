@@ -97,6 +97,7 @@ def generate_item_code(doc, method):
         item_code = f"{base_code}-{next_series}"
 
     doc.item_code = item_code
+    doc.item_name = item_code
 
 
 def create_item_barcode(doc, method):

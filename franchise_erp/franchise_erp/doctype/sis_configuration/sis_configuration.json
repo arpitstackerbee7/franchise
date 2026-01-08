@@ -78,11 +78,12 @@
   },
   {
    "allow_on_submit": 1,
+   "default": "Fortnightly",
    "fieldname": "sis_debit_note_creation_period",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "SIS Debit Note Creation Period",
-   "options": "Weekly\nFortnightly\nMonthly\nDate Range",
+   "options": "\nWeekly\nFortnightly\nMonthly\nDate Range",
    "reqd": 1
   },
   {
@@ -122,7 +123,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-08 11:42:00.638299",
+ "modified": "2026-01-08 17:38:34.095899",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "SIS Configuration",
