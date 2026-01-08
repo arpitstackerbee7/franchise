@@ -42,7 +42,7 @@ def apply_purchase_term(doc, method):
 
         for row in sorted(term.purchase_term_charges, key=lambda x: x.sequence):
             if row.charge_type == "Rate Diff":
-                adjusted_rate += row.value
+                adjusted_rate -= row.value
 
         item.rate = adjusted_rate
 
