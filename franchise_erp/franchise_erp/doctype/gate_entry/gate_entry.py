@@ -16,7 +16,6 @@ class GateEntry(Document):
             frappe.throw("Incoming Logistics is required")
 
         il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
-        il_doc.status = "Received"
         il_doc.gate_entry_no = self.name
         il_doc.save(ignore_permissions=True)
 

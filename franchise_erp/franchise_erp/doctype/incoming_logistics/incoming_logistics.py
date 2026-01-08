@@ -30,44 +30,44 @@ class IncomingLogistics(Document):
             # Save the PO with updated field
             po.save(ignore_permissions=True)
 
-    def validate(self):
+    # def validate(self):
 
-        self.validate_unique_lr_per_transporter()
+    #     self.validate_unique_lr_per_transporter()
 
-        if not self.purchase_order_id or not self.received_qty:
-            return
+    #     if not self.purchase_order_id or not self.received_qty:
+    #         return
 
-        total_po_qty = 0
-        po_details = []
+    #     total_po_qty = 0
+    #     po_details = []
 
-        # 🔹 Sum ALL PO item qty
-        for row in self.purchase_order_id:
-            if not row.purchase_order:
-                continue
+    #     # 🔹 Sum ALL PO item qty
+    #     for row in self.purchase_order_id:
+    #         if not row.purchase_order:
+    #             continue
 
-            po = frappe.get_doc("Purchase Order", row.purchase_order)
-            po_qty = sum(flt(item.qty) for item in po.items)
+    #         po = frappe.get_doc("Purchase Order", row.purchase_order)
+    #         po_qty = sum(flt(item.qty) for item in po.items)
 
-            total_po_qty += po_qty
-            po_details.append(f"{row.purchase_order} → {po_qty}")
+    #         total_po_qty += po_qty
+    #         po_details.append(f"{row.purchase_order} → {po_qty}")
 
-        # 🔹 ONLY current document received qty
-        current_received = flt(self.received_qty)
+    #     # 🔹 ONLY current document received qty
+    #     current_received = flt(self.received_qty)
 
-        # ❌ Validation
-        if current_received > total_po_qty:
-            frappe.throw(
-                f"""
-                ❌ <b>Received Qty Invalid</b><br><br>
+    #     # ❌ Validation
+    #     if current_received > total_po_qty:
+    #         frappe.throw(
+    #             f"""
+    #             ❌ <b>Received Qty Invalid</b><br><br>
 
-                <b>Purchase Order Qty:</b><br>
-                {'<br>'.join(po_details)}<br><br>
+    #             <b>Purchase Order Qty:</b><br>
+    #             {'<br>'.join(po_details)}<br><br>
 
-                <b>Total PO Qty:</b> {total_po_qty}<br>
-                <b>Entered Received Qty:</b> {current_received}<br><br>
+    #             <b>Total PO Qty:</b> {total_po_qty}<br>
+    #             <b>Entered Received Qty:</b> {current_received}<br><br>
 
-                """
-            )
+    #             """
+    #         )
 
 
     def before_submit(self):

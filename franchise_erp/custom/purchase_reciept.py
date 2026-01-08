@@ -89,6 +89,7 @@ def restore_serials_on_grn_cancel(doc, method):
 #     gate_entry.save(ignore_permissions=True)
 
 
+
 def on_submit(doc, method):
     # 🔹 Collect all Gate Entry IDs from PR level and item level
     gate_entry_ids = set()
@@ -115,7 +116,6 @@ def on_submit(doc, method):
             pr_total_qty += sum(item.qty for item in doc.items)
 
         # ➕ Append new received row if not already appended
-        # Prevent duplicate entries for same PR
         existing_row = next(
             (d for d in gate_entry.received_details if d.document_no == doc.name),
             None
@@ -123,32 +123,18 @@ def on_submit(doc, method):
 
         if not existing_row:
             row = gate_entry.append("received_details", {})
-
             row.document_no = doc.name
             row.document_date = doc.posting_date
             row.item_qty = pr_total_qty
             row.amounts = doc.total
-
             row.entry_no = gate_entry.name
             row.entry_date = gate_entry.date
             row.ge_qty = gate_entry.lr_quantity
 
-        # 🔢 Total Received Qty till now
+        # 🔢 Total Received Qty
         total_received_qty = sum(
             (d.item_qty or 0) for d in gate_entry.received_details
         )
-
-        # 🔢 PO Total Qty
-        po_total_qty = 0
-        if gate_entry.purchase_order:
-            po = frappe.get_doc("Purchase Order", gate_entry.purchase_order)
-            po_total_qty = sum(item.qty for item in po.items)
-
-        # 🔄 Update Gate Entry Status
-        if total_received_qty >= po_total_qty:
-            gate_entry.status = "Fully Received"
-        else:
-            gate_entry.status = "Partially Received"
 
         # 🔢 Optional cumulative fields
         if hasattr(gate_entry, "total_qty"):
@@ -330,7 +316,6 @@ def assign_serials_from_po_on_submit(doc, method=None):
 
         row.serial_no = "\n".join(final_serials)
 
-
 def on_cancel(doc, method):
     # 🔹 Collect all Gate Entry IDs from PR level and item level
     gate_entry_ids = set()
@@ -357,20 +342,6 @@ def on_cancel(doc, method):
             (d.item_qty or 0) for d in gate_entry.received_details
         )
 
-        # 🔢 PO total qty
-        po_total_qty = 0
-        if gate_entry.purchase_order:
-            po = frappe.get_doc("Purchase Order", gate_entry.purchase_order)
-            po_total_qty = sum(item.qty for item in po.items)
-
-        # 🔄 Update Gate Entry Status
-        if total_received_qty == 0:
-            gate_entry.status = "Submitted"
-        elif total_received_qty < po_total_qty:
-            gate_entry.status = "Partially Received"
-        else:
-            gate_entry.status = "Fully Received"
-
         # 🔢 Optional cumulative fields
         if hasattr(gate_entry, "total_qty"):
             gate_entry.total_qty = total_received_qty
@@ -381,6 +352,8 @@ def on_cancel(doc, method):
             )
 
         gate_entry.save(ignore_permissions=True)
+
+
 
 @frappe.whitelist()
 def get_item_by_barcode(barcode):

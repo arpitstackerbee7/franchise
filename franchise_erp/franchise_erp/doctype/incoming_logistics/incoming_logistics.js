@@ -87,17 +87,17 @@ frappe.ui.form.on("Incoming Logistics", {
             frm.set_value("invoice_date", today);
             frm.set_value("date", today);
         }
-        if (!frm.doc.to_pay) frm.set_value('to_pay', 'Yes');
-        frm.trigger('toggle_pay_fields');
-        toggle_site_field(frm);
-    },
-    toggle_pay_fields(frm) {
-        const hide_fields = [
-            'rate', 'actual_weight', 'charged_weight',
-            'freight', 'others', 'declaration_amount', 'total_amount'
-        ];
-        const hide = frm.doc.to_pay === 'No';
-        hide_fields.forEach(field => frm.set_df_property(field, 'hidden', hide));
+    //     if (!frm.doc.to_pay) frm.set_value('to_pay', 'Yes');
+    //     frm.trigger('toggle_pay_fields');
+    //     toggle_site_field(frm);
+    // },
+    // toggle_pay_fields(frm) {
+    //     const hide_fields = [
+    //         'rate', 'actual_weight', 'charged_weight',
+    //         'freight', 'others', 'declaration_amount', 'total_amount'
+    //     ];
+    //     const hide = frm.doc.to_pay === 'No';
+    //     hide_fields.forEach(field => frm.set_df_property(field, 'hidden', hide));
     }
 });
 
@@ -212,3 +212,4 @@ function open_purchase_order_mapper(frm) {
 }
     });
 }
+

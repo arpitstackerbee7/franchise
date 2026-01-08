@@ -210,7 +210,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "\nDraft\nSubmitted\nPartially Received\nFully Received\nCancelled"
+   "options": "\nDraft\nSubmitted\nCancelled"
   },
   {
    "fieldname": "amended_from",
@@ -238,7 +238,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-01-06 18:33:10.320321",
+ "modified": "2026-01-08 15:28:55.549985",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
@@ -263,18 +263,5 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": [
-  {
-   "color": "Orange",
-   "title": "Partially Received"
-  },
-  {
-   "color": "Purple",
-   "title": "Fully Received"
-  },
-  {
-   "color": "Red",
-   "title": "Cancelled"
-  }
- ]
+ "states": []
 }
