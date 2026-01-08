@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:{company_abbreviation}-OL-{#####}-{FY}",
  "creation": "2026-01-03 11:46:27.642230",
  "default_view": "List",
  "doctype": "DocType",
@@ -8,6 +9,7 @@
  "field_order": [
   "general_section",
   "owner_site",
+  "company_abbreviation",
   "entry_no",
   "consignee",
   "transporter",
@@ -17,7 +19,6 @@
   "date",
   "document_no",
   "column_break_sgwy",
-  "sales_invoice_no",
   "document_date",
   "mode",
   "site",
@@ -47,6 +48,7 @@
   "total_amount",
   "others_section",
   "item_barcode",
+  "sales_invoice_no",
   "amended_from"
  ],
  "fields": [
@@ -67,9 +69,10 @@
   },
   {
    "fieldname": "owner_site",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Owner Site",
+   "options": "Company",
    "reqd": 1
   },
   {
@@ -267,26 +270,32 @@
    "reqd": 1
   },
   {
-   "fieldname": "sales_invoice_no",
-   "fieldtype": "Link",
-   "label": "Sales Invoice No",
-   "options": "Sales Invoice",
-   "read_only": 1
-  },
-  {
    "fieldname": "additional_charges",
    "fieldtype": "Data",
    "label": "Additional Charges"
+  },
+  {
+   "fieldname": "sales_invoice_no",
+   "fieldtype": "Table",
+   "label": "Sales Invoice No",
+   "options": "Sales Invoice Child Table"
+  },
+  {
+   "fetch_from": "owner_site.abbr",
+   "fieldname": "company_abbreviation",
+   "fieldtype": "Data",
+   "label": "Company Abbreviation"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-07 17:37:21.835552",
+ "modified": "2026-01-08 16:06:46.595777",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

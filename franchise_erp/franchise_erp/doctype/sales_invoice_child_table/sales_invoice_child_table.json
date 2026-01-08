@@ -12,6 +12,7 @@
   {
    "fieldname": "sales_invoice",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Sales Invoice",
    "options": "Sales Invoice"
   }
@@ -20,7 +21,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-07 11:57:35.409981",
+ "modified": "2026-01-08 11:15:06.852108",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Sales Invoice Child Table",
