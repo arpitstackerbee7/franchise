@@ -78,7 +78,8 @@ doc_events = {
         "before_save": "franchise_erp.custom.item_master.apply_tzu_setting"
     },
     "Item Group": {
-        "validate": "franchise_erp.custom.item_group.validate_same_parent",
+        "validate": ["franchise_erp.custom.item_group.validate_same_parent",
+                     "franchise_erp.custom.item_group.validate_multiple_category_checks"],
         "autoname": "franchise_erp.custom.item_group.autoname"    
     },
     # "Supplier": {
@@ -153,6 +154,7 @@ after_migrate = [
 
 app_include_js = [
     "/assets/franchise_erp/js/back_date_disabled.js",
+    "/assets/franchise_erp/js/item_group_overrides.js",
     "/assets/franchise_erp/js/session_company.js?v=120"
     ]
 

@@ -195,3 +195,32 @@ function toggle_incoming_logistic_button(frm) {
         );
     }
 }
+
+frappe.ui.form.on("Sales Invoice", {
+    refresh(frm) {
+        if (!frm.doc.customer || frm.doc.docstatus !== 1) return;
+
+        frappe.db.get_value(
+            "Customer",
+            frm.doc.customer,
+            "custom_outgoing_logistics_applicable"
+        ).then(r => {
+            if (r.message?.custom_outgoing_logistics_applicable) {
+                frm.add_custom_button(
+                    __("Outgoing Logistics"),
+                    () => {
+                        frappe.route_options = {
+                            sales_invoice_no: frm.doc.name,          
+                            consignee: frm.doc.customer,         
+                            owner_site: frm.doc.company,
+                            transporter: frm.doc.transporter,
+                            stock_point: frm.doc.set_warehouse
+                        };
+                        frappe.new_doc("Outgoing Logistics");
+                    },
+                    __("Create")
+                );
+            }
+        });
+    }
+});

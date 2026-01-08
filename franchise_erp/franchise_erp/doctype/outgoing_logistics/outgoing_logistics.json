@@ -9,15 +9,15 @@
   "general_section",
   "owner_site",
   "entry_no",
-  "transporter",
   "consignee",
+  "transporter",
   "column_break_kknq",
   "type",
   "stock_point",
   "date",
   "document_no",
   "column_break_sgwy",
-  "sales_order_no",
+  "sales_invoice_no",
   "document_date",
   "mode",
   "site",
@@ -42,7 +42,7 @@
   "declaration_amount",
   "document_amount",
   "column_break_drha",
-  "others_charges",
+  "additional_charges",
   "completion_time",
   "total_amount",
   "others_section",
@@ -80,6 +80,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "consignee.custom_transporter",
    "fieldname": "transporter",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -88,9 +89,9 @@
   },
   {
    "fieldname": "stock_point",
-   "fieldtype": "Data",
-   "in_list_view": 1,
+   "fieldtype": "Link",
    "label": "Stock Point",
+   "options": "Warehouse",
    "reqd": 1
   },
   {
@@ -143,8 +144,9 @@
   },
   {
    "fieldname": "station_from",
-   "fieldtype": "Data",
-   "label": "Station From"
+   "fieldtype": "Link",
+   "label": "Station From",
+   "options": "City"
   },
   {
    "fieldname": "vehicle_no",
@@ -167,8 +169,9 @@
   },
   {
    "fieldname": "station_to",
-   "fieldtype": "Data",
-   "label": "Station To"
+   "fieldtype": "Link",
+   "label": "Station To",
+   "options": "City"
   },
   {
    "fieldname": "policy_no",
@@ -225,11 +228,6 @@
    "label": "Charged Weight"
   },
   {
-   "fieldname": "others_charges",
-   "fieldtype": "Data",
-   "label": "Others Charges"
-  },
-  {
    "fieldname": "total_amount",
    "fieldtype": "Data",
    "label": "Total Amount"
@@ -262,23 +260,30 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "sales_order_no",
+   "fieldname": "consignee",
    "fieldtype": "Link",
-   "label": "Sales Order No",
-   "options": "Sales Order",
+   "label": "Consignee",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sales_invoice_no",
+   "fieldtype": "Link",
+   "label": "Sales Invoice No",
+   "options": "Sales Invoice",
    "read_only": 1
   },
   {
-   "fieldname": "consignee",
+   "fieldname": "additional_charges",
    "fieldtype": "Data",
-   "label": "Consignee"
+   "label": "Additional Charges"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-03 12:10:26.130516",
+ "modified": "2026-01-07 17:37:21.835552",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",

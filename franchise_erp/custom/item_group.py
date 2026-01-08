@@ -1,5 +1,6 @@
 
 import frappe
+from frappe import _
 
 @frappe.whitelist()
 def get_item_group_parents(child_group):
@@ -187,53 +188,36 @@ def get_item_group_path_limited(item_group, max_parents=3):
 
 #for item group tree showing item group name only
 @frappe.whitelist()
-def get_item_group_tree(doctype, parent):
-    parent = parent or "All Item Groups"
-
-    # Agar parent "All Item Groups" hai, to manually root node bana do
-    if parent == "All Item Groups":
-        tree = [{
-            "name": "All Item Groups",
-            "label": "All Item Groups",  # 👈 Manual label
-            "is_group": 1
-        }]
-    else:
-        tree = []
+def get_item_group_tree(doctype, parent=None):
+    parent = parent or ""
 
     data = frappe.get_all(
         "Item Group",
-        filters={"parent_item_group": parent},
-        fields=["name", "item_group_name", "is_group"],
-        order_by="name"
+        filters={
+            "parent_item_group": parent or ""
+        },
+        fields=[
+            "name",
+            "parent_item_group as parent",
+            "item_group_name",
+            "is_group"
+        ],
+        order_by="lft"
     )
 
+    tree = []
     for d in data:
-        label = d.item_group_name if d.item_group_name else d.name
-        node = {
+        tree.append({
             "name": d.name,
-            "label": label,
-            "is_group": d.is_group
-        }
-        tree.append(node)
+            "parent": d.parent,
+            "label": d.item_group_name,
+            "is_group": d.is_group,
+            "expandable": d.is_group
+        })
 
     return tree
 
 
-    data = frappe.get_all(
-        "Item Group",
-        filters={"parent_item_group": parent},
-        fields=["name", "item_group_name", "is_group"],
-        order_by="name"
-    )
-
-    # Return tree nodes
-    return [
-        {
-            "name": d.name,
-            "label": d.item_group_name or d.name,  # 👈 label fallback
-            "is_group": d.is_group
-        } for d in data
-    ]
 
 
 def autoname(doc, method=None):
@@ -242,3 +226,34 @@ def autoname(doc, method=None):
     else:
         # Root node or system-created group
         doc.name = doc.item_group_name
+
+
+def validate_multiple_category_checks(doc,method):
+    # Normalize checkbox values (TreeView / API safe)
+    is_group = int(doc.is_group or 0)
+    is_silhouette = int(doc.custom_is_silhouette or 0)
+
+    is_department = int(doc.custom_is_departmnent or 0)
+    is_collection = int(doc.custom_is_collection or 0)
+    is_division = int(doc.custom_is_division or 0)
+
+    # 1️⃣ Only ONE category checkbox allowed
+    category_flags = [
+        is_silhouette,
+        is_department,
+        is_collection,
+        is_division,
+    ]
+
+    if sum(category_flags) > 1:
+        frappe.throw(
+            _("Only one Item Group Category can be selected"),
+            title=_("Validation Error")
+        )
+
+    # 2️⃣ is_group and is_silhouette cannot be enabled together
+    if is_group and is_silhouette:
+        frappe.throw(
+            _("Item Group(Silhoutte) cannot have 'Is Group' enabled"),
+            title=_("Validation Error")
+        )
