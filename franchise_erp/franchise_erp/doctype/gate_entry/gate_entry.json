@@ -11,6 +11,7 @@
   "owner_site",
   "date",
   "document_no",
+  "transport_service_item",
   "column_break_kknq",
   "type",
   "consignor",
@@ -140,6 +141,7 @@
    "label": "Document No"
   },
   {
+   "default": "Now",
    "fieldname": "document_date",
    "fieldtype": "Date",
    "label": "Document Date"
@@ -151,6 +153,7 @@
    "label": "LR Entry No."
   },
   {
+   "default": "Now",
    "fieldname": "lr_entry_date",
    "fieldtype": "Date",
    "label": "LR Entry Date",
@@ -228,7 +231,19 @@
    "fieldname": "purchase_order_id",
    "fieldtype": "Table",
    "label": "Purchase Order ID",
+<<<<<<< Updated upstream
    "options": "Purchase  ID"
+=======
+   "options": "Purchase Order ID"
+  },
+  {
+   "fieldname": "transport_service_item",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Transport Service Item",
+   "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
+   "options": "Item"
+>>>>>>> Stashed changes
   }
  ],
  "grid_page_length": 50,
@@ -240,7 +255,11 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
+<<<<<<< Updated upstream
  "modified": "2026-01-09 13:40:30.838145",
+=======
+ "modified": "2026-01-09 16:16:32.585373",
+>>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

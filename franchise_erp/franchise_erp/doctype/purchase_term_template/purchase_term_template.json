@@ -8,7 +8,6 @@
  "field_order": [
   "active",
   "term_name",
-  "trade_group",
   "purchase_term_charges"
  ],
  "fields": [
@@ -19,15 +18,6 @@
    "label": "Term Name",
    "reqd": 1,
    "unique": 1
-  },
-  {
-   "default": "INTER STATE",
-   "fieldname": "trade_group",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Trade Group",
-   "options": "\nINTER STATE\nINTRA STATE",
-   "reqd": 1
   },
   {
    "default": "0",
@@ -45,7 +35,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-31 10:37:25.488769",
+ "modified": "2026-01-09 14:42:09.586028",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Purchase Term Template",

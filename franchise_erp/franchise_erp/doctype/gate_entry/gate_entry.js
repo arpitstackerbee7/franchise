@@ -114,22 +114,8 @@ frappe.ui.form.on("Gate Entry", {
 });
 
 
-// set current date and disabled futur date
+// // set current date and disabled futur date
 frappe.ui.form.on("Gate Entry", {
-
-    onload(frm) {
-        const today = frappe.datetime.get_today();
-
-        // 🔒 Disable future dates in calendar
-        frm.set_df_property("document_date", "options", "Today");
-        frm.set_df_property("lr_entry_date", "options", "Today");
-
-        // ✅ Auto set today for new doc
-        if (frm.is_new()) {
-            frm.set_value("document_date", today);
-            frm.set_value("lr_entry_date", today);
-        }
-    },
 
     document_date(frm) {
         validate_not_future(frm, "document_date");
@@ -210,3 +196,63 @@ function validate_not_future(frm, fieldname) {
 //         });
 //     }
 // });
+
+frappe.ui.form.on("Gate Entry", {
+    onload(frm) {
+        set_transport_service_item(frm);
+    },
+
+    refresh(frm) {
+        set_transport_service_item(frm);
+    }
+});
+
+function set_transport_service_item(frm) {
+    // Don't override if already set
+    if (frm.doc.transport_service_item) {
+        return;
+    }
+
+    frappe.db.get_single_value(
+        "TZU Setting",
+        "transport_service_item"
+    ).then(value => {
+        if (value) {
+            frm.set_value("transport_service_item", value);
+        }
+    });
+}
+
+frappe.ui.form.on("Gate Entry", {
+    refresh(frm) {
+        if (frm.doc.docstatus === 1) {
+            frm.add_custom_button(
+                __("Purchase Invoice"),
+                () => {
+                    frappe.call({
+                        method: "franchise_erp.custom.purchase_invoice.create_pi_from_gate_entry",
+                        args: {
+                            gate_entry: frm.doc.name
+                        },
+                        callback(r) {
+                            if (r.message) {
+                                frappe.msgprint({
+                                    title: __("Success"),
+                                    message: __("Purchase Invoice created successfully"),
+                                    indicator: "green"
+                                });
+
+                                frappe.set_route(
+                                    "Form",
+                                    "Purchase Invoice",
+                                    r.message
+                                );
+                            }
+                        }
+                    });
+                },
+                __("Create")
+            );
+        }
+    }
+});

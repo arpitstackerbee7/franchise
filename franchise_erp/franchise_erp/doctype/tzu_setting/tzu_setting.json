@@ -10,6 +10,7 @@
   "serial_no_uom",
   "product_bundle_series",
   "box_barcode_series",
+  "transport_service_item",
   "column_break_dltx",
   "item_name",
   "batch_uom",
@@ -65,13 +66,20 @@
    "fieldname": "box_barcode_series_length",
    "fieldtype": "Int",
    "label": "Box Barcode Series Length"
+  },
+  {
+   "fieldname": "transport_service_item",
+   "fieldtype": "Link",
+   "label": "Transport Service Item",
+   "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
+   "options": "Item"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-12-31 11:12:09.160326",
+ "modified": "2026-01-09 12:57:52.044898",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",

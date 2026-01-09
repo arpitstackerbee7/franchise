@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import flt
 from frappe.utils import add_days
+from frappe.utils import today
 
 def apply_intercompany_gst(doc, method=None):
 
@@ -75,3 +76,57 @@ def set_buffer_due_date(doc, method):
     due_date = getdate(doc.due_date)
 
     doc.custom_buffer_due_date = add_days(due_date, int(buffer_days))
+
+
+@frappe.whitelist()
+def create_pi_from_gate_entry(gate_entry):
+    gate = frappe.get_doc("Gate Entry", gate_entry)
+
+    if gate.docstatus != 1:
+        frappe.throw("Gate Entry must be submitted")
+
+    if not gate.consignor:
+        frappe.throw("Consignor is mandatory")
+
+    if not gate.transport_service_item:
+        frappe.throw("Transport Service Item is missing")
+
+    if not gate.incoming_logistics:
+        frappe.throw("Incoming Logistics is missing")
+
+    # Prevent duplicate PI (docstatus != 2)
+    if frappe.db.exists(
+        "Purchase Invoice",
+        {
+            "custom_gate_entry_": gate.name,
+            "docstatus": ["!=", 2]
+        }
+    ):
+        frappe.throw("Purchase Invoice already created for this Gate Entry")
+
+
+    # Get rate from Incoming Logistics
+    rate = frappe.db.get_value(
+        "Incoming Logistics",
+        gate.incoming_logistics,
+        "rate"
+    ) or 0
+
+    # Create Purchase Invoice
+    pi = frappe.new_doc("Purchase Invoice")
+    pi.supplier = gate.consignor
+    pi.company = gate.owner_site
+    pi.bill_date = today()
+
+    # Link back (recommended)
+    pi.custom_gate_entry_ = gate.name
+
+    # Add item
+    pi.append("items", {
+        "item_code": gate.transport_service_item,
+        "qty": 1,
+        "rate": rate
+    })
+
+    pi.save()
+    return pi.name
