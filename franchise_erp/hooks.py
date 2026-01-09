@@ -155,7 +155,9 @@ after_migrate = [
 app_include_js = [
     "/assets/franchise_erp/js/back_date_disabled.js",
     "/assets/franchise_erp/js/item_group_overrides.js",
-    "/assets/franchise_erp/js/session_company.js?v=120"
+    "/assets/franchise_erp/js/session_company.js?v=120",
+    "/assets/franchise_erp/js/customer_quick_entry.js",
+    "/assets/franchise_erp/js/customer_quick_entry_patch.js"
     ]
 
    

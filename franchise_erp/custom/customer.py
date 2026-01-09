@@ -11,8 +11,6 @@ class CustomCustomer(Customer):
 
 
 def before_save(doc, method):
-    if not doc.mobile_no and not doc.custom_mobile_no_customer:
-        frappe.throw("Please enter either Mobile Number or Reference Mobile Number.")
 
     if doc.mobile_no:
         if not doc.mobile_no.isdigit() or len(doc.mobile_no) != 10:
