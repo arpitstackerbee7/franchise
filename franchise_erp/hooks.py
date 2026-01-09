@@ -57,7 +57,7 @@ doc_events = {
         "before_save": "franchise_erp.custom.purchase_order.apply_purchase_term_freight"
     },
     "Purchase Receipt": {
-        "validate":"franchise_erp.custom.purchase_reciept.validate_item",
+        "validate":["franchise_erp.custom.purchase_reciept.validate_item","franchise_erp.custom.purchase_reciept.validate_gate_entry"],
         "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_from_po_on_submit",
         "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
                       "franchise_erp.custom.purchase_reciept.on_submit",

@@ -447,3 +447,55 @@ def fix_pr_totals(doc, method):
         )
 
     frappe.db.commit()
+
+
+
+# def validate_gate_entry(doc, method):
+#     if not doc.supplier:
+#         return
+
+#     # Supplier gate entry flag
+#     gate_required = frappe.db.get_value(
+#         "Supplier",
+#         doc.supplier,
+#         "custom_gate_entry"
+#     )
+
+#     # Agar supplier ke liye gate entry required nahi
+#     if not gate_required:
+#         return
+
+#     # Items check
+#     for row in doc.items:
+#         if not row.custom_bulk_gate_entry:
+#             frappe.throw(
+#                 "First create Gate Entry, then Purchase Receipt can be saved."
+#             )
+import frappe
+
+def validate_gate_entry(doc, method):
+    # Supplier mandatory check
+    if not doc.supplier:
+        return
+
+    # 🔹 IF Source Sales Invoice present → allow save
+    if doc.custom_source_sales_invoice:
+        return
+
+    # Supplier gate entry flag
+    gate_required = frappe.db.get_value(
+        "Supplier",
+        doc.supplier,
+        "custom_gate_entry"
+    )
+
+    # Agar supplier ke liye gate entry required nahi
+    if not gate_required:
+        return
+
+    # Items check
+    for row in doc.items:
+        if not row.custom_bulk_gate_entry:
+            frappe.throw(
+                "First create Gate Entry, then Purchase Receipt can be saved."
+            )

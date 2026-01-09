@@ -86,3 +86,35 @@ frappe.ui.form.on("Item", {
         });
     }
 });
+
+// frappe.ui.form.on('Item', {
+//     onload(frm) {
+//         // Detect duplicate item (new doc but data already filled)
+//         if (frm.is_new() && frm.doc.name && frm.doc.name.startsWith('new-item')) {
+
+//             // Clear Barcodes child table
+//             frm.clear_table('barcodes');
+
+//             // Refresh table UI
+//             frm.refresh_field('barcodes');
+//         }
+//     }
+// });
+frappe.ui.form.on('Item', {
+    onload(frm) {
+        // Only for Duplicate / New Item
+        if (frm.is_new() && frm.doc.name && frm.doc.name.startsWith('new-item')) {
+
+            // Clear Barcodes child table
+            frm.clear_table('barcodes');
+            frm.refresh_field('barcodes');
+        }
+    },
+
+    is_stock_item(frm) {
+        // Non-stock item → item_code blank
+        if (frm.doc.is_stock_item == 0) {
+            frm.set_value('item_code', '');
+        }
+    }
+});

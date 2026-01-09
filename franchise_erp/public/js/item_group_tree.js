@@ -8,7 +8,7 @@ frappe.after_ajax(() => {
             const parent_label = node.parent_label || null;
 
             if (!parent_label) {
-                return `<b class="tree-label">All Item Groups</b>`;
+                return `<b class="tree-label">.</b>`;
             }
 
             const title = node.data?.title || node.label || "Unnamed Group";
