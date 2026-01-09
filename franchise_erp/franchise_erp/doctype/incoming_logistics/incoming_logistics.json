@@ -383,11 +383,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
-<<<<<<< Updated upstream
- "modified": "2026-01-09 13:40:31.613614",
-=======
  "modified": "2026-01-09 17:44:23.588653",
->>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
