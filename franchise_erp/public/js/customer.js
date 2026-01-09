@@ -57,7 +57,6 @@ function set_required_fields(frm) {
         .then(r => {
             const is_group = r.message.is_group;
 
-            // ✅ SAME RULE
             frm.set_df_property("custom_transporter", "reqd", is_group ? 1 : 0);
             frm.set_df_property("custom_mobile_no_customer", "reqd", is_group ? 0 : 1);
         });
