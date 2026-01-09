@@ -177,7 +177,8 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Issued\nReceived\nPaid"
+   "options": "Issued\nReceived\nPaid",
+   "read_only": 1
   },
   {
    "fieldname": "transport_information_section",
@@ -381,7 +382,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-08 15:20:27.192443",
+ "modified": "2026-01-08 19:01:03.219531",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

@@ -5,7 +5,13 @@ frappe.ui.form.on("Incoming Logistics", {
         });
 
         frm.set_query("consignor", function() {
-            return { filters: { is_transporter: 0 } };
+            return { 
+                filters: [
+                        ["is_transporter", "=", 0],
+                        ["custom_is_agent", "=", 0],
+                        ["custom_gate_entry", "=", 1]
+                    ]
+             };
         });
 
         if (frm.doc.docstatus === 0) {
