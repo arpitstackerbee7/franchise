@@ -23,6 +23,7 @@ frappe.ui.form.on("Customer", {
 frappe.ui.form.on("Customer", {
     onload(frm) {
         apply_company_credit_rules(frm);
+        set_required_fields(frm);
     },
 
     refresh(frm) {
@@ -31,20 +32,11 @@ frappe.ui.form.on("Customer", {
 
     custom_company(frm) {
         apply_company_credit_rules(frm);
-    }
-});
-
-
-
-frappe.ui.form.on("Customer", {
-    custom_company(frm) {
-        set_required_fields(frm);
-    },
-
-    onload(frm) {
         set_required_fields(frm);
     }
 });
+
+
 
 function set_required_fields(frm) {
     if (!frm.doc.custom_company) {
