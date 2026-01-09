@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2026-01-02 15:56:40.915759",
  "default_view": "List",
@@ -382,7 +381,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-08 19:01:03.219531",
+ "modified": "2026-01-09 11:39:16.391638",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

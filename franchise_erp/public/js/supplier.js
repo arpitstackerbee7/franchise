@@ -21,3 +21,15 @@ frappe.ui.form.on("Supplier", {
         });
     }
 });
+
+frappe.ui.form.on("Supplier", {
+    setup(frm) {
+        frm.set_query("custom_purchase_terms_template", function () {
+            return {
+                filters: {
+                    active: 1
+                }
+            };
+        });
+    }
+});

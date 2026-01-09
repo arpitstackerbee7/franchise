@@ -67,6 +67,7 @@
    "fieldname": "gate_entry",
    "fieldtype": "Data",
    "label": "Gate Entry No",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -111,7 +112,8 @@
   {
    "fieldname": "lr_quantity",
    "fieldtype": "Data",
-   "label": "LR Quantity"
+   "label": "LR Quantity",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_dmpn",
@@ -120,8 +122,7 @@
   {
    "fieldname": "declaration_amount",
    "fieldtype": "Float",
-   "label": "Declaration Amount",
-   "reqd": 1
+   "label": "Declaration Amount"
   },
   {
    "fieldname": "others_section",
@@ -210,7 +211,8 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "\nDraft\nSubmitted\nCancelled"
+   "options": "\nDraft\nSubmitted\nCancelled",
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",
@@ -238,7 +240,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-01-08 15:28:55.549985",
+ "modified": "2026-01-09 11:20:52.304081",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
