@@ -40,7 +40,7 @@ def apply_purchase_term(doc, method):
 
         adjusted_rate = item.custom_base_rate_new
 
-        for row in sorted(term.purchase_term_charges, key=lambda x: x.sequence):
+        for row in term.purchase_term_charges:
             if row.charge_type == "Rate Diff":
                 adjusted_rate -= row.value
 
@@ -81,9 +81,17 @@ def apply_purchase_term_freight(doc, method):
     if not doc.custom_purchase_term:
         return
 
-    freight_account = get_freight_account(doc.company)
-
     term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
+
+    has_freight = any(
+        row.charge_type == "Freight"
+        for row in term.purchase_term_charges
+    )
+
+    if not has_freight:
+        return
+
+    freight_account = get_freight_account(doc.company)
 
     for row in term.purchase_term_charges:
         if row.charge_type != "Freight":
@@ -102,7 +110,7 @@ def apply_purchase_term_freight(doc, method):
         tax.add_deduct_tax = "Add"
         tax.account_head = freight_account
         tax.tax_amount = row.value
-        tax.total=row.value+doc.total
+        tax.total = row.value + doc.total
         tax.description = "Freight Charges (Purchase Term)"
 
 
