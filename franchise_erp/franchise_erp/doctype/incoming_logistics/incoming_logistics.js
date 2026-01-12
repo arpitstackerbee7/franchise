@@ -16,7 +16,7 @@ frappe.ui.form.on("Incoming Logistics", {
 
         if (frm.doc.docstatus === 0) {
             frm.add_custom_button(
-                __("Fetch Purchase Order ID"),
+                __("Fetch ID "),
                 () => open_purchase_order_mapper(frm),
                 __("Get Items From")
             );
@@ -30,7 +30,7 @@ frappe.ui.form.on("Incoming Logistics", {
             __("Create Gate Entry"),
             function () {
                 // Map all selected purchase orders
-                const po_list = (frm.doc.purchase_order_id || []).map(row => row.purchase_order);
+                const po_list = (frm.doc.purchase_ids || []).map(row => row.purchase_order);
 
                 frappe.route_options = {
                     incoming_logistics: frm.doc.name,
@@ -45,7 +45,8 @@ frappe.ui.form.on("Incoming Logistics", {
                     purchase_orders: po_list, // send array of POs instead of single field
                     document_no: frm.doc.lr_document_no,
                     declaration_amount: frm.doc.declaration_amount,
-                    purchase_order_id :frm.doc.purchase_order_id
+                    purchase_ids :frm.doc.purchase_ids,
+                    quantity_as_per_invoice: frm.doc.received_qty
                 };
 
                 frappe.set_route("Form", "Gate Entry", "new-gate-entry");
@@ -203,17 +204,17 @@ function open_purchase_order_mapper(frm) {
     }
 
     // Get list of already added POs
-    const existing_pos = (frm.doc.purchase_order_id || []).map(r => r.purchase_order);
+    const existing_pos = (frm.doc.purchase_ids || []).map(r => r.purchase_order);
 
     selections.forEach(po => {
         // Add only if not already in table
         if (!existing_pos.includes(po)) {
-            let row = frm.add_child("purchase_order_id");
+            let row = frm.add_child("purchase_ids");
             row.purchase_order = po;
         }
     });
 
-    frm.refresh_field("purchase_order_id");
+    frm.refresh_field("purchase_ids");
     this.dialog.hide();
 }
     });

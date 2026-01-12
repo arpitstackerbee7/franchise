@@ -57,7 +57,7 @@
   "others_section",
   "remarks",
   "gate_entry_box_barcode",
-  "purchase_order_id"
+  "purchase_ids"
  ],
  "fields": [
   {
@@ -367,10 +367,10 @@
    "read_only": 1
   },
   {
-   "fieldname": "purchase_order_id",
+   "fieldname": "purchase_ids",
    "fieldtype": "Table",
-   "label": "Purchase order Id",
-   "options": "Purchase  ID"
+   "label": "Purchase Id's",
+   "options": "Purchase Items Details"
   }
  ],
  "grid_page_length": 50,
@@ -382,7 +382,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-12 11:48:08.737316",
+ "modified": "2026-01-12 17:40:44.226405",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

@@ -143,7 +143,7 @@ def get_gate_entry_with_po_child(doctype, txt, filters, page_length=20, start=0)
     return frappe.db.sql("""
         SELECT
             ge.name AS name,
-            IFNULL(ge.purchase_order_id, '') AS purchase_order_id,
+            IFNULL(ge.purchase_ids, '') AS purchase_ids,
             IFNULL(ge.purchase_order, '') AS purchase_order,
             IFNULL(ge.owner_site, '') AS owner_site
         FROM `tabGate Entry` ge

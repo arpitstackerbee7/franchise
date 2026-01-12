@@ -149,13 +149,13 @@ function validate_not_future(frm, fieldname) {
 //         if (frm.doc.docstatus !== 1) return;
 
 //         // Child table mandatory
-//         if (!frm.doc.purchase_order_id || !frm.doc.purchase_order_id.length) return;
+//         if (!frm.doc.purchase_ids || !frm.doc.purchase_ids.length) return;
 
 //         let show_button = false;
 //         let promises = [];
 
 //         // 🔥 loop child table POs
-//         (frm.doc.purchase_order_id || []).forEach(row => {
+//         (frm.doc.purchase_ids || []).forEach(row => {
 //             if (!row.purchase_order) return;
 
 //             promises.push(

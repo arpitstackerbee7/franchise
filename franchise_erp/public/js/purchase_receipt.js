@@ -135,10 +135,7 @@ frappe.ui.form.on("Purchase Receipt", {
         });
     }
 });
-
-
 function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
-
     // 🧹 Remove default empty row only once
     if (frm.doc.items?.length === 1 && !frm.doc.items[0].item_code) {
         frm.clear_table("items");
@@ -150,13 +147,21 @@ function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
             gate_entry: gate_entry
         },
         callback(res) {
-            const items = res.message || [];
+            if (!res.message) {
+                frappe.msgprint(__("No response received for Gate Entry {0}", [gate_entry]));
+                return;
+            }
+
+            // Extract items and totals from the response safely
+            const items = res.message.items || res.message || [];
+            const po_totals = res.message.totals || null;
 
             if (!items.length) {
                 frappe.msgprint(__("No items found for Gate Entry {0}", [gate_entry]));
                 return;
             }
 
+            // Add each item to the Purchase Receipt items table
             items.forEach(item => {
                 let row = frm.add_child("items");
 
@@ -168,68 +173,157 @@ function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
                 row.rate = item.rate;
                 row.warehouse = item.warehouse;
 
-                // 🔗 Proper PO linking
+                // Link to Purchase Order
                 row.purchase_order = item.purchase_order;
                 row.purchase_order_item = item.name;
 
-                // 🔗 Gate Entry link
+                // Link to Gate Entry
                 row.custom_bulk_gate_entry = gate_entry;
             });
 
+            // Update totals if they exist in the response
+            if (po_totals) {
+                frm.set_value("total_qty", po_totals.total_qty);
+                frm.set_value("total", po_totals.total);
+                frm.set_value("total_taxes_and_charges", po_totals.total_taxes_and_charges);
+                frm.set_value("grand_total", po_totals.grand_total);
+                frm.set_value("rounding_adjustment", po_totals.rounding_adjustment);
+                frm.set_value("rounded_total", po_totals.rounded_total);
+                frm.set_value("disable_rounded_total", po_totals.disable_rounded_total);
+                frm.set_value("in_words", po_totals.in_words);
+                frm.set_value("advance_paid", po_totals.advance_paid);
+                frm.set_value("additional_discount_percentage", po_totals.additional_discount_percentage);
+                frm.set_value("discount_amount", po_totals.discount_amount);
+            }
+
+            // Refresh the items table to show newly added rows
             frm.refresh_field("items");
         }
     });
 }
-function open_gate_entry_mapper(frm) {
 
+function open_gate_entry_mapper(frm) {
     if (!frm.doc.supplier) {
-        frappe.throw({
-            title: __("Mandatory"),
-            message: __("Please select Supplier first"),
-        });
+        frappe.throw(__("Please select Supplier first"));
     }
 
-    let dialog = new frappe.ui.form.MultiSelectDialog({
-        doctype: "Gate Entry",
-        target: frm,
-
-        setters: {
-            consignor: frm.doc.supplier
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_pending_gate_entries",
+        args: {
+            supplier: frm.doc.supplier
         },
+        callback(r) {
+            let data = r.message || [];
 
-        get_query() {
-            return {
-                filters: {
-                    consignor: frm.doc.supplier,
-                    docstatus: 1
-                }
-            };
-        },
-
-        columns: [
-            { fieldname: "name", label: __("Gate Entry ID"), fieldtype: "Data" }
-        ],
-
-        action(selections) {
-
-            if (!selections || !selections.length) {
-                frappe.msgprint(__("Please select at least one Gate Entry"));
+            if (!data.length) {
+                frappe.msgprint(__("No pending Gate Entries found"));
                 return;
             }
 
-            // ✅ SINGLE call per Gate Entry
-            selections.forEach(gate_entry => {
-                map_gate_entry_to_purchase_receipt(frm, gate_entry);
-            });
+            let dialog = new frappe.ui.form.MultiSelectDialog({
+                doctype: "Gate Entry",
+                target: frm,
 
-            // 🔹 Close the popup after processing
-            dialog.dialog.hide();
+                setters: {},
+
+                get_query() {
+                    return {
+                        filters: {
+                            name: ["in", data.map(d => d.gate_entry)],
+                            supplier: frm.doc.consignor
+                        }
+                    };
+                },
+
+                columns: [
+                    { fieldname: "name", label: __("Gate Entry") },
+                    { fieldname: "consignor", label: __("Supplier") }
+                ],
+
+                action(selections) {
+                    if (!selections.length) {
+                        frappe.msgprint(__("Please select at least one Gate Entry"));
+                        return;
+                    }
+
+                    selections.forEach(ge => {
+                        map_gate_entry_to_purchase_receipt(frm, ge);
+                    });
+
+                    dialog.dialog.hide();
+                }
+            });
         }
     });
 }
 
-frappe.ui.form.on("Purchase Receipt", {
-    refresh(frm) {
-        frm.set_df_property("title", "read_only", 1);
+
+
+
+function open_gate_entry_mapper(frm) {
+    if (!frm.doc.supplier) {
+        frappe.throw(__("Please select Supplier first"));
     }
-});
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_pending_gate_entries",
+        args: {
+            supplier: frm.doc.supplier
+        },
+        callback(r) {
+            let data = r.message || [];
+
+            if (!data.length) {
+                frappe.msgprint(__("No pending Gate Entries found"));
+                return;
+            }
+
+            let dialog = new frappe.ui.form.MultiSelectDialog({
+                doctype: "Gate Entry",
+                target: frm,
+
+                // 👇 VERY IMPORTANT
+                setters: {
+                    consignor: frm.doc.supplier
+                },
+
+                get_query() {
+                    return {
+                        filters: {
+                            name: ["in", data.map(d => d.gate_entry)],
+                            consignor: frm.doc.supplier
+                        }
+                    };
+                },
+
+                columns: [
+                    {
+                        fieldname: "name",
+                        label: __("Gate Entry"),
+                        fieldtype: "Link",
+                        options: "Gate Entry"
+                    },
+                    {
+                        fieldname: "consignor",
+                        label: __("Supplier"),
+                        fieldtype: "Link",
+                        options: "Supplier"
+                    }
+                ],
+
+                action(selections) {
+                    if (!selections.length) {
+                        frappe.msgprint(__("Please select at least one Gate Entry"));
+                        return;
+                    }
+
+                    selections.forEach(ge => {
+                        map_gate_entry_to_purchase_receipt(frm, ge);
+                    });
+
+                    dialog.dialog.hide();
+                }
+            });
+        }
+    });
+}

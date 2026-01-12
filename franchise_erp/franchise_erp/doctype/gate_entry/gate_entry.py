@@ -156,8 +156,8 @@ def get_gate_entry_with_pos(supplier=None):
     for ge in gate_entries:
         ge_doc = frappe.get_doc("Gate Entry", ge.name)
         # Check if Purchase Orders exist in the child table
-        if ge_doc.get("purchase_order_id"):
-            for po in ge_doc.get("purchase_order_id"):
+        if ge_doc.get("purchase_ids"):
+            for po in ge_doc.get("purchase_ids"):
                 result.append({
                     "gate_entry": ge.name,
                     "purchase_order": po.purchase_order,
@@ -174,7 +174,7 @@ def get_po_items_from_gate_entry(gate_entry):
 
     po_list = [
         row.purchase_order
-        for row in ge.purchase_order_id
+        for row in ge.purchase_ids
         if row.purchase_order
     ]
 
@@ -200,3 +200,36 @@ def get_po_items_from_gate_entry(gate_entry):
     )
 
     return po_items
+
+
+
+@frappe.whitelist()
+def get_pending_gate_entries(supplier):
+    result = []
+
+    gate_entries = frappe.get_all(
+        "Gate Entry",
+        filters={
+            "consignor": supplier,
+            "docstatus": 1
+        },
+        fields=["name", "quantity_as_per_invoice"]
+    )
+
+    for ge in gate_entries:
+        # total received qty from Purchase Receipt
+        received_qty = frappe.db.sql("""
+            SELECT IFNULL(SUM(pri.qty), 0)
+            FROM `tabPurchase Receipt Item` pri
+            WHERE pri.custom_bulk_gate_entry = %s
+              AND pri.docstatus < 2
+        """, ge.name)[0][0]
+
+        # 🔑 show only if pending qty exists
+        if received_qty < ge.quantity_as_per_invoice:
+            result.append({
+                "gate_entry": ge.name,
+                "pending_qty": ge.quantity_as_per_invoice - received_qty
+            })
+
+    return result

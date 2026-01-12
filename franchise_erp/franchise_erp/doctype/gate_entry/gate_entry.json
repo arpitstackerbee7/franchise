@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "format:TPL-GE-{#####}-{FY}",
  "creation": "2026-01-02 22:39:58.720291",
  "default_view": "List",
@@ -23,6 +24,7 @@
   "section_break_rlzu",
   "lr_entry_no",
   "declaration_amount",
+  "quantity_as_per_invoice",
   "column_break_vrba",
   "lr_entry_date",
   "pending_qty",
@@ -37,7 +39,7 @@
   "remarks",
   "section_break_rsit",
   "received_details",
-  "purchase_order_id",
+  "purchase_ids",
   "amended_from"
  ],
  "fields": [
@@ -227,18 +229,23 @@
    "search_index": 1
   },
   {
-   "fieldname": "purchase_order_id",
-   "fieldtype": "Table",
-   "label": "Purchase Order ID",
-   "options": "Purchase  ID"
-  },
-  {
    "fieldname": "transport_service_item",
    "fieldtype": "Link",
    "hidden": 1,
    "label": "Transport Service Item",
    "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
    "options": "Item"
+  },
+  {
+   "fieldname": "quantity_as_per_invoice",
+   "fieldtype": "Int",
+   "label": "Quantity as per Invoice"
+  },
+  {
+   "fieldname": "purchase_ids",
+   "fieldtype": "Table",
+   "label": "Purchase Id's",
+   "options": "Purchase Items Details"
   }
  ],
  "grid_page_length": 50,
@@ -250,7 +257,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-01-12 10:28:14.495587",
+ "modified": "2026-01-12 17:43:43.161799",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

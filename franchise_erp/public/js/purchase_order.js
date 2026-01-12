@@ -68,7 +68,7 @@ frappe.ui.form.on("Purchase Order", {
         //             gate_entry: "Yes",
 
         //             // 🔴 CHANGE #4 — PO ko CHILD TABLE me map karo
-        //             purchase_order_id: [
+        //             purchase_ids: [
         //                 {
         //                     purchase_order: frm.doc.name,
         //                     pending_qty: pending_qty

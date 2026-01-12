@@ -16,7 +16,7 @@ class IncomingLogistics(Document):
 
     def on_submit(self):
         # Loop through all linked Purchase Orders
-        for po_link in self.purchase_order_id:
+        for po_link in self.purchase_ids:
             if not po_link.purchase_order:
                 continue
 
@@ -34,14 +34,14 @@ class IncomingLogistics(Document):
 
     #     self.validate_unique_lr_per_transporter()
 
-    #     if not self.purchase_order_id or not self.received_qty:
+    #     if not self.purchase_ids or not self.received_qty:
     #         return
 
     #     total_po_qty = 0
     #     po_details = []
 
     #     # 🔹 Sum ALL PO item qty
-    #     for row in self.purchase_order_id:
+    #     for row in self.purchase_ids:
     #         if not row.purchase_order:
     #             continue
 
