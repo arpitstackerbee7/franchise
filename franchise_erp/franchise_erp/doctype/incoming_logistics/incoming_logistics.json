@@ -370,7 +370,7 @@
    "fieldname": "purchase_order_id",
    "fieldtype": "Table",
    "label": "Purchase order Id",
-   "options": "Purchase Order ID"
+   "options": "Purchase  ID"
   }
  ],
  "grid_page_length": 50,
@@ -382,7 +382,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-12 10:38:01.674550",
+ "modified": "2026-01-12 11:48:08.737316",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
