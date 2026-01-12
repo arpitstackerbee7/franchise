@@ -34,7 +34,7 @@ def apply_early_payment_discount(doc, method):
         discount_percent = supplier.custom_allow_cash_discount_
 
         # ✅ Decide discount base
-        if supplier.custom_applied_on == "Net Total":
+        if supplier.custom_applied_on == "Taxable Amount":
             invoice_base = pi.net_total
         elif supplier.custom_applied_on == "Grand Total":
             invoice_base = pi.grand_total

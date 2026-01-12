@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "naming_series:",
  "creation": "2026-01-02 15:56:40.915759",
  "default_view": "List",
@@ -122,11 +123,11 @@
    "label": "LR Document No"
   },
   {
-   "allow_in_quick_entry": 1,
    "allow_on_submit": 1,
    "default": "Yes",
    "fieldname": "gate_entry",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Gate Entry"
   },
   {
@@ -345,14 +346,12 @@
   {
    "fieldname": "lr_attachment",
    "fieldtype": "Attach",
-   "label": "LR Attachment",
-   "reqd": 1
+   "label": "LR Attachment"
   },
   {
    "fieldname": "sales_invoice_attachment",
    "fieldtype": "Attach",
-   "label": "Sales Invoice Attachment",
-   "reqd": 1
+   "label": "Sales Invoice Attachment"
   },
   {
    "fieldname": "naming_series",
@@ -371,7 +370,7 @@
    "fieldname": "purchase_order_id",
    "fieldtype": "Table",
    "label": "Purchase order Id",
-   "options": "Purchase  ID"
+   "options": "Purchase Order ID"
   }
  ],
  "grid_page_length": 50,
@@ -383,7 +382,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-09 17:44:23.588653",
+ "modified": "2026-01-12 10:38:01.674550",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
