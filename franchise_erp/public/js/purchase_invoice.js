@@ -170,23 +170,23 @@ frappe.ui.form.on("Purchase Invoice", {
 
 
 
-frappe.ui.form.on("Purchase Invoice", {
-    refresh(frm) {
-        toggle_bill_fields(frm);
-    },
-    is_return(frm) {
-        toggle_bill_fields(frm);
-    }
-});
+// frappe.ui.form.on("Purchase Invoice", {
+//     refresh(frm) {
+//         toggle_bill_fields(frm);
+//     },
+//     is_return(frm) {
+//         toggle_bill_fields(frm);
+//     }
+// });
 
-function toggle_bill_fields(frm) {
-    if (frm.doc.is_return) {
-        // Purchase Return → NOT mandatory
-        frm.set_df_property("bill_no", "reqd", 0);
-        frm.set_df_property("bill_date", "reqd", 0);
-    } else {
-        // Normal Purchase Invoice → Mandatory
-        frm.set_df_property("bill_no", "reqd", 1);
-        frm.set_df_property("bill_date", "reqd", 1);
-    }
-}
+// function toggle_bill_fields(frm) {
+//     if (frm.doc.is_return) {
+//         // Purchase Return → NOT mandatory
+//         frm.set_df_property("bill_no", "reqd", 0);
+//         frm.set_df_property("bill_date", "reqd", 0);
+//     } else {
+//         // Normal Purchase Invoice → Mandatory
+//         frm.set_df_property("bill_no", "reqd", 1);
+//         frm.set_df_property("bill_date", "reqd", 1);
+//     }
+// }
