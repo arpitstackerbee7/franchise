@@ -34,7 +34,7 @@ frappe.ui.form.on("Purchase Order", {
 
         // 🔴 CHANGE #1 — Incoming Logistics ❌ parent se nahi
         // 🔴 CHANGE #2 — CHILD TABLE "Purchase Order ID" se qty uthao
-        const il_list = await frappe.db.get_list("Purchase  ID", {
+        const il_list = await frappe.db.get_list("Purchase Items Details", {
             filters: {
                 purchase_order: frm.doc.name,   // 🔴 CHANGED
                 docstatus: 1
