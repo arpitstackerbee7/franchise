@@ -15,9 +15,9 @@ class PurchaseTermTemplate(Document):
 					f"Row {row.idx}: Rate Diff can only be applied on Item"
 				)
 
-			if row.charge_type == "Discount" and row.apply_on != "Net Total":
+			if row.charge_type == "Discount" and row.apply_on != "Taxable Amount":
 				frappe.throw(
-					f"Row {row.idx}: Discount can only be applied on Net Total"
+					f"Row {row.idx}: Discount can only be applied on Taxable Amount"
 				)
 
 			# VALUE TYPE VALIDATION

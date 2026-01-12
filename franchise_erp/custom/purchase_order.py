@@ -66,14 +66,12 @@ def apply_purchase_term(doc, method):
     # 3️⃣ PUSH TO ERPNext STANDARD FIELDS
     # -----------------------------------
     if header_discount_percent:
-        doc.apply_discount_on = row.apply_on
+        doc.apply_discount_on = "Net Total"
         doc.additional_discount_percentage = header_discount_percent
 
 
     elif total_flat_discount:
-        doc.apply_discount_on = row.apply_on
-        print(row.value_type)
-        print(row.apply_on)
+        doc.apply_discount_on = "Net Total"
         doc.discount_amount = total_flat_discount
 
 

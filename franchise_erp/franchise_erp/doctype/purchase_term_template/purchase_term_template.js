@@ -30,9 +30,9 @@ function apply_charge_rules(frm, row) {
     }
 
     if (row.charge_type === "Discount") {
-        grid.update_docfield_property("apply_on", "options", ["Net Total"]);
+        grid.update_docfield_property("apply_on", "options", ["Taxable Amount"]);
         grid.update_docfield_property("apply_on", "read_only", 1);
-        frappe.model.set_value(row.doctype, row.name, "apply_on", "Net Total");
+        frappe.model.set_value(row.doctype, row.name, "apply_on", "Taxable Amount");
     }
 
     /* ---------------- VALUE TYPE RULES ---------------- */
