@@ -122,3 +122,32 @@ function apply_company_credit_rules(frm) {
         frm.refresh_field("credit_limits");
     });
 }
+
+
+//validation for credit limit validation
+frappe.ui.form.on("Customer", {
+    onload(frm) {
+        if (frm.is_new()) {
+            auto_add_credit_limit_row(frm);
+        }
+    },
+
+    refresh(frm) {
+        auto_add_credit_limit_row(frm);
+    }
+});
+
+function auto_add_credit_limit_row(frm) {
+    if (!frm.doc.credit_limits || frm.doc.credit_limits.length === 0) {
+        let row = frm.add_child("credit_limits");
+
+        // Default company set karo
+        row.company = frappe.defaults.get_default("Company");
+
+        // credit_limit intentionally BLANK
+        row.credit_limit = null;
+
+        frm.refresh_field("credit_limits");
+    }
+}
+

@@ -75,9 +75,7 @@ doc_events = {
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
         "after_insert": "franchise_erp.custom.item_master.create_item_barcode",
-        "before_save": "franchise_erp.custom.item_master.apply_tzu_setting",
-        # "on_update" : "franchise_erp.custom.item_master.existing_item_price_update" #existing validation
-        "on_update" : "franchise_erp.custom.item_master.existing_item_price_update"
+        "before_save": "franchise_erp.custom.item_master.apply_tzu_setting"
     },
     "Item Group": {
         "validate": ["franchise_erp.custom.item_group.validate_same_parent",
@@ -123,8 +121,7 @@ doctype_js = {
     "Purchase Receipt":"public/js/purchase_receipt.js",
     "Sales Order":"public/js/sales_order.js",
     "Customer":"public/js/customer.js",
-    "BOM":"public/js/bom.js",
-    "Delivery Note": "public/js/delivery_note.js"
+    "BOM":"public/js/bom.js"
 }
 
 
@@ -160,8 +157,7 @@ app_include_js = [
     "/assets/franchise_erp/js/item_group_overrides.js",
     "/assets/franchise_erp/js/session_company.js?v=120",
     "/assets/franchise_erp/js/customer_quick_entry.js",
-    "/assets/franchise_erp/js/customer_quick_entry_patch.js",
-    "/assets/franchise_erp/js/doctype_overrides.js"
+    "/assets/franchise_erp/js/customer_quick_entry_patch.js"
     ]
 
    
