@@ -182,7 +182,7 @@ frappe.ui.form.on("Purchase Order", {
             }
 
             // 6️⃣ Show pending info
-            frm.dashboard.clear_comments();
+            // frm.dashboard.clear_comments();
             frm.dashboard.add_comment(
                 __("Pending Qty : {0}", [pending_qty]),
                 "blue"
