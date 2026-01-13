@@ -152,7 +152,7 @@ function handle_inter_company_grn(frm) {
         frm.page.clear_custom_buttons(__("Create"));
     }
 
-    if (frm.doc.docstatus === 1) {
+    if (frm.doc.docstatus === 1 && frm.doc.custom_outgoing_logistics_reference) {
         frm.add_custom_button(
             __("Inter Company GRN"),
             () => {
