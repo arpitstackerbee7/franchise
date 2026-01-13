@@ -10,7 +10,6 @@
   "general_section",
   "owner_site",
   "company_abbreviation",
-  "entry_no",
   "consignee",
   "transporter",
   "column_break_kknq",
@@ -72,13 +71,6 @@
    "in_list_view": 1,
    "label": "Owner Site",
    "options": "Company",
-   "reqd": 1
-  },
-  {
-   "fieldname": "entry_no",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Entry No",
    "reqd": 1
   },
   {
@@ -293,7 +285,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-13 12:36:16.719856",
+ "modified": "2026-01-13 12:47:06.957865",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
