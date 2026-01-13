@@ -136,68 +136,31 @@ frappe.ui.form.on("Purchase Receipt", {
     }
 });
 function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
-    // 🧹 Remove default empty row only once
-    if (frm.doc.items?.length === 1 && !frm.doc.items[0].item_code) {
-        frm.clear_table("items");
+
+    if (!gate_entry) {
+        frappe.msgprint(__("Gate Entry not selected"));
+        return;
     }
 
     frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_po_items_from_gate_entry",
+        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.make_pr_from_gate_entry",
         args: {
             gate_entry: gate_entry
         },
-        callback(res) {
-            if (!res.message) {
-                frappe.msgprint(__("No response received for Gate Entry {0}", [gate_entry]));
+        freeze: true,
+        freeze_message: __("Creating Purchase Receipt from Gate Entry..."),
+        callback(r) {
+            if (!r.message) {
+                frappe.msgprint(__("Failed to create Purchase Receipt"));
                 return;
             }
 
-            // Extract items and totals from the response safely
-            const items = res.message.items || res.message || [];
-            const po_totals = res.message.totals || null;
+            // 🔥 VERY IMPORTANT
+            // This syncs mapped doc (items + taxes + totals)
+            frappe.model.sync(r.message);
 
-            if (!items.length) {
-                frappe.msgprint(__("No items found for Gate Entry {0}", [gate_entry]));
-                return;
-            }
-
-            // Add each item to the Purchase Receipt items table
-            items.forEach(item => {
-                let row = frm.add_child("items");
-
-                row.item_code = item.item_code;
-                row.item_name = item.item_name;
-                row.stock_uom = item.stock_uom;
-                row.uom = item.uom;
-                row.conversion_factor = item.conversion_factor;
-                row.rate = item.rate;
-                row.warehouse = item.warehouse;
-
-                // Link to Purchase Order
-                row.purchase_order = item.purchase_order;
-                row.purchase_order_item = item.name;
-
-                // Link to Gate Entry
-                row.custom_bulk_gate_entry = gate_entry;
-            });
-
-            // Update totals if they exist in the response
-            if (po_totals) {
-                frm.set_value("total_qty", po_totals.total_qty);
-                frm.set_value("total", po_totals.total);
-                frm.set_value("total_taxes_and_charges", po_totals.total_taxes_and_charges);
-                frm.set_value("grand_total", po_totals.grand_total);
-                frm.set_value("rounding_adjustment", po_totals.rounding_adjustment);
-                frm.set_value("rounded_total", po_totals.rounded_total);
-                frm.set_value("disable_rounded_total", po_totals.disable_rounded_total);
-                frm.set_value("in_words", po_totals.in_words);
-                frm.set_value("advance_paid", po_totals.advance_paid);
-                frm.set_value("additional_discount_percentage", po_totals.additional_discount_percentage);
-                frm.set_value("discount_amount", po_totals.discount_amount);
-            }
-
-            // Refresh the items table to show newly added rows
-            frm.refresh_field("items");
+            // Open newly created PR
+            frappe.set_route("Form", "Purchase Receipt", r.message.name);
         }
     });
 }

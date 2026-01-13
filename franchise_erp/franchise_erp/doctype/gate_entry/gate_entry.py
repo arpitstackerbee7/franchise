@@ -167,41 +167,82 @@ def get_gate_entry_with_pos(supplier=None):
     return result
 
 
+# @frappe.whitelist()
+# def get_po_items_from_gate_entry(gate_entry):
+
+#     ge = frappe.get_doc("Gate Entry", gate_entry)
+
+#     po_list = [
+#         row.purchase_order
+#         for row in ge.purchase_ids
+#         if row.purchase_order
+#     ]
+
+#     if not po_list:
+#         return []
+
+#     po_items = frappe.get_all(
+#         "Purchase Order Item",
+#         filters={
+#             "parent": ["in", po_list]
+#         },
+#         fields=[
+#             "name",
+#             "parent as purchase_order",
+#             "item_code",
+#             "item_name",
+#             "stock_uom",
+#             "uom",
+#             "conversion_factor",
+#             "rate",
+#             "warehouse"
+#         ]
+#     )
+
+#     return po_items
+
+
+
+
 @frappe.whitelist()
-def get_po_items_from_gate_entry(gate_entry):
+def make_pr_from_gate_entry(gate_entry):
+    import erpnext.buying.doctype.purchase_order.purchase_order as po
 
     ge = frappe.get_doc("Gate Entry", gate_entry)
 
-    po_list = [
-        row.purchase_order
-        for row in ge.purchase_ids
-        if row.purchase_order
-    ]
+    po_list = list(set(
+        row.purchase_order for row in ge.purchase_ids if row.purchase_order
+    ))
 
     if not po_list:
-        return []
+        frappe.throw("No Purchase Order linked with Gate Entry")
 
-    po_items = frappe.get_all(
-        "Purchase Order Item",
-        filters={
-            "parent": ["in", po_list]
-        },
-        fields=[
-            "name",
-            "parent as purchase_order",
-            "item_code",
-            "item_name",
-            "stock_uom",
-            "uom",
-            "conversion_factor",
-            "rate",
-            "warehouse"
-        ]
-    )
+    pr = None
 
-    return po_items
+    for po_name in po_list:
+        mapped_pr = po.make_purchase_receipt(po_name)
 
+        if not pr:
+            pr = mapped_pr
+        else:
+            for item in mapped_pr.items:
+                pr.append("items", item)
 
+    # 🔗 LINK GATE ENTRY AT DOCUMENT LEVEL
+    pr.custom_bulk_gate_entry = gate_entry
+
+    # 🔗 LINK GATE ENTRY AT ITEM LEVEL
+    for item in pr.items:
+        item.custom_bulk_gate_entry = gate_entry
+
+        # (These are already mapped by ERP, but safe check)
+        item.purchase_order = item.purchase_order
+        item.purchase_order_item = item.purchase_order_item
+
+    # 🔥 Recalculate taxes & totals
+    pr.run_method("calculate_taxes_and_totals")
+
+    return pr
 
 @frappe.whitelist()
 def get_pending_gate_entries(supplier):
