@@ -355,13 +355,135 @@ import frappe
 from frappe.utils import flt
 
 
+# @frappe.whitelist()
+# def create_inter_company_purchase_receipt(sales_invoice):
+#     si = frappe.get_doc("Sales Invoice", sales_invoice)
+
+#     # -------------------------------
+#     # Get Internal Supplier
+#     # -------------------------------
+#     supplier = frappe.get_value(
+#         "Supplier",
+#         {"represents_company": si.company},
+#         "name"
+#     )
+#     if not supplier:
+#         frappe.throw("Internal Supplier not found")
+
+#     # -------------------------------
+#     # Create Purchase Receipt
+#     # -------------------------------
+#     pr = frappe.new_doc("Purchase Receipt")
+#     pr.supplier = supplier
+#     pr.company = si.represents_company
+#     pr.custom_source_sales_invoice = si.name
+#     pr.posting_date = si.posting_date
+#     pr.set_posting_time = 1
+#     pr.posting_time = si.posting_time
+
+#     # -------------------------------
+#     # Warehouse
+#     # -------------------------------
+#     warehouse = frappe.get_value(
+#         "Warehouse",
+#         {"company": pr.company, "is_group": 0},
+#         "name"
+#     )
+#     if not warehouse:
+#         frappe.throw("Warehouse not found")
+
+#     total_qty = 0
+
+#     # -------------------------------
+#     # Append Items (DISCOUNTED RATE)
+#     # -------------------------------
+#     for item in si.items:
+#         discounted_rate = item.net_rate or item.rate
+
+#         pr.append("items", {
+#             "item_code": item.item_code,
+#             "item_name": item.item_name,
+#             "qty": item.qty,
+#             "uom": item.uom,
+#             "rate": discounted_rate,
+#             "warehouse": warehouse
+#         })
+
+#         total_qty += item.qty
+
+#     # -------------------------------
+#     # Save PR
+#     # -------------------------------
+#     pr.run_method("set_missing_values")
+#     pr.run_method("calculate_taxes_and_totals")
+#     pr.save(ignore_permissions=True)
+
+#     # -------------------------------
+#     # Fix Item Level Amounts (GST SAFE)
+#     # -------------------------------
+#     for si_item in si.items:
+#         pr_item_name = frappe.get_value(
+#             "Purchase Receipt Item",
+#             {
+#                 "parent": pr.name,
+#                 "item_code": si_item.item_code
+#             },
+#             "name"
+#         )
+
+#         if not pr_item_name:
+#             continue
+
+#         discounted_rate = si_item.net_rate or si_item.rate
+#         amount = discounted_rate * si_item.qty
+
+#         frappe.db.set_value("Purchase Receipt Item", pr_item_name, {
+#             "price_list_rate": discounted_rate,
+#             "rate": discounted_rate,
+#             "net_rate": discounted_rate,
+#             "amount": amount,
+#             "net_amount": amount,
+#             "base_price_list_rate": discounted_rate,
+#             "base_rate": discounted_rate,
+#             "base_net_rate": discounted_rate,
+#             "base_amount": amount,
+#             "base_net_amount": amount
+#         })
+
+#     # -------------------------------
+#     # Header Totals Override
+#     # -------------------------------
+#     frappe.db.set_value("Purchase Receipt", pr.name, {
+#         "total": si.net_total,
+#         "net_total": si.net_total,
+#         "grand_total": si.grand_total,
+#         "base_grand_total": si.base_grand_total,
+#         "rounded_total": si.rounded_total or si.grand_total,
+#         "total_qty": total_qty
+#     })
+
+#     # -------------------------------
+#     # 🔥 CREATE / UPDATE STANDARD BUYING PRICE = 100
+#     # -------------------------------
+#     for si_item in si.items:
+#         create_standard_buying_item_price(
+#             item_code=si_item.item_code,
+#             source_price_list=si.selling_price_list
+#         )
+
+#     frappe.db.commit()
+#     return pr.name
+
+import frappe
+
 @frappe.whitelist()
 def create_inter_company_purchase_receipt(sales_invoice):
+
     si = frappe.get_doc("Sales Invoice", sales_invoice)
 
-    # -------------------------------
-    # Get Internal Supplier
-    # -------------------------------
+    # -------------------------------------------------
+    # Find Internal Supplier
+    # -------------------------------------------------
     supplier = frappe.get_value(
         "Supplier",
         {"represents_company": si.company},
@@ -370,9 +492,9 @@ def create_inter_company_purchase_receipt(sales_invoice):
     if not supplier:
         frappe.throw("Internal Supplier not found")
 
-    # -------------------------------
+    # -------------------------------------------------
     # Create Purchase Receipt
-    # -------------------------------
+    # -------------------------------------------------
     pr = frappe.new_doc("Purchase Receipt")
     pr.supplier = supplier
     pr.company = si.represents_company
@@ -381,9 +503,50 @@ def create_inter_company_purchase_receipt(sales_invoice):
     pr.set_posting_time = 1
     pr.posting_time = si.posting_time
 
-    # -------------------------------
+    # -------------------------------------------------
+    # 🔥 GST & ADDRESS FIX (ERPNext v15 compatible)
+    # -------------------------------------------------
+
+    # ---- Company Address (from Dynamic Link) ----
+    company_address = frappe.db.get_value(
+        "Dynamic Link",
+        {
+            "link_doctype": "Company",
+            "link_name": pr.company,
+            "parenttype": "Address"
+        },
+        "parent"
+    )
+
+    if not company_address:
+        frappe.throw(f"Company Address missing for {pr.company}")
+
+    pr.company_address = company_address
+    pr.company_gstin = frappe.get_value("Address", company_address, "gstin")
+
+    # ---- Supplier Billing Address ----
+    supplier_address = frappe.db.get_value(
+        "Dynamic Link",
+        {
+            "link_doctype": "Supplier",
+            "link_name": supplier,
+            "parenttype": "Address"
+        },
+        "parent"
+    )
+
+    if not supplier_address:
+        frappe.throw(f"Billing Address missing for Supplier {supplier}")
+
+    pr.supplier_address = supplier_address
+
+    # ERPNext GST wrongly checks this for Company GST
+    # pr.billing_address = supplier_address
+    # pr.billing_address = company_address
+
+    # -------------------------------------------------
     # Warehouse
-    # -------------------------------
+    # -------------------------------------------------
     warehouse = frappe.get_value(
         "Warehouse",
         {"company": pr.company, "is_group": 0},
@@ -394,35 +557,35 @@ def create_inter_company_purchase_receipt(sales_invoice):
 
     total_qty = 0
 
-    # -------------------------------
-    # Append Items (DISCOUNTED RATE)
-    # -------------------------------
+    # -------------------------------------------------
+    # Append Items (Discounted Rate)
+    # -------------------------------------------------
     for item in si.items:
-        discounted_rate = item.net_rate or item.rate
+        rate = item.net_rate or item.rate
 
         pr.append("items", {
             "item_code": item.item_code,
             "item_name": item.item_name,
             "qty": item.qty,
             "uom": item.uom,
-            "rate": discounted_rate,
+            "rate": rate,
             "warehouse": warehouse
         })
 
         total_qty += item.qty
 
-    # -------------------------------
-    # Save PR
-    # -------------------------------
+    # -------------------------------------------------
+    # Calculate & Save
+    # -------------------------------------------------
     pr.run_method("set_missing_values")
     pr.run_method("calculate_taxes_and_totals")
     pr.save(ignore_permissions=True)
 
-    # -------------------------------
-    # Fix Item Level Amounts (GST SAFE)
-    # -------------------------------
+    # -------------------------------------------------
+    # Fix Item Level Amounts (GST Safe)
+    # -------------------------------------------------
     for si_item in si.items:
-        pr_item_name = frappe.get_value(
+        pr_item = frappe.get_value(
             "Purchase Receipt Item",
             {
                 "parent": pr.name,
@@ -431,28 +594,28 @@ def create_inter_company_purchase_receipt(sales_invoice):
             "name"
         )
 
-        if not pr_item_name:
+        if not pr_item:
             continue
 
-        discounted_rate = si_item.net_rate or si_item.rate
-        amount = discounted_rate * si_item.qty
+        rate = si_item.net_rate or si_item.rate
+        amount = rate * si_item.qty
 
-        frappe.db.set_value("Purchase Receipt Item", pr_item_name, {
-            "price_list_rate": discounted_rate,
-            "rate": discounted_rate,
-            "net_rate": discounted_rate,
+        frappe.db.set_value("Purchase Receipt Item", pr_item, {
+            "price_list_rate": rate,
+            "rate": rate,
+            "net_rate": rate,
             "amount": amount,
             "net_amount": amount,
-            "base_price_list_rate": discounted_rate,
-            "base_rate": discounted_rate,
-            "base_net_rate": discounted_rate,
+            "base_price_list_rate": rate,
+            "base_rate": rate,
+            "base_net_rate": rate,
             "base_amount": amount,
             "base_net_amount": amount
         })
 
-    # -------------------------------
-    # Header Totals Override
-    # -------------------------------
+    # -------------------------------------------------
+    # Header Totals Sync
+    # -------------------------------------------------
     frappe.db.set_value("Purchase Receipt", pr.name, {
         "total": si.net_total,
         "net_total": si.net_total,
@@ -462,18 +625,8 @@ def create_inter_company_purchase_receipt(sales_invoice):
         "total_qty": total_qty
     })
 
-    # -------------------------------
-    # 🔥 CREATE / UPDATE STANDARD BUYING PRICE = 100
-    # -------------------------------
-    for si_item in si.items:
-        create_standard_buying_item_price(
-            item_code=si_item.item_code,
-            source_price_list=si.selling_price_list
-        )
-
     frappe.db.commit()
     return pr.name
-
 
 
 @frappe.whitelist()
