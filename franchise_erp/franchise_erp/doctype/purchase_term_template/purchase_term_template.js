@@ -51,3 +51,40 @@ function apply_charge_rules(frm, row) {
         grid.update_docfield_property("value_type", "read_only", 0);
     }
 }
+
+frappe.ui.form.on("Purchase Term Template", {
+    refresh(frm) {
+        hide_add_row_after_render(frm);
+    }
+});
+
+frappe.ui.form.on("Purchase Term Charges", {
+    purchase_term_charges_add(frm) {
+        hide_add_row_after_render(frm);
+    },
+    purchase_term_charges_remove(frm) {
+        hide_add_row_after_render(frm);
+    },
+    charge_type(frm, cdt, cdn) {
+        hide_add_row_after_render(frm);
+    }
+});
+
+function hide_add_row_after_render(frm) {
+    const max_rows = 3;
+
+    // wait for grid re-render
+    setTimeout(() => {
+        const row_count = frm.doc.purchase_term_charges
+            ? frm.doc.purchase_term_charges.length
+            : 0;
+
+        const grid = frm.fields_dict.purchase_term_charges.grid;
+
+        if (row_count >= max_rows) {
+            grid.wrapper.find(".grid-add-row").hide();
+        } else {
+            grid.wrapper.find(".grid-add-row").show();
+        }
+    }, 100);
+}

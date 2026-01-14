@@ -101,8 +101,10 @@ doc_events = {
     },
     "Item Price": {
         "validate": "franchise_erp.custom.item_price.validate_item_price"
+    },
+    "Sales Order":{
+        "before_validate": "franchise_erp.custom.sales_order.apply_sales_term"
     }
-
 
 }
 
