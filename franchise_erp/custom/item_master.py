@@ -88,16 +88,24 @@ def generate_item_code(doc, method):
     department_code = get_item_group_code(doc.custom_departments, "DEPARTMENT")
     silvet_code = get_item_group_code(doc.custom_silvet, "SILVET")
 
-    base_code = f"{collection_code}-{department_code}-{silvet_code}-{doc.custom_colour_code}"
-    next_series = get_next_series(base_code)
+    # base_code = f"{collection_code}-{department_code}-{silvet_code}-{doc.custom_colour_code}"
+    # next_series = get_next_series(base_code)
+    # item_code = f"{base_code}-{next_series}"
+    #--------------------------------------------------------------------------------------------
 
-    item_code = f"{base_code}-{next_series}"
+    #Colour code intentionally removed
+    base_code = f"{collection_code}{department_code}{silvet_code}"
+    next_series = get_next_series(base_code)
+    #No dashes at all
+    item_code = f"{base_code}{next_series}"
+
     while frappe.db.exists("Item", item_code):
         next_series += 1
         item_code = f"{base_code}-{next_series}"
 
     doc.item_code = item_code
     doc.item_name = item_code
+
 
 
 def create_item_barcode(doc, method):
