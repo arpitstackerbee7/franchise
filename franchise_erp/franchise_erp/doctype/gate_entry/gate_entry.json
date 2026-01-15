@@ -61,8 +61,7 @@
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "Date",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "default": "Yes",
@@ -81,8 +80,7 @@
    "fieldtype": "Link",
    "label": "Type",
    "options": "Incoming Logistics Type",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "consignor",
@@ -257,7 +255,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-01-12 17:43:43.161799",
+ "modified": "2026-01-15 12:29:35.943652",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

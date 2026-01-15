@@ -24,22 +24,28 @@ frappe.ui.form.on("Customer", {
     onload(frm) {
         apply_company_credit_rules(frm);
         set_required_fields(frm);
+        toggle_parent_company_fields(frm);
+
     },
     onload_post_render(frm) {
         //  EDIT FULL FORM FIX
         set_required_fields(frm);
         apply_company_credit_rules(frm);
+        toggle_parent_company_fields(frm);
+
     },
 
     refresh(frm) {
         set_required_fields(frm);
         apply_company_credit_rules(frm);
+        toggle_parent_company_fields(frm);
+
     },
 
     custom_company(frm) {
         set_required_fields(frm);
         apply_company_credit_rules(frm);
-        
+        toggle_parent_company_fields(frm);
     }
 });
 
@@ -162,3 +168,22 @@ function toggle_pan_mandatory(frm) {
     frm.refresh_field("pan");
 }
 
+function toggle_parent_company_fields(frm) {
+    if (!frm.doc.custom_company) {
+        ["customer_group", "agent", "default_price_list"].forEach(f => {
+            frm.set_df_property(f, "reqd", 0);
+            frm.refresh_field(f);
+        });
+        return;
+    }
+
+    frappe.db.get_value("Company", frm.doc.custom_company, "is_group")
+        .then(r => {
+            const is_group = r.message?.is_group || 0;
+
+            ["customer_group", "custom_agent", "default_price_list"].forEach(f => {
+                frm.set_df_property(f, "reqd", is_group ? 1 : 0);
+                frm.refresh_field(f);
+            });
+        });
+}

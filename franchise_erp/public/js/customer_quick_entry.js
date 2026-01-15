@@ -65,5 +65,63 @@ frappe.ui.form.CustomerQuickEntryForm = class CustomerQuickEntryForm extends fra
         company_field.df.onchange = () => {
             set_required_fields(company_field.get_value());
         };
-    }
+
+        const parent_only_fields = [
+        "customer_group",
+        "custom_agent",
+        "default_price_list"
+    ];
+
+    const handle_parent_company_fields = (company) => {
+        if (!company) {
+            parent_only_fields.forEach(fname => {
+                const field = this.dialog.fields_dict[fname];
+                if (field) {
+                    field.df.reqd = 0;
+                    field.$wrapper.hide();
+                    field.refresh();
+                }
+            });
+            return;
+        }
+
+        frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+                doctype: "Company",
+                filters: { name: company },
+                fieldname: ["is_group"]
+            },
+            callback: (r) => {
+                const is_group = r?.message?.is_group || 0;
+
+                parent_only_fields.forEach(fname => {
+                    const field = this.dialog.fields_dict[fname];
+                    if (!field) return;
+
+                    if (is_group) {
+                        field.$wrapper.show();
+                        field.df.reqd = 1;
+                    } else {
+                        field.$wrapper.hide();
+                        field.df.reqd = 0;
+                    }
+                    field.refresh();
+                });
+            }
+        });
+    };
+
+    handle_parent_company_fields(company_field.get_value());
+
+    // ⚠️ IMPORTANT:
+    // onchange overwrite NA ho, isliye wrap karo
+    const old_onchange = company_field.df.onchange;
+    company_field.df.onchange = () => {
+        if (old_onchange) old_onchange();
+        handle_parent_company_fields(company_field.get_value());
+    };
+
+}
+    
 };
