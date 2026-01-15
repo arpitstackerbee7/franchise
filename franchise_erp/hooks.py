@@ -66,7 +66,6 @@ doc_events = {
 
         "on_cancel": ["franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel",
                        "franchise_erp.custom.purchase_reciept.on_cancel" ],
-        # "before_submit": "franchise_erp.custom.purchase_reciept.validate_company_submit"
 
 
         
