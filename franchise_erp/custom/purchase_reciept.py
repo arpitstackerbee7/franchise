@@ -501,4 +501,3 @@ def validate_gate_entry(doc, method):
             )
 
 
-
