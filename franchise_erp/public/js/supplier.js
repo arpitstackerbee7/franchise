@@ -33,3 +33,23 @@ frappe.ui.form.on("Supplier", {
         });
     }
 });
+
+frappe.ui.form.on("Supplier", {
+    onload(frm) {
+        toggle_pan_mandatory(frm);
+    },
+    refresh(frm) {
+        toggle_pan_mandatory(frm);
+    },
+    tax_withholding_category(frm) {
+        toggle_pan_mandatory(frm);
+    }
+});
+
+function toggle_pan_mandatory(frm) {
+    const has_tds = !!frm.doc.tax_withholding_category;
+
+    frm.set_df_property("pan", "reqd", has_tds ? 1 : 0);
+
+    frm.refresh_field("pan");
+}
