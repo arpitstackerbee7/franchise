@@ -13,6 +13,10 @@ import random
 from frappe.model.document import Document, flt
 
 class IncomingLogistics(Document):
+    def validate(self):
+        self.validate_unique_lr_per_transporter()
+        self.validate_unique_invoice_per_consignor()
+
 
     def on_submit(self):
         # Loop through all linked Purchase Orders
@@ -114,9 +118,7 @@ class IncomingLogistics(Document):
             })
 
 
-
     def validate_unique_lr_per_transporter(self):
-        # Skip if values missing
         if not self.transporter or not self.lr_document_no:
             return
 
@@ -126,7 +128,7 @@ class IncomingLogistics(Document):
                 "transporter": self.transporter,
                 "lr_document_no": self.lr_document_no,
                 "name": ["!=", self.name],
-                "docstatus": ["<", 2]   # Draft + Submitted
+                "docstatus": ["<", 2]
             }
         )
 
@@ -135,7 +137,29 @@ class IncomingLogistics(Document):
                 title="Duplicate LR Document No",
                 msg=(
                     f"LR Document No <b>{self.lr_document_no}</b> "
-                    f"already exists for Transporter <b>{self.transporter}</b>.<br><br>"
-                    "Please use a different LR Document No."
+                    f"already exists for Transporter <b>{self.transporter}</b>."
+                )
+            )
+
+    def validate_unique_invoice_per_consignor(self):
+        if not self.consignor or not self.invoice_no:
+            return
+
+        duplicate = frappe.db.exists(
+            "Incoming Logistics",
+            {
+                "consignor": self.consignor,
+                "invoice_no": self.invoice_no,
+                "name": ["!=", self.name],
+                "docstatus": ["<", 2]
+            }
+        )
+
+        if duplicate:
+            frappe.throw(
+                title="Duplicate Invoice No",
+                msg=(
+                    f"Invoice No <b>{self.invoice_no}</b> "
+                    f"already exists for Consignor <b>{self.consignor}</b>."
                 )
             )

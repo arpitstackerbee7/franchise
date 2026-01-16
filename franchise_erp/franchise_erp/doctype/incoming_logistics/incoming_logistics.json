@@ -120,7 +120,8 @@
   {
    "fieldname": "lr_document_no",
    "fieldtype": "Data",
-   "label": "LR Document No"
+   "label": "LR Document No",
+   "reqd": 1
   },
   {
    "allow_on_submit": 1,
@@ -382,7 +383,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-12 17:40:44.226405",
+ "modified": "2026-01-16 10:31:35.885240",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
@@ -420,5 +421,8 @@
    "color": "Pink",
    "title": "Paid"
   }
- ]
+ ],
+ "track_changes": 1,
+ "track_seen": 1,
+ "track_views": 1
 }
