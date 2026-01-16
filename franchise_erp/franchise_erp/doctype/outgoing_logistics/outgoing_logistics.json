@@ -94,13 +94,12 @@
   },
   {
    "fieldname": "type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Type",
-   "options": "S&D: Sales Invoice/Transfer In",
+   "options": "Outgoing Logistics Type",
    "reqd": 1
   },
   {
-   "default": "now",
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "Date",
@@ -130,8 +129,7 @@
   {
    "fieldname": "quantity",
    "fieldtype": "Data",
-   "label": "Quantity",
-   "reqd": 1
+   "label": "Quantity"
   },
   {
    "fieldname": "station_from",
@@ -191,19 +189,22 @@
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "actual_weight",
    "fieldtype": "Data",
-   "label": "Actual Weight"
+   "label": "Actual Weight",
+   "mandatory_depends_on": "eval:doc.to_pay==\"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "freight_charges",
    "fieldtype": "Data",
-   "label": "Freight Charges"
+   "label": "Freight Charges",
+   "mandatory_depends_on": "eval:doc.to_pay==\"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "declaration_amount",
    "fieldtype": "Data",
-   "label": "Declaration Amount"
+   "label": "Declaration Amount",
+   "mandatory_depends_on": "eval:doc.to_pay==\"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
@@ -219,13 +220,15 @@
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "rate",
    "fieldtype": "Data",
-   "label": "Rate"
+   "label": "Rate",
+   "mandatory_depends_on": "eval:doc.to_pay==\"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "charged_weight",
    "fieldtype": "Data",
-   "label": "Charged Weight"
+   "label": "Charged Weight",
+   "mandatory_depends_on": "eval:doc.to_pay==\"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
@@ -273,7 +276,8 @@
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "additional_charges",
    "fieldtype": "Data",
-   "label": "Additional Charges"
+   "label": "Additional Charges",
+   "mandatory_depends_on": "eval:doc.to_pay==\"Yes\""
   },
   {
    "fieldname": "sales_invoice_no",
@@ -292,8 +296,8 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-15 18:13:23.761488",
- "modified_by": "Administrator",
+ "modified": "2026-01-16 15:29:57.266434",
+ "modified_by": "tzu@gmail.com",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
  "naming_rule": "Expression",
