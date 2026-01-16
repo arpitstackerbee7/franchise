@@ -133,17 +133,6 @@ frappe.ui.form.on("Purchase Order", {
                 ["custom_gate_entry", "custom_transporter"]
             );
 
-            const gate_entry_enabled = supplier_res?.message?.custom_gate_entry;
-            const transporter = supplier_res?.message?.custom_transporter;
-
-            if (!gate_entry_enabled) {
-                frappe.msgprint({
-                    title: __("Gate Entry Disabled"),
-                    message: __("Please enable <b>Gate Entry</b> in Supplier"),
-                    indicator: "orange"
-                });
-                return;
-            }
 
             // 3️⃣ PO total qty
             let po_total_qty = 0;
