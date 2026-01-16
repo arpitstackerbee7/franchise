@@ -101,7 +101,7 @@ def generate_item_code(doc, method):
 
     while frappe.db.exists("Item", item_code):
         next_series += 1
-        item_code = f"{base_code}-{next_series}"
+        item_code = f"{base_code}{next_series}"
 
     doc.item_code = item_code
     doc.item_name = item_code
