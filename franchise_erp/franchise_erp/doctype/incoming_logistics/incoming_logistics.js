@@ -229,3 +229,19 @@ frappe.ui.form.on("Incoming Logistics", {
         $(".page-title .editable-title").css("pointer-events", "none");
     }
 });
+
+
+
+frappe.ui.form.on("Incoming Logistics", {
+    validate(frm) {
+        if (!frm.doc.purchase_ids || frm.doc.purchase_ids.length === 0) {
+            frappe.msgprint({
+                title: __("Validation Error"),
+                message: __("Please add at least one Purchase Order before saving."),
+                indicator: "red"
+            });
+
+            frappe.validated = false;
+        }
+    }
+});
