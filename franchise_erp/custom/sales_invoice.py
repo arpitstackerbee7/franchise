@@ -474,7 +474,164 @@ from frappe.utils import flt
 #     frappe.db.commit()
 #     return pr.name
 
-import frappe
+
+# @frappe.whitelist()
+# def create_inter_company_purchase_receipt(sales_invoice):
+
+#     si = frappe.get_doc("Sales Invoice", sales_invoice)
+
+#     # -------------------------------------------------
+#     # Find Internal Supplier
+#     # -------------------------------------------------
+#     supplier = frappe.get_value(
+#         "Supplier",
+#         {"represents_company": si.company},
+#         "name"
+#     )
+#     if not supplier:
+#         frappe.throw("Internal Supplier not found")
+
+#     # -------------------------------------------------
+#     # Create Purchase Receipt
+#     # -------------------------------------------------
+#     pr = frappe.new_doc("Purchase Receipt")
+#     pr.supplier = supplier
+#     pr.company = si.represents_company
+#     pr.custom_source_sales_invoice = si.name
+#     pr.posting_date = si.posting_date
+#     pr.set_posting_time = 1
+#     pr.posting_time = si.posting_time
+
+#     # -------------------------------------------------
+#     # 🔥 GST & ADDRESS FIX (ERPNext v15 compatible)
+#     # -------------------------------------------------
+
+#     # ---- Company Address (from Dynamic Link) ----
+#     company_address = frappe.db.get_value(
+#         "Dynamic Link",
+#         {
+#             "link_doctype": "Company",
+#             "link_name": pr.company,
+#             "parenttype": "Address"
+#         },
+#         "parent"
+#     )
+
+#     if not company_address:
+#         frappe.throw(f"Company Address missing for {pr.company}")
+
+#     pr.company_address = company_address
+#     pr.company_gstin = frappe.get_value("Address", company_address, "gstin")
+
+#     # ---- Supplier Billing Address ----
+#     supplier_address = frappe.db.get_value(
+#         "Dynamic Link",
+#         {
+#             "link_doctype": "Supplier",
+#             "link_name": supplier,
+#             "parenttype": "Address"
+#         },
+#         "parent"
+#     )
+
+#     if not supplier_address:
+#         frappe.throw(f"Billing Address missing for Supplier {supplier}")
+
+#     pr.supplier_address = supplier_address
+
+#     # ERPNext GST wrongly checks this for Company GST
+#     # pr.billing_address = supplier_address
+#     # pr.billing_address = company_address
+
+#     # -------------------------------------------------
+#     # Warehouse
+#     # -------------------------------------------------
+#     warehouse = frappe.get_value(
+#         "Warehouse",
+#         {"company": pr.company, "is_group": 0},
+#         "name"
+#     )
+#     if not warehouse:
+#         frappe.throw("Warehouse not found")
+
+#     total_qty = 0
+
+#     # -------------------------------------------------
+#     # Append Items (Discounted Rate)
+#     # -------------------------------------------------
+#     for item in si.items:
+#         rate = item.net_rate or item.rate
+
+#         pr.append("items", {
+#             "item_code": item.item_code,
+#             "item_name": item.item_name,
+#             "qty": item.qty,
+#             "uom": item.uom,
+#             "rate": rate,
+#             "warehouse": warehouse
+#         })
+
+#         total_qty += item.qty
+
+#     # -------------------------------------------------
+#     # Calculate & Save
+#     # -------------------------------------------------
+#     pr.run_method("set_missing_values")
+#     pr.run_method("calculate_taxes_and_totals")
+#     pr.save(ignore_permissions=True)
+
+#     # -------------------------------------------------
+#     # Fix Item Level Amounts (GST Safe)
+#     # -------------------------------------------------
+#     for si_item in si.items:
+#         pr_item = frappe.get_value(
+#             "Purchase Receipt Item",
+#             {
+#                 "parent": pr.name,
+#                 "item_code": si_item.item_code
+#             },
+#             "name"
+#         )
+
+#         if not pr_item:
+#             continue
+
+#         rate = si_item.net_rate or si_item.rate
+#         amount = rate * si_item.qty
+
+#         frappe.db.set_value("Purchase Receipt Item", pr_item, {
+#             "price_list_rate": rate,
+#             "rate": rate,
+#             "net_rate": rate,
+#             "amount": amount,
+#             "net_amount": amount,
+#             "base_price_list_rate": rate,
+#             "base_rate": rate,
+#             "base_net_rate": rate,
+#             "base_amount": amount,
+#             "base_net_amount": amount
+#         })
+
+#     # -------------------------------------------------
+#     # Header Totals Sync
+#     # -------------------------------------------------
+#     frappe.db.set_value("Purchase Receipt", pr.name, {
+#         "total": si.net_total,
+#         "net_total": si.net_total,
+#         "grand_total": si.grand_total,
+#         "base_grand_total": si.base_grand_total,
+#         "rounded_total": si.rounded_total or si.grand_total,
+#         "total_qty": total_qty
+#     })
+#     for si_item in si.items:
+#         create_standard_buying_item_price(
+#             item_code=si_item.item_code,
+#             source_price_list=si.selling_price_list
+#         )
+#     frappe.db.commit()
+#     return pr.name
+
+
 
 @frappe.whitelist()
 def create_inter_company_purchase_receipt(sales_invoice):
@@ -503,11 +660,13 @@ def create_inter_company_purchase_receipt(sales_invoice):
     pr.set_posting_time = 1
     pr.posting_time = si.posting_time
 
-    # -------------------------------------------------
-    # 🔥 GST & ADDRESS FIX (ERPNext v15 compatible)
-    # -------------------------------------------------
+    # Inter Company Flags
+    pr.is_internal_supplier = 1
+    pr.represents_company = si.company
 
-    # ---- Company Address (from Dynamic Link) ----
+    # -------------------------------------------------
+    # Company Address & GST
+    # -------------------------------------------------
     company_address = frappe.db.get_value(
         "Dynamic Link",
         {
@@ -517,14 +676,16 @@ def create_inter_company_purchase_receipt(sales_invoice):
         },
         "parent"
     )
-
     if not company_address:
         frappe.throw(f"Company Address missing for {pr.company}")
 
     pr.company_address = company_address
-    pr.company_gstin = frappe.get_value("Address", company_address, "gstin")
+    company_gstin = frappe.get_value("Address", company_address, "gstin")
+    pr.company_gstin = company_gstin
 
-    # ---- Supplier Billing Address ----
+    # -------------------------------------------------
+    # Supplier Address & GST (GST OPTIONAL)
+    # -------------------------------------------------
     supplier_address = frappe.db.get_value(
         "Dynamic Link",
         {
@@ -534,15 +695,19 @@ def create_inter_company_purchase_receipt(sales_invoice):
         },
         "parent"
     )
-
     if not supplier_address:
         frappe.throw(f"Billing Address missing for Supplier {supplier}")
 
     pr.supplier_address = supplier_address
 
-    # ERPNext GST wrongly checks this for Company GST
-    # pr.billing_address = supplier_address
-    # pr.billing_address = company_address
+    supplier_gstin = frappe.get_value("Address", supplier_address, "gstin")
+
+    if supplier_gstin:
+        pr.supplier_gstin = supplier_gstin
+        pr.gst_category = "Registered Regular"
+    else:
+        pr.supplier_gstin = None
+        pr.gst_category = "Unregistered"
 
     # -------------------------------------------------
     # Warehouse
@@ -558,7 +723,7 @@ def create_inter_company_purchase_receipt(sales_invoice):
     total_qty = 0
 
     # -------------------------------------------------
-    # Append Items (Discounted Rate)
+    # Append Items
     # -------------------------------------------------
     for item in si.items:
         rate = item.net_rate or item.rate
@@ -575,14 +740,25 @@ def create_inter_company_purchase_receipt(sales_invoice):
         total_qty += item.qty
 
     # -------------------------------------------------
-    # Calculate & Save
+    # Calculate & Save (GST SAFE)
     # -------------------------------------------------
     pr.run_method("set_missing_values")
-    pr.run_method("calculate_taxes_and_totals")
+
+    # Re-apply GST values after system override
+    pr.company_gstin = company_gstin
+
+    if supplier_gstin:
+        pr.supplier_gstin = supplier_gstin
+        pr.run_method("calculate_taxes_and_totals")
+    else:
+        # 🔥 NO GST CASE
+        pr.taxes = []
+        pr.total_taxes_and_charges = 0
+
     pr.save(ignore_permissions=True)
 
     # -------------------------------------------------
-    # Fix Item Level Amounts (GST Safe)
+    # Fix Item Level Amounts
     # -------------------------------------------------
     for si_item in si.items:
         pr_item = frappe.get_value(
@@ -624,13 +800,16 @@ def create_inter_company_purchase_receipt(sales_invoice):
         "rounded_total": si.rounded_total or si.grand_total,
         "total_qty": total_qty
     })
+
     for si_item in si.items:
         create_standard_buying_item_price(
             item_code=si_item.item_code,
             source_price_list=si.selling_price_list
         )
+        
     frappe.db.commit()
     return pr.name
+
 
 
 @frappe.whitelist()
