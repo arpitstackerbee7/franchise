@@ -534,6 +534,7 @@ def create_inter_company_purchase_receipt(sales_invoice):
         "parent"
     )
 
+
     if not supplier_address:
         frappe.throw(f"Billing Address missing for Supplier {supplier}")
 
