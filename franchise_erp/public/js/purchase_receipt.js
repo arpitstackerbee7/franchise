@@ -13,6 +13,9 @@ frappe.ui.form.on("Purchase Receipt", {
     onload(frm) {
         if (!frm.is_new()) return;
 
+        if (frm.doc.is_subcontracted===1)
+        return;
+
         (frm.doc.items || []).forEach(row => {
             if (row.purchase_order_item) {
                 row.qty = 0;
