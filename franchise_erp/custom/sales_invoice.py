@@ -631,6 +631,7 @@ def create_inter_company_purchase_receipt(sales_invoice):
     frappe.db.commit()
     return pr.name
 
+
 # import frappe
 # from frappe import _
 
