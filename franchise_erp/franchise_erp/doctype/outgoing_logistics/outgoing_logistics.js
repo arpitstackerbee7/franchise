@@ -84,6 +84,12 @@ frappe.ui.form.on("Outgoing Logistics", {
     // STATION TO → CUSTOMER
     consignee: function (frm) {
         set_station_to_customer(frm);
+    },
+      type: function(frm) {
+        toggle_consignee_supplier_fields(frm);
+    },
+     refresh: function(frm) {
+        toggle_consignor_fields(frm);
     }
 });
 
@@ -181,3 +187,37 @@ frappe.ui.form.on("Outgoing Logistics", {
         }
     }
 });
+
+function toggle_consignee_supplier_fields(frm) {
+    if (!frm.doc.type) {
+        return;
+    }
+
+    frappe.db.get_value(
+        "Incoming Logistics Type",
+        frm.doc.type,
+        "is_checked",
+        function(r) {
+            if (r && r.is_checked) {
+                // ✅ If checkbox is checked
+                frm.set_df_property("consignee", "hidden", 0);
+                frm.set_df_property("consignee", "reqd", 1);
+
+                frm.set_df_property("consignee_supplier", "hidden", 1);
+                frm.set_df_property("consignee_supplier", "reqd", 0);
+
+                frm.set_value("consignee_supplier", null);
+
+            } else {
+                // ❌ If checkbox is NOT checked
+                frm.set_df_property("consignee", "hidden", 1);
+                frm.set_df_property("consignee", "reqd", 0);
+
+                frm.set_df_property("consignee_supplier", "hidden", 0);
+                frm.set_df_property("consignee_supplier", "reqd", 1);
+
+                frm.set_value("consignee", null);
+            }
+        }
+    );
+}

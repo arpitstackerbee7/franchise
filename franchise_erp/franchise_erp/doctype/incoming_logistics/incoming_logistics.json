@@ -19,6 +19,7 @@
   "column_break_kknq",
   "type",
   "consignor",
+  "consignor_customer",
   "mode",
   "lr_document_no",
   "status",
@@ -98,8 +99,7 @@
    "fieldname": "consignor",
    "fieldtype": "Link",
    "label": "Consignor",
-   "options": "Supplier",
-   "reqd": 1
+   "options": "Supplier"
   },
   {
    "fetch_from": "consignor.custom_transporter",
@@ -252,20 +252,23 @@
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "actual_weight",
    "fieldtype": "Data",
-   "label": "Actual Weight"
+   "label": "Actual Weight",
+   "mandatory_depends_on": "eval:doc.to_pay == \"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "description": "Rate * Charged Weight",
    "fieldname": "freight",
    "fieldtype": "Data",
-   "label": "Freight"
+   "label": "Freight",
+   "mandatory_depends_on": "eval:doc.to_pay == \"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "declaration_amount",
    "fieldtype": "Data",
-   "label": "Declaration Amount"
+   "label": "Declaration Amount",
+   "mandatory_depends_on": "eval:doc.to_pay == \"Yes\""
   },
   {
    "fieldname": "column_break_hmwf",
@@ -275,19 +278,22 @@
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "rate",
    "fieldtype": "Data",
-   "label": "Rate"
+   "label": "Rate",
+   "mandatory_depends_on": "eval:doc.to_pay == \"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "charged_weight",
    "fieldtype": "Data",
-   "label": "Charged Weight"
+   "label": "Charged Weight",
+   "mandatory_depends_on": "eval:doc.to_pay == \"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
    "fieldname": "others",
    "fieldtype": "Data",
-   "label": "Additional Charges"
+   "label": "Additional Charges",
+   "mandatory_depends_on": "eval:doc.to_pay == \"Yes\""
   },
   {
    "depends_on": "eval:doc.to_pay == \"Yes\"",
@@ -365,6 +371,12 @@
    "fieldtype": "Table",
    "label": "Purchase Id's",
    "options": "Purchase Items Details"
+  },
+  {
+   "fieldname": "consignor_customer",
+   "fieldtype": "Link",
+   "label": "Consignor ",
+   "options": "Customer"
   }
  ],
  "grid_page_length": 50,
@@ -376,7 +388,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-17 14:36:42.197826",
+ "modified": "2026-01-18 15:52:00.641398",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

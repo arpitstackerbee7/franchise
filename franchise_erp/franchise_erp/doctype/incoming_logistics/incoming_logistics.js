@@ -75,6 +75,9 @@ frappe.ui.form.on("Incoming Logistics", {
     type(frm) {
         toggle_site_field(frm);
     },
+    type: function(frm) {
+        toggle_consignor_fields(frm);
+    },
     to_pay(frm) {
         frm.trigger('toggle_pay_fields');
     },
@@ -105,6 +108,9 @@ frappe.ui.form.on("Incoming Logistics", {
     //     ];
     //     const hide = frm.doc.to_pay === 'No';
     //     hide_fields.forEach(field => frm.set_df_property(field, 'hidden', hide));
+    },
+     refresh: function(frm) {
+        toggle_consignor_fields(frm);
     }
 });
 
@@ -245,3 +251,37 @@ frappe.ui.form.on("Incoming Logistics", {
         }
     }
 });
+
+function toggle_consignor_fields(frm) {
+    if (!frm.doc.type) {
+        return;
+    }
+
+    frappe.db.get_value(
+        "Incoming Logistics Type",
+        frm.doc.type,
+        "is_checked",
+        function(r) {
+            if (r && r.is_checked) {
+                // ✅ If checkbox is checked
+                frm.set_df_property("consignor_customer", "hidden", 0);
+                frm.set_df_property("consignor_customer", "reqd", 1);
+
+                frm.set_df_property("consignor", "hidden", 1);
+                frm.set_df_property("consignor", "reqd", 0);
+
+                frm.set_value("consignor", null);
+
+            } else {
+                // ❌ If checkbox is NOT checked
+                frm.set_df_property("consignor_customer", "hidden", 1);
+                frm.set_df_property("consignor_customer", "reqd", 0);
+
+                frm.set_df_property("consignor", "hidden", 0);
+                frm.set_df_property("consignor", "reqd", 1);
+
+                frm.set_value("consignor_customer", null);
+            }
+        }
+    );
+}
