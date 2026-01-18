@@ -29,3 +29,52 @@ frappe.ui.form.on('Sales Order', {
         });
     }
 });
+
+frappe.ui.form.on("Sales Order", {
+    customer(frm) {
+        if (!frm.doc.customer) return;
+
+        // wait for ERPNext to populate sales_team
+        setTimeout(() => {
+            (frm.doc.sales_team || []).forEach(row => {
+                set_incentive_from_sales_person(frm, row);
+            });
+        }, 500);
+    },
+
+    refresh(frm) {
+        // handles reload / back navigation
+        (frm.doc.sales_team || []).forEach(row => {
+            if (!row.incentives) {
+                set_incentive_from_sales_person(frm, row);
+            }
+        });
+    }
+});
+
+function set_incentive_from_sales_person(frm, row) {
+    if (!row.sales_person) return;
+
+    frappe.db.get_value(
+        "Sales Person",
+        row.sales_person,
+        "custom_commission_amount"
+    ).then(r => {
+        if (r && r.message && r.message.custom_commission_amount != null) {
+            frappe.model.set_value(
+                row.doctype,
+                row.name,
+                "incentives",
+                r.message.custom_commission_amount
+            );
+        }
+    });
+}
+
+
+frappe.ui.form.on("Sales Team", {
+    sales_person(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        set_incentive_from_sales_person(frm, row);
+    }
+});
