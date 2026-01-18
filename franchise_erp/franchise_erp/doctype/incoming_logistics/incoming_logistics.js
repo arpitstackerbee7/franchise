@@ -108,9 +108,6 @@ frappe.ui.form.on("Incoming Logistics", {
     //     ];
     //     const hide = frm.doc.to_pay === 'No';
     //     hide_fields.forEach(field => frm.set_df_property(field, 'hidden', hide));
-    },
-     refresh: function(frm) {
-        toggle_consignor_fields(frm);
     }
 });
 

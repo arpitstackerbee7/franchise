@@ -87,9 +87,6 @@ frappe.ui.form.on("Outgoing Logistics", {
     },
       type: function(frm) {
         toggle_consignee_supplier_fields(frm);
-    },
-     refresh: function(frm) {
-        toggle_consignor_fields(frm);
     }
 });
 
