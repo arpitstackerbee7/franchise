@@ -7,7 +7,8 @@
  "engine": "InnoDB",
  "field_order": [
   "type",
-  "is_checked"
+  "is_customer",
+  "is_supplier"
  ],
  "fields": [
   {
@@ -18,15 +19,21 @@
   },
   {
    "default": "0",
-   "fieldname": "is_checked",
+   "fieldname": "is_supplier",
    "fieldtype": "Check",
-   "label": "Is checked "
+   "label": "Is Supplier"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_customer",
+   "fieldtype": "Check",
+   "label": "Is Customer"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-18 15:43:12.230932",
+ "modified": "2026-01-19 10:15:54.533947",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics Type",

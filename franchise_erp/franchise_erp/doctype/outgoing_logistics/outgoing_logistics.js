@@ -85,7 +85,7 @@ frappe.ui.form.on("Outgoing Logistics", {
     consignee: function (frm) {
         set_station_to_customer(frm);
     },
-      type: function(frm) {
+    type: function(frm) {
         toggle_consignee_supplier_fields(frm);
     }
 });
@@ -186,34 +186,41 @@ frappe.ui.form.on("Outgoing Logistics", {
 });
 
 function toggle_consignee_supplier_fields(frm) {
-    if (!frm.doc.type) {
-        return;
-    }
+    if (!frm.doc.type) return;
 
     frappe.db.get_value(
         "Incoming Logistics Type",
         frm.doc.type,
-        "is_checked",
-        function(r) {
-            if (r && r.is_checked) {
-                // ✅ If checkbox is checked
+        ["is_customer", "is_supplier"],
+        function (r) {
+            if (!r) return;
+
+            // 👉 Customer case → show consignee
+            if (r.is_customer) {
                 frm.set_df_property("consignee", "hidden", 0);
                 frm.set_df_property("consignee", "reqd", 1);
 
                 frm.set_df_property("consignee_supplier", "hidden", 1);
                 frm.set_df_property("consignee_supplier", "reqd", 0);
-
                 frm.set_value("consignee_supplier", null);
+            }
 
-            } else {
-                // ❌ If checkbox is NOT checked
-                frm.set_df_property("consignee", "hidden", 1);
-                frm.set_df_property("consignee", "reqd", 0);
-
+            // 👉 Supplier case → show consignee_supplier
+            else if (r.is_supplier) {
                 frm.set_df_property("consignee_supplier", "hidden", 0);
                 frm.set_df_property("consignee_supplier", "reqd", 1);
 
+                frm.set_df_property("consignee", "hidden", 1);
+                frm.set_df_property("consignee", "reqd", 0);
                 frm.set_value("consignee", null);
+            }
+
+            // 👉 Safety fallback
+            else {
+                frm.set_df_property("consignee", "hidden", 1);
+                frm.set_df_property("consignee_supplier", "hidden", 1);
+                frm.set_value("consignee", null);
+                frm.set_value("consignee_supplier", null);
             }
         }
     );

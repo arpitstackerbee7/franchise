@@ -250,33 +250,40 @@ frappe.ui.form.on("Incoming Logistics", {
 });
 
 function toggle_consignor_fields(frm) {
-    if (!frm.doc.type) {
-        return;
-    }
+    if (!frm.doc.type) return;
 
     frappe.db.get_value(
         "Incoming Logistics Type",
         frm.doc.type,
-        "is_checked",
-        function(r) {
-            if (r && r.is_checked) {
-                // ✅ If checkbox is checked
+        ["is_customer", "is_supplier"],
+        function (r) {
+            if (!r) return;
+
+            // 👉 Customer case
+            if (r.is_customer) {
                 frm.set_df_property("consignor_customer", "hidden", 0);
                 frm.set_df_property("consignor_customer", "reqd", 1);
 
                 frm.set_df_property("consignor", "hidden", 1);
                 frm.set_df_property("consignor", "reqd", 0);
-
                 frm.set_value("consignor", null);
+            }
 
-            } else {
-                // ❌ If checkbox is NOT checked
-                frm.set_df_property("consignor_customer", "hidden", 1);
-                frm.set_df_property("consignor_customer", "reqd", 0);
-
+            // 👉 Supplier case
+            else if (r.is_supplier) {
                 frm.set_df_property("consignor", "hidden", 0);
                 frm.set_df_property("consignor", "reqd", 1);
 
+                frm.set_df_property("consignor_customer", "hidden", 1);
+                frm.set_df_property("consignor_customer", "reqd", 0);
+                frm.set_value("consignor_customer", null);
+            }
+
+            // 👉 Safety fallback
+            else {
+                frm.set_df_property("consignor", "hidden", 1);
+                frm.set_df_property("consignor_customer", "hidden", 1);
+                frm.set_value("consignor", null);
                 frm.set_value("consignor_customer", null);
             }
         }
