@@ -141,7 +141,7 @@ frappe.ui.form.on("Sales Invoice", {
         handle_inter_company_grn(frm);
         toggle_incoming_logistic_button(frm);
     },
-    is_return(frm) {
+    on_submit(frm) {
         toggle_incoming_logistic_button(frm);
     }
 });
@@ -174,26 +174,66 @@ function handle_inter_company_grn(frm) {
 }
 
 
+// function toggle_incoming_logistic_button(frm) {
+//     // SAFELY clear only CREATE buttons
+//     if (frm.page && frm.page.clear_custom_buttons) {
+//         frm.page.clear_custom_buttons(__("Create"));
+//     }
+
+//     if (frm.doc.is_return) {
+//         frm.add_custom_button(
+//             __("Incoming Logistic"),
+//             () => {
+//                 frappe.new_doc("Incoming Logistics", {
+//                     sales_invoice: frm.doc.name,
+//                     consignor: frm.doc.customer,
+//                     sales_inovice_no: frm.doc.name,
+//                     transporter: frm.doc.transporter
+//                 });
+//             },
+//             __("Create")
+//         );
+//     }
+// }
 function toggle_incoming_logistic_button(frm) {
     // SAFELY clear only CREATE buttons
     if (frm.page && frm.page.clear_custom_buttons) {
         frm.page.clear_custom_buttons(__("Create"));
     }
 
-    if (frm.doc.is_return) {
-        frm.add_custom_button(
-            __("Incoming Logistic"),
-            () => {
-                frappe.new_doc("Incoming Logistics", {
-                    sales_invoice: frm.doc.name,
-                    consignor: frm.doc.customer,
-                    sales_inovice_no: frm.doc.name,
-                    transporter: frm.doc.transporter
-                });
-            },
-            __("Create")
-        );
+    // Show ONLY after submit
+    if (frm.doc.docstatus !== 1) {
+        return;
     }
+
+    // Condition 1: Sales Invoice is Return
+    if (!frm.doc.is_return || !frm.doc.customer) {
+        return;
+    }
+
+    // Fetch Customer custom field
+    frappe.db.get_value(
+        "Customer",
+        frm.doc.customer,
+        "custom_gate_in_applicable",
+        (r) => {
+            // Condition 2: Customer custom_gate_in_applicable is checked
+            if (r && r.custom_gate_in_applicable) {
+                frm.add_custom_button(
+                    __("Incoming Logistic"),
+                    () => {
+                        frappe.new_doc("Incoming Logistics", {
+                            sales_invoice: frm.doc.name,
+                            consignor: frm.doc.customer,
+                            sales_inovice_no: frm.doc.name,
+                            transporter: frm.doc.transporter
+                        });
+                    },
+                    __("Create")
+                );
+            }
+        }
+    );
 }
 
 frappe.ui.form.on("Sales Invoice", {
@@ -246,3 +286,79 @@ frappe.ui.form.on("Sales Invoice", {
         frm.set_df_property("title", "read_only", 1);
     }
 });
+
+
+
+// frappe.ui.form.on("Sales Invoice Item", {
+//     item_code: function(frm, cdt, cdn) {
+
+//     let row = locals[cdt][cdn];
+//     if (!row.item_code) return;
+
+//     // Check Product Bundle
+//         frappe.call({
+//             method: "frappe.client.get",
+//             args: {
+//             doctype: "Product Bundle",
+//             name: row.item_code
+//             },
+//             callback: function(r) {
+//             if (!r.message) return;
+
+//             let bundle = r.message;
+
+//             // ❌ remove scanned bundle row
+//             frm.get_field("items")
+//             .grid.grid_rows[row.idx - 1].remove();
+
+//             // ✅ add child items
+//             bundle.items.forEach(function(it) {
+
+//             let child = frm.add_child("items");
+
+//             frappe.call({
+//             method: "erpnext.stock.get_item_details.get_item_details",
+//             args: {
+//             args: {
+//             item_code: it.item_code,
+//             company: frm.doc.company,
+//             customer: frm.doc.customer,
+//             selling_price_list: frm.doc.selling_price_list,
+//             price_list_currency: frm.doc.currency,
+//             plc_conversion_rate: frm.doc.plc_conversion_rate,
+//             conversion_rate: frm.doc.conversion_rate,
+//             qty: it.qty,
+//             doctype: frm.doc.doctype,
+//             name: frm.doc.name || "",
+//             child_docname: child.name
+//             }
+//             },
+//             callback: function(res) {
+//             if (!res.message) return;
+
+//             let d = res.message;
+
+//             // set values returned by ERPNext
+//             frappe.model.set_value(child.doctype, child.name, "item_code", it.item_code);
+//             frappe.model.set_value(child.doctype, child.name, "qty", it.qty);
+//             frappe.model.set_value(child.doctype, child.name, "uom", d.uom);
+//             frappe.model.set_value(child.doctype, child.name, "price_list_rate", d.price_list_rate);
+//             frappe.model.set_value(child.doctype, child.name, "rate", d.rate);
+//             frappe.model.set_value(child.doctype, child.name, "item_tax_template", d.item_tax_template);
+
+//             // 🔥 store bundle name
+//             frappe.model.set_value(
+//             child.doctype,
+//             child.name,
+//             "custom_product_bundle",
+//             bundle.name
+//             );
+//             }
+//             });
+//         });
+
+//             frm.refresh_field("items");
+//             }
+//         });
+//     }
+// });
