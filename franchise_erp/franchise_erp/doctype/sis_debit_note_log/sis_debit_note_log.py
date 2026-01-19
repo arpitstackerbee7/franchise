@@ -708,8 +708,8 @@ def create_debit_note(company, period_type=None, invoices=None):
     discount_threshold = config.discount_threshold
     period_type = period_type or config.sis_debit_note_creation_period
 
-    if not auto_credit_note_percent:
-        frappe.throw("Auto Credit Note Percent missing in SIS Configuration.")
+    # if not auto_credit_note_percent:
+    #     frappe.throw("Auto Credit Note Percent missing in SIS Configuration.")
 
     if discount_threshold is None:
         frappe.throw("Discount Threshold missing in SIS Configuration.")
