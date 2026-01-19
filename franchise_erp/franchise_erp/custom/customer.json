@@ -1422,15 +1422,9 @@
    "is_child_table": 0,
    "link_doctype": "Party Specific Item",
    "link_fieldname": "party",
-<<<<<<< Updated upstream
    "modified": "2026-01-02 18:32:07.953451",
    "modified_by": "Administrator",
    "name": "4gva46f8rj",
-=======
-   "modified": "2026-01-05 13:42:35.827851",
-   "modified_by": "Administrator",
-   "name": "u46p2g1nf7",
->>>>>>> Stashed changes
    "owner": "Administrator",
    "parent": "Customer",
    "parent_doctype": null,
@@ -1453,11 +1447,7 @@
    "field_name": "customer_group",
    "idx": 0,
    "is_system_generated": 0,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.712382",
-=======
-   "modified": "2026-01-17 16:55:31.863532",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-customer_group-reqd",
@@ -1480,11 +1470,7 @@
    "field_name": "default_price_list",
    "idx": 0,
    "is_system_generated": 0,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.737427",
-=======
-   "modified": "2026-01-17 16:55:31.877026",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-default_price_list-reqd",
@@ -1507,11 +1493,7 @@
    "field_name": "gstin",
    "idx": 0,
    "is_system_generated": 0,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.764429",
-=======
-   "modified": "2026-01-17 16:55:31.889509",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-gstin-in_quick_entry",
@@ -1534,11 +1516,7 @@
    "field_name": null,
    "idx": 0,
    "is_system_generated": 0,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.790453",
-=======
-   "modified": "2026-01-17 16:55:31.897916",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-main-autoname",
@@ -1553,11 +1531,7 @@
    "_comments": null,
    "_liked_by": null,
    "_user_tags": null,
-<<<<<<< Updated upstream
    "creation": "2026-01-19 13:34:20.955494",
-=======
-   "creation": "2026-01-19 15:30:02.696238",
->>>>>>> Stashed changes
    "default_value": null,
    "doc_type": "Customer",
    "docstatus": 0,
@@ -1565,24 +1539,15 @@
    "field_name": null,
    "idx": 0,
    "is_system_generated": 0,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 13:34:20.955494",
    "modified_by": "Administrator",
-=======
-   "modified": "2026-01-19 15:30:02.696238",
-   "modified_by": "tzu@gmail.com",
->>>>>>> Stashed changes
    "module": null,
    "name": "Customer-main-field_order",
    "owner": "tzu@gmail.com",
    "property": "field_order",
    "property_type": "Data",
    "row_name": null,
-<<<<<<< Updated upstream
    "value": "[\"basic_info\", \"naming_series\", \"salutation\", \"customer_name\", \"customer_type\", \"customer_group\", \"custom_company\", \"custom_date_of_birth\", \"custom_anniversary_date\", \"custom_company_abbrevation\", \"custom_transporter\", \"custom_agent\", \"custom_agent_commission\", \"custom_commission_rate\", \"custom_is_group_company\", \"custom_class_name\", \"column_break0\", \"territory\", \"gender\", \"lead_name\", \"opportunity_name\", \"prospect_name\", \"account_manager\", \"image\", \"custom_outgoing_logistics_applicable\", \"defaults_tab\", \"default_currency\", \"default_bank_account\", \"column_break_14\", \"default_price_list\", \"acc_name\", \"internal_customer_section\", \"is_internal_customer\", \"represents_company\", \"column_break_70\", \"companies\", \"more_info\", \"market_segment\", \"industry\", \"customer_pos_id\", \"website\", \"language\", \"column_break_45\", \"customer_details\", \"dashboard_tab\", \"contact_and_address_tab\", \"address_contacts\", \"address_html\", \"column_break1\", \"contact_html\", \"primary_address_and_contact_detail\", \"column_break_26\", \"customer_primary_address\", \"primary_address\", \"column_break_nwor\", \"customer_primary_contact\", \"mobile_no\", \"email_id\", \"first_name\", \"last_name\", \"custom_mobile_no_customer\", \"custom_sales_terms\", \"custom_sales_terms_template\", \"tax_tab\", \"tax_details_section\", \"gstin\", \"pan\", \"tax_details_column_break\", \"gst_category\", \"taxation_section\", \"tax_id\", \"column_break_21\", \"tax_category\", \"tax_withholding_category\", \"accounting_tab\", \"credit_limit_section\", \"custom_credit_days\", \"payment_terms\", \"credit_limits\", \"default_receivable_accounts\", \"accounts\", \"loyalty_points_tab\", \"loyalty_program\", \"column_break_54\", \"loyalty_program_tier\", \"sales_team_tab\", \"sales_team\", \"sales_team_section\", \"default_sales_partner\", \"column_break_66\", \"default_commission_rate\", \"settings_tab\", \"so_required\", \"dn_required\", \"column_break_53\", \"is_frozen\", \"disabled\", \"portal_users_tab\", \"portal_users\"]"
-=======
-   "value": "[\"basic_info\", \"naming_series\", \"salutation\", \"customer_name\", \"customer_type\", \"customer_group\", \"custom_company\", \"custom_date_of_birth\", \"custom_anniversary_date\", \"custom_company_abbrevation\", \"custom_transporter\", \"custom_agent\", \"custom_agent_commission\", \"custom_commission_rate\", \"custom_is_group_company\", \"custom_class_name\", \"column_break0\", \"territory\", \"gender\", \"lead_name\", \"opportunity_name\", \"prospect_name\", \"account_manager\", \"image\", \"custom_outgoing_logistics_applicable\", \"gate_in_applicable\", \"defaults_tab\", \"default_currency\", \"default_bank_account\", \"column_break_14\", \"default_price_list\", \"internal_customer_section\", \"is_internal_customer\", \"represents_company\", \"column_break_70\", \"companies\", \"more_info\", \"market_segment\", \"industry\", \"customer_pos_id\", \"website\", \"language\", \"column_break_45\", \"customer_details\", \"dashboard_tab\", \"contact_and_address_tab\", \"address_contacts\", \"address_html\", \"column_break1\", \"contact_html\", \"primary_address_and_contact_detail\", \"column_break_26\", \"customer_primary_address\", \"primary_address\", \"column_break_nwor\", \"customer_primary_contact\", \"mobile_no\", \"email_id\", \"first_name\", \"last_name\", \"custom_mobile_no_customer\", \"custom_sales_terms\", \"custom_sales_terms_template\", \"tax_tab\", \"tax_details_section\", \"gstin\", \"pan\", \"tax_details_column_break\", \"gst_category\", \"taxation_section\", \"tax_id\", \"column_break_21\", \"tax_category\", \"tax_withholding_category\", \"accounting_tab\", \"credit_limit_section\", \"custom_credit_days\", \"payment_terms\", \"credit_limits\", \"default_receivable_accounts\", \"accounts\", \"loyalty_points_tab\", \"loyalty_program\", \"column_break_54\", \"loyalty_program_tier\", \"sales_team_tab\", \"sales_team\", \"sales_team_section\", \"default_sales_partner\", \"column_break_66\", \"default_commission_rate\", \"settings_tab\", \"so_required\", \"dn_required\", \"column_break_53\", \"is_frozen\", \"disabled\", \"portal_users_tab\", \"portal_users\"]"
->>>>>>> Stashed changes
   },
   {
    "_assign": null,
@@ -1597,11 +1562,7 @@
    "field_name": null,
    "idx": 0,
    "is_system_generated": 0,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.844798",
-=======
-   "modified": "2026-01-17 16:55:31.913932",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-main-naming_rule",
@@ -1624,11 +1585,7 @@
    "field_name": null,
    "idx": 0,
    "is_system_generated": 0,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.872237",
-=======
-   "modified": "2026-01-17 16:55:31.921551",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-main-search_fields",
@@ -1651,11 +1608,7 @@
    "field_name": "naming_series",
    "idx": 0,
    "is_system_generated": 1,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.900553",
-=======
-   "modified": "2026-01-17 16:55:31.928483",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-naming_series-default",
@@ -1678,11 +1631,7 @@
    "field_name": "naming_series",
    "idx": 0,
    "is_system_generated": 1,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.924533",
-=======
-   "modified": "2026-01-17 16:55:31.935423",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-naming_series-hidden",
@@ -1705,11 +1654,7 @@
    "field_name": "naming_series",
    "idx": 0,
    "is_system_generated": 1,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.940354",
-=======
-   "modified": "2026-01-17 16:55:31.942875",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-naming_series-options",
@@ -1732,11 +1677,7 @@
    "field_name": "naming_series",
    "idx": 0,
    "is_system_generated": 1,
-<<<<<<< Updated upstream
    "modified": "2026-01-19 12:59:02.956235",
-=======
-   "modified": "2026-01-17 16:55:31.950580",
->>>>>>> Stashed changes
    "modified_by": "Administrator",
    "module": null,
    "name": "Customer-naming_series-reqd",
