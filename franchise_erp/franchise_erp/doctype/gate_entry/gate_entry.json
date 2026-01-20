@@ -186,6 +186,7 @@
    "fieldname": "incoming_logistics",
    "fieldtype": "Link",
    "label": "Incoming Logistics",
+   "link_filters": "[[\"Incoming Logistics\",\"gate_entry_no\",\"like\",\"%null%\"]]",
    "options": "Incoming Logistics"
   },
   {
@@ -255,7 +256,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-01-16 10:31:45.998188",
+ "modified": "2026-01-20 18:09:43.781163",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

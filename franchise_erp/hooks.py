@@ -129,7 +129,10 @@ doctype_js = {
     "Delivery Note": "public/js/delivery_note.js",
     "Subcontracting Order": "public/js/subcontracting_order.js",
     "Subcontracting Receipt": "public/js/subcontracting_receipt.js",
-    "Stock Entry": "public/js/stock_entry.js"
+    "Stock Entry": "public/js/stock_entry.js",
+    "Customer Group": "public/js/customer_group.js",
+    "Supplier Group": "public/js/supplier_group.js",
+    "Item Group": "public/js/item_group.js",
 }
 
 

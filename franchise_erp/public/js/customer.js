@@ -187,3 +187,13 @@ function toggle_parent_company_fields(frm) {
             });
         });
 }
+
+frappe.ui.form.on("Customer", {
+    refresh(frm) {
+        // Disable rename action
+        frm.disable_rename = true;
+
+        // Remove pencil icon
+        $(".page-title .editable-title").css("pointer-events", "none");
+    }
+});

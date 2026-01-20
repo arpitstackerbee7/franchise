@@ -53,3 +53,13 @@ function toggle_pan_mandatory(frm) {
 
     frm.refresh_field("pan");
 }
+
+frappe.ui.form.on("Supplier", {
+    refresh(frm) {
+        // Disable rename action
+        frm.disable_rename = true;
+
+        // Remove pencil icon
+        $(".page-title .editable-title").css("pointer-events", "none");
+    }
+});
