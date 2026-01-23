@@ -218,3 +218,25 @@ frappe.ui.form.on("Purchase Order", {
     }
 });
 
+
+
+
+
+
+
+
+frappe.ui.form.on("Purchase Order Item", {
+
+
+    // Jab rate manually change ho → price list rate bhi same ho jaye
+    rate: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (row.rate) {
+            row.price_list_rate = row.rate;
+            row.amount = row.rate * row.qty;
+            frm.refresh_field("items");
+        }
+    },
+
+   
+});
