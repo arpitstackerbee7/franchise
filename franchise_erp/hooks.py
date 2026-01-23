@@ -77,7 +77,7 @@ doc_events = {
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
         "after_insert": "franchise_erp.custom.item_master.create_item_barcode",
-        "before_save": "franchise_erp.custom.item_master.apply_tzu_setting",
+        "before_save": ["franchise_erp.custom.item_master.apply_tzu_setting","franchise_erp.custom.item_master.update_barcode_on_sup_design_change"],
         # "on_update" : "franchise_erp.custom.item_master.existing_item_price_update" #existing validation
         "on_update" : "franchise_erp.custom.item_master.existing_item_price_update"
     },
