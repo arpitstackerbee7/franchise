@@ -65,12 +65,53 @@ def get_uoms_from_tzu(parentfield):
     return [u.strip() for u in rows if u]
 
 
+# def generate_item_code(doc, method):
+
+#     if not doc.is_stock_item:
+#         return
+
+#     # 🔒 RUN ONLY ON CREATE
+#     if not doc.is_new():
+#         return
+
+#     if not all([
+#         doc.custom_group_collection,
+#         doc.custom_departments,
+#         doc.custom_silvet,
+#         doc.custom_colour_code
+#     ]):
+#         frappe.throw(
+#             "Please select Collection, Department, Silhouette and Colour"
+#         )
+
+#     collection_code = get_item_group_code(doc.custom_group_collection, "COLLECTION")
+#     department_code = get_item_group_code(doc.custom_departments, "DEPARTMENT")
+#     silvet_code = get_item_group_code(doc.custom_silvet, "SILVET")
+
+#     # base_code = f"{collection_code}-{department_code}-{silvet_code}-{doc.custom_colour_code}"
+#     # next_series = get_next_series(base_code)
+#     # item_code = f"{base_code}-{next_series}"
+#     #--------------------------------------------------------------------------------------------
+
+#     #Colour code intentionally removed
+#     base_code = f"{collection_code}{department_code}{silvet_code}"
+#     next_series = get_next_series(base_code)
+#     #No dashes at all
+#     item_code = f"{base_code}{next_series}"
+
+#     while frappe.db.exists("Item", item_code):
+#         next_series += 1
+#         item_code = f"{base_code}{next_series}"
+
+#     doc.item_code = item_code
+#     doc.item_name = item_code
+
 def generate_item_code(doc, method):
 
     if not doc.is_stock_item:
         return
 
-    # 🔒 RUN ONLY ON CREATE
+    # 🔒 ONLY ON CREATE
     if not doc.is_new():
         return
 
@@ -78,27 +119,24 @@ def generate_item_code(doc, method):
         doc.custom_group_collection,
         doc.custom_departments,
         doc.custom_silvet,
-        doc.custom_colour_code
+        doc.custom_colour_code,
+        doc.custom_sup_design_no
     ]):
         frappe.throw(
-            "Please select Collection, Department, Silhouette and Colour"
+            "Please select Collection, Department, Silhouette, Colour and Supplier Design No"
         )
 
     collection_code = get_item_group_code(doc.custom_group_collection, "COLLECTION")
     department_code = get_item_group_code(doc.custom_departments, "DEPARTMENT")
     silvet_code = get_item_group_code(doc.custom_silvet, "SILVET")
 
-    # base_code = f"{collection_code}-{department_code}-{silvet_code}-{doc.custom_colour_code}"
-    # next_series = get_next_series(base_code)
-    # item_code = f"{base_code}-{next_series}"
-    #--------------------------------------------------------------------------------------------
-
-    #Colour code intentionally removed
+    # --------------------------------------------------
+    # ITEM CODE (always unique)
+    # --------------------------------------------------
     base_code = f"{collection_code}{department_code}{silvet_code}"
     next_series = get_next_series(base_code)
-    #No dashes at all
-    item_code = f"{base_code}{next_series}"
 
+    item_code = f"{base_code}{next_series}"
     while frappe.db.exists("Item", item_code):
         next_series += 1
         item_code = f"{base_code}{next_series}"
@@ -106,6 +144,34 @@ def generate_item_code(doc, method):
     doc.item_code = item_code
     doc.item_name = item_code
 
+    # --------------------------------------------------
+    # BARCODE LOGIC (supplier design based)
+    # --------------------------------------------------
+    existing_barcode = frappe.db.get_value(
+        "Item",
+        {
+            "custom_sup_design_no": doc.custom_sup_design_no,
+            "custom_group_collection": doc.custom_group_collection,
+            "custom_departments": doc.custom_departments,
+            "custom_silvet": doc.custom_silvet
+        },
+        "custom_barcode_code",
+        order_by="creation desc"
+    )
+
+    if existing_barcode:
+        # SAME supplier design → SAME barcode
+        doc.custom_barcode_code = existing_barcode
+    else:
+        # NEW supplier design → NEW barcode series
+        barcode_series = get_next_series(base_code)
+        barcode = f"{base_code}{barcode_series}"
+
+        while frappe.db.exists("Item", {"custom_barcode_code": barcode}):
+            barcode_series += 1
+            barcode = f"{base_code}{barcode_series}"
+
+        doc.custom_barcode_code = barcode
 
 
 def create_item_barcode(doc, method):
