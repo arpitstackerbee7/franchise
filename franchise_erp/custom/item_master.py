@@ -144,10 +144,10 @@ def generate_item_code(doc, method):
     doc.item_code = item_code
     doc.item_name = item_code
 
-    # --------------------------------------------------
-    # BARCODE LOGIC (supplier design based)
-    # --------------------------------------------------
-    existing_barcode = frappe.db.get_value(
+# --------------------------------------------------
+# BARCODE LOGIC (supplier design based)
+# --------------------------------------------------
+    existing_item_code = frappe.db.get_value(
         "Item",
         {
             "custom_sup_design_no": doc.custom_sup_design_no,
@@ -155,24 +155,48 @@ def generate_item_code(doc, method):
             "custom_departments": doc.custom_departments,
             "custom_silvet": doc.custom_silvet
         },
-        "custom_barcode_code",
+        "item_code",
         order_by="creation desc"
     )
 
-    if existing_barcode:
-        # SAME supplier design → SAME barcode
-        doc.custom_barcode_code = existing_barcode
+    if existing_item_code:
+        # ✅ SAME supplier design → SAME ITEM CODE AS BARCODE
+        doc.custom_barcode_code = existing_item_code
     else:
-        # NEW supplier design → NEW barcode series
-        barcode_series = get_next_series(base_code)
-        barcode = f"{base_code}{barcode_series}"
+        # ✅ NEW supplier design → CURRENT ITEM CODE AS BARCODE
+        doc.custom_barcode_code = doc.item_code
 
-        while frappe.db.exists("Item", {"custom_barcode_code": barcode}):
-            barcode_series += 1
-            barcode = f"{base_code}{barcode_series}"
+def update_barcode_on_sup_design_change(doc, method):
+    # sirf existing item
+    if doc.is_new():
+        return
 
-        doc.custom_barcode_code = barcode
+    # sirf jab supplier design change ho
+    if not doc.has_value_changed("custom_sup_design_no"):
+        return
 
+    if not doc.custom_sup_design_no:
+        return
+
+    # 🔑 ERPNext me item code = name
+    current_item_code = doc.name
+
+    existing_item_code = frappe.db.get_value(
+        "Item",
+        {
+            "custom_sup_design_no": doc.custom_sup_design_no,
+            "name": ["!=", doc.name]
+        },
+        "name",   # 👈 YAHI MAIN FIX HAI
+        order_by="creation asc"
+    )
+
+    if existing_item_code:
+        # same design → same barcode (old item ka item_code)
+        doc.custom_barcode_code = existing_item_code
+    else:
+        # new design → current item ka item_code
+        doc.custom_barcode_code = current_item_code
 
 def create_item_barcode(doc, method):
 
