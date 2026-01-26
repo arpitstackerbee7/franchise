@@ -462,33 +462,70 @@ def get_item_tax_amount(row):
 
 
 
-
-
-
 import frappe
+from frappe import _
+from datetime import date
 
 @frappe.whitelist()
 def get_item_price(item_code, price_list):
-    return frappe.db.get_value(
+    price = frappe.get_all(
         "Item Price",
-        {"item_code": item_code, "price_list": price_list},
-        "price_list_rate"
+        filters={
+            "item_code": item_code,
+            "price_list": price_list
+        },
+        fields=["price_list_rate", "valid_from", "valid_upto"],
+        order_by="valid_from desc",
+        limit=1
     )
 
+    if price:
+        return {
+            "rate": price[0].price_list_rate,
+            "valid_from": price[0].valid_from,
+            "valid_upto": price[0].valid_upto
+        }
+    return None
 
 @frappe.whitelist()
-def update_item_price(item_code, price_list, new_rate):
-    name = frappe.db.get_value(
-        "Item Price",
-        {"item_code": item_code, "price_list": price_list},
-        "name"
-    )
-    if not name:
-        frappe.throw("Item Price not found")
+def update_price_and_release_so(so_name, item_code, price_list, rate, valid_from, valid_upto=None):
 
-    frappe.db.set_value(
+    if frappe.session.user != "Administrator":
+        frappe.throw("Only Administrator can update Item Price")
+
+    # ------------------------
+    # Update Item Price
+    # ------------------------
+    ip = frappe.get_all(
         "Item Price",
-        name,
-        "price_list_rate",
-        new_rate
+        filters={"item_code": item_code, "price_list": price_list},
+        limit=1
     )
+
+    if ip:
+        doc = frappe.get_doc("Item Price", ip[0].name)
+        doc.price_list_rate = rate
+        doc.valid_from = valid_from
+        doc.valid_upto = valid_upto
+        doc.save(ignore_permissions=True)
+    else:
+        frappe.get_doc({
+            "doctype": "Item Price",
+            "item_code": item_code,
+            "price_list": price_list,
+            "price_list_rate": rate,
+            "valid_from": valid_from,
+            "valid_upto": valid_upto,
+            "selling": 1
+        }).insert(ignore_permissions=True)
+
+    # ------------------------
+    # Release SO from Hold (Correct Way)
+    # ------------------------
+    so = frappe.get_doc("Sales Order", so_name)
+
+    if so.status == "On Hold":
+        so.update_status("Resume")   # ERPNext standard method
+
+    frappe.db.commit()
+    return "success"
