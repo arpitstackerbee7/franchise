@@ -106,8 +106,74 @@ def get_uoms_from_tzu(parentfield):
 #     doc.item_code = item_code
 #     doc.item_name = item_code
 
+# def generate_item_code(doc, method):
+
+#     # IMPORT TIME VALIDATION SKIP
+#     # if frappe.flags.in_import:
+#     #     return
+    
+#     if not doc.is_stock_item:
+#         return
+
+#     # 🔒 ONLY ON CREATE
+#     if not doc.is_new():
+#         return
+
+#     if not all([
+#         doc.custom_group_collection,
+#         doc.custom_departments,
+#         doc.custom_silvet,
+#         doc.custom_colour_code,
+#         doc.custom_sup_design_no
+#     ]):
+#         frappe.throw(
+#             "Please select Collection, Department, Silhouette, Colour and Supplier Design No"
+#         )
+
+#     collection_code = get_item_group_code(doc.custom_group_collection, "COLLECTION")
+#     department_code = get_item_group_code(doc.custom_departments, "DEPARTMENT")
+#     silvet_code = get_item_group_code(doc.custom_silvet, "SILVET")
+
+#     # --------------------------------------------------
+#     # ITEM CODE (always unique)
+#     # --------------------------------------------------
+#     base_code = f"{collection_code}{department_code}{silvet_code}"
+#     next_series = get_next_series(base_code)
+
+#     item_code = f"{base_code}{next_series}"
+#     while frappe.db.exists("Item", item_code):
+#         next_series += 1
+#         item_code = f"{base_code}{next_series}"
+
+#     doc.item_code = item_code
+#     doc.item_name = item_code
+
+# # --------------------------------------------------
+# # BARCODE LOGIC (supplier design based)
+# # --------------------------------------------------
+#     existing_barcode = frappe.db.get_value(
+#         "Item",
+#         {
+#             "custom_sup_design_no": doc.custom_sup_design_no,
+#         },
+#         "custom_barcode_code",   # 👈 IMPORTANT FIX
+#         order_by="creation asc"
+#     )
+
+#     if existing_barcode:
+#         # ✅ SAME supplier design → SAME BARCODE (previous item ka)
+#         doc.custom_barcode_code = existing_barcode
+#     else:
+#         # ✅ NEW supplier design → CURRENT ITEM CODE
+#         # ERPNext me item code = name
+#         doc.custom_barcode_code = doc.item_code
+
 def generate_item_code(doc, method):
 
+    # IMPORT TIME VALIDATION SKIP
+    # if frappe.flags.in_import:
+    #     return
+    
     if not doc.is_stock_item:
         return
 
@@ -115,15 +181,19 @@ def generate_item_code(doc, method):
     if not doc.is_new():
         return
 
-    if not all([
-        doc.custom_group_collection,
-        doc.custom_departments,
-        doc.custom_silvet,
-        doc.custom_colour_code,
-        doc.custom_sup_design_no
-    ]):
+    required_fields = {
+        "Collection": doc.custom_group_collection,
+        "Department": doc.custom_departments,
+        "Silhouette": doc.custom_silvet,
+        "Colour": doc.custom_colour_code,
+        "Supplier Design No": doc.custom_sup_design_no
+    }
+
+    missing = [label for label, value in required_fields.items() if not value]
+
+    if missing:
         frappe.throw(
-            "Please select Collection, Department, Silhouette, Colour and Supplier Design No"
+            "Missing required fields: " + ", ".join(missing)
         )
 
     collection_code = get_item_group_code(doc.custom_group_collection, "COLLECTION")
@@ -163,7 +233,6 @@ def generate_item_code(doc, method):
         # ✅ NEW supplier design → CURRENT ITEM CODE
         # ERPNext me item code = name
         doc.custom_barcode_code = doc.item_code
-
 
 def update_barcode_on_sup_design_change(doc, method):
     # sirf existing item
