@@ -1,8 +1,13 @@
+
+
+
 import frappe
 from frappe.utils import flt
 
 
-# ---------------- ROUNDING RULE ----------------
+# ------------------------------------------------
+# ROUNDING (Sirf WSP ke liye use hoga)
+# ------------------------------------------------
 def round_to_nearest_9(rate):
     rate = int(round(rate))
     last = rate % 10
@@ -14,7 +19,9 @@ def round_to_nearest_9(rate):
     return rate + (9 - last)
 
 
-# ---------------- TAX AMOUNT ----------------
+# ------------------------------------------------
+# TAX CALCULATION
+# ------------------------------------------------
 def get_item_tax_amount(row):
     return (
         (row.igst_amount or 0) +
@@ -25,32 +32,52 @@ def get_item_tax_amount(row):
     )
 
 
-# ---------------- COST CALCULATION ----------------
+# ------------------------------------------------
+# COST CALCULATION
+# ------------------------------------------------
 def calculate_cost(row, cost_type, tax_mode):
     """
-    cost_type  : Basic Cost / Effective Cost
-    tax_mode   : Net Of Tax / Gross Of Tax
+    cost_type : Basic Cost / Effective Cost
+    tax_mode  : Net Of Tax / Gross Of Tax
+
+    Effective Cost:
+        Net Rate + Tax
+    Basic Cost:
+        Basic Purchase Rate
     """
 
     item_tax = get_item_tax_amount(row)
 
-    # Base cost selection
+    # Effective Cost
     if cost_type == "Effective Cost":
         base_cost = flt(row.net_rate)
-    else:  # Basic Cost
-        base_cost = flt(row.price_list_rate)
+        if tax_mode == "Gross Of Tax":
+            return base_cost + item_tax
+        return base_cost
 
+    # Basic Cost
+    base_cost = flt(row.price_list_rate)
     if tax_mode == "Gross Of Tax":
         return base_cost + item_tax
-
     return base_cost
 
 
-# ---------------- CREATE ITEM PRICE ----------------
-def create_item_price(item_code, price_list, cost, margin_type, margin_value, valid_from):
+# ------------------------------------------------
+# CREATE ITEM PRICE (Generic)
+# ------------------------------------------------
+def create_item_price(
+    item_code,
+    price_list,
+    cost,
+    margin_type,
+    margin_value,
+    valid_from,
+    apply_rounding=False
+):
     """
-    Creates Item Price only once (no overwrite).
-    Applies rounding rule to end with 9.
+    - Item Price ek baar banega (overwrite nahi hoga)
+    - apply_rounding=True  → WSP
+    - apply_rounding=False → MRP / RSP
     """
 
     if frappe.db.exists("Item Price", {
@@ -66,7 +93,10 @@ def create_item_price(item_code, price_list, cost, margin_type, margin_value, va
         margin_amount = margin_value
 
     final_price = flt(cost + margin_amount)
-    final_price = round_to_nearest_9(final_price)
+
+    # Sirf WSP me rounding
+    if apply_rounding:
+        final_price = round_to_nearest_9(final_price)
 
     doc = frappe.get_doc({
         "doctype": "Item Price",
@@ -79,28 +109,38 @@ def create_item_price(item_code, price_list, cost, margin_type, margin_value, va
     doc.insert(ignore_permissions=True)
 
 
-# ---------------- MAIN FUNCTION (ON PO SUBMIT) ----------------
+# ------------------------------------------------
+# MAIN FUNCTION (PO SUBMIT HOOK)
+# ------------------------------------------------
 def create_selling_price_from_po(doc, method):
     """
-    PO submit par:
-    - MRP/RSP aur WSP dono alag logic se banenge
-    - MRP/RSP same rule follow karega
-    - WSP alag rule follow karega
-    - Ek baar banne ke baad overwrite nahi hoga
+    MRP / RSP aur WSP dono ke liye alag-alag config chalegi.
+
+    MRP / RSP:
+        - Apni cost base
+        - Apna tax mode
+        - Apna margin
+        - Exact value (jaise 109.72)
+
+    WSP:
+        - Alag cost base
+        - Alag tax mode
+        - Alag margin
+        - Rounding to nearest 9
     """
 
     pricing_rule = frappe.db.get_value(
         "Pricing Rule",
         {"disable": 0},
         [
-            # MRP / RSP
+            # ---------- MRP / RSP ----------
             "custom_cost_will_be_taken_as",
             "custom_consider_tax_in_margin",
             "custom_mrp_will_be_taken_as",
             "custom_margin_typee",
             "custom_minimum_margin",
 
-            # WSP
+            # ---------- WSP (double underscore fields) ----------
             "custom_cost__will_be_taken_as",
             "custom_consider__tax_in_margin",
             "custom_wsp_margin_type",
@@ -112,26 +152,25 @@ def create_selling_price_from_po(doc, method):
     if not pricing_rule:
         frappe.throw("No active Pricing Rule found")
 
-    # ---------------- CONFIG ----------------
-    # MRP / RSP
-    mrp_cost_type = pricing_rule.custom_cost_will_be_taken_as or "Basic Cost"
-    mrp_tax_mode = pricing_rule.custom_consider_tax_in_margin or "Net Of Tax"
+    # ---------------- MRP / RSP CONFIG ----------------
+    mrp_cost_type = pricing_rule.custom_cost_will_be_taken_as or "Effective Cost"
+    mrp_tax_mode = pricing_rule.custom_consider_tax_in_margin or "Gross Of Tax"
     selling_price_list = pricing_rule.custom_mrp_will_be_taken_as or "MRP"
     mrp_margin_type = pricing_rule.custom_margin_typee or "Percentage"
     mrp_margin_value = flt(pricing_rule.custom_minimum_margin or 0)
 
-    # WSP
+    # ---------------- WSP CONFIG (Double underscore) ----------------
     wsp_cost_type = pricing_rule.custom_cost__will_be_taken_as or "Effective Cost"
     wsp_tax_mode = pricing_rule.custom_consider__tax_in_margin or "Net Of Tax"
     wsp_margin_type = pricing_rule.custom_wsp_margin_type or "Percentage"
     wsp_margin_value = flt(pricing_rule.custom_wsp_minimum_margin or 0)
 
-    # ---------------- LOOP ITEMS ----------------
+    # ---------------- PROCESS ITEMS ----------------
     for row in doc.items:
         if not row.item_code:
             continue
 
-        # ----- MRP / RSP COST -----
+        # ===== MRP / RSP PRICE =====
         cost_mrp = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
 
         create_item_price(
@@ -140,10 +179,11 @@ def create_selling_price_from_po(doc, method):
             cost=cost_mrp,
             margin_type=mrp_margin_type,
             margin_value=mrp_margin_value,
-            valid_from=doc.transaction_date
+            valid_from=doc.transaction_date,
+            apply_rounding=False              # MRP/RSP exact price
         )
 
-        # ----- WSP COST -----
+        # ===== WSP PRICE =====
         cost_wsp = calculate_cost(row, wsp_cost_type, wsp_tax_mode)
 
         create_item_price(
@@ -152,5 +192,27 @@ def create_selling_price_from_po(doc, method):
             cost=cost_wsp,
             margin_type=wsp_margin_type,
             margin_value=wsp_margin_value,
-            valid_from=doc.transaction_date
+            valid_from=doc.transaction_date,
+            apply_rounding=True               # WSP rounding to 9
         )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
