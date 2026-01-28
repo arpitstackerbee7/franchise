@@ -198,6 +198,8 @@ def create_selling_price_from_po(doc, method):
 
 
 
+    frappe.db.commit()
+    return "success"
 
 
 
@@ -212,7 +214,32 @@ def create_selling_price_from_po(doc, method):
 
 
 
+import frappe
+import io
+import base64
+import barcode
+from barcode.writer import ImageWriter
+import frappe
 
+@frappe.whitelist()
+def generate_custom_barcode(data):
+    writer = ImageWriter()
+    writer.set_options({
+        "module_width": 0.6,     
+        "module_height": 30,      
+        "font_size": 14,         
+        "text_distance": 5,
+        "quiet_zone": 10,     
+        "dpi": 800,          
+        "write_text": True,
+        "anti_alias": False 
+    })
 
+    code128 = barcode.get_barcode_class("code128")
+    code = code128(data, writer=writer)
 
+    buffer = io.BytesIO()
+    code.write(buffer, {"format": "PNG"})
 
+    img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    return "data:image/png;base64," + img_str

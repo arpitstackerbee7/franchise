@@ -244,10 +244,11 @@ doctype_tree_js = {
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "franchise_erp.utils.jinja_methods",
-# 	"filters": "franchise_erp.utils.jinja_filters"
-# }
+jinja = {
+	# "methods": "franchise_erp.utils.jinja_methods",
+	# "filters": "franchise_erp.utils.jinja_filters"
+ "methods": "franchise_erp.api.generate_custom_barcode",
+}
 
 # Installation
 # ------------
