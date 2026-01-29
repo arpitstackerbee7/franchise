@@ -35,32 +35,67 @@ def get_item_tax_amount(row):
 # ------------------------------------------------
 # COST CALCULATION
 # ------------------------------------------------
+# def calculate_cost(row, cost_type, tax_mode):
+#     """
+#     cost_type : Basic Cost / Effective Cost
+#     tax_mode  : Net Of Tax / Gross Of Tax
+
+#     Effective Cost:
+#         Net Rate + Tax
+#     Basic Cost:
+#         Basic Purchase Rate
+#     """
+
+#     item_tax = get_item_tax_amount(row)
+
+#     # Effective Cost
+#     if cost_type == "Effective Cost":
+#         base_cost = flt(row.net_rate)
+#         if tax_mode == "Gross Of Tax":
+#             return base_cost + item_tax
+#         return base_cost
+
+#     # Basic Cost
+#     base_cost = flt(row.price_list_rate)
+#     if tax_mode == "Gross Of Tax":
+#         return base_cost + item_tax
+#     return base_cost
+
 def calculate_cost(row, cost_type, tax_mode):
     """
     cost_type : Basic Cost / Effective Cost
     tax_mode  : Net Of Tax / Gross Of Tax
 
-    Effective Cost:
-        Net Rate + Tax
-    Basic Cost:
-        Basic Purchase Rate
+    Gross Of Tax → Tax INCLUDED
+    Net Of Tax   → Tax EXCLUDED
     """
 
-    item_tax = get_item_tax_amount(row)
+    # ---- Per Unit Tax (SAFE) ----
+    total_tax = flt(row.item_tax_amount or 0)
+    qty = flt(row.qty or 1)
+    per_unit_tax = total_tax / qty if qty else 0
 
-    # Effective Cost
+    # ---------------- Effective Cost ----------------
     if cost_type == "Effective Cost":
-        base_cost = flt(row.net_rate)
+        # net_rate is ALWAYS tax exclusive
+        base_cost = flt(row.net_rate or 0)
+
         if tax_mode == "Gross Of Tax":
-            return base_cost + item_tax
+            # include tax
+            return base_cost + per_unit_tax
+
+        # Net Of Tax
         return base_cost
 
-    # Basic Cost
-    base_cost = flt(row.price_list_rate)
-    if tax_mode == "Gross Of Tax":
-        return base_cost + item_tax
-    return base_cost
+    # ---------------- Basic Cost ----------------
+    # price_list_rate / basic_rate is also tax exclusive
+    base_cost = flt(row.price_list_rate or 0)
 
+    if tax_mode == "Gross Of Tax":
+        return base_cost + per_unit_tax
+
+    # Net Of Tax
+    return base_cost
 
 # ------------------------------------------------
 # CREATE ITEM PRICE (Generic)
@@ -193,7 +228,7 @@ def create_selling_price_from_po(doc, method):
             margin_type=wsp_margin_type,
             margin_value=wsp_margin_value,
             valid_from=doc.transaction_date,
-            apply_rounding=True               # WSP rounding to 9
+            apply_rounding=False               # WSP rounding to 9
         )
 
 
