@@ -185,7 +185,7 @@ def generate_item_code(doc, method):
         "Collection": doc.custom_group_collection,
         "Department": doc.custom_departments,
         "Silhouette": doc.custom_silvet,
-        "Colour": doc.custom_colour_code,
+        # "Colour": doc.custom_colour_code,
         "Supplier Design No": doc.custom_sup_design_no
     }
 
