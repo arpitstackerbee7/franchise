@@ -53,14 +53,18 @@ doc_events = {
         ],
     },
     "Purchase Order": {
-        "before_insert": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
-        "on_submit": "franchise_erp.api.create_selling_price_from_po",
+        # "before_insert": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
+        "on_submit": ["franchise_erp.api.create_selling_price_from_po","franchise_erp.custom.purchase_order.generate_serials_on_po_submit"],
         "before_validate": ["franchise_erp.custom.purchase_order.apply_purchase_term"],
         "before_save": "franchise_erp.custom.purchase_order.apply_purchase_term_freight",
         # "on_change": "franchise_erp.api.on_change"
     },
     "Purchase Receipt": {
-        "validate":["franchise_erp.custom.purchase_reciept.validate_item","franchise_erp.custom.purchase_reciept.validate_gate_entry"],
+        "validate":[
+            "franchise_erp.custom.purchase_reciept.validate_item",
+                    "franchise_erp.custom.purchase_reciept.validate_gate_entry",
+                    "franchise_erp.custom.purchase_reciept.validate_gate_entry_qty_on_grn"
+                    ],
         "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_from_po_on_submit",
         "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
                       "franchise_erp.custom.purchase_reciept.on_submit",
@@ -143,6 +147,7 @@ doctype_js = {
     "Customer Group": "public/js/customer_group.js",
     "Supplier Group": "public/js/supplier_group.js",
     "Item Group": "public/js/item_group.js",
+    "Stock Reconciliation": "public/js/stock_reconciliation.js",
 }
 
 

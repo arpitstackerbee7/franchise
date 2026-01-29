@@ -19,14 +19,84 @@
 #             item.custom_generated_serials = "\n".join(generated)
 #             frappe.db.set_value("Purchase Order Item", item.name, "custom_generated_serials", item.custom_generated_serials)
 
+# import frappe
+# from frappe.model.naming import make_autoname
+
+# def generate_serials_on_po_submit(doc, method):
+#     for item in doc.items:
+
+#         # =================================================
+#         # EXISTING LOGIC – Normal Item Serials
+#         # =================================================
+#         item_info = frappe.db.get_value(
+#             "Item",
+#             item.item_code,
+#             ["has_serial_no", "serial_no_series"],
+#             as_dict=True
+#         )
+
+#         if item_info and item_info.has_serial_no:
+#             generated = []
+
+#             series_prefix = (
+#                 item_info.serial_no_series
+#                 if item_info.serial_no_series
+#                 else f"{item.item_code}-.#####"
+#             )
+
+#             for i in range(int(item.qty)):
+#                 sn = make_autoname(series_prefix)
+#                 generated.append(sn)
+
+#             item.custom_generated_serials = "\n".join(generated)
+
+#         # =================================================
+#         # NEW LOGIC – Subcontracted Finished Good Serials
+#         # =================================================
+#         if not doc.is_subcontracted:
+#             continue
+
+#         if not item.fg_item or not item.fg_item_qty or not item.qty:
+#             continue
+
+#         fg_item_info = frappe.db.get_value(
+#             "Item",
+#             item.fg_item,
+#             ["has_serial_no", "serial_no_series"],
+#             as_dict=True
+#         )
+
+#         if not fg_item_info or not fg_item_info.has_serial_no:
+#             continue
+
+#         fg_serials = []
+
+#         fg_series_prefix = (
+#             fg_item_info.serial_no_series
+#             if fg_item_info.serial_no_series
+#             else f"{item.fg_item}-.#####"
+#         )
+
+#         # 🔥 IMPORTANT CHANGE: Qty × FG Qty
+#         total_fg_qty = int(item.qty) * int(item.fg_item_qty)
+
+#         for i in range(total_fg_qty):
+#             sn = make_autoname(fg_series_prefix)
+#             fg_serials.append(sn)
+
+#         # 👉 Store FG serials in SAME field
+#         item.custom_generated_serials = "\n".join(fg_serials)
+
 import frappe
 from frappe.model.naming import make_autoname
 
 def generate_serials_on_po_submit(doc, method):
     for item in doc.items:
 
+        serials_to_save = []
+
         # =================================================
-        # EXISTING LOGIC – Normal Item Serials
+        # NORMAL ITEM SERIALS
         # =================================================
         item_info = frappe.db.get_value(
             "Item",
@@ -36,56 +106,51 @@ def generate_serials_on_po_submit(doc, method):
         )
 
         if item_info and item_info.has_serial_no:
-            generated = []
-
             series_prefix = (
                 item_info.serial_no_series
                 if item_info.serial_no_series
                 else f"{item.item_code}-.#####"
             )
 
-            for i in range(int(item.qty)):
-                sn = make_autoname(series_prefix)
-                generated.append(sn)
-
-            item.custom_generated_serials = "\n".join(generated)
+            for _ in range(int(item.qty)):
+                serials_to_save.append(make_autoname(series_prefix))
 
         # =================================================
-        # NEW LOGIC – Subcontracted Finished Good Serials
+        # SUBCONTRACTED FG SERIALS
         # =================================================
-        if not doc.is_subcontracted:
-            continue
+        if doc.is_subcontracted and item.fg_item and item.fg_item_qty and item.qty:
 
-        if not item.fg_item or not item.fg_item_qty or not item.qty:
-            continue
+            fg_item_info = frappe.db.get_value(
+                "Item",
+                item.fg_item,
+                ["has_serial_no", "serial_no_series"],
+                as_dict=True
+            )
 
-        fg_item_info = frappe.db.get_value(
-            "Item",
-            item.fg_item,
-            ["has_serial_no", "serial_no_series"],
-            as_dict=True
-        )
+            if fg_item_info and fg_item_info.has_serial_no:
+                fg_series_prefix = (
+                    fg_item_info.serial_no_series
+                    if fg_item_info.serial_no_series
+                    else f"{item.fg_item}-.#####"
+                )
 
-        if not fg_item_info or not fg_item_info.has_serial_no:
-            continue
+                total_fg_qty = int(item.qty) * int(item.fg_item_qty)
 
-        fg_serials = []
+                serials_to_save = []  # overwrite normal serials
+                for _ in range(total_fg_qty):
+                    serials_to_save.append(make_autoname(fg_series_prefix))
 
-        fg_series_prefix = (
-            fg_item_info.serial_no_series
-            if fg_item_info.serial_no_series
-            else f"{item.fg_item}-.#####"
-        )
+        # =================================================
+        # 🔥 FORCE SAVE IN DB (THIS WAS MISSING)
+        # =================================================
+        if serials_to_save:
+            frappe.db.set_value(
+                "Purchase Order Item",
+                item.name,
+                "custom_generated_serials",
+                "\n".join(serials_to_save)
+            )
 
-        # 🔥 IMPORTANT CHANGE: Qty × FG Qty
-        total_fg_qty = int(item.qty) * int(item.fg_item_qty)
-
-        for i in range(total_fg_qty):
-            sn = make_autoname(fg_series_prefix)
-            fg_serials.append(sn)
-
-        # 👉 Store FG serials in SAME field
-        item.custom_generated_serials = "\n".join(fg_serials)
 
 def apply_purchase_term(doc, method):
     if not doc.custom_purchase_term:

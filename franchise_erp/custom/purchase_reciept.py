@@ -501,3 +501,50 @@ def validate_gate_entry(doc, method):
             )
 
 
+from frappe import _
+
+def validate_gate_entry_qty_on_grn(doc, method):
+    for item in doc.items:
+
+        gate_entry = item.custom_bulk_gate_entry
+        if not gate_entry:
+            continue
+
+        # 1️⃣ Get Invoice Qty from Gate Entry
+        invoice_qty = frappe.db.get_value(
+            "Gate Entry",
+            gate_entry,
+            "quantity_as_per_invoice"
+        ) or 0
+
+        if invoice_qty <= 0:
+            frappe.throw(
+                _("Quantity as per invoice is zero for Gate Entry {0}. GRN cannot be created.")
+                .format(gate_entry)
+            )
+
+        # 2️⃣ Already received qty from previous GRNs
+        already_grn_qty = frappe.db.sql("""
+            SELECT IFNULL(SUM(pri.qty), 0) AS total_qty
+            FROM `tabPurchase Receipt Item` pri
+            JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
+            WHERE pri.custom_bulk_gate_entry = %s
+            AND pr.docstatus = 1
+            AND pr.name != %s
+        """, (gate_entry, doc.name), as_dict=1)[0]["total_qty"]
+
+        remaining_qty = invoice_qty - already_grn_qty
+
+        # 3️⃣ If nothing left
+        if remaining_qty <= 0:
+            frappe.throw(
+                _("All quantity as per invoice has already been received for Gate Entry {0}.")
+                .format(gate_entry)
+            )
+
+        # 4️⃣ If user enters more than remaining
+        if item.qty > remaining_qty:
+            frappe.throw(
+                _("Only {0} quantity is remaining as per invoice for Gate Entry {1}.")
+                .format(remaining_qty, gate_entry)
+            )

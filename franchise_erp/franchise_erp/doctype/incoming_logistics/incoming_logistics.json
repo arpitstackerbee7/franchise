@@ -150,6 +150,7 @@
   {
    "fieldname": "site",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Site",
    "mandatory_depends_on": "type == \"Sales Invoice\"",
    "options": "Address"
@@ -382,8 +383,8 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-19 14:45:40.721335",
- "modified_by": "Administrator",
+ "modified": "2026-01-28 16:05:07.198299",
+ "modified_by": "tzu@gmail.com",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
  "naming_rule": "By \"Naming Series\" field",
