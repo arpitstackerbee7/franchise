@@ -173,6 +173,10 @@ def generate_item_code(doc, method):
     # IMPORT TIME VALIDATION SKIP
     # if frappe.flags.in_import:
     #     return
+
+    # ✅ BYPASS CHECK
+    if doc.custom_bypass_serialbatch:
+        return
     
     if not doc.is_stock_item:
         return
@@ -298,6 +302,15 @@ def apply_tzu_setting(doc, method):
     if not doc.is_stock_item:
         return
 
+    # ✅ BYPASS SERIAL/BATCH
+    if doc.custom_bypass_serialbatch:
+        doc.has_serial_no = 0
+        doc.has_batch_no = 0
+        doc.create_new_batch = 0
+        doc.serial_no_series = ""
+        doc.batch_number_series = ""
+        return
+    
     if not doc.stock_uom:
         frappe.throw("Stock UOM is mandatory for Stock Item")
 
