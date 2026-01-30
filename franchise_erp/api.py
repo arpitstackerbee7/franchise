@@ -284,7 +284,6 @@ def generate_custom_barcode(data):
 
 
 
-
 import frappe
 from frappe import _
 from datetime import date
@@ -293,8 +292,6 @@ from datetime import date
 def get_item_price(item_code, price_list):
     price = frappe.get_all(
         "Item Price",
-        {"item_code": item_code, "price_list": price_list},
-        "price_list_rate"
         filters={
             "item_code": item_code,
             "price_list": price_list
@@ -306,8 +303,9 @@ def get_item_price(item_code, price_list):
 
     if price:
         return {
-            "rate": price[0].price_list_rate,
-            "valid_from": price[0].valid_from,
-            "valid_upto": price[0].valid_upto
+            "rate": price[0]["price_list_rate"],
+            "valid_from": price[0]["valid_from"],
+            "valid_upto": price[0]["valid_upto"]
         }
+
     return None
