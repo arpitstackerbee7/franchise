@@ -291,7 +291,6 @@ from datetime import date
 
 @frappe.whitelist()
 def get_item_price(item_code, price_list):
-    return frappe.db.get_value(
     price = frappe.get_all(
         "Item Price",
         {"item_code": item_code, "price_list": price_list},
