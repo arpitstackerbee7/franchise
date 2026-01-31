@@ -147,21 +147,117 @@ def create_item_price(
 # ------------------------------------------------
 # MAIN FUNCTION (PO SUBMIT HOOK)
 # ------------------------------------------------
+# def create_selling_price_from_po(doc, method):
+#     """
+#     MRP / RSP aur WSP dono ke liye alag-alag config chalegi.
+
+#     MRP / RSP:
+#         - Apni cost base
+#         - Apna tax mode
+#         - Apna margin
+#         - Exact value (jaise 109.72)
+
+#     WSP:
+#         - Alag cost base
+#         - Alag tax mode
+#         - Alag margin
+#         - Rounding to nearest 9
+#     """
+
+#     pricing_rule = frappe.db.get_value(
+#         "Pricing Rule",
+#         {"disable": 0},
+#         [
+#             # ---------- MRP / RSP ----------
+#             "custom_cost_will_be_taken_as",
+#             "custom_consider_tax_in_margin",
+#             "custom_mrp_will_be_taken_as",
+#             "custom_margin_typee",
+#             "custom_minimum_margin",
+
+#             # ---------- WSP (double underscore fields) ----------
+#             "custom_cost__will_be_taken_as",
+#             "custom_consider__tax_in_margin",
+#             "custom_wsp_margin_type",
+#             "custom_wsp_minimum_margin"
+#         ],
+#         as_dict=True
+#     )
+
+#     if not pricing_rule:
+#         frappe.throw("No active Pricing Rule found")
+
+#     # ---------------- MRP / RSP CONFIG ----------------
+#     mrp_cost_type = pricing_rule.custom_cost_will_be_taken_as or "Effective Cost"
+#     mrp_tax_mode = pricing_rule.custom_consider_tax_in_margin or "Gross Of Tax"
+#     selling_price_list = pricing_rule.custom_mrp_will_be_taken_as or "MRP"
+#     mrp_margin_type = pricing_rule.custom_margin_typee or "Percentage"
+#     mrp_margin_value = flt(pricing_rule.custom_minimum_margin or 0)
+
+#     # ---------------- WSP CONFIG (Double underscore) ----------------
+#     wsp_cost_type = pricing_rule.custom_cost__will_be_taken_as or "Effective Cost"
+#     wsp_tax_mode = pricing_rule.custom_consider__tax_in_margin or "Net Of Tax"
+#     wsp_margin_type = pricing_rule.custom_wsp_margin_type or "Percentage"
+#     wsp_margin_value = flt(pricing_rule.custom_wsp_minimum_margin or 0)
+
+#     # ---------------- PROCESS ITEMS ----------------
+#     for row in doc.items:
+#         if not row.item_code:
+#             continue
+
+#         # ===== MRP / RSP PRICE =====
+#         cost_mrp = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
+
+#         create_item_price(
+#             item_code=row.item_code,
+#             price_list=selling_price_list,   # MRP or RSP
+#             cost=cost_mrp,
+#             margin_type=mrp_margin_type,
+#             margin_value=mrp_margin_value,
+#             valid_from=doc.transaction_date,
+#             apply_rounding=False              # MRP/RSP exact price
+#         )
+
+#         # ===== WSP PRICE =====
+#         cost_wsp = calculate_cost(row, wsp_cost_type, wsp_tax_mode)
+
+#         create_item_price(
+#             item_code=row.item_code,
+#             price_list="WSP",
+#             cost=cost_wsp,
+#             margin_type=wsp_margin_type,
+#             margin_value=wsp_margin_value,
+#             valid_from=doc.transaction_date,
+#             apply_rounding=False               # WSP rounding to 9
+#         )
+
+
+
+#     frappe.db.commit()
+#     return "success"
+
+
+
+
+import frappe
+from frappe.utils import flt, cint
+
+
 def create_selling_price_from_po(doc, method):
     """
     MRP / RSP aur WSP dono ke liye alag-alag config chalegi.
 
     MRP / RSP:
-        - Apni cost base
-        - Apna tax mode
-        - Apna margin
-        - Exact value (jaise 109.72)
+        - Same cost base
+        - Same tax mode
+        - Same margin
+        - Exact value (NO rounding)
 
     WSP:
         - Alag cost base
         - Alag tax mode
         - Alag margin
-        - Rounding to nearest 9
+        - Rounding (if required later)
     """
 
     pricing_rule = frappe.db.get_value(
@@ -171,11 +267,14 @@ def create_selling_price_from_po(doc, method):
             # ---------- MRP / RSP ----------
             "custom_cost_will_be_taken_as",
             "custom_consider_tax_in_margin",
-            "custom_mrp_will_be_taken_as",
             "custom_margin_typee",
             "custom_minimum_margin",
 
-            # ---------- WSP (double underscore fields) ----------
+            # NEW CHECKBOXES
+            "custom_is_mrp",
+            "custom_is_rsp",
+
+            # ---------- WSP ----------
             "custom_cost__will_be_taken_as",
             "custom_consider__tax_in_margin",
             "custom_wsp_margin_type",
@@ -188,35 +287,53 @@ def create_selling_price_from_po(doc, method):
         frappe.throw("No active Pricing Rule found")
 
     # ---------------- MRP / RSP CONFIG ----------------
-    mrp_cost_type = pricing_rule.custom_cost_will_be_taken_as or "Effective Cost"
-    mrp_tax_mode = pricing_rule.custom_consider_tax_in_margin or "Gross Of Tax"
-    selling_price_list = pricing_rule.custom_mrp_will_be_taken_as or "MRP"
+    mrp_cost_type   = pricing_rule.custom_cost_will_be_taken_as or "Effective Cost"
+    mrp_tax_mode    = pricing_rule.custom_consider_tax_in_margin or "Gross Of Tax"
     mrp_margin_type = pricing_rule.custom_margin_typee or "Percentage"
-    mrp_margin_value = flt(pricing_rule.custom_minimum_margin or 0)
+    mrp_margin_val  = flt(pricing_rule.custom_minimum_margin or 0)
 
-    # ---------------- WSP CONFIG (Double underscore) ----------------
-    wsp_cost_type = pricing_rule.custom_cost__will_be_taken_as or "Effective Cost"
-    wsp_tax_mode = pricing_rule.custom_consider__tax_in_margin or "Net Of Tax"
+    is_mrp_enabled = cint(pricing_rule.custom_is_mrp)
+    is_rsp_enabled = cint(pricing_rule.custom_is_rsp)
+
+    if not (is_mrp_enabled or is_rsp_enabled):
+      frappe.throw("Please enable MRP or RSP in Pricing Rule")
+    # ---------------- WSP CONFIG ----------------
+    wsp_cost_type   = pricing_rule.custom_cost__will_be_taken_as or "Effective Cost"
+    wsp_tax_mode    = pricing_rule.custom_consider__tax_in_margin or "Net Of Tax"
     wsp_margin_type = pricing_rule.custom_wsp_margin_type or "Percentage"
-    wsp_margin_value = flt(pricing_rule.custom_wsp_minimum_margin or 0)
+    wsp_margin_val  = flt(pricing_rule.custom_wsp_minimum_margin or 0)
 
     # ---------------- PROCESS ITEMS ----------------
     for row in doc.items:
         if not row.item_code:
             continue
 
-        # ===== MRP / RSP PRICE =====
-        cost_mrp = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
+        # ===== MRP / RSP COST =====
+        cost_mrp_rsp = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
 
-        create_item_price(
-            item_code=row.item_code,
-            price_list=selling_price_list,   # MRP or RSP
-            cost=cost_mrp,
-            margin_type=mrp_margin_type,
-            margin_value=mrp_margin_value,
-            valid_from=doc.transaction_date,
-            apply_rounding=False              # MRP/RSP exact price
-        )
+        # ===== MRP PRICE =====
+        if is_mrp_enabled:
+            create_item_price(
+                item_code=row.item_code,
+                price_list="MRP",
+                cost=cost_mrp_rsp,
+                margin_type=mrp_margin_type,
+                margin_value=mrp_margin_val,
+                valid_from=doc.transaction_date,
+                apply_rounding=False
+            )
+
+        # ===== RSP PRICE =====
+        if is_rsp_enabled:
+            create_item_price(
+                item_code=row.item_code,
+                price_list="RSP",
+                cost=cost_mrp_rsp,
+                margin_type=mrp_margin_type,
+                margin_value=mrp_margin_val,
+                valid_from=doc.transaction_date,
+                apply_rounding=False
+            )
 
         # ===== WSP PRICE =====
         cost_wsp = calculate_cost(row, wsp_cost_type, wsp_tax_mode)
@@ -226,19 +343,13 @@ def create_selling_price_from_po(doc, method):
             price_list="WSP",
             cost=cost_wsp,
             margin_type=wsp_margin_type,
-            margin_value=wsp_margin_value,
+            margin_value=wsp_margin_val,
             valid_from=doc.transaction_date,
-            apply_rounding=False               # WSP rounding to 9
+            apply_rounding=False
         )
-
-
 
     frappe.db.commit()
     return "success"
-
-
-
-
 
 
 
