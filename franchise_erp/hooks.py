@@ -80,10 +80,16 @@ doc_events = {
 
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
-        "after_insert": "franchise_erp.custom.item_master.create_item_barcode",
-        "before_save": ["franchise_erp.custom.item_master.apply_tzu_setting","franchise_erp.custom.item_master.update_barcode_on_sup_design_change"],
+        # "after_insert": "franchise_erp.custom.item_master.create_item_barcode_once",
+        "before_save": [
+            "franchise_erp.custom.item_master.apply_tzu_setting",
+            "franchise_erp.custom.item_master.update_style_on_supplier_design_change",
+            "franchise_erp.custom.item_master.update_item_code_on_change",
+            ],
         # "on_update" : "franchise_erp.custom.item_master.existing_item_price_update" #existing validation
-        "on_update" : "franchise_erp.custom.item_master.existing_item_price_update"
+        "on_update" : [
+            "franchise_erp.custom.item_master.existing_item_price_update",
+        ]
     },
     "Item Group": {
         "validate": ["franchise_erp.custom.item_group.validate_same_parent",
