@@ -160,3 +160,24 @@ frappe.ui.form.on("Item", {
         }
     }
 });
+
+
+
+frappe.ui.form.on('Item', {
+    onload(frm) {
+        // Sirf new item ke liye
+        if (frm.is_new()) {
+
+            // Agar table empty hai
+            if (!frm.doc.taxes || frm.doc.taxes.length === 0) {
+
+                let row = frm.add_child('taxes');
+
+                // OPTIONAL: default Item Tax Template set karna ho
+                // row.item_tax_template = "GST 3%";  
+
+                frm.refresh_field('taxes');
+            }
+        }
+    }
+});
