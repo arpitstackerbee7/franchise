@@ -38,7 +38,7 @@ def get_item_tax_amount(row):
 # def calculate_cost(row, cost_type, tax_mode):
 #     """
 #     cost_type : Basic Cost / Effective Cost
-#     tax_mode  : Net Of Tax / Gross Of Tax
+#     tax_mode  : Inclusive / Exclusive
 
 #     Effective Cost:
 #         Net Rate + Tax
@@ -51,23 +51,60 @@ def get_item_tax_amount(row):
 #     # Effective Cost
 #     if cost_type == "Effective Cost":
 #         base_cost = flt(row.net_rate)
-#         if tax_mode == "Gross Of Tax":
+#         if tax_mode == "Exclusive":
 #             return base_cost + item_tax
 #         return base_cost
 
 #     # Basic Cost
 #     base_cost = flt(row.price_list_rate)
-#     if tax_mode == "Gross Of Tax":
+#     if tax_mode == "Exclusive":
 #         return base_cost + item_tax
 #     return base_cost
+
+# def calculate_cost(row, cost_type, tax_mode):
+#     """
+#     cost_type : Basic Cost / Effective Cost
+#     tax_mode  : Inclusive / Exclusive
+
+#     Exclusive → Tax INCLUDED
+#     Inclusive   → Tax EXCLUDED
+#     """
+
+#     # ---- Per Unit Tax (SAFE) ----
+#     total_tax = flt(row.item_tax_amount or 0)
+#     qty = flt(row.qty or 1)
+#     per_unit_tax = total_tax / qty if qty else 0
+
+#     # ---------------- Effective Cost ----------------
+#     if cost_type == "Effective Cost":
+#         # net_rate is ALWAYS tax exclusive
+#         base_cost = flt(row.net_rate or 0)
+
+#         if tax_mode == "Exclusive":
+#             # include tax
+#             return base_cost + per_unit_tax
+
+#         # Inclusive
+#         return base_cost
+
+#     # ---------------- Basic Cost ----------------
+#     # price_list_rate / basic_rate is also tax exclusive
+#     base_cost = flt(row.price_list_rate or 0)
+
+#     if tax_mode == "Exclusive":
+#         return base_cost + per_unit_tax
+
+#     # Inclusive
+#     return base_cost
+from frappe.utils import flt
 
 def calculate_cost(row, cost_type, tax_mode):
     """
     cost_type : Basic Cost / Effective Cost
-    tax_mode  : Net Of Tax / Gross Of Tax
+    tax_mode  : Inclusive / Exclusive
 
-    Gross Of Tax → Tax INCLUDED
-    Net Of Tax   → Tax EXCLUDED
+    Exclusive → ADD tax
+    Inclusive → DO NOT add tax
     """
 
     # ---- Per Unit Tax (SAFE) ----
@@ -80,22 +117,19 @@ def calculate_cost(row, cost_type, tax_mode):
         # net_rate is ALWAYS tax exclusive
         base_cost = flt(row.net_rate or 0)
 
-        if tax_mode == "Gross Of Tax":
-            # include tax
+        if tax_mode == "Exclusive":
             return base_cost + per_unit_tax
 
-        # Net Of Tax
-        return base_cost
+        return base_cost  # Inclusive
 
     # ---------------- Basic Cost ----------------
-    # price_list_rate / basic_rate is also tax exclusive
+    # price_list_rate / basic_rate is ALSO tax exclusive
     base_cost = flt(row.price_list_rate or 0)
 
-    if tax_mode == "Gross Of Tax":
+    if tax_mode == "Exclusive":
         return base_cost + per_unit_tax
 
-    # Net Of Tax
-    return base_cost
+    return base_cost  # Inclusive
 
 # ------------------------------------------------
 # CREATE ITEM PRICE (Generic)
@@ -189,14 +223,14 @@ def create_item_price(
 
 #     # ---------------- MRP / RSP CONFIG ----------------
 #     mrp_cost_type = pricing_rule.custom_cost_will_be_taken_as or "Effective Cost"
-#     mrp_tax_mode = pricing_rule.custom_consider_tax_in_margin or "Gross Of Tax"
+#     mrp_tax_mode = pricing_rule.custom_consider_tax_in_margin or "Exclusive"
 #     selling_price_list = pricing_rule.custom_mrp_will_be_taken_as or "MRP"
 #     mrp_margin_type = pricing_rule.custom_margin_typee or "Percentage"
 #     mrp_margin_value = flt(pricing_rule.custom_minimum_margin or 0)
 
 #     # ---------------- WSP CONFIG (Double underscore) ----------------
 #     wsp_cost_type = pricing_rule.custom_cost__will_be_taken_as or "Effective Cost"
-#     wsp_tax_mode = pricing_rule.custom_consider__tax_in_margin or "Net Of Tax"
+#     wsp_tax_mode = pricing_rule.custom_consider__tax_in_margin or "Inclusive"
 #     wsp_margin_type = pricing_rule.custom_wsp_margin_type or "Percentage"
 #     wsp_margin_value = flt(pricing_rule.custom_wsp_minimum_margin or 0)
 
@@ -244,62 +278,63 @@ from frappe.utils import flt, cint
 
 
 def create_selling_price_from_po(doc, method):
-    """
-    MRP / RSP aur WSP dono ke liye alag-alag config chalegi.
-
-    MRP / RSP:
-        - Same cost base
-        - Same tax mode
-        - Same margin
-        - Exact value (NO rounding)
-
-    WSP:
-        - Alag cost base
-        - Alag tax mode
-        - Alag margin
-        - Rounding (if required later)
-    """
 
     pricing_rule = frappe.db.get_value(
         "Pricing Rule",
         {"disable": 0},
         [
-            # ---------- MRP / RSP ----------
+            # -------- COMMON --------
+            "supplier",
+
+            # -------- MRP --------
             "custom_cost_will_be_taken_as",
             "custom_consider_tax_in_margin",
             "custom_margin_typee",
             "custom_minimum_margin",
 
-            # NEW CHECKBOXES
-            "custom_is_mrp",
-            "custom_is_rsp",
+            # -------- RSP --------
+            "custom_cost___will_be_taken_as",
+            "custom_consider___tax_in_margin",
+            "custom_rsp_margin_type",
+            "custom_rsp_minimum_margin",
 
-            # ---------- WSP ----------
+            # -------- WSP --------
             "custom_cost__will_be_taken_as",
             "custom_consider__tax_in_margin",
             "custom_wsp_margin_type",
-            "custom_wsp_minimum_margin"
+            "custom_wsp_minimum_margin",
         ],
         as_dict=True
     )
 
+    # ------------------------------------------------
+    # 1️⃣ NO PRICING RULE → ERP DEFAULT
+    # ------------------------------------------------
     if not pricing_rule:
-        frappe.throw("No active Pricing Rule found")
+        return  # 👈 silently exit, no error
 
-    # ---------------- MRP / RSP CONFIG ----------------
+    # ------------------------------------------------
+    # 2️⃣ SUPPLIER CHECK
+    # ------------------------------------------------
+    if pricing_rule.supplier:
+        if doc.supplier != pricing_rule.supplier:
+            return  # 👈 supplier mismatch → ERP default
+
+    # ---------------- MRP CONFIG ----------------
     mrp_cost_type   = pricing_rule.custom_cost_will_be_taken_as or "Effective Cost"
-    mrp_tax_mode    = pricing_rule.custom_consider_tax_in_margin or "Gross Of Tax"
+    mrp_tax_mode    = pricing_rule.custom_consider_tax_in_margin or "Exclusive"
     mrp_margin_type = pricing_rule.custom_margin_typee or "Percentage"
     mrp_margin_val  = flt(pricing_rule.custom_minimum_margin or 0)
 
-    is_mrp_enabled = cint(pricing_rule.custom_is_mrp)
-    is_rsp_enabled = cint(pricing_rule.custom_is_rsp)
+    # ---------------- RSP CONFIG ----------------
+    rsp_cost_type   = pricing_rule.custom_cost___will_be_taken_as or "Effective Cost"
+    rsp_tax_mode    = pricing_rule.custom_consider___tax_in_margin or "Exclusive"
+    rsp_margin_type = pricing_rule.custom_rsp_margin_type or "Percentage"
+    rsp_margin_val  = flt(pricing_rule.custom_rsp_minimum_margin or 0)
 
-    if not (is_mrp_enabled or is_rsp_enabled):
-      frappe.throw("Please enable MRP or RSP in Pricing Rule")
     # ---------------- WSP CONFIG ----------------
     wsp_cost_type   = pricing_rule.custom_cost__will_be_taken_as or "Effective Cost"
-    wsp_tax_mode    = pricing_rule.custom_consider__tax_in_margin or "Net Of Tax"
+    wsp_tax_mode    = pricing_rule.custom_consider__tax_in_margin or "Exclusive"
     wsp_margin_type = pricing_rule.custom_wsp_margin_type or "Percentage"
     wsp_margin_val  = flt(pricing_rule.custom_wsp_minimum_margin or 0)
 
@@ -308,40 +343,39 @@ def create_selling_price_from_po(doc, method):
         if not row.item_code:
             continue
 
-        # ===== MRP / RSP COST =====
-        cost_mrp_rsp = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
+        # ===== MRP =====
+        mrp_cost = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
 
-        # ===== MRP PRICE =====
-        if is_mrp_enabled:
-            create_item_price(
-                item_code=row.item_code,
-                price_list="MRP",
-                cost=cost_mrp_rsp,
-                margin_type=mrp_margin_type,
-                margin_value=mrp_margin_val,
-                valid_from=doc.transaction_date,
-                apply_rounding=False
-            )
+        create_item_price(
+            item_code=row.item_code,
+            price_list="MRP",
+            cost=mrp_cost,
+            margin_type=mrp_margin_type,
+            margin_value=mrp_margin_val,
+            valid_from=doc.transaction_date,
+            apply_rounding=False
+        )
 
-        # ===== RSP PRICE =====
-        if is_rsp_enabled:
-            create_item_price(
-                item_code=row.item_code,
-                price_list="RSP",
-                cost=cost_mrp_rsp,
-                margin_type=mrp_margin_type,
-                margin_value=mrp_margin_val,
-                valid_from=doc.transaction_date,
-                apply_rounding=False
-            )
+        # ===== RSP =====
+        rsp_cost = calculate_cost(row, rsp_cost_type, rsp_tax_mode)
 
-        # ===== WSP PRICE =====
-        cost_wsp = calculate_cost(row, wsp_cost_type, wsp_tax_mode)
+        create_item_price(
+            item_code=row.item_code,
+            price_list="RSP",
+            cost=rsp_cost,
+            margin_type=rsp_margin_type,
+            margin_value=rsp_margin_val,
+            valid_from=doc.transaction_date,
+            apply_rounding=False
+        )
+
+        # ===== WSP =====
+        wsp_cost = calculate_cost(row, wsp_cost_type, wsp_tax_mode)
 
         create_item_price(
             item_code=row.item_code,
             price_list="WSP",
-            cost=cost_wsp,
+            cost=wsp_cost,
             margin_type=wsp_margin_type,
             margin_value=wsp_margin_val,
             valid_from=doc.transaction_date,
@@ -349,7 +383,6 @@ def create_selling_price_from_po(doc, method):
         )
 
     frappe.db.commit()
-    return "success"
 
 
 
