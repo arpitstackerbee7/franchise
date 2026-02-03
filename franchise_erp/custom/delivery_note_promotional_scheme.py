@@ -4,62 +4,98 @@ from frappe.utils import today, flt
 # ============================================================
 # MAIN ENTRY
 # ============================================================
+def get_all_active_schemes(doc):
+    schemes = frappe.get_all(
+        "Promotional Scheme",
+        filters={
+            "selling": 1,
+            "disable": 0,
+            "apply_on": "Transaction",
+            "company": doc.company,
+            "valid_from": ["<=", today()],
+            "valid_upto": [">=", today()]
+        },
+        fields=["name"],
+        order_by="creation asc"
+    )
+
+    applicable_schemes = []
+    for s in schemes:
+        scheme = frappe.get_doc("Promotional Scheme", s.name)
+        if is_scheme_applicable(scheme, doc):
+            applicable_schemes.append(scheme)
+
+    return applicable_schemes
 
 def apply_promotions(doc, method=None):
-
-    if doc.docstatus == 1:
-        return
-    
-    if doc.ignore_pricing_rule:
+    if doc.docstatus == 1 or doc.ignore_pricing_rule:
         return
 
-    # Prevent double execution in same save
+    # Prevent double execution
     if getattr(doc, "_promotion_applied", False):
         return
     doc._promotion_applied = True
 
-    # Reset everything first
+    # Reset any previous promotions applied
     reset_previous_promotions(doc)
 
-    scheme = get_active_scheme(doc)
-    if not scheme:
+    # Get all active schemes for this document
+    schemes = get_all_active_schemes(doc)
+    if not schemes:
         return
 
-    slab = get_applicable_slab(scheme)
-    if not slab:
-        return
+    for scheme in schemes:
+        eligible_items = get_eligible_items(doc, scheme)
+        if not eligible_items:
+            continue
 
-    eligible_items = get_eligible_items(doc, scheme)
-    if not eligible_items:
-        return
+        # Total quantity for eligible items
+        total_qty = sum(flt(row.qty or 0) for row in eligible_items)
 
-    total_qty = sum(int(row.qty) for row in eligible_items)
+        # Get slab based on total_qty
+        slab = get_applicable_slab(scheme, total_qty)
+        if not slab:
+            continue
 
-    # --------------------------------------------------------
-    # BUY N GET X FREE
-    # --------------------------------------------------------
-    if slab.custom_get_1_free:
-        n = int(slab.custom_enter_1 or 0)
-        x = int(slab.custom_free_item_no or 0)
+        # ---------------- Buy N Get X Free ----------------
+        if getattr(slab, "custom_get_1_free", 0):
+            n = int(getattr(slab, "custom_enter_1", 0))
+            x = int(getattr(slab, "custom_free_item_no", 0))
+            if n > 0 and x > 0 and total_qty >= (n + x):
+                apply_buy_n_get_x_free(doc, eligible_items, n, x)
 
-        if n > 0 and x > 0 and total_qty >= (n + x):
-            apply_buy_n_get_x_free(doc, eligible_items, n, x)
+        # ---------------- Buy N Get X% Off ----------------
+        if getattr(slab, "custom_get_50_off", 0):
+            n = int(getattr(slab, "custom_enter_50", 0))
+            percent = flt(getattr(slab, "custom_enter_percent", 0))
+            if n > 0 and percent > 0 and total_qty >= n:
+                apply_buy_n_get_x_percent_off(doc, eligible_items, n, percent)
 
-    # --------------------------------------------------------
-    # BUY N GET X% OFF
-    # --------------------------------------------------------
-    elif slab.custom_get_50_off:
-        n = int(slab.custom_enter_50 or 0)
-        percent = flt(slab.custom_enter_percent or 0)
-
-        if n > 0 and percent > 0 and total_qty >= n:
-            apply_buy_n_get_x_percent_off(doc, eligible_items, n, percent)
-
-    # --------------------------------------------------------
-    # FINAL RECALC
-    # --------------------------------------------------------
+    # Recalculate totals after promotions
     recalc_totals(doc)
 
+def get_applicable_slab(scheme, total_qty):
+    """
+    Returns the highest applicable slab based on total_qty
+    """
+    if not getattr(scheme, "price_discount_slabs", None):
+        return None
+
+    # Highest priority slab first
+    slabs = sorted(
+        scheme.price_discount_slabs,
+        key=lambda x: flt(getattr(x, "min_qty", 0)),
+        reverse=True
+    )
+
+    for slab in slabs:
+        min_qty = flt(getattr(slab, "min_qty", 0))
+        max_qty = flt(getattr(slab, "max_qty", 1e9))
+
+        if min_qty <= total_qty <= max_qty:
+            return slab
+
+    return None
 
 # ============================================================
 # RESET PREVIOUS PROMOTIONS (CRITICAL)
@@ -84,19 +120,18 @@ def reset_previous_promotions(doc):
     if doc.docstatus == 1:
         return
 
-    # Remove ONLY free promo rows
+    # Remove only free or promo discount rows
     doc.items = [row for row in doc.items if not getattr(row, "is_free_item", 0)]
 
     for row in doc.items:
-        # 🔐 Agar manual discount dala hai → usko chhedo mat
+        # Agar manual discount hai → skip
         if row.discount_percentage or row.discount_amount:
             continue
 
-        # 🔁 Sirf promo-applied items reset honge
+        # Promo-applied rows reset
         if getattr(row, "custom_is_promo_scheme", 0):
             if row.price_list_rate:
                 row.rate = row.price_list_rate
-
             row.discount_percentage = 0
             row.discount_amount = 0
             row.is_free_item = 0
@@ -135,8 +170,8 @@ def is_scheme_applicable(scheme, doc):
     return True
 
 
-def get_applicable_slab(scheme):
-    return scheme.price_discount_slabs[0] if scheme.price_discount_slabs else None
+# def get_applicable_slab(scheme):
+#     return scheme.price_discount_slabs[0] if scheme.price_discount_slabs else None
 
 
 # ============================================================
@@ -166,11 +201,6 @@ def get_eligible_items(doc, scheme):
 # ============================================================
 
 def apply_buy_n_get_x_free(doc, items, n, x):
-    """
-    Buy N Get X Free
-    Free items selected using LOWEST price_list_rate
-    """
-
     total_qty = sum(int(r.qty) for r in items)
     eligible_sets = total_qty // (n + x)
     free_units = eligible_sets * x
@@ -178,8 +208,7 @@ def apply_buy_n_get_x_free(doc, items, n, x):
     if free_units <= 0:
         return
 
-    # Sort by ORIGINAL price (price_list_rate)
-    items.sort(key=lambda r: r.price_list_rate)
+    items.sort(key=lambda r: r.price_list_rate)  # lowest price first
 
     for row in items:
         if free_units <= 0:
@@ -189,27 +218,21 @@ def apply_buy_n_get_x_free(doc, items, n, x):
             row.discount_percentage = 100
             row.discount_amount = flt(row.price_list_rate * row.qty)
             row.is_free_item = 1
+            row.custom_is_promo_scheme = 1
             free_units -= row.qty
         else:
-            # Split free units
+            # Split row for free units
             free_row = doc.append("items", {})
             copy_item_fields(row, free_row)
 
             free_row.qty = free_units
-
-            # 🔒 NEVER keep rate = 0
             free_row.rate = row.price_list_rate
             free_row.price_list_rate = row.price_list_rate
-
-            # 🔥 Proper free item identification
             free_row.discount_percentage = 100
             free_row.discount_amount = flt(row.price_list_rate * free_units)
-
             free_row.is_free_item = 1
-            free_row.margin_type = "Percentage"
-            free_row.margin_rate_or_amount = 100
+            free_row.custom_is_promo_scheme = 1
 
-            # Reduce paid quantity
             row.qty -= free_units
             free_units = 0
 
@@ -243,59 +266,38 @@ def apply_buy_n_get_x_free(doc, items, n, x):
 #         row.qty -= 1
 
 def apply_buy_n_get_x_percent_off(doc, items, n, percent):
-    """
-    Buy N Get X% Off
-    Discount applied on ONE lowest price_list_rate unit
-    Serial numbers are properly split
-    """
-
     total_qty = sum(int(r.qty) for r in items)
     if total_qty < n:
         return
 
-    # lowest price item
     items.sort(key=lambda r: r.price_list_rate)
-    row = items[0]
+    discount_sets = total_qty // n
+    free_units = discount_sets
 
-    discounted_rate = flt(row.price_list_rate * (100 - percent) / 100)
+    for row in items:
+        if free_units <= 0:
+            break
 
-    # collect serials
-    serials = []
-    if row.serial_no:
-        serials = [s.strip() for s in row.serial_no.split("\n") if s.strip()]
+        qty_to_discount = min(int(row.qty), free_units)
+        discounted_rate = flt(row.price_list_rate * (100 - percent) / 100)
 
-    # Case 1: qty == 1 (simple discount)
-    if int(row.qty) == 1:
-        row.rate = discounted_rate
-        # serial remains as-is
-        return
+        if qty_to_discount == int(row.qty):
+            row.rate = discounted_rate
+            row.discount_percentage = percent
+            row.custom_is_promo_scheme = 1
+            free_units -= qty_to_discount
+        else:
+            discount_row = doc.append("items", {})
+            copy_item_fields(row, discount_row)
 
-    # Case 2: qty > 1 → split row
-    discount_row = doc.append("items", {})
-    copy_item_fields(row, discount_row)
+            discount_row.qty = qty_to_discount
+            discount_row.rate = discounted_rate
+            discount_row.price_list_rate = row.price_list_rate
+            discount_row.discount_percentage = percent
+            discount_row.custom_is_promo_scheme = 1
 
-    # discounted row
-    discount_row.qty = 1
-    discount_row.rate = discounted_rate
-    discount_row.price_list_rate = row.price_list_rate
-
-    # assign ONE serial to discounted row
-    if serials:
-        discount_row.serial_no = serials[-1]
-        serials = serials[:-1]
-    else:
-        discount_row.serial_no = None
-
-    discount_row.serial_and_batch_bundle = None
-
-    # original row
-    row.qty -= 1
-    if serials:
-        row.serial_no = "\n".join(serials)
-    else:
-        row.serial_no = None
-
-    row.serial_and_batch_bundle = None
+            row.qty -= qty_to_discount
+            free_units -= qty_to_discount
 
 # ============================================================
 # TOTAL RECALC
