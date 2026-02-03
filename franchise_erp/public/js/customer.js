@@ -197,3 +197,5 @@ frappe.ui.form.on("Customer", {
         $(".page-title .editable-title").css("pointer-events", "none");
     }
 });
+
+
