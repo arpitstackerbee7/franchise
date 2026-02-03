@@ -312,46 +312,46 @@ def generate_item_code(doc, method):
         "uom": doc.stock_uom or "Nos"
     })
     
-def update_style_on_supplier_design_change(doc, method):
+# def update_style_on_supplier_design_change(doc, method):
 
-    if doc.is_new():
-        return
+#     if doc.is_new():
+#         return
 
-    old = doc.get_doc_before_save()
-    if not old:
-        return
+#     old = doc.get_doc_before_save()
+#     if not old:
+#         return
 
-    # supplier design change nahi hua
-    if old.custom_sup_design_no == doc.custom_sup_design_no:
-        return
+#     # supplier design change nahi hua
+#     if old.custom_sup_design_no == doc.custom_sup_design_no:
+#         return
 
-    # ---------------- SAME DESIGN EXISTS ----------------
-    existing_style = frappe.db.get_value(
-        "Item",
-        {
-            "custom_sup_design_no": doc.custom_sup_design_no,
-            "name": ["!=", doc.name]
-        },
-        "custom_barcode_code",
-        order_by="creation asc"
-    )
+#     # ---------------- SAME DESIGN EXISTS ----------------
+#     existing_style = frappe.db.get_value(
+#         "Item",
+#         {
+#             "custom_sup_design_no": doc.custom_sup_design_no,
+#             "name": ["!=", doc.name]
+#         },
+#         "custom_barcode_code",
+#         order_by="creation asc"
+#     )
 
-    if existing_style:
-        doc.custom_barcode_code = existing_style
-        return
+#     if existing_style:
+#         doc.custom_barcode_code = existing_style
+#         return
 
-    # ---------------- NEW SUP DESIGN ----------------
-    # item_code se STYLE nikalo
-    # Example: COLDEPSIL001RED06 → COLDEPSIL001
-    item_code = doc.item_code
+#     # ---------------- NEW SUP DESIGN ----------------
+#     # item_code se STYLE nikalo
+#     # Example: COLDEPSIL001RED06 → COLDEPSIL001
+#     item_code = doc.item_code
 
-    # colour + size remove
-    colour_code = frappe.db.get_value("Color", doc.custom_colour_name, "custom_color_code") or ""
-    size_code = frappe.db.get_value("Size", doc.custom_size, "size_code") or ""
+#     # colour + size remove
+#     colour_code = frappe.db.get_value("Color", doc.custom_colour_name, "custom_color_code") or ""
+#     size_code = frappe.db.get_value("Size", doc.custom_size, "size_code") or ""
 
-    style_code = item_code.replace(colour_code + size_code, "")
+#     style_code = item_code.replace(colour_code + size_code, "")
 
-    doc.custom_barcode_code = style_code
+#     doc.custom_barcode_code = style_code
 
 # def update_barcode_on_sup_design_change(doc, method):
 #     # sirf existing item
@@ -392,75 +392,75 @@ def update_style_on_supplier_design_change(doc, method):
 #         # new design → current item ka code
 #         doc.custom_barcode_code = current_item_code
 
-def update_item_code_on_change(doc, method):
+# def update_item_code_on_change(doc, method):
 
-    if doc.is_new() or doc.custom_bypass_serialbatch:
-        return
+#     if doc.is_new() or doc.custom_bypass_serialbatch:
+#         return
 
-    tracked_fields = [
-        "custom_group_collection",
-        "custom_departments",
-        "custom_silvet",
-        "custom_colour_name",
-        "custom_size"
-    ]
+#     tracked_fields = [
+#         "custom_group_collection",
+#         "custom_departments",
+#         "custom_silvet",
+#         "custom_colour_name",
+#         "custom_size"
+#     ]
 
-    old = doc.get_doc_before_save()
-    if not old:
-        return
+#     old = doc.get_doc_before_save()
+#     if not old:
+#         return
 
-    if not any(old.get(f) != doc.get(f) for f in tracked_fields):
-        return
+#     if not any(old.get(f) != doc.get(f) for f in tracked_fields):
+#         return
 
-    # ---------------- MASTER CODES ----------------
-    collection_code = get_item_group_code(doc.custom_group_collection, "COLLECTION")
-    department_code = get_item_group_code(doc.custom_departments, "DEPARTMENT")
-    silvet_code = get_item_group_code(doc.custom_silvet, "SILVET")
+#     # ---------------- MASTER CODES ----------------
+#     collection_code = get_item_group_code(doc.custom_group_collection, "COLLECTION")
+#     department_code = get_item_group_code(doc.custom_departments, "DEPARTMENT")
+#     silvet_code = get_item_group_code(doc.custom_silvet, "SILVET")
 
-    colour_code = frappe.db.get_value("Color", doc.custom_colour_name, "custom_color_code")
-    size_code = frappe.db.get_value("Size", doc.custom_size, "size_code")
+#     colour_code = frappe.db.get_value("Color", doc.custom_colour_name, "custom_color_code")
+#     size_code = frappe.db.get_value("Size", doc.custom_size, "size_code")
 
-    if not colour_code or not size_code:
-        frappe.throw("Colour / Size Code missing")
+#     if not colour_code or not size_code:
+#         frappe.throw("Colour / Size Code missing")
 
-    base_code = f"{collection_code}{department_code}{silvet_code}"
+#     base_code = f"{collection_code}{department_code}{silvet_code}"
 
-    old_base = old.item_code[:-len(colour_code + size_code)]
-    base_item_code = old_base if old_base.startswith(base_code) else f"{base_code}{get_next_series(base_code)}"
+#     old_base = old.item_code[:-len(colour_code + size_code)]
+#     base_item_code = old_base if old_base.startswith(base_code) else f"{base_code}{get_next_series(base_code)}"
 
-    new_item_code = f"{base_item_code}{colour_code}{size_code}"
+#     new_item_code = f"{base_item_code}{colour_code}{size_code}"
 
-    if new_item_code == doc.name:
-        return
+#     if new_item_code == doc.name:
+#         return
 
-    if frappe.db.exists("Item", new_item_code):
-        frappe.throw(f"Item Code {new_item_code} already exists")
+#     if frappe.db.exists("Item", new_item_code):
+#         frappe.throw(f"Item Code {new_item_code} already exists")
 
-    old_item_code = doc.name
+#     old_item_code = doc.name
 
-    # ---------------- RENAME ITEM ----------------
-    frappe.rename_doc("Item", old_item_code, new_item_code, force=True)
+#     # ---------------- RENAME ITEM ----------------
+#     frappe.rename_doc("Item", old_item_code, new_item_code, force=True)
 
-    # 🔥 CRITICAL PART: recreate barcode
-    barcode_value = new_item_code
-    uom = doc.stock_uom or "Nos"
+#     # 🔥 CRITICAL PART: recreate barcode
+#     barcode_value = new_item_code
+#     uom = doc.stock_uom or "Nos"
 
-    # delete old barcode rows (if any ghost)
-    frappe.db.delete("Item Barcode", {"parent": new_item_code})
+#     # delete old barcode rows (if any ghost)
+#     frappe.db.delete("Item Barcode", {"parent": new_item_code})
 
-    # create fresh barcode row
-    frappe.get_doc({
-        "doctype": "Item Barcode",
-        "parent": new_item_code,
-        "parenttype": "Item",
-        "parentfield": "barcodes",
-        "barcode": barcode_value,
-        "barcode_type": "UPC-A",
-        "uom": uom
-    }).insert(ignore_permissions=True)
+#     # create fresh barcode row
+#     frappe.get_doc({
+#         "doctype": "Item Barcode",
+#         "parent": new_item_code,
+#         "parenttype": "Item",
+#         "parentfield": "barcodes",
+#         "barcode": barcode_value,
+#         "barcode_type": "UPC-A",
+#         "uom": uom
+#     }).insert(ignore_permissions=True)
 
-    doc.item_code = new_item_code
-    doc.item_name = new_item_code
+#     doc.item_code = new_item_code
+#     doc.item_name = new_item_code
 
 
 # def create_item_barcode(doc, method):
@@ -488,6 +488,10 @@ def apply_tzu_setting(doc, method):
     if not doc.is_stock_item:
         return
 
+     # 🔒 Only run for NEW items
+    if not doc.is_new():
+        return
+    
     # ✅ BYPASS SERIAL/BATCH
     if doc.custom_bypass_serialbatch:
         doc.has_serial_no = 0
