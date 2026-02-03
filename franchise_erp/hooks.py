@@ -83,12 +83,12 @@ doc_events = {
         # "after_insert": "franchise_erp.custom.item_master.create_item_barcode_once",
         "before_save": [
             "franchise_erp.custom.item_master.apply_tzu_setting",
-            "franchise_erp.custom.item_master.update_style_on_supplier_design_change",
-            "franchise_erp.custom.item_master.update_item_code_on_change",
+            # "franchise_erp.custom.item_master.update_style_on_supplier_design_change",
+            # "franchise_erp.custom.item_master.update_item_code_on_change",
             ],
         # "on_update" : "franchise_erp.custom.item_master.existing_item_price_update" #existing validation
         "on_update" : [
-            "franchise_erp.custom.item_master.existing_item_price_update",
+            # "franchise_erp.custom.item_master.existing_item_price_update",
         ]
     },
     "Item Group": {
@@ -122,9 +122,10 @@ doc_events = {
             "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
             "franchise_erp.custom.delivery_note.set_promo_group_id",
             "franchise_erp.custom.delivery_note.set_percent_off_promo_flags"
-        ],
-        #  "before_save":"franchise_erp.api.apply_scheme_on_dn"
+        ]
     },
+
+
     }
    
 
