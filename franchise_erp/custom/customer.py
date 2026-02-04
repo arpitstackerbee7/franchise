@@ -51,3 +51,49 @@ def before_save(doc, method):
 
     elif not doc.custom_mobile_no_customer:
         doc.custom_mobile_no_customer = doc.mobile_no
+
+
+
+
+
+
+
+
+import frappe
+
+def validate_customer_counter_rules(doc, method):
+    if not doc.custom_company:
+        return
+
+    disable_counter = frappe.db.get_value(
+        "Company",
+        doc.custom_company,
+        "custom_disable_validation_for_counter"
+    )
+
+    # --------------------------------------------------
+    # WHEN COUNTER VALIDATION IS DISABLED (unchecked)
+    # --------------------------------------------------
+    if not disable_counter:
+
+        # 🔹 1. BYPASS CREDIT LIMIT VALIDATION
+        # ERP throws error if row exists but credit_limit is empty
+        for row in doc.get("credit_limits") or []:
+            row.credit_limit = row.credit_limit or 0
+
+        # 🔹 2. CHECK MRP PRICE LIST (exist + enabled)
+        enabled = frappe.db.get_value(
+            "Price List",
+            "MRP",
+            "enabled"
+        )
+
+        if not enabled or enabled != 1:
+            frappe.throw(
+                "Please create and enable <b>MRP</b> Price List",
+                frappe.ValidationError
+            )
+
+        # 🔹 3. SET DEFAULT PRICE LIST
+        if not doc.default_price_list:
+            doc.default_price_list = "MRP"

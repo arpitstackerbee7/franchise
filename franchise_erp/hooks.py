@@ -109,7 +109,8 @@ doc_events = {
         "on_submit": "franchise_erp.custom.bom.create_subcontracting_bom"
     },
     "Customer": {
-        "before_save": "franchise_erp.custom.customer.before_save"
+        "before_save": "franchise_erp.custom.customer.before_save",
+         "validate": "franchise_erp.custom.customer.validate_customer_counter_rules"
     },
     "Item Price": {
         "validate": "franchise_erp.custom.item_price.validate_item_price"
