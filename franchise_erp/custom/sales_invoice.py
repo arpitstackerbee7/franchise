@@ -489,6 +489,11 @@ def create_inter_company_purchase_receipt(sales_invoice):
 
 
 
+# for si_item in si.items:
+    #     create_standard_buying_item_price(
+    #         item_code=si_item.item_code,
+    #         source_price_list=si.selling_price_list
+    #     )
 
 @frappe.whitelist()
 def create_standard_buying_item_price(item_code, source_price_list):
