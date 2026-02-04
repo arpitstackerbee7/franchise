@@ -24,28 +24,28 @@ frappe.ui.form.on("Customer", {
     onload(frm) {
         apply_company_credit_rules(frm);
         set_required_fields(frm);
-        toggle_parent_company_fields(frm);
+        // toggle_parent_company_fields(frm);
 
     },
     onload_post_render(frm) {
         //  EDIT FULL FORM FIX
         set_required_fields(frm);
         apply_company_credit_rules(frm);
-        toggle_parent_company_fields(frm);
+        // toggle_parent_company_fields(frm);
 
     },
 
     refresh(frm) {
         set_required_fields(frm);
         apply_company_credit_rules(frm);
-        toggle_parent_company_fields(frm);
+        // toggle_parent_company_fields(frm);
 
     },
 
     custom_company(frm) {
         set_required_fields(frm);
         apply_company_credit_rules(frm);
-        toggle_parent_company_fields(frm);
+        // toggle_parent_company_fields(frm);
     }
 });
 
@@ -197,5 +197,64 @@ frappe.ui.form.on("Customer", {
         $(".page-title .editable-title").css("pointer-events", "none");
     }
 });
+
+
+frappe.ui.form.on('Customer', {
+    refresh(frm) {
+        if (frm.doc.custom_company) {
+            frm.trigger('check_company_counter_validation');
+        }
+    },
+
+    custom_company(frm) {
+        frm.trigger('check_company_counter_validation');
+    },
+
+    check_company_counter_validation(frm) {
+        if (!frm.doc.custom_company) return;
+
+        frappe.db.get_value(
+            'Company',
+            frm.doc.custom_company,
+            'custom_disable_validation_for_counter'
+        ).then(r => {
+            const flag = r.message.custom_disable_validation_for_counter;
+
+            // 🔹 Mandatory toggle
+            frm.toggle_reqd('customer_group', flag);
+            frm.toggle_reqd('custom_transporter', flag);
+            frm.toggle_reqd('custom_agent', flag);
+            frm.toggle_reqd('default_price_list', flag);
+
+            // 🔹 If unchecked → set default price list = MRP (only if exists & enabled)
+            if (!flag) {
+                frappe.db.get_value(
+                    'Price List',
+                    'MRP',
+                    'enabled'
+                ).then(res => {
+                    // Price List not found OR disabled
+                    if (!res.message || res.message.enabled != 1) {
+                        frappe.msgprint({
+                            title: __('Invalid Price List'),
+                            message: __('Please create and enable <b>MRP</b> Price List'),
+                            indicator: 'red'
+                        });
+                        return;
+                    }
+
+                    // Exists & enabled
+                    if (!frm.doc.default_price_list) {
+                        frm.set_value('default_price_list', 'MRP');
+                    }
+                });
+            }
+
+            console.log('Disable Validation For Counter:', flag);
+        });
+    }
+});
+
+
 
 
