@@ -222,7 +222,7 @@ frappe.ui.form.on('Customer', {
 
             // 🔹 Mandatory toggle
             frm.toggle_reqd('customer_group', flag);
-            frm.toggle_reqd('custom_transporter', flag);
+            // frm.toggle_reqd('custom_transporter', flag);
             frm.toggle_reqd('custom_agent', flag);
             frm.toggle_reqd('default_price_list', flag);
 
