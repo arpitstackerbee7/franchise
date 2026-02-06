@@ -119,15 +119,15 @@ frappe.ui.form.on('Item', {
     }
 });
 
-// frappe.ui.form.on("Item", {
-//     refresh(frm) {
-//         // Disable rename action
-//         frm.disable_rename = true;
+frappe.ui.form.on("Item", {
+    refresh(frm) {
+        // Disable rename action
+        frm.disable_rename = true;
 
-//         // Remove pencil icon
-//         $(".page-title .editable-title").css("pointer-events", "none");
-//     }
-// });
+        // Remove pencil icon
+        $(".page-title .editable-title").css("pointer-events", "none");
+    }
+});
 
 
 //for item price Row
@@ -181,3 +181,45 @@ frappe.ui.form.on('Item', {
         }
     }
 });
+frappe.ui.form.on("Item", {
+    gst_hsn_code: function (frm) {
+        if (!frm.doc.gst_hsn_code) return;
+
+        frappe.call({
+            method: "frappe.client.get",
+            args: {
+                doctype: "GST HSN Code",
+                name: frm.doc.gst_hsn_code
+            },
+            callback: function (r) {
+
+                // Clear Item → Tax table
+                frm.clear_table("taxes");
+
+                // Case 1: HSN me Taxes present hain
+                if (r.message && r.message.taxes && r.message.taxes.length > 0) {
+
+                    r.message.taxes.forEach(hsn_row => {
+                        let row = frm.add_child("taxes");
+
+                        row.item_tax_template = hsn_row.item_tax_template;
+                        row.tax_category = hsn_row.tax_category || "";
+                        row.valid_from = hsn_row.valid_from || "";
+
+                        row.minimum_net_rate = hsn_row.minimum_net_rate || 0;
+                        row.maximum_net_rate = hsn_row.maximum_net_rate || 0;
+                    });
+
+                } 
+                // Case 2: HSN me ek bhi Tax row nahi
+                else {
+                    // Add one empty row for validation/manual entry
+                    frm.add_child("taxes");
+                }
+
+                frm.refresh_field("taxes");
+            }
+        });
+    }
+});
+
