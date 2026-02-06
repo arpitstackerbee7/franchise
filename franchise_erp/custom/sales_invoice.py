@@ -320,12 +320,6 @@ def validate_item_from_so(doc, method=None):
             )
 
 
-
-
-
-
-
-
 #arpit
 
 # @frappe.whitelist()
@@ -624,7 +618,7 @@ def create_inter_company_purchase_receipt(sales_invoice):
     for row in pr.items:
         item_tax_template = get_item_tax_template1(
             pr.company,
-            row.price_list_rate
+            row.rate
         )
         row.item_tax_template = item_tax_template
 
