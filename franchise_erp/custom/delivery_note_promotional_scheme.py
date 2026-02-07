@@ -4,18 +4,39 @@ from frappe.utils import today, flt
 # ============================================================
 # MAIN ENTRY
 # ============================================================
+# def get_all_active_schemes(doc):
+#     schemes = frappe.get_all(
+#         "Promotional Scheme",
+#         filters={
+#             "selling": 1,
+#             "disable": 0,
+#             "apply_on": "Transaction",
+#             "company": doc.company,
+#             "valid_from": ["<=", today()],
+#             "valid_upto": [">=", today()]
+#         },
+#         fields=["name"],
+#         order_by="creation asc"
+#     )
+
+#     applicable_schemes = []
+#     for s in schemes:
+#         scheme = frappe.get_doc("Promotional Scheme", s.name)
+#         if is_scheme_applicable(scheme, doc):
+#             applicable_schemes.append(scheme)
+
+#     return applicable_schemes
 def get_all_active_schemes(doc):
     schemes = frappe.get_all(
         "Promotional Scheme",
         filters={
             "selling": 1,
             "disable": 0,
-            "apply_on": "Transaction",
             "company": doc.company,
             "valid_from": ["<=", today()],
             "valid_upto": [">=", today()]
         },
-        fields=["name"],
+        fields=["name", "apply_on"],
         order_by="creation asc"
     )
 
@@ -187,23 +208,61 @@ def is_scheme_applicable(scheme, doc):
 # ELIGIBLE ITEM FILTERING
 # ============================================================
 
+# def get_eligible_items(doc, scheme):
+#     items = []
+
+#     for row in doc.items:
+#         if getattr(row, "is_free_item", 0):
+#             continue
+
+#         if scheme.apply_rule_on_other == "Item Group":
+#             if scheme.other_item_group != "All Item Groups":
+#                 if row.item_group != scheme.other_item_group:
+#                     continue
+
+#         if row.qty > 0 and row.price_list_rate > 0:
+#             items.append(row)
+
+#     return items
+
 def get_eligible_items(doc, scheme):
     items = []
 
+    apply_on = (scheme.apply_on or "").strip()
+
+    # ---- Pre-calc valid filters (EMPTY = ALL) ----
+    valid_item_codes = {d.item_code for d in scheme.items if d.item_code}
+    valid_item_groups = {d.item_group for d in scheme.item_groups if d.item_group}
+    valid_brands = {d.brand for d in scheme.brands if d.brand}
+
     for row in doc.items:
+        # Skip promo/free rows
         if getattr(row, "is_free_item", 0):
             continue
 
-        if scheme.apply_rule_on_other == "Item Group":
-            if scheme.other_item_group != "All Item Groups":
-                if row.item_group != scheme.other_item_group:
-                    continue
+        if flt(row.qty) <= 0 or flt(row.price_list_rate) <= 0:
+            continue
 
-        if row.qty > 0 and row.price_list_rate > 0:
+        # 🔹 TRANSACTION → always all
+        if apply_on == "Transaction":
             items.append(row)
 
-    return items
+        # 🔹 ITEM CODE
+        elif apply_on == "Item Code":
+            if not valid_item_codes or row.item_code in valid_item_codes:
+                items.append(row)
 
+        # 🔹 ITEM GROUP
+        elif apply_on == "Item Group":
+            if not valid_item_groups or row.item_group in valid_item_groups:
+                items.append(row)
+
+        # 🔹 BRAND
+        elif apply_on == "Brand":
+            if not valid_brands or row.brand in valid_brands:
+                items.append(row)
+
+    return items
 
 # ============================================================
 # PROMOTION LOGIC
