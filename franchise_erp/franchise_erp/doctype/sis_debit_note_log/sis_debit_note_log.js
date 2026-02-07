@@ -188,6 +188,12 @@ function show_invoice_dialog(frm) {
 
         // --- TABLE HTML ---
         let table = `
+            <div style="
+                max-height: 420px;
+                overflow-y: auto;
+                overflow-x: auto;
+                border: 1px solid #ddd;
+            ">
             <table class="table table-bordered" style="margin-bottom:0;">
                 <thead>
                     <tr>
@@ -217,6 +223,7 @@ function show_invoice_dialog(frm) {
                     </tr>
                 </thead>
                 <tbody>
+            
         `;
         
 
@@ -252,7 +259,7 @@ function show_invoice_dialog(frm) {
             });
         }
 
-        table += `</tbody></table>`;
+        table += `</tbody></table></div>`;
 
         // Inject table
         d.get_field("items_html").$wrapper.html(table);
