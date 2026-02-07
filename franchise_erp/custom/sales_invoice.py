@@ -548,24 +548,149 @@ def get_purchase_tax_template(company, supplier):
 # =========================================================
 # MAIN – INTER COMPANY PURCHASE RECEIPT
 # =========================================================
+# @frappe.whitelist()
+# def create_inter_company_purchase_receipt(sales_invoice):
+    
+#     si = frappe.get_doc("Sales Invoice", sales_invoice)
+
+#     supplier = frappe.get_value(
+#         "Supplier",
+#         {"represents_company": si.company},
+#         "name"
+#     )
+#     if not supplier:
+#         frappe.throw("Internal Supplier not found")
+
+#     pr = frappe.new_doc("Purchase Receipt")
+#     pr.company = si.represents_company
+#     pr.supplier = supplier
+
+#     # 🔥 FIX: IGNORE SUPPLIER TAX CATEGORY
+#     pr.tax_category = None
+
+#     pr.custom_source_sales_invoice = si.name
+#     pr.posting_date = si.posting_date
+#     pr.set_posting_time = 1
+#     pr.posting_time = si.posting_time
+
+#     # ---------------- Company Address ----------------
+#     company_address = frappe.db.get_value(
+#         "Dynamic Link",
+#         {"link_doctype": "Company", "link_name": pr.company, "parenttype": "Address"},
+#         "parent"
+#     )
+#     pr.company_address = company_address
+#     pr.company_gstin = frappe.get_value("Address", company_address, "gstin")
+
+#     # ---------------- Supplier Address ----------------
+#     supplier_address = frappe.db.get_value(
+#         "Dynamic Link",
+#         {"link_doctype": "Supplier", "link_name": supplier, "parenttype": "Address"},
+#         "parent"
+#     )
+#     pr.supplier_address = supplier_address
+
+#     # ---------------- Warehouse ----------------
+#     warehouse = frappe.get_value(
+#         "Warehouse",
+#         {"company": pr.company, "is_group": 0},
+#         "name"
+#     )
+
+#     # ---------------- Items ----------------
+#     for item in si.items:
+#         rate = item.net_rate or item.rate
+#         pr.append("items", {
+#             "item_code": item.item_code,
+#             "item_name": item.item_name,
+#             "qty": item.qty,
+#             "uom": item.uom,
+#             "rate": rate,
+#             "price_list_rate": item.price_list_rate,
+#             "warehouse": warehouse
+#         })
+
+#     # ---------------- FIRST SAVE ----------------
+#     pr.run_method("set_missing_values")
+#     pr.save(ignore_permissions=True)
+
+#     # ---------------- ITEM TAX TEMPLATE ----------------
+#     for row in pr.items:
+#         item_tax_template = get_item_tax_template1(
+#             pr.company,
+#             row.rate
+#         )
+#         row.item_tax_template = item_tax_template
+
+#     # ---------------- APPLY PURCHASE GST TEMPLATE ----------------
+#     purchase_tax_template = get_purchase_tax_template(
+#         pr.company,
+#         supplier
+#     )
+
+#     # 🔥 FORCE APPLY – IGNORE ERPNext AUTO LOGIC
+#     pr.taxes = []
+#     pr.taxes_and_charges = purchase_tax_template
+#     pr.tax_category = None
+
+#     # ---------------- FINAL CALC ----------------
+#     pr.run_method("calculate_taxes_and_totals")
+#     pr.save(ignore_permissions=True)
+
+#     frappe.db.commit()
+#     return pr.name
+import frappe
+from frappe import _
+
+import frappe
+from frappe import _
+
+
 @frappe.whitelist()
 def create_inter_company_purchase_receipt(sales_invoice):
 
+    # =====================================================
+    # 🚫 DUPLICATE GRN CHECK
+    # =====================================================
+    existing_pr = frappe.get_value(
+        "Purchase Receipt",
+        {
+            "custom_source_sales_invoice": sales_invoice,
+            "docstatus": ["!=", 2]  # ignore cancelled PR
+        },
+        "name"
+    )
+
+    if existing_pr:
+        frappe.throw(
+            _("Inter Company GRN already created against this Sales Invoice: {0}")
+            .format(existing_pr)
+        )
+
+    # =====================================================
+    # SALES INVOICE
+    # =====================================================
     si = frappe.get_doc("Sales Invoice", sales_invoice)
 
+    # =====================================================
+    # INTERNAL SUPPLIER
+    # =====================================================
     supplier = frappe.get_value(
         "Supplier",
         {"represents_company": si.company},
         "name"
     )
     if not supplier:
-        frappe.throw("Internal Supplier not found")
+        frappe.throw(_("Internal Supplier not found"))
 
+    # =====================================================
+    # CREATE PURCHASE RECEIPT
+    # =====================================================
     pr = frappe.new_doc("Purchase Receipt")
     pr.company = si.represents_company
     pr.supplier = supplier
 
-    # 🔥 FIX: IGNORE SUPPLIER TAX CATEGORY
+    # 🔥 IGNORE SUPPLIER TAX CATEGORY
     pr.tax_category = None
 
     pr.custom_source_sales_invoice = si.name
@@ -573,34 +698,57 @@ def create_inter_company_purchase_receipt(sales_invoice):
     pr.set_posting_time = 1
     pr.posting_time = si.posting_time
 
-    # ---------------- Company Address ----------------
+    # =====================================================
+    # COMPANY ADDRESS
+    # =====================================================
     company_address = frappe.db.get_value(
         "Dynamic Link",
-        {"link_doctype": "Company", "link_name": pr.company, "parenttype": "Address"},
+        {
+            "link_doctype": "Company",
+            "link_name": pr.company,
+            "parenttype": "Address"
+        },
         "parent"
     )
     pr.company_address = company_address
     pr.company_gstin = frappe.get_value("Address", company_address, "gstin")
 
-    # ---------------- Supplier Address ----------------
+    # =====================================================
+    # SUPPLIER ADDRESS
+    # =====================================================
     supplier_address = frappe.db.get_value(
         "Dynamic Link",
-        {"link_doctype": "Supplier", "link_name": supplier, "parenttype": "Address"},
+        {
+            "link_doctype": "Supplier",
+            "link_name": supplier,
+            "parenttype": "Address"
+        },
         "parent"
     )
     pr.supplier_address = supplier_address
 
-    # ---------------- Warehouse ----------------
+    # =====================================================
+    # WAREHOUSE
+    # =====================================================
     warehouse = frappe.get_value(
         "Warehouse",
-        {"company": pr.company, "is_group": 0},
+        {
+            "company": pr.company,
+            "is_group": 0
+        },
         "name"
     )
 
-    # ---------------- Items ----------------
+    if not warehouse:
+        frappe.throw(_("No warehouse found for company {0}").format(pr.company))
+
+    # =====================================================
+    # ITEMS (COPY SERIAL NO ALSO)
+    # =====================================================
     for item in si.items:
         rate = item.net_rate or item.rate
-        pr.append("items", {
+
+        pr_item = {
             "item_code": item.item_code,
             "item_name": item.item_name,
             "qty": item.qty,
@@ -608,13 +756,23 @@ def create_inter_company_purchase_receipt(sales_invoice):
             "rate": rate,
             "price_list_rate": item.price_list_rate,
             "warehouse": warehouse
-        })
+        }
 
-    # ---------------- FIRST SAVE ----------------
+        # 🔥 COPY SERIAL NUMBERS FROM SALES INVOICE
+        if item.serial_no:
+            pr_item["serial_no"] = item.serial_no
+
+        pr.append("items", pr_item)
+
+    # =====================================================
+    # FIRST SAVE
+    # =====================================================
     pr.run_method("set_missing_values")
     pr.save(ignore_permissions=True)
 
-    # ---------------- ITEM TAX TEMPLATE ----------------
+    # =====================================================
+    # ITEM TAX TEMPLATE (ROW WISE)
+    # =====================================================
     for row in pr.items:
         item_tax_template = get_item_tax_template1(
             pr.company,
@@ -622,18 +780,25 @@ def create_inter_company_purchase_receipt(sales_invoice):
         )
         row.item_tax_template = item_tax_template
 
-    # ---------------- APPLY PURCHASE GST TEMPLATE ----------------
+    # =====================================================
+    # PURCHASE GST TEMPLATE
+    # =====================================================
     purchase_tax_template = get_purchase_tax_template(
         pr.company,
         supplier
     )
+
+    if not purchase_tax_template:
+        frappe.throw(_("Purchase GST Tax Template not found"))
 
     # 🔥 FORCE APPLY – IGNORE ERPNext AUTO LOGIC
     pr.taxes = []
     pr.taxes_and_charges = purchase_tax_template
     pr.tax_category = None
 
-    # ---------------- FINAL CALC ----------------
+    # =====================================================
+    # FINAL CALCULATION
+    # =====================================================
     pr.run_method("calculate_taxes_and_totals")
     pr.save(ignore_permissions=True)
 
