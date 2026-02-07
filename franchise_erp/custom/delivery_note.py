@@ -19,7 +19,6 @@ def set_promo_group_id(doc, method=None):
 def set_percent_off_promo_flags(doc, method=None):
     discounted_items = []
 
-    # Step 1: sirf ACTUAL discounted item pakdo
     for item in doc.items:
         if (
             item.price_list_rate
@@ -28,19 +27,17 @@ def set_percent_off_promo_flags(doc, method=None):
         ):
             discounted_items.append(item)
 
-    # Agar koi discounted item nahi → scheme nahi lagi
     if not discounted_items:
         return
 
-    # Step 2: sab PAID items promo ka part
     for item in doc.items:
         if item.rate > 0:
-            item.custom_is_promo_scheme = 1
-            item.custom_promo_discount_percent = 0  # reset
+            item.db_set("custom_is_promo_scheme", 1)
+            item.db_set("custom_promo_discount_percent", 0)
 
-    # Step 3: SIRF discounted item me % set
     for item in discounted_items:
-        item.custom_promo_discount_percent = round(
+        discount_percent = round(
             (1 - (item.rate / item.price_list_rate)) * 100,
             2
         )
+        item.db_set("custom_promo_discount_percent", discount_percent)

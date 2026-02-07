@@ -31,15 +31,12 @@ def apply_promotions(doc, method=None):
     if doc.docstatus == 1 or doc.ignore_pricing_rule:
         return
 
-    # Prevent double execution
     if getattr(doc, "_promotion_applied", False):
         return
     doc._promotion_applied = True
 
-    # Reset any previous promotions applied
     reset_previous_promotions(doc)
 
-    # Get all active schemes for this document
     schemes = get_all_active_schemes(doc)
     if not schemes:
         return
@@ -49,30 +46,42 @@ def apply_promotions(doc, method=None):
         if not eligible_items:
             continue
 
-        # Total quantity for eligible items
-        total_qty = sum(flt(row.qty or 0) for row in eligible_items)
-
-        # Get slab based on total_qty
+        total_qty = sum(flt(i.qty) for i in eligible_items)
         slab = get_applicable_slab(scheme, total_qty)
         if not slab:
             continue
 
-        # ---------------- Buy N Get X Free ----------------
-        if getattr(slab, "custom_get_1_free", 0):
-            n = int(getattr(slab, "custom_enter_1", 0))
-            x = int(getattr(slab, "custom_free_item_no", 0))
-            if n > 0 and x > 0 and total_qty >= (n + x):
-                apply_buy_n_get_x_free(doc, eligible_items, n, x)
+        if slab.custom_get_1_free:
+            apply_buy_n_get_x_free(
+                doc,
+                eligible_items,
+                int(slab.custom_enter_1),
+                int(slab.custom_free_item_no)
+            )
 
-        # ---------------- Buy N Get X% Off ----------------
-        if getattr(slab, "custom_get_50_off", 0):
-            n = int(getattr(slab, "custom_enter_50", 0))
-            percent = flt(getattr(slab, "custom_enter_percent", 0))
-            if n > 0 and percent > 0 and total_qty >= n:
-                apply_buy_n_get_x_percent_off(doc, eligible_items, n, percent)
+        if slab.custom_get_50_off:
+            apply_buy_n_get_x_percent_off(
+                doc,
+                eligible_items,
+                int(slab.custom_enter_50),
+                flt(slab.custom_enter_percent)
+            )
 
-    # Recalculate totals after promotions
-    recalc_totals(doc)
+    # 🔥 CRITICAL
+    reset_tax_calculation_fields(doc)
+
+    # 🔥 FORCE ERPNext recalculation
+    doc.calculate_taxes_and_totals()
+
+
+def reset_tax_calculation_fields(doc):
+    for row in doc.items:
+        row.item_tax_rate = None
+        row.item_wise_tax_detail = None
+        row.base_rate = 0
+        row.base_amount = 0
+        row.net_rate = 0
+        row.net_amount = 0
 
 def get_applicable_slab(scheme, total_qty):
     """
@@ -321,7 +330,7 @@ def recalc_totals(doc):
 # ============================================================
 
 def copy_item_fields(source, target):
-    fields = [
+    safe_fields = [
         "item_code",
         "item_name",
         "description",
@@ -334,6 +343,27 @@ def copy_item_fields(source, target):
         "cost_center"
     ]
 
-    for f in fields:
+    for f in safe_fields:
         if hasattr(source, f):
             setattr(target, f, getattr(source, f))
+
+    # 🔥 GST & CALCULATION RESET
+    target.item_tax_rate = None
+    target.item_wise_tax_detail = None
+    target.discount_amount = 0
+    target.base_rate = 0
+    target.base_amount = 0
+    target.net_rate = 0
+    target.net_amount = 0
+
+
+
+
+def reset_item_tax_details(doc):
+    """
+    VERY IMPORTANT:
+    Clear item-wise tax after rate/qty manipulation
+    """
+    for item in doc.items:
+        item.item_tax_rate = None
+        item.item_wise_tax_detail = None
