@@ -119,13 +119,17 @@ doc_events = {
         "before_validate": "franchise_erp.custom.sales_order.apply_sales_term"
     },
     "Delivery Note": {
-        "validate": [
+        "before_save": [
             "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
             "franchise_erp.custom.delivery_note.set_promo_group_id",
             "franchise_erp.custom.delivery_note.set_percent_off_promo_flags"
-        ]
+        ],
+        # "after_save": [
+        #     # "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
+        #     "franchise_erp.custom.delivery_note.set_promo_group_id",
+        #     "franchise_erp.custom.delivery_note.set_percent_off_promo_flags"
+        # ]
     },
-
 
     }
    
@@ -212,7 +216,6 @@ doctype_tree_js = {
 }
 
 
-on_session_creation = "franchise_erp.custom.set_default_company_on_login.set_default_company_on_login"
 # include js, css files in header of web template
 # web_include_css = "/assets/franchise_erp/css/franchise_erp.css"
 # web_include_js = "/assets/franchise_erp/js/franchise_erp.js"
