@@ -456,3 +456,43 @@ frappe.ui.form.on("Sales Invoice", {
 //         });
 //     }
 // });
+
+
+frappe.ui.form.on('Sales Invoice', {
+    refresh(frm) {
+        toggle_update_stock(frm);
+    }
+});
+
+frappe.ui.form.on('Sales Invoice Item', {
+    item_code(frm, cdt, cdn) {
+        toggle_update_stock(frm);
+    },
+    qty(frm) {
+        toggle_update_stock(frm);
+    }
+});
+
+function toggle_update_stock(frm) {
+    let promises = [];
+    let has_stock_item = false;
+
+    (frm.doc.items || []).forEach(row => {
+        if (row.item_code) {
+            let p = frappe.db.get_value(
+                "Item",
+                row.item_code,
+                "is_stock_item"
+            ).then(r => {
+                if (r && r.message && r.message.is_stock_item) {
+                    has_stock_item = true;
+                }
+            });
+            promises.push(p);
+        }
+    });
+
+    Promise.all(promises).then(() => {
+        frm.set_value("update_stock", has_stock_item ? 1 : 0);
+    });
+}
