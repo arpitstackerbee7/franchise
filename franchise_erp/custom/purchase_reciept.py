@@ -445,7 +445,16 @@ def fix_pr_totals(doc, method):
                 "custom_single_item_input_gst_amount": single_item_gst
             }
         )
-
+    # ======================================================
+    # 4️⃣ AFTER GRN SUBMIT → UPDATE SALES INVOICE CHECKBOX ✅
+    # ======================================================
+    if doc.docstatus == 1:
+        frappe.db.set_value(
+            "Sales Invoice",
+            si.name,
+            "custom_is_received_grn",
+            1
+        )
     frappe.db.commit()
 
 
