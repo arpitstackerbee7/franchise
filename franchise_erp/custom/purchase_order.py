@@ -134,7 +134,8 @@ def generate_serials_on_po_submit(doc, method):
                     else f"{item.fg_item}-.#####"
                 )
 
-                total_fg_qty = int(item.qty) * int(item.fg_item_qty)
+                # total_fg_qty = int(item.qty) * int(item.fg_item_qty)
+                total_fg_qty = int(item.fg_item_qty)
 
                 serials_to_save = []  # overwrite normal serials
                 for _ in range(total_fg_qty):
