@@ -585,6 +585,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
             dn.posting_date,
             dn.posting_time,
             dn.customer,
+            dn.is_return,              -- ✅ CORRECT
             dni.name AS sii_name,
             dni.item_code,
             dni.item_name,
@@ -653,9 +654,19 @@ def fetch_invoices(company, from_date=None, to_date=None):
         gst_amount_per_item = D(gst_amount_per_item)
         single_item_rate = D(single_item_rate)
 
+        # total_serial_invoice_value = single_item_rate + gst_amount_per_item
+        # invoice_value = inv_base_value + gst_amount_per_item
+        # debit_note_value = total_serial_invoice_value - invoice_value
+
+        # Return case → GST negative
+        is_return = r.is_return or 0   # 0 or 1
+        if is_return == 1:
+           gst_amount_per_item = -gst_amount_per_item
+           single_item_rate = -single_item_rate
+
         total_serial_invoice_value = single_item_rate + gst_amount_per_item
         invoice_value = inv_base_value + gst_amount_per_item
-        debit_note_value = total_serial_invoice_value - invoice_value
+        debit_note_value = single_item_rate - inv_base_value
 
         # -------------------------------------------------------------------
         # FINAL UPDATE

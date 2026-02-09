@@ -41,3 +41,4 @@ def set_percent_off_promo_flags(doc, method=None):
             2
         )
         item.db_set("custom_promo_discount_percent", discount_percent)
+

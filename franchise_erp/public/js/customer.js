@@ -250,7 +250,7 @@ frappe.ui.form.on('Customer', {
                 });
             }
 
-            console.log('Disable Validation For Counter:', flag);
+            // console.log('Disable Validation For Counter:', flag);
         });
     }
 });
