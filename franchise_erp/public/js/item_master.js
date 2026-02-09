@@ -223,3 +223,23 @@ frappe.ui.form.on("Item", {
     }
 });
 
+frappe.ui.form.on("Item", {
+    refresh(frm) {
+        frappe.call({
+            method: "frappe.client.get",
+            args: {
+                doctype: "User",
+                name: frappe.session.user
+            },
+            callback(r) {
+                if (
+                    r.message &&
+                    r.message.role_profile_name === "SIS Counter"
+                ) {
+                    // 🔥 THIS is the key
+                    frm.fields_dict["custom_item_prices"].grid.wrapper.hide();
+                }
+            }
+        });
+    }
+});
