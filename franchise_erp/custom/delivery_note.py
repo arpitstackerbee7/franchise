@@ -49,3 +49,13 @@ def set_dn_naming_series(doc, method):
         doc.naming_series = "DRET-.YY.-"
     else:
         doc.naming_series = "DN-.YY.-"
+
+
+def disable_eway_notification(doc, method):
+    # Agar E-Way bilkul nahi chahiye
+    doc.ewaybill = None
+    doc.ewaybill_validity = None
+    doc.transport_mode = None
+    doc.vehicle_no = None
+    doc.distance = 0
+    doc.gst_transporter_id = None

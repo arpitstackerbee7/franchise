@@ -1033,6 +1033,7 @@ def create_standard_buying_item_price(item_code, source_price_list):
 #                 title="Overdue Invoice Exists",
 #                 msg="Please clear your previous overdue invoice before creating a new Sales Invoice."
 #             )
+
 # import frappe
 # from frappe.utils import getdate, today, flt
 
@@ -1168,6 +1169,10 @@ def create_standard_buying_item_price(item_code, source_price_list):
 #             title="Credit Validation Failed",
 #             msg="Please clear your previous overdue invoice before creating a new Sales Invoice."
 #         )
+
+
+
+
 import frappe
 from frappe.utils import getdate, today, flt
 
@@ -1264,3 +1269,202 @@ def validate_overdue_invoice(doc, method):
             title="Credit Validation Failed",
             msg="<br>".join(messages)
         )
+
+
+
+
+#discount and freight both showing in Sales Taxes and Charge
+def apply_sales_term(doc, method):
+
+    # ✅ only for external customers
+    if doc.is_internal_customer:
+        return
+
+    if not doc.custom_sales_term or not doc.items:
+        return
+
+    term = frappe.get_doc("Sales Term Template", doc.custom_sales_term)
+
+    total_discount = 0.0
+    total_freight = 0.0
+
+    discount_account = None
+    freight_account = None
+
+    # -------------------------------
+    # 1️⃣ ITEM LEVEL DISCOUNT
+    # -------------------------------
+    for item in doc.items:
+
+        base_amount = item.qty * item.rate
+        item_discount = 0.0
+
+        for row in term.sales_term_charges:
+
+            if row.charge_type != "Discount":
+                continue
+
+            discount_account = row.discount_account
+
+            if row.value_type == "Percentage":
+                item_discount += (base_amount * row.value) / 100
+
+            elif row.value_type == "Amount":
+                item_discount += row.value / len(doc.items)
+
+        item.discount_amount = item_discount
+        total_discount += item_discount
+
+    # -------------------------------
+    # 2️⃣ FREIGHT
+    # -------------------------------
+    for row in term.sales_term_charges:
+
+        if row.charge_type != "Freight":
+            continue
+
+        freight_account = row.freight_account
+
+        if row.value_type == "Amount":
+            total_freight += row.value
+
+        elif row.value_type == "Percentage":
+            total_freight += (doc.net_total * row.value) / 100
+
+    # -------------------------------
+    # 3️⃣ REMOVE OLD ROWS
+    # -------------------------------
+    doc.taxes = [
+        t for t in doc.taxes
+        if t.description not in [
+            "Discount as per Sales Term",
+            "Freight as per Sales Term"
+        ]
+    ]
+
+    # -------------------------------
+    # 4️⃣ ADD DISCOUNT TAX ROW
+    # -------------------------------
+    if total_discount and discount_account:
+        doc.append("taxes", {
+            "charge_type": "Actual",
+            "account_head": discount_account,
+            "tax_amount": -1 * total_discount,
+            "description": "Discount as per Sales Term"
+        })
+
+    # -------------------------------
+    # 5️⃣ ADD FREIGHT TAX ROW
+    # -------------------------------
+    if total_freight and freight_account:
+        doc.append("taxes", {
+            "charge_type": "Actual",
+            "account_head": freight_account,
+            "tax_amount": total_freight,
+            "description": "Freight as per Sales Term"
+        })
+
+    # -------------------------------
+    # 6️⃣ FINAL CALCULATION
+    # -------------------------------
+    doc.calculate_taxes_and_totals()
+
+
+#discount showing in item table and freight showing in Sales Taxes and Charge
+import frappe
+
+
+def apply_sales_term(doc, method):
+
+    # ✅ apply only for external customers
+    if doc.is_internal_customer:
+        return
+
+    if not doc.custom_sales_term or not doc.items:
+        return
+
+    term = frappe.get_doc("Sales Term Template", doc.custom_sales_term)
+
+    total_discount = 0.0
+    total_freight = 0.0
+    freight_account = None
+
+    # --------------------------------
+    # 1️⃣ ITEM LEVEL DISCOUNT (CORRECT)
+    # --------------------------------
+    for item in doc.items:
+
+        base_amount = item.qty * item.rate
+        item_discount = 0.0
+
+        for row in term.sales_term_charges:
+
+            if row.charge_type != "Discount":
+                continue
+
+            # Multiple discounts supported
+            if row.value_type == "Percentage":
+                item_discount += (base_amount * row.value) / 100
+
+            elif row.value_type == "Amount":
+                item_discount += row.value / len(doc.items)
+
+        # ✅ ERPNext standard way
+        item.discount_amount = item_discount
+        total_discount += item_discount
+
+    # --------------------------------
+    # 2️⃣ FREIGHT (ONLY TAX ROW)
+    # --------------------------------
+    for row in term.sales_term_charges:
+
+        if row.charge_type != "Freight":
+            continue
+
+        freight_account = row.freight_account
+
+        if row.value_type == "Amount":
+            total_freight += row.value
+
+        elif row.value_type == "Percentage":
+            total_freight += (doc.net_total * row.value) / 100
+
+    # --------------------------------
+    # 3️⃣ REMOVE OLD FREIGHT ROWS
+    # --------------------------------
+    doc.taxes = [
+        t for t in doc.taxes
+        if t.description != "Freight as per Sales Term"
+    ]
+
+    # --------------------------------
+    # 4️⃣ ADD FREIGHT ROW (FIXED)
+    # --------------------------------
+    if total_freight and freight_account:
+
+        cost_center = (
+            doc.cost_center
+            or (doc.items[0].cost_center if doc.items else None)
+            or frappe.db.get_value("Company", doc.company, "cost_center")
+        )
+
+        doc.append("taxes", {
+            "charge_type": "Actual",
+            "account_head": freight_account,
+            "tax_amount": total_freight,
+            "description": "Freight as per Sales Term",
+            "cost_center": cost_center
+        })
+
+    # --------------------------------
+    # 5️⃣ SHOW DISCOUNT INFO (HEADER)
+    # --------------------------------
+    if total_discount:
+        doc.apply_discount_on = "Net Total"
+        doc.discount_amount = total_discount
+        doc.additional_discount_percentage = 0
+
+    # --------------------------------
+    # 6️⃣ FINAL RECALCULATION
+    # --------------------------------
+    doc.calculate_taxes_and_totals()

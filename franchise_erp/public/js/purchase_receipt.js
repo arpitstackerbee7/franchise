@@ -168,60 +168,74 @@ function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
     });
 }
 
-function open_gate_entry_mapper(frm) {
-    if (!frm.doc.supplier) {
-        frappe.throw(__("Please select Supplier first"));
-    }
 
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_pending_gate_entries",
-        args: {
-            supplier: frm.doc.supplier
-        },
-        callback(r) {
-            let data = r.message || [];
 
-            if (!data.length) {
-                frappe.msgprint(__("No pending Gate Entries found"));
-                return;
-            }
 
-            let dialog = new frappe.ui.form.MultiSelectDialog({
-                doctype: "Gate Entry",
-                target: frm,
 
-                setters: {},
 
-                get_query() {
-                    return {
-                        filters: {
-                            name: ["in", data.map(d => d.gate_entry)],
-                            supplier: frm.doc.consignor
-                        }
-                    };
-                },
 
-                columns: [
-                    { fieldname: "name", label: __("Gate Entry") },
-                    { fieldname: "consignor", label: __("Supplier") }
-                ],
 
-                action(selections) {
-                    if (!selections.length) {
-                        frappe.msgprint(__("Please select at least one Gate Entry"));
-                        return;
-                    }
 
-                    selections.forEach(ge => {
-                        map_gate_entry_to_purchase_receipt(frm, ge);
-                    });
 
-                    dialog.dialog.hide();
-                }
-            });
-        }
-    });
-}
+
+
+// function open_gate_entry_mapper(frm) {
+//     if (!frm.doc.supplier) {
+//         frappe.throw(__("Please select Supplier first"));
+//     }
+
+//     frappe.call({
+//         method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_pending_gate_entries",
+//         args: {
+//             supplier: frm.doc.supplier
+//         },
+//         callback(r) {
+//             let data = r.message || [];
+
+//             if (!data.length) {
+//                 frappe.msgprint(__("No pending Gate Entries found"));
+//                 return;
+//             }
+
+//             let dialog = new frappe.ui.form.MultiSelectDialog({
+//                 doctype: "Gate Entry",
+//                 target: frm,
+
+//                 setters: {},
+
+//                 get_query() {
+//                     return {
+//                         filters: {
+//                             name: ["in", data.map(d => d.gate_entry)],
+//                             supplier: frm.doc.consignor
+//                         }
+//                     };
+//                 },
+
+//                 columns: [
+//                     { fieldname: "name", label: __("Gate Entry") },
+//                     { fieldname: "consignor", label: __("Supplier") }
+//                 ],
+
+//                 action(selections) {
+//                     if (!selections.length) {
+//                         frappe.msgprint(__("Please select at least one Gate Entry"));
+//                         return;
+//                     }
+
+//                     selections.forEach(ge => {
+//                         map_gate_entry_to_purchase_receipt(frm, ge);
+//                     });
+
+//                     dialog.dialog.hide();
+//                 }
+//             });
+//         }
+//     });
+// }
+
+
+
 
 
 
