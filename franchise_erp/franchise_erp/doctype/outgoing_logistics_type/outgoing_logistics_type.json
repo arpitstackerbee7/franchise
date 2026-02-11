@@ -6,7 +6,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "type"
+  "type",
+  "is_customer",
+  "is_supplier"
  ],
  "fields": [
   {
@@ -14,13 +16,25 @@
    "fieldtype": "Data",
    "label": "Type",
    "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_customer",
+   "fieldtype": "Check",
+   "label": "Is Customer"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_supplier",
+   "fieldtype": "Check",
+   "label": "Is Supplier"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-16 15:33:59.929074",
- "modified_by": "tzu@gmail.com",
+ "modified": "2026-02-11 13:13:53.153867",
+ "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics Type",
  "naming_rule": "By fieldname",

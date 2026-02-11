@@ -496,3 +496,16 @@ function toggle_update_stock(frm) {
         frm.set_value("update_stock", has_stock_item ? 1 : 0);
     });
 }
+
+
+frappe.ui.form.on('Sales Invoice', {
+    validate(frm) {
+        frm.doc.items.forEach(row => {
+            if (row.has_serial_no && !row.serial_no) {
+                frappe.throw(
+                    __('Please scan or select Serial Number for Item: {0}', [row.item_name])
+                );
+            }
+        });
+    }
+});

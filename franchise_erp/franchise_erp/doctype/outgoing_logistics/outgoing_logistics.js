@@ -198,7 +198,7 @@ function toggle_consignee_supplier_fields(frm) {
     if (!frm.doc.type) return;
 
     frappe.db.get_value(
-        "Incoming Logistics Type",
+        "Outgoing Logistics Type",
         frm.doc.type,
         ["is_customer", "is_supplier"],
         function (r) {
@@ -234,3 +234,4 @@ function toggle_consignee_supplier_fields(frm) {
         }
     );
 }
+

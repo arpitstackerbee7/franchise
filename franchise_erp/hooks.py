@@ -26,6 +26,9 @@ app_license = "mit"
 
 # on_login = "franchise_erp.custom.customs.validate_user_status"
 
+on_session_creation = [
+    "franchise_erp.custom.session_company.set_session_company_from_user"
+]
 
 
 doc_events = {
@@ -124,6 +127,7 @@ doc_events = {
             "franchise_erp.custom.delivery_note.set_promo_group_id",
             "franchise_erp.custom.delivery_note.set_percent_off_promo_flags"
         ],
+        "before_insert": "franchise_erp.custom.delivery_note.set_dn_naming_series",
         # "after_save": [
         #     # "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
         #     "franchise_erp.custom.delivery_note.set_promo_group_id",
@@ -194,7 +198,7 @@ app_include_js = [
     "/assets/franchise_erp/js/back_date_disabled.js",
     "/assets/franchise_erp/js/item_group_overrides.js",
     "/assets/franchise_erp/js/doctype_overrides.js",
-    "/assets/franchise_erp/js/session_company.js",
+    "/assets/franchise_erp/js/session_company.js?v=120",
     "/assets/franchise_erp/js/customer_quick_entry.js",
     "/assets/franchise_erp/js/customer_quick_entry_patch.js"
     ]

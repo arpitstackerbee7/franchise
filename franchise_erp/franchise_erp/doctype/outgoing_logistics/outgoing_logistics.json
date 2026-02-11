@@ -80,7 +80,6 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Transporter",
-   "link_filters": "[[\"Supplier\",\"is_transporter\",\"=\",1]]",
    "options": "Supplier",
    "reqd": 1
   },
@@ -97,7 +96,7 @@
    "fieldname": "type",
    "fieldtype": "Link",
    "label": "Type",
-   "options": "Incoming Logistics Type",
+   "options": "Outgoing Logistics Type",
    "reqd": 1
   },
   {
@@ -262,7 +261,7 @@
   {
    "fieldname": "consignee",
    "fieldtype": "Link",
-   "label": "Consignee",
+   "label": "Customer",
    "mandatory_depends_on": "eval: !doc.document_no",
    "options": "Customer"
   },
@@ -292,7 +291,7 @@
   {
    "fieldname": "consignee_supplier",
    "fieldtype": "Link",
-   "label": "Consignee",
+   "label": "Supplier",
    "options": "Supplier"
   }
  ],
@@ -300,7 +299,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-03 10:39:56.167538",
+ "modified": "2026-02-11 13:49:32.843503",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",

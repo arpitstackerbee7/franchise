@@ -98,11 +98,12 @@
   {
    "fieldname": "consignor",
    "fieldtype": "Link",
-   "label": "Consignor",
+   "label": "Supplier",
    "options": "Supplier"
   },
   {
    "fetch_from": "consignor.custom_transporter",
+   "fetch_if_empty": 1,
    "fieldname": "transporter",
    "fieldtype": "Link",
    "label": "Transporter",
@@ -370,7 +371,7 @@
   {
    "fieldname": "consignor_customer",
    "fieldtype": "Link",
-   "label": "Consignor ",
+   "label": "Customer ",
    "options": "Customer"
   }
  ],
@@ -383,8 +384,8 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-01-28 16:05:07.198299",
- "modified_by": "tzu@gmail.com",
+ "modified": "2026-02-11 13:25:23.281768",
+ "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
  "naming_rule": "By \"Naming Series\" field",
