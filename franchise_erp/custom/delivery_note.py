@@ -42,3 +42,10 @@ def set_percent_off_promo_flags(doc, method=None):
         )
         item.db_set("custom_promo_discount_percent", discount_percent)
 
+
+
+def set_dn_naming_series(doc, method):
+    if doc.is_return:
+        doc.naming_series = "DRET-.YY.-"
+    else:
+        doc.naming_series = "DN-.YY.-"

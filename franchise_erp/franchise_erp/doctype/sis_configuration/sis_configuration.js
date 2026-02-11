@@ -43,3 +43,19 @@ frappe.ui.form.on('SIS Configuration', {
         frm.trigger('sis_debit_note_creation_period');
     }
 });
+
+frappe.ui.form.on('SIS Configuration', {
+    setup(frm) {
+        frm.set_query('delivery_note_warehouse', () => {
+            return {
+                filters: {
+                    company: frm.doc.company
+                }
+            };
+        });
+    },
+
+    company(frm) {
+        frm.set_value('delivery_note_warehouse', null);
+    }
+});

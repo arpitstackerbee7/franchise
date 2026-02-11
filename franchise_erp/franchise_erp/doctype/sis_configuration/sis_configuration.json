@@ -20,7 +20,8 @@
   "output_gst_min_net_rate",
   "output_gst_max_net_rate",
   "column_break_dbci",
-  "warehouse"
+  "warehouse",
+  "delivery_note_warehouse"
  ],
  "fields": [
   {
@@ -127,9 +128,17 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "warehouse",
    "fieldtype": "Link",
    "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "delivery_note_warehouse",
+   "fieldtype": "Link",
+   "label": "Delivery Note Warehouse",
    "options": "Warehouse"
   }
  ],
@@ -137,7 +146,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-05 18:35:06.912675",
+ "modified": "2026-02-11 11:51:58.732014",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "SIS Configuration",
