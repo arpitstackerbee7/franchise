@@ -76,18 +76,20 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "type",
    "fieldtype": "Link",
    "label": "Type",
    "options": "Incoming Logistics Type",
-   "read_only": 1
+   "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "consignor",
    "fieldtype": "Link",
    "label": "Consignor",
    "options": "Supplier",
-   "read_only": 1
+   "reqd": 1
   },
   {
    "fieldname": "column_break_cred",
@@ -256,7 +258,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-01-20 20:17:06.153364",
+ "modified": "2026-02-11 22:40:47.048211",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

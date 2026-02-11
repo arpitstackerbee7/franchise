@@ -509,3 +509,35 @@ frappe.ui.form.on('Sales Invoice', {
         });
     }
 });
+
+frappe.ui.form.on("Sales Invoice", {
+    customer: function(frm) {
+        if (!frm.doc.customer) return;
+
+        frappe.db.get_value(
+            "Customer",
+            frm.doc.customer,
+            "custom_credit_days",
+            (r) => {
+                if (!r || !r.custom_credit_days) return;
+
+                setTimeout(() => {
+                    let posting_date = frm.doc.posting_date || frappe.datetime.get_today();
+
+                    let due_date = frappe.datetime.add_days(
+                        posting_date,
+                        r.custom_credit_days
+                    );
+
+                    frm.set_value("due_date", due_date);
+                }, 1200); // ⏱️ ERPNext ko overwrite karne ka time do
+            }
+        );
+    },
+
+    posting_date: function(frm) {
+        if (frm.doc.customer) {
+            frm.trigger("customer");
+        }
+    }
+});

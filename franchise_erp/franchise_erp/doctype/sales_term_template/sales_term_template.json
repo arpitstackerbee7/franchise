@@ -11,7 +11,7 @@
  ],
  "fields": [
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "active",
    "fieldtype": "Check",
    "label": "Active"
@@ -34,7 +34,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-14 10:59:05.325351",
+ "modified": "2026-02-11 15:31:58.380401",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Sales Term Template",
