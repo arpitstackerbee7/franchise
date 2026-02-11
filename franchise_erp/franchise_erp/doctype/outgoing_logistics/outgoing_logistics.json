@@ -76,10 +76,12 @@
   },
   {
    "fetch_from": "consignee.custom_transporter",
+   "fetch_if_empty": 1,
    "fieldname": "transporter",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Transporter",
+   "link_filters": "[[\"Supplier\",\"is_transporter\",\"=\",1]]",
    "options": "Supplier",
    "reqd": 1
   },
@@ -299,7 +301,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-11 13:49:32.843503",
+ "modified": "2026-02-11 14:19:42.423581",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
