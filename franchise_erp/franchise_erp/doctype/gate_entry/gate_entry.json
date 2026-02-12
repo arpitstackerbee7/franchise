@@ -237,7 +237,7 @@
   },
   {
    "fieldname": "quantity_as_per_invoice",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "Quantity as per Invoice"
   },
   {
@@ -256,7 +256,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-02-12 11:52:08.441489",
+ "modified": "2026-02-12 16:57:40.634335",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
