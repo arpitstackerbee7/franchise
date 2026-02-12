@@ -1274,100 +1274,100 @@ def validate_overdue_invoice(doc, method):
 
 
 #discount and freight both showing in Sales Taxes and Charge
-def apply_sales_term(doc, method):
+# def apply_sales_term(doc, method):
 
-    # ✅ only for external customers
-    if doc.is_internal_customer:
-        return
+#     # ✅ only for external customers
+#     if doc.is_internal_customer:
+#         return
 
-    if not doc.custom_sales_term or not doc.items:
-        return
+#     if not doc.custom_sales_term or not doc.items:
+#         return
 
-    term = frappe.get_doc("Sales Term Template", doc.custom_sales_term)
+#     term = frappe.get_doc("Sales Term Template", doc.custom_sales_term)
 
-    total_discount = 0.0
-    total_freight = 0.0
+#     total_discount = 0.0
+#     total_freight = 0.0
 
-    discount_account = None
-    freight_account = None
+#     discount_account = None
+#     freight_account = None
 
-    # -------------------------------
-    # 1️⃣ ITEM LEVEL DISCOUNT
-    # -------------------------------
-    for item in doc.items:
+#     # -------------------------------
+#     # 1️⃣ ITEM LEVEL DISCOUNT
+#     # -------------------------------
+#     for item in doc.items:
 
-        base_amount = item.qty * item.rate
-        item_discount = 0.0
+#         base_amount = item.qty * item.rate
+#         item_discount = 0.0
 
-        for row in term.sales_term_charges:
+#         for row in term.sales_term_charges:
 
-            if row.charge_type != "Discount":
-                continue
+#             if row.charge_type != "Discount":
+#                 continue
 
-            discount_account = row.discount_account
+#             discount_account = row.discount_account
 
-            if row.value_type == "Percentage":
-                item_discount += (base_amount * row.value) / 100
+#             if row.value_type == "Percentage":
+#                 item_discount += (base_amount * row.value) / 100
 
-            elif row.value_type == "Amount":
-                item_discount += row.value / len(doc.items)
+#             elif row.value_type == "Amount":
+#                 item_discount += row.value / len(doc.items)
 
-        item.discount_amount = item_discount
-        total_discount += item_discount
+#         item.discount_amount = item_discount
+#         total_discount += item_discount
 
-    # -------------------------------
-    # 2️⃣ FREIGHT
-    # -------------------------------
-    for row in term.sales_term_charges:
+#     # -------------------------------
+#     # 2️⃣ FREIGHT
+#     # -------------------------------
+#     for row in term.sales_term_charges:
 
-        if row.charge_type != "Freight":
-            continue
+#         if row.charge_type != "Freight":
+#             continue
 
-        freight_account = row.freight_account
+#         freight_account = row.freight_account
 
-        if row.value_type == "Amount":
-            total_freight += row.value
+#         if row.value_type == "Amount":
+#             total_freight += row.value
 
-        elif row.value_type == "Percentage":
-            total_freight += (doc.net_total * row.value) / 100
+#         elif row.value_type == "Percentage":
+#             total_freight += (doc.net_total * row.value) / 100
 
-    # -------------------------------
-    # 3️⃣ REMOVE OLD ROWS
-    # -------------------------------
-    doc.taxes = [
-        t for t in doc.taxes
-        if t.description not in [
-            "Discount as per Sales Term",
-            "Freight as per Sales Term"
-        ]
-    ]
+#     # -------------------------------
+#     # 3️⃣ REMOVE OLD ROWS
+#     # -------------------------------
+#     doc.taxes = [
+#         t for t in doc.taxes
+#         if t.description not in [
+#             "Discount as per Sales Term",
+#             "Freight as per Sales Term"
+#         ]
+#     ]
 
-    # -------------------------------
-    # 4️⃣ ADD DISCOUNT TAX ROW
-    # -------------------------------
-    if total_discount and discount_account:
-        doc.append("taxes", {
-            "charge_type": "Actual",
-            "account_head": discount_account,
-            "tax_amount": -1 * total_discount,
-            "description": "Discount as per Sales Term"
-        })
+#     # -------------------------------
+#     # 4️⃣ ADD DISCOUNT TAX ROW
+#     # -------------------------------
+#     if total_discount and discount_account:
+#         doc.append("taxes", {
+#             "charge_type": "Actual",
+#             "account_head": discount_account,
+#             "tax_amount": -1 * total_discount,
+#             "description": "Discount as per Sales Term"
+#         })
 
-    # -------------------------------
-    # 5️⃣ ADD FREIGHT TAX ROW
-    # -------------------------------
-    if total_freight and freight_account:
-        doc.append("taxes", {
-            "charge_type": "Actual",
-            "account_head": freight_account,
-            "tax_amount": total_freight,
-            "description": "Freight as per Sales Term"
-        })
+#     # -------------------------------
+#     # 5️⃣ ADD FREIGHT TAX ROW
+#     # -------------------------------
+#     if total_freight and freight_account:
+#         doc.append("taxes", {
+#             "charge_type": "Actual",
+#             "account_head": freight_account,
+#             "tax_amount": total_freight,
+#             "description": "Freight as per Sales Term"
+#         })
 
-    # -------------------------------
-    # 6️⃣ FINAL CALCULATION
-    # -------------------------------
-    doc.calculate_taxes_and_totals()
+#     # -------------------------------
+#     # 6️⃣ FINAL CALCULATION
+#     # -------------------------------
+#     doc.calculate_taxes_and_totals()
 
 
 #discount showing in item table and freight showing in Sales Taxes and Charge
@@ -1468,3 +1468,101 @@ def apply_sales_term(doc, method):
     # 6️⃣ FINAL RECALCULATION
     # --------------------------------
     doc.calculate_taxes_and_totals()
+
+
+#freight calculate before gst 
+# def apply_sales_term(doc, method):
+
+#     # ✅ apply only for external customers
+#     if doc.is_internal_customer:
+#         return
+
+#     if not doc.custom_sales_term or not doc.items:
+#         return
+
+#     term = frappe.get_doc("Sales Term Template", doc.custom_sales_term)
+
+#     total_discount = 0.0
+#     total_freight = 0.0
+#     freight_account = None
+
+#     # --------------------------------
+#     # 1️⃣ ITEM LEVEL DISCOUNT (CORRECT)
+#     # --------------------------------
+#     for item in doc.items:
+
+#         base_amount = item.qty * item.rate
+#         item_discount = 0.0
+
+#         for row in term.sales_term_charges:
+
+#             if row.charge_type != "Discount":
+#                 continue
+
+#             # Multiple discounts supported
+#             if row.value_type == "Percentage":
+#                 item_discount += (base_amount * row.value) / 100
+
+#             elif row.value_type == "Amount":
+#                 item_discount += row.value / len(doc.items)
+
+#         # ✅ ERPNext standard way
+#         item.discount_amount = item_discount
+#         total_discount += item_discount
+
+#     # --------------------------------
+#     # 2️⃣ FREIGHT (ONLY TAX ROW)
+#     # --------------------------------
+#     for row in term.sales_term_charges:
+
+#         if row.charge_type != "Freight":
+#             continue
+
+#         freight_account = row.freight_account
+
+#         if row.value_type == "Amount":
+#             total_freight += row.value
+
+#         elif row.value_type == "Percentage":
+#             total_freight += (doc.net_total * row.value) / 100
+
+#     # --------------------------------
+#     # 3️⃣ REMOVE OLD FREIGHT ROWS
+#     # --------------------------------
+#     doc.taxes = [
+#         t for t in doc.taxes
+#         if t.description != "Freight as per Sales Term"
+#     ]
+
+#     # --------------------------------
+#     # 4️⃣ ADD FREIGHT ROW (GST BASE)
+#     # --------------------------------
+#     if total_freight and freight_account:
+
+#         cost_center = (
+#             doc.cost_center
+#             or (doc.items[0].cost_center if doc.items else None)
+#             or frappe.db.get_value("Company", doc.company, "cost_center")
+#         )
+
+#         # 1️⃣ Append properly (ERPNext way)
+#         freight_doc = doc.append("taxes", {})
+#         freight_doc.charge_type = "On Net Total"
+#         freight_doc.account_head = freight_account
+#         freight_doc.description = "Freight as per Sales Term"
+#         freight_doc.rate = total_freight
+#         freight_doc.tax_amount = total_freight
+#         freight_doc.cost_center = cost_center
+
+#         # 2️⃣ Find first GST row index
+#         gst_index = None
+#         for i, t in enumerate(doc.taxes):
+#             if t.account_head and "GST" in t.account_head:
+#                 gst_index = i
+#                 break
+
+#         # 3️⃣ Move freight before GST rows
+#         if gst_index is not None:
+#             doc.taxes.remove(freight_doc)
+#             doc.taxes.insert(gst_index, freight_doc)
+
