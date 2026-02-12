@@ -200,8 +200,9 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "received_qty",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Quantity as per Invoice",
    "reqd": 1
   },
@@ -384,7 +385,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-02-11 13:25:23.281768",
+ "modified": "2026-02-12 17:21:06.978295",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

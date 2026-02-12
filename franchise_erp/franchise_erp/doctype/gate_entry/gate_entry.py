@@ -254,6 +254,40 @@ def make_pr_from_gate_entry(gate_entry):
 
     return pr
 
+# @frappe.whitelist()
+# def get_pending_gate_entries(supplier):
+#     result = []
+
+#     gate_entries = frappe.get_all(
+#         "Gate Entry",
+#         filters={
+#             "consignor": supplier,
+#             "docstatus": 1
+#         },
+#         fields=["name", "quantity_as_per_invoice"]
+#     )
+
+#     for ge in gate_entries:
+#         # total received qty from Purchase Receipt
+#         received_qty = frappe.db.sql("""
+#             SELECT IFNULL(SUM(pri.qty), 0)
+#             FROM `tabPurchase Receipt Item` pri
+#             WHERE pri.custom_bulk_gate_entry = %s
+#               AND pri.docstatus < 2
+#         """, ge.name)[0][0]
+
+#         # 🔑 show only if pending qty exists
+#         if received_qty < ge.quantity_as_per_invoice:
+#             result.append({
+#                 "gate_entry": ge.name,
+#                 "pending_qty": ge.quantity_as_per_invoice - received_qty
+#             })
+
+#     return result
+
+import frappe
+from frappe.utils import flt
+
 @frappe.whitelist()
 def get_pending_gate_entries(supplier):
     result = []
@@ -276,11 +310,14 @@ def get_pending_gate_entries(supplier):
               AND pri.docstatus < 2
         """, ge.name)[0][0]
 
+        received_qty = flt(received_qty)
+        invoice_qty = flt(ge.quantity_as_per_invoice)
+
         # 🔑 show only if pending qty exists
-        if received_qty < ge.quantity_as_per_invoice:
+        if received_qty < invoice_qty:
             result.append({
                 "gate_entry": ge.name,
-                "pending_qty": ge.quantity_as_per_invoice - received_qty
+                "pending_qty": invoice_qty - received_qty
             })
 
     return result
