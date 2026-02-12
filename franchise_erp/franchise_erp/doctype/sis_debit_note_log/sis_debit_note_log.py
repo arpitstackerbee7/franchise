@@ -557,18 +557,43 @@ def fetch_invoices(company, from_date=None, to_date=None):
     # -------------------------------------------------------------------
     # SET DATE RANGE
     # -------------------------------------------------------------------
-    if period_type == "Date Range":
-        if not from_date or not to_date:
-            from_date, to_date = frappe.db.get_value(
-                "SIS Configuration",
-                {"company": company},
-                ["from_date", "to_date"]
-            )
+    # if period_type == "Date Range":
+    #     if not from_date or not to_date:
+    #         from_date, to_date = frappe.db.get_value(
+    #             "SIS Configuration",
+    #             {"company": company},
+    #             ["from_date", "to_date"]
+    #         )
 
-        if not from_date or not to_date:
-            frappe.throw("Please select From Date and To Date")
+    #     if not from_date or not to_date:
+    #         frappe.throw("Please select From Date and To Date")
+    # else:
+    #     from_date, to_date = get_period_dates(period_type)
+
+    # from_date = getdate(from_date)
+    # to_date = getdate(to_date)
+
+    # if from_date > to_date:
+    #     frappe.throw("From Date cannot be greater than To Date")
+
+    # 🔥 If frontend sent dates → ALWAYS use them
+    if from_date and to_date:
+        pass
+
+    # fallback to config (only if frontend empty)
+    elif period_type == "Date Range":
+        from_date, to_date = frappe.db.get_value(
+            "SIS Configuration",
+            {"company": company},
+            ["from_date", "to_date"]
+        )
+
+    # fallback to period type
     else:
         from_date, to_date = get_period_dates(period_type)
+
+    if not from_date or not to_date:
+        frappe.throw("Please select From Date and To Date")
 
     from_date = getdate(from_date)
     to_date = getdate(to_date)
@@ -730,6 +755,8 @@ def get_period_dates(period_type):
         return first_day, last_day
 
     return today, today
+
+
 
 
 import frappe
