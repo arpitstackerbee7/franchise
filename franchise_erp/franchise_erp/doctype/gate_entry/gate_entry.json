@@ -236,8 +236,9 @@
    "options": "Item"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "quantity_as_per_invoice",
-   "fieldtype": "Data",
+   "fieldtype": "Float",
    "label": "Quantity as per Invoice"
   },
   {
@@ -256,7 +257,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-02-12 16:57:40.634335",
+ "modified": "2026-02-12 17:21:23.366321",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
