@@ -513,6 +513,9 @@ def validate_gate_entry(doc, method):
 from frappe import _
 
 def validate_gate_entry_qty_on_grn(doc, method):
+     # 🚫 Skip validation for Return Purchase Receipt
+    if doc.is_return:
+        return
     for item in doc.items:
 
         gate_entry = item.custom_bulk_gate_entry
