@@ -203,7 +203,7 @@ app_include_js = [
     "/assets/franchise_erp/js/doctype_overrides.js",
     "/assets/franchise_erp/js/session_company.js?v=120",
     "/assets/franchise_erp/js/customer_quick_entry.js",
-    "/assets/franchise_erp/js/customer_quick_entry_patch.js"
+    "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     ]
 
    

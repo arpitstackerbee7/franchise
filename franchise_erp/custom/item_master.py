@@ -677,3 +677,4 @@ def existing_item_price_update(doc, method):
     # Very important
     frappe.clear_document_cache("Item Price")
     frappe.clear_cache()
+
