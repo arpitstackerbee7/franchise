@@ -33,6 +33,9 @@ on_session_creation = [
 
 doc_events = {
 
+    # apps/franchise_erp/franchise_erp/hooks.py
+
+
    "Purchase Invoice": {
        "before_save": "franchise_erp.custom.purchase_invoice.apply_intercompany_gst",
        "validate": ["franchise_erp.custom.purchase_invoice_hooks.apply_item_gst",
@@ -204,6 +207,7 @@ app_include_js = [
     "/assets/franchise_erp/js/session_company.js?v=120",
     "/assets/franchise_erp/js/customer_quick_entry.js",
     "/assets/franchise_erp/js/customer_quick_entry_patch.js",
+    "/assets/franchise_erp/js/uploader_patch.js" 
     ]
 
    
