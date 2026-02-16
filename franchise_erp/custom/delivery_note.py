@@ -59,3 +59,28 @@ def disable_eway_notification(doc, method):
     doc.vehicle_no = None
     doc.distance = 0
     doc.gst_transporter_id = None
+
+def set_sales_person(doc, method=None):
+
+    user = frappe.session.user
+
+    sales_person = frappe.db.get_value(
+        "Sales Person",
+        {"custom_user": user},
+        ["name", "commission_rate", "custom_commission_amount"],
+        as_dict=True
+    )
+
+    if not sales_person:
+        return
+
+    # 🔹 Clear entire sales_team table
+    doc.set("sales_team", [])
+
+    # 🔹 Append fresh controlled row
+    doc.append("sales_team", {
+        "sales_person": sales_person.name,
+        "allocated_percentage": 100,
+        "commission_rate": sales_person.commission_rate or 0,
+        "incentives": sales_person.custom_commission_amount or 0
+    })
