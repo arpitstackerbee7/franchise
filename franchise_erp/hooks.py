@@ -146,6 +146,7 @@ doc_events = {
         "validate": "franchise_erp.custom.sales_person.validate_unique_custom_user"
     },
     "Stock Entry":{
+        "validate": "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
         "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
     },
     

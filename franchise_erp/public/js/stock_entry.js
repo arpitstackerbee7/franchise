@@ -165,3 +165,31 @@ function fetch_and_import_material_issues(frm) {
 }
 
 
+frappe.ui.form.on('Stock Entry', {
+    custom_to_company(frm) {
+        toggle_intercompany_flag(frm);
+    },
+
+    company(frm) {
+        toggle_intercompany_flag(frm);
+    }
+});
+
+function toggle_intercompany_flag(frm) {
+    const company = frm.doc.company;
+    const to_company = frm.doc.custom_to_company;
+
+    // jab dono filled ho
+    if (company && to_company) {
+        if (company !== to_company) {
+            // ✅ different company → intercompany ON
+            frm.set_value('custom_intercompany_stock_transfer', 1);
+        } else {
+            //  same company → intercompany OFF
+            frm.set_value('custom_intercompany_stock_transfer', 0);
+        }
+    } else {
+        // safety: agar to_company blank ho
+        frm.set_value('custom_intercompany_stock_transfer', 0);
+    }
+}
