@@ -137,38 +137,8 @@ frappe.ui.form.on('Sales Invoice', {
         });
     }
 });
-frappe.ui.form.on('Sales Invoice Item', {
-    serial_no(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
-        if (!row.serial_no) return;
 
-        let serials = row.serial_no.split('\n').map(s => s.trim());
 
-        let all_serials = [];
-        (frm.doc.items || []).forEach(r => {
-            if (r.name !== row.name && r.serial_no) {
-                all_serials.push(
-                    ...r.serial_no.split('\n').map(s => s.trim())
-                );
-            }
-        });
-
-        serials.forEach(s => {
-            if (all_serials.includes(s)) {
-                frappe.throw(`Serial No ${s} already scanned in another row`);
-            }
-        });
-    }
-});
-frappe.ui.form.on('Sales Invoice Item', {
-    serial_no(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
-        if (!row.serial_no) return;
-
-        let count = row.serial_no.split('\n').filter(Boolean).length;
-        frappe.model.set_value(cdt, cdn, 'qty', count);
-    }
-});
 
 function calculate_sis_delta(frm, cdt, cdn, delta_qty) {
     const row = locals[cdt][cdn];
@@ -498,17 +468,7 @@ function toggle_update_stock(frm) {
 }
 
 
-frappe.ui.form.on('Sales Invoice', {
-    validate(frm) {
-        frm.doc.items.forEach(row => {
-            if (row.has_serial_no && !row.serial_no) {
-                frappe.throw(
-                    __('Please scan or select Serial Number for Item: {0}', [row.item_name])
-                );
-            }
-        });
-    }
-});
+
 
 frappe.ui.form.on("Sales Invoice", {
     customer: function(frm) {
