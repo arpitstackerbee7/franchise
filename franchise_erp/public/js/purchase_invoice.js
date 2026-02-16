@@ -302,3 +302,19 @@ function fetch_invoice_details(frm) {
         }
     );
 }
+
+// Fetch default warehouse from SIS Configuration for new Purchase Invoices
+frappe.ui.form.on("Purchase Invoice", {
+    company: function(frm) {
+        // Run only for new documents when a company is selected
+        if (frm.is_new() && frm.doc.company) {
+            frappe.db.get_value("SIS Configuration", { company: frm.doc.company }, "warehouse")
+                .then(r => {
+                    if (r.message && r.message.warehouse) {
+                        // In Purchase Invoice, 'set_warehouse' field is used when 'Update Stock' is checked
+                        frm.set_value("set_warehouse", r.message.warehouse);
+                    }
+                });
+        }
+    }
+});

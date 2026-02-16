@@ -339,5 +339,21 @@ frappe.ui.form.on('Purchase Receipt', {
     }
 });
 
+// ------------------------------------ Purchase Receipt------------------------------------------------
+// Fetch default warehouse from SIS Configuration for new Purchase Receipts
+frappe.ui.form.on("Purchase Receipt", {
+    company: function(frm) {
+        // Run only for new documents when a company is selected
+        if (frm.is_new() && frm.doc.company) {
+            frappe.db.get_value("SIS Configuration", { company: frm.doc.company }, "warehouse")
+                .then(r => {
+                    if (r.message && r.message.warehouse) {
+                        // 'set_warehouse' is the technical name for 'Accepted Warehouse' field
+                        frm.set_value("set_warehouse", r.message.warehouse);
+                    }
+                });
+        }
+    }
+});
 
 
