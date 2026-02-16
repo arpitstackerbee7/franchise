@@ -144,7 +144,11 @@ doc_events = {
     },
     "Sales Person":{
         "validate": "franchise_erp.custom.sales_person.validate_unique_custom_user"
-    }
+    },
+    "Stock Entry":{
+        "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
+    },
+    
 }
    
 
@@ -246,7 +250,7 @@ doctype_tree_js = {
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_list_js = {"Stock Entry" : "public/js/stock_entry_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
