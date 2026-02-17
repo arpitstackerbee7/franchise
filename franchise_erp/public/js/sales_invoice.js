@@ -326,6 +326,7 @@ frappe.ui.form.on("Sales Invoice", {
                         doc.owner_site = frm.doc.company;
                         doc.transporter = frm.doc.transporter;
                         doc.stock_point = frm.doc.set_warehouse;
+                        doc.type = 'S&D: Sales Invoice/Transfer In';
 
                         // Append child row
                         let row = frappe.model.add_child(
