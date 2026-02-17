@@ -133,8 +133,7 @@ doc_events = {
             "franchise_erp.custom.delivery_note.set_percent_off_promo_flags"
         ],
         "before_insert": "franchise_erp.custom.delivery_note.set_dn_naming_series",
-        "validate": "franchise_erp.custom.delivery_note.disable_eway_notification",
-        "before_validate": "franchise_erp.custom.delivery_note.set_sales_person",
+        "validate": ["franchise_erp.custom.delivery_note.disable_eway_notification","franchise_erp.custom.delivery_note.apply_sales_person_rules"]
         
         # "after_save": [
         #     # "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
