@@ -344,3 +344,5 @@ def on_submit_stock_entry(doc, method):
         "custom_status",
         "Submitted"
     )
+
+
