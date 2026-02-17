@@ -10,17 +10,17 @@
   "general_section",
   "owner_site",
   "company_abbreviation",
+  "type",
   "consignee",
   "consignee_supplier",
   "transporter",
   "column_break_kknq",
-  "type",
   "date",
-  "document_no",
-  "column_break_sgwy",
-  "document_date",
   "mode",
+  "document_no",
   "remarks",
+  "column_break_sgwy",
+  "sales_invoice_no",
   "transport_information_section",
   "quantity",
   "station_from",
@@ -47,7 +47,6 @@
   "document_amount",
   "others_section",
   "item_barcode",
-  "sales_invoice_no",
   "amended_from"
  ],
  "fields": [
@@ -86,11 +85,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "document_date",
-   "fieldtype": "Date",
-   "label": "Document Date"
-  },
-  {
    "fieldname": "column_break_kknq",
    "fieldtype": "Column Break"
   },
@@ -116,9 +110,8 @@
   },
   {
    "fieldname": "document_no",
-   "fieldtype": "Link",
-   "label": "Document No",
-   "options": "Subcontracting Order"
+   "fieldtype": "Data",
+   "label": "Document No/LR No"
   },
   {
    "fieldname": "transport_information_section",
@@ -280,12 +273,6 @@
    "options": "Sales Invoice Child Table"
   },
   {
-   "fetch_from": "owner_site.abbr",
-   "fieldname": "company_abbreviation",
-   "fieldtype": "Data",
-   "label": "Company Abbreviation"
-  },
-  {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
@@ -295,13 +282,20 @@
    "fieldtype": "Link",
    "label": "Supplier",
    "options": "Supplier"
+  },
+  {
+   "fetch_from": "owner_site.abbr",
+   "fieldname": "company_abbreviation",
+   "fieldtype": "Data",
+   "label": "Company Abbreviation",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-11 14:19:42.423581",
+ "modified": "2026-02-17 15:23:17.743451",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
