@@ -318,3 +318,82 @@ frappe.ui.form.on("Purchase Invoice", {
         }
     }
 });
+
+
+frappe.ui.form.on('Purchase Invoice', {
+    is_return(frm) {
+        if (frm.doc.is_return) {
+            make_items_negative_pi(frm);
+        }
+    },
+
+    refresh(frm) {
+        if (frm.doc.is_return) {
+            make_items_negative_pi(frm);
+        }
+    }
+});
+
+frappe.ui.form.on('Purchase Invoice Item', {
+
+    serial_no(frm, cdt, cdn) {
+        if (!frm.doc.is_return) return;
+
+        // ⏳ wait for ERPNext to finish serial append
+        setTimeout(() => {
+            let row = locals[cdt][cdn];
+            if (!row.serial_no) return;
+
+            let serials = row.serial_no
+                .split('\n')
+                .filter(s => s.trim());
+
+            // ✅ qty = - serial count
+            frappe.model.set_value(
+                cdt,
+                cdn,
+                'qty',
+                -Math.abs(serials.length)
+            );
+        }, 300);
+    },
+
+    qty(frm, cdt, cdn) {
+        if (!frm.doc.is_return) return;
+
+        let row = locals[cdt][cdn];
+
+        if (row.qty > 0) {
+            frappe.model.set_value(
+                cdt,
+                cdn,
+                'qty',
+                -Math.abs(row.qty)
+            );
+        }
+    }
+});
+
+function make_items_negative_pi(frm) {
+    (frm.doc.items || []).forEach(row => {
+        if (row.serial_no) {
+            let serials = row.serial_no
+                .split('\n')
+                .filter(s => s.trim());
+
+            frappe.model.set_value(
+                row.doctype,
+                row.name,
+                'qty',
+                -Math.abs(serials.length)
+            );
+        } else if (row.qty > 0) {
+            frappe.model.set_value(
+                row.doctype,
+                row.name,
+                'qty',
+                -Math.abs(row.qty)
+            );
+        }
+    });
+}
