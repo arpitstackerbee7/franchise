@@ -60,27 +60,93 @@ def disable_eway_notification(doc, method):
     doc.distance = 0
     doc.gst_transporter_id = None
 
-def set_sales_person(doc, method=None):
 
-    user = frappe.session.user
+def apply_sales_person_rules(doc, method=None):
 
-    sales_person = frappe.db.get_value(
-        "Sales Person",
-        {"custom_user": user},
-        ["name", "commission_rate", "custom_commission_amount"],
-        as_dict=True
-    )
-
-    if not sales_person:
+    if not doc.company:
         return
 
-    # 🔹 Clear entire sales_team table
+    # Properly clear child table
     doc.set("sales_team", [])
 
-    # 🔹 Append fresh controlled row
-    doc.append("sales_team", {
-        "sales_person": sales_person.name,
-        "allocated_percentage": 100,
-        "commission_rate": sales_person.commission_rate or 0,
-        "incentives": sales_person.custom_commission_amount or 0
-    })
+    sales_persons = frappe.get_all(
+        "Sales Person",
+        filters={
+            "custom_company": doc.company,
+            "enabled": 1
+        },
+        fields=["name", "custom_apply_on"]
+    )
+
+    if not sales_persons:
+        return
+
+    item_codes = {d.item_code for d in doc.items}
+    item_groups = {d.item_group for d in doc.items}
+
+    matched_sales_persons = {}
+    total_amount = doc.base_net_total or doc.net_total or 0
+
+    for sp in sales_persons:
+        sp_doc = frappe.get_doc("Sales Person", sp.name)
+
+        # -------------------------
+        # Apply on Item Code
+        # -------------------------
+        if sp.custom_apply_on == "Item Code":
+            for rule in sp_doc.custom_sales_person_item_rule:
+                if rule.item in item_codes:
+                    matched_sales_persons[sp.name] = {
+                        "commission_rate": rule.commission_rate or 0,
+                        "commission_amount": rule.commission_amount or 0
+                    }
+                    break
+
+        # -------------------------
+        # Apply on Item Group
+        # -------------------------
+        elif sp.custom_apply_on == "Item Group":
+            for rule in sp_doc.custom_sales_person_item_group_rule:
+                if rule.item_group in item_groups:
+                    matched_sales_persons[sp.name] = {
+                        "commission_rate": rule.commission_rate or 0,
+                        "commission_amount": rule.commission_amount or 0
+                    }
+                    break
+
+    if not matched_sales_persons:
+        return
+
+    sales_person_list = list(matched_sales_persons.keys())
+    total_persons = len(sales_person_list)
+
+    equal_percentage = round(100 / total_persons, 2)
+    total_allocated_percentage = 0
+
+    for i, sp_name in enumerate(sales_person_list):
+
+        if i == total_persons - 1:
+            allocated_percentage = 100 - total_allocated_percentage
+        else:
+            allocated_percentage = equal_percentage
+            total_allocated_percentage += allocated_percentage
+
+        commission_rate = matched_sales_persons[sp_name]["commission_rate"]
+        commission_amount = matched_sales_persons[sp_name]["commission_amount"]
+
+        # ✅ Calculate allocated amount
+        allocated_amount = (total_amount * allocated_percentage) / 100
+
+        # ✅ Incentive Logic
+        if commission_rate:
+            incentives = (allocated_amount * commission_rate) / 100
+        else:
+            incentives = commission_amount
+
+        doc.append("sales_team", {
+            "sales_person": sp_name,
+            "commission_rate": commission_rate,
+            "allocated_percentage": allocated_percentage,
+            "allocated_amount": allocated_amount,
+            "incentives": incentives
+        })
