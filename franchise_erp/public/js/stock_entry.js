@@ -179,11 +179,11 @@ function fetch_and_import_material_issues(frm) {
             //     custom_intercompany_stock_transfer: 1
             // },
             filters: {
-    stock_entry_type: 'Material Issue',
-    docstatus: 1,
-    custom_status: ["in", ["In Transit", "Partially Delivered"]],
-    custom_to_company: ["in", [frm.doc.company, null, ""]],
-},
+                stock_entry_type: 'Material Issue',
+                docstatus: 1,
+                custom_status: ["in", ["In Transit", "Partially Delivered"]],
+                custom_to_company: ["in", [frm.doc.company, null, ""]],
+            },
             fields: [
                 'name',
                 'company',
@@ -209,13 +209,14 @@ function fetch_and_import_material_issues(frm) {
 
             const dialog = new frappe.ui.Dialog({
                 title: 'Select Material Issues',
+                size: 'extra-large',
                 fields: [
                     {
                         fieldtype: 'Table',
                         fieldname: 'entries',
                         label: 'Material Issues',
                         cannot_add_rows: true,
-                        in_place_edit: false,
+                        in_place_edit: true,
                         read_only: 1,
                         fields: [
                             {
@@ -314,7 +315,10 @@ function fetch_and_import_material_issues(frm) {
             });
 
             dialog.show();
-
+            dialog.$wrapper.find('.modal-dialog').css({
+                width: '90%',
+                maxWidth: '90%'
+            });
             // ===============================
             // 🔒 SINGLE SELECT + REMOVE DELETE
             // ===============================
