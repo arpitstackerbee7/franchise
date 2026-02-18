@@ -235,3 +235,36 @@ function toggle_consignee_supplier_fields(frm) {
     );
 }
 
+frappe.ui.form.on('Outgoing Logistics', {
+
+    refresh(frm) {
+        set_outgoing_type(frm);
+    },
+
+    source_doctype(frm) {
+        set_outgoing_type(frm);
+    },
+
+    source_document(frm) {
+        set_outgoing_type(frm);
+    }
+});
+
+function set_outgoing_type(frm) {
+
+    if (!frm.doc.source_doctype) return;
+
+    let type_map = {
+        "Sales Invoice": "Sales Invoice",
+        "Job Order": "Job Order",
+        "Job Work Order": "Job Order",
+        "Purchase Return": "Purchase Return",
+        "Stock Entry": "Transfer Out"
+    };
+
+    let logistics_type = type_map[frm.doc.source_doctype];
+
+    if (logistics_type) {
+        frm.set_value("outgoing_logistics_type", logistics_type);
+    }
+}

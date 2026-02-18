@@ -19,9 +19,10 @@ def get_outgoing_logistics_data(subcontracting_order):
         "transporter": sc.supplier,
         "date": frappe.utils.today(),
         "document_no": sc.name,
-        "document_date": sc.transaction_date,
+        # "document_date": sc.transaction_date,
         "quantity": sc.total_qty,
         "unit": "Nos",
-        "type": "S&D: Sales Invoice/Transfer In",
+        # "type": "S&D: Sales Invoice/Transfer In",
+        "type": "Job Order",
         "mode": "Land"
     }
