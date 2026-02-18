@@ -430,3 +430,10 @@ function set_outgoing_type(frm) {
         frm.set_value("outgoing_logistics_type", logistics_type);
     }
 }
+
+frappe.ui.form.on("Outgoing Logistics", {
+    type(frm) {
+        frm.clear_table("sales_invoice_no");
+        frm.refresh_field("sales_invoice_no");
+    }
+});
