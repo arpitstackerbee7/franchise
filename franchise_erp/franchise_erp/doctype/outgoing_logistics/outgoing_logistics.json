@@ -14,6 +14,7 @@
   "consignee",
   "consignee_supplier",
   "transporter",
+  "s_transporter",
   "column_break_kknq",
   "date",
   "mode",
@@ -74,6 +75,7 @@
    "reqd": 1
   },
   {
+   "depends_on": "eval:doc.consignee",
    "fetch_from": "consignee.custom_transporter",
    "fetch_if_empty": 1,
    "fieldname": "transporter",
@@ -311,13 +313,24 @@
    "fieldtype": "Data",
    "label": "Company Abbreviation",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.consignee_supplier",
+   "fetch_from": "consignee_supplier.custom_transporter",
+   "fetch_if_empty": 1,
+   "fieldname": "s_transporter",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Transporter",
+   "options": "Supplier",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-18 14:20:07.405324",
+ "modified": "2026-02-18 15:56:23.425186",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
