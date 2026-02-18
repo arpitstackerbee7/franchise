@@ -12,65 +12,227 @@ frappe.ui.form.on("Outgoing Logistics", {
                     ]
              };
         });
+        // if (frm.doc.docstatus === 0) {
+        //     frm.add_custom_button(
+        //         __("Fetch Sales Invoice ID"),
+        //         () => open_sales_invoice_mapper(frm),
+        //         __("Get Items From")
+        //     );
+        // }
         if (frm.doc.docstatus === 0) {
             frm.add_custom_button(
-                __("Fetch Sales Invoice ID"),
-                () => open_sales_invoice_mapper(frm),
+                __("Fetch ID"),
+                () => open_mapper_by_type(frm),
                 __("Get Items From")
             );
         }
 	},
 });
 
-function open_sales_invoice_mapper(frm) {
-    if (!frm.doc.consignee) frappe.throw({ title: __("Mandatory"), message: __("Please select consignee first") });
-    if (!frm.doc.owner_site) frappe.throw({ title: __("Mandatory"), message: __("Please select Owner Site first") });
+function open_mapper_by_type(frm) {
 
-   new frappe.ui.form.MultiSelectDialog({
-    doctype: "Sales Invoice",
-    target: frm,
-    setters: {
-        customer: frm.doc.consignee,
-        company: frm.doc.owner_site
-    },
-    add_filters_group: 1,
-    date_field: "transaction_date",
-    columns: [  
-        { fieldname: "name", label: __("Sales Invoice"), fieldtype: "Link", options: "Sales Invoice" },
-        "supplier", "company"
-    ],
-    get_query() {
-        return {
-            filters: [
-                ["Sales Invoice", "docstatus", "=", 1],
-                ["Sales Invoice", "custom_outgoing_logistics_reference", "=", ""],
-                ["Sales Invoice", "customer", "=", frm.doc.consignee],
-                ["Sales Invoice", "company", "=", frm.doc.owner_site]
-            ]
-        };
-    },
-  action(selections) {
-    if (!selections || !selections.length) {
-        frappe.msgprint(__("Please select at least one Sales Invoice"));
+    if (!frm.doc.type) {
+        frappe.throw(__("Please select Type first"));
+    }
+
+    if (!frm.doc.owner_site) {
+        frappe.throw(__("Please select Owner Site first"));
+    }
+
+    const type_map = {
+        "Sales Invoice": open_sales_invoice_mapper,
+        "Job Order": open_job_order_mapper,
+        "Purchase Return": open_purchase_return_mapper,
+        "Stock Entry": open_stock_entry_mapper
+    };
+
+    if (!type_map[frm.doc.type]) {
+        frappe.msgprint(__("Invalid Type selected"));
         return;
     }
 
-    // Get list of already added POs
-    const existing_sis = (frm.doc.sales_invoice_no || []).map(r => r.sales_invoice);
+    type_map[frm.doc.type](frm);
+}
+function open_sales_invoice_mapper(frm) {
 
-    selections.forEach(si => {
-        // Add only if not already in table
-        if (!existing_sis.includes(si)) {
+    if (!frm.doc.consignee) {
+        frappe.throw(__("Please select Consignee first"));
+    }
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Sales Invoice",
+        target: frm,
+        setters: {
+            customer: frm.doc.consignee,
+            company: frm.doc.owner_site
+        },
+        get_query() {
+            return {
+                filters: [
+                    ["Sales Invoice", "docstatus", "=", 1],
+                    ["Sales Invoice", "custom_outgoing_logistics_reference", "is", "not set"],
+                    ["Sales Invoice", "customer", "=", frm.doc.consignee],
+                    ["Sales Invoice", "company", "=", frm.doc.owner_site]
+                ]
+            };
+        },
+        action(selections) {
+            add_rows(frm, selections);
+            this.dialog.hide();
+        }
+    });
+}
+function open_job_order_mapper(frm) {
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Subcontracting Order",
+        target: frm,
+        setters: {
+            company: frm.doc.owner_site
+        },
+        get_query() {
+            let filters = [
+                ["Subcontracting Order", "docstatus", "=", 1],
+                ["Subcontracting Order", "custom_outgoing_logistics_reference", "is", "not set"],
+                ["Subcontracting Order", "company", "=", frm.doc.owner_site]
+            ];
+
+            if (frm.doc.consignee) {
+                filters.push(["Job Order", "customer", "=", frm.doc.consignee]);
+            }
+
+            if (frm.doc.supplier) {
+                filters.push(["Job Order", "supplier", "=", frm.doc.supplier]);
+            }
+
+            return { filters };
+        },
+        action(selections) {
+            add_rows(frm, selections);
+            this.dialog.hide();
+        }
+    });
+}
+function open_purchase_return_mapper(frm) {
+
+    if (!frm.doc.consignee_supplier) {
+        frappe.throw(__("Please select Supplier first"));
+    }
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Purchase Receipt",
+        target: frm,
+        setters: {
+            supplier: frm.doc.consignee_supplier,
+            is_return: 1
+        },
+        get_query() {
+            return {
+                filters: [
+                    ["Purchase Receipt", "is_return", "=", 1],
+                    ["Purchase Receipt", "docstatus", "=", 1],
+                    ["Purchase Receipt", "custom_outgoing_logistics_reference", "is", "not set"],
+                    ["Purchase Receipt", "supplier", "=", frm.doc.consignee_supplier],
+                    ["Purchase Receipt", "company", "=", frm.doc.owner_site]
+                ]
+            };
+        },
+        action(selections) {
+            add_rows(frm, selections);
+            this.dialog.hide();
+        }
+    });
+}
+
+function open_stock_entry_mapper(frm) {
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Stock Entry",
+        target: frm,
+        setters: {
+            stock_entry_type: "Transfer Out"
+        },
+        get_query() {
+            return {
+                filters: [
+                    ["Stock Entry", "docstatus", "=", 1],
+                    ["Stock Entry", "stock_entry_type", "=", "Transfer Out"],
+                    ["Stock Entry", "is_return", "=", 1],
+                    ["Stock Entry", "custom_outgoing_logistics_reference", "is", "not set"],
+                    ["Stock Entry", "company", "=", frm.doc.owner_site]
+                ]
+            };
+        },
+        action(selections) {
+            add_rows(frm, selections);
+            this.dialog.hide();
+        }
+    });
+}
+function add_rows(frm, selections) {
+
+    const existing = (frm.doc.sales_invoice_no || []).map(r => r.sales_invoice);
+
+    selections.forEach(name => {
+        if (!existing.includes(name)) {
             let row = frm.add_child("sales_invoice_no");
-            row.sales_invoice = si;
+            row.sales_invoice = name;
         }
     });
 
     frm.refresh_field("sales_invoice_no");
-    this.dialog.hide();
 }
-    });
-}
+
+
+// function open_sales_invoice_mapper(frm) {
+//     if (!frm.doc.consignee) frappe.throw({ title: __("Mandatory"), message: __("Please select consignee first") });
+//     if (!frm.doc.owner_site) frappe.throw({ title: __("Mandatory"), message: __("Please select Owner Site first") });
+
+//    new frappe.ui.form.MultiSelectDialog({
+//     doctype: "Sales Invoice",
+//     target: frm,
+//     setters: {
+//         customer: frm.doc.consignee,
+//         company: frm.doc.owner_site
+//     },
+//     add_filters_group: 1,
+//     date_field: "transaction_date",
+//     columns: [  
+//         { fieldname: "name", label: __("Sales Invoice"), fieldtype: "Link", options: "Sales Invoice" },
+//         "supplier", "company"
+//     ],
+//     get_query() {
+//         return {
+//             filters: [
+//                 ["Sales Invoice", "docstatus", "=", 1],
+//                 ["Sales Invoice", "custom_outgoing_logistics_reference", "=", ""],
+//                 ["Sales Invoice", "customer", "=", frm.doc.consignee],
+//                 ["Sales Invoice", "company", "=", frm.doc.owner_site]
+//             ]
+//         };
+//     },
+//   action(selections) {
+//     if (!selections || !selections.length) {
+//         frappe.msgprint(__("Please select at least one Sales Invoice"));
+//         return;
+//     }
+
+//     // Get list of already added POs
+//     const existing_sis = (frm.doc.sales_invoice_no || []).map(r => r.sales_invoice);
+
+//     selections.forEach(si => {
+//         // Add only if not already in table
+//         if (!existing_sis.includes(si)) {
+//             let row = frm.add_child("sales_invoice_no");
+//             row.sales_invoice = si;
+//         }
+//     });
+
+//     frm.refresh_field("sales_invoice_no");
+//     this.dialog.hide();
+// }
+//     });
+// }
 
 frappe.ui.form.on("Outgoing Logistics", {
 
