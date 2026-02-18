@@ -22,6 +22,7 @@
   "remarks",
   "column_break_sgwy",
   "sales_invoice_no",
+  "references",
   "transport_information_section",
   "quantity",
   "station_from",
@@ -288,6 +289,7 @@
   {
    "fieldname": "sales_invoice_no",
    "fieldtype": "Table",
+   "hidden": 1,
    "label": "Sales Invoice No",
    "options": "Sales Invoice Child Table"
   },
@@ -323,13 +325,19 @@
    "label": "Transporter",
    "mandatory_depends_on": "eval:doc.consignee_supplier",
    "options": "Supplier"
+  },
+  {
+   "fieldname": "references",
+   "fieldtype": "Table",
+   "label": "References",
+   "options": "Outgoing Logistics Reference"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-18 17:00:24.761518",
+ "modified": "2026-02-18 18:11:19.935479",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",

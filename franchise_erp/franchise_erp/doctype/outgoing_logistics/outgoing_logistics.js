@@ -1,6 +1,8 @@
 // Copyright (c) 2025, Franchise Erp and contributors
 // For license information, please see license.txt
 
+
+
 frappe.ui.form.on("Outgoing Logistics", {
 	refresh(frm) {
         frm.set_query("consignee_supplier", function() {
@@ -82,37 +84,9 @@ function open_sales_invoice_mapper(frm) {
         }
     });
 }
-function open_job_order_mapper(frm) {
+function open_job_order_mapper(frm) { new frappe.ui.form.MultiSelectDialog({ doctype: "Subcontracting Order", target: frm, setters: { company: frm.doc.owner_site }, get_query() { let filters = [ ["Subcontracting Order", "docstatus", "=", 1], ["Subcontracting Order", "custom_outgoing_logistics_reference", "is", "not set"], ["Subcontracting Order", "company", "=", frm.doc.owner_site] ]; if (frm.doc.consignee) { filters.push(["Job Order", "customer", "=", frm.doc.consignee]); } if (frm.doc.supplier) { filters.push(["Job Order", "supplier", "=", frm.doc.supplier]); } return { filters }; }, action(selections) { add_rows(frm, selections); this.dialog.hide(); } }); }
 
-    new frappe.ui.form.MultiSelectDialog({
-        doctype: "Subcontracting Order",
-        target: frm,
-        setters: {
-            company: frm.doc.owner_site
-        },
-        get_query() {
-            let filters = [
-                ["Subcontracting Order", "docstatus", "=", 1],
-                ["Subcontracting Order", "custom_outgoing_logistics_reference", "is", "not set"],
-                ["Subcontracting Order", "company", "=", frm.doc.owner_site]
-            ];
 
-            if (frm.doc.consignee) {
-                filters.push(["Job Order", "customer", "=", frm.doc.consignee]);
-            }
-
-            if (frm.doc.supplier) {
-                filters.push(["Job Order", "supplier", "=", frm.doc.supplier]);
-            }
-
-            return { filters };
-        },
-        action(selections) {
-            add_rows(frm, selections);
-            this.dialog.hide();
-        }
-    });
-}
 function open_purchase_return_mapper(frm) {
 
     if (!frm.doc.consignee_supplier) {
@@ -169,19 +143,43 @@ function open_stock_entry_mapper(frm) {
         }
     });
 }
+
+const TYPE_DOCTYPE_MAP = {
+    "Sales Invoice": "Sales Invoice",
+    "Job Order": "Subcontracting Order",
+    "Purchase Return": "Purchase Receipt",
+    "Stock Entry": "Stock Entry"
+};
 function add_rows(frm, selections) {
 
-    const existing = (frm.doc.sales_invoice_no || []).map(r => r.sales_invoice);
+    if (!frm.doc.type) {
+        frappe.throw(__("Please select Type first"));
+    }
+
+    const source_doctype = TYPE_DOCTYPE_MAP[frm.doc.type];
+
+    if (!source_doctype) {
+        frappe.throw(__("Invalid Type → Doctype mapping"));
+    }
+
+    const existing = (frm.doc.references || []).map(
+        r => `${r.source_doctype}::${r.source_name}`
+    );
 
     selections.forEach(name => {
-        if (!existing.includes(name)) {
-            let row = frm.add_child("sales_invoice_no");
-            row.sales_invoice = name;
+
+        const key = `${source_doctype}::${name}`;
+
+        if (!existing.includes(key)) {
+            let row = frm.add_child("references");
+            row.source_doctype = source_doctype;   // ✅ REAL doctype
+            row.source_name = name;                // ✅ Document ID
         }
     });
 
-    frm.refresh_field("sales_invoice_no");
+    frm.refresh_field("references");
 }
+
 
 
 // function open_sales_invoice_mapper(frm) {
