@@ -1,16 +1,24 @@
 frappe.ui.form.on('Subcontracting Order', {
     refresh(frm) {
-        // sirf submitted document ke liye
         if (frm.doc.docstatus !== 1 || !frm.doc.supplier) return;
 
-        // Supplier master se flag check
-        frappe.db.get_value(
-            "Supplier",
-            frm.doc.supplier,
-            "custom_gate_out_applicable",
-            (r) => {
-                if (r && r.custom_gate_out_applicable) {
-                    // ✅ tabhi button add hoga
+        // 1️⃣ First check if Stock Entry exists
+        frappe.db.exists("Stock Entry", {
+            subcontracting_order: frm.doc.name,
+            docstatus: 1
+        }).then(exists => {
+
+            if (!exists) return;  // ❌ If no stock entry, don't show button
+
+            // 2️⃣ If stock entry exists, then check Supplier flag
+            frappe.db.get_value(
+                "Supplier",
+                frm.doc.supplier,
+                "custom_gate_out_applicable"
+            ).then(r => {
+
+                if (r.message && r.message.custom_gate_out_applicable) {
+
                     frm.add_custom_button(
                         __('Outgoing Logistics'),
                         () => {
@@ -28,8 +36,10 @@ frappe.ui.form.on('Subcontracting Order', {
                         },
                         __('Create')
                     );
+
                 }
-            }
-        );
+            });
+
+        });
     }
 });
