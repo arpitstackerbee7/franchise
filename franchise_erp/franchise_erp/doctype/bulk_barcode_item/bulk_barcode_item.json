@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-02-18 13:28:14.110400",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "design_no",
+  "item_code",
+  "serial_no",
+  "qty",
+  "is_serialized"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Code",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Serial No"
+  },
+  {
+   "default": "1",
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Qty "
+  },
+  {
+   "default": "0",
+   "fieldname": "is_serialized",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "is_serialized"
+  },
+  {
+   "fetch_from": "item_code.custom_sup_design_no",
+   "fieldname": "design_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Design No"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-02-18 16:22:08.055853",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Bulk Barcode Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
