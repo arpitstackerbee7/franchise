@@ -39,6 +39,7 @@
   "remarks",
   "section_break_rsit",
   "received_details",
+  "references",
   "purchase_ids",
   "amended_from"
  ],
@@ -243,8 +244,16 @@
   {
    "fieldname": "purchase_ids",
    "fieldtype": "Table",
+   "hidden": 1,
    "label": "Purchase Id's",
    "options": "Purchase Items Details"
+  },
+  {
+   "fieldname": "references",
+   "fieldtype": "Table",
+   "label": "References",
+   "options": "Outgoing Logistics Reference",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -256,7 +265,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-02-12 17:32:17.480637",
+ "modified": "2026-02-20 15:49:38.876075",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

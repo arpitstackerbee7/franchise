@@ -332,27 +332,27 @@ frappe.ui.form.on("Outgoing Logistics", {
 });
 
 
-frappe.ui.form.on("Outgoing Logistics", {
-    document_no(frm) {
-        toggle_mandatory_logic(frm);
-    },
+// frappe.ui.form.on("Outgoing Logistics", {
+//     document_no(frm) {
+//         toggle_mandatory_logic(frm);
+//     },
 
-    before_save(frm) {
-        // If Job Work Order is selected, skip validation
-        if (frm.doc.document_no) {
-            return;
-        }
+//     before_save(frm) {
+//         // If Job Work Order is selected, skip validation
+//         if (frm.doc.document_no) {
+//             return;
+//         }
 
-        const rows = frm.doc.sales_invoice_no || [];
-        const has_sales_invoice = rows.some(row => row.sales_invoice);
+//         const rows = frm.doc.sales_invoice_no || [];
+//         const has_sales_invoice = rows.some(row => row.sales_invoice);
 
-        if (!has_sales_invoice) {
-            frappe.throw(__(
-                "At least one Sales Invoice is required to create Outgoing Logistics."
-            ));
-        }
-    }
-});
+//         if (!has_sales_invoice) {
+//             frappe.throw(__(
+//                 "At least one Sales Invoice is required to create Outgoing Logistics."
+//             ));
+//         }
+//     }
+// });
 
 function toggle_consignee_supplier_fields(frm) {
     if (!frm.doc.type) return;

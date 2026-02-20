@@ -18,21 +18,48 @@ class IncomingLogistics(Document):
         self.validate_unique_invoice_per_consignor()
 
 
+    # def on_submit(self):
+    #     # Loop through all linked Purchase Orders
+    #     for po_link in self.purchase_ids:
+    #         if not po_link.purchase_order:
+    #             continue
+
+    #         # Get the Purchase Order document
+    #         po = frappe.get_doc("Purchase Order", po_link.purchase_order)
+
+    #         # Loop through items in PO and map Incoming Logistics ID
+    #         for po_item in po.items:
+    #             po_item.custom_incoming_logistic = self.name
+
+    #         # Save the PO with updated field
+    #         po.save(ignore_permissions=True)
+   
     def on_submit(self):
-        # Loop through all linked Purchase Orders
-        for po_link in self.purchase_ids:
-            if not po_link.purchase_order:
+
+        for row in self.purchase_ids:
+            if not row.reference_doctype or not row.reference_name:
                 continue
 
-            # Get the Purchase Order document
-            po = frappe.get_doc("Purchase Order", po_link.purchase_order)
+            # =================================================
+            # 🔹 JOB WORK RECEIPT → Subcontracting Receipt Item
+            # =================================================
+            if row.reference_doctype == "Job Work Receipt":
+                frappe.db.sql("""
+                    UPDATE `tabSubcontracting Receipt Item`
+                    SET custom_incoming_logistic = %s
+                    WHERE parent = %s
+                """, (self.name, row.reference_name))
 
-            # Loop through items in PO and map Incoming Logistics ID
-            for po_item in po.items:
-                po_item.custom_incoming_logistic = self.name
+            # =====================================
+            # 🔹 PURCHASE ORDER → Purchase Order Item
+            # =====================================
+            elif row.reference_doctype == "Purchase Order":
+                frappe.db.sql("""
+                    UPDATE `tabPurchase Order Item`
+                    SET custom_incoming_logistic = %s
+                    WHERE parent = %s
+                """, (self.name, row.reference_name))
 
-            # Save the PO with updated field
-            po.save(ignore_permissions=True)
 
     # def validate(self):
 

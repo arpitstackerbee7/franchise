@@ -33,21 +33,81 @@ class GateEntry(Document):
         il_doc.save(ignore_permissions=True)
 
 # fetch box barcode list
+# @frappe.whitelist()
+# def get_data_for_gate_entry(incoming_logistics):
+#     il = frappe.get_doc("Incoming Logistics", incoming_logistics)
+
+#     return {
+#         # -------- Header Fields --------
+#         "lr_quantity": il.lr_quantity,
+#          "type": il.type,
+#           "lr_quantity": il.lr_quantity,
+#         "document_no": il.lr_document_no,
+#         "declaration_amount": il.declaration_amount,
+#         "qty_as_per_invoice":il.received_qty,
+
+#         # -------- Purchase Orders --------
+#         "purchase_orders": [
+#             {
+#                 "purchase_order": row.purchase_order
+#             }
+#             for row in il.purchase_ids
+#         ],
+
+#         # -------- Box Barcodes --------
+#         "box_barcodes": [
+#             {
+#                 "box_barcode": row.box_barcode,
+#                 "incoming_logistics_no": row.incoming_logistics_no,
+#                 "status": row.status
+#             }
+#             for row in il.gate_entry_box_barcode
+#         ]
+#     }
 @frappe.whitelist()
 def get_data_for_gate_entry(incoming_logistics):
+
     il = frappe.get_doc("Incoming Logistics", incoming_logistics)
 
+    # -------------------------------------------------
+    # 🔹 Detect party based on Incoming Type
+    # -------------------------------------------------
+    party_type = None
+    party = None
+
+    if il.type:
+        type_doc = frappe.get_doc("Incoming Logistics Type", il.type)
+
+        if getattr(type_doc, "is_supplier", 0):
+            party_type = "Supplier"
+            party = il.consignor
+
+        elif getattr(type_doc, "is_customer", 0):
+            party_type = "Customer"
+            # 👉 agar field name different ho to yaha change karo
+            party = il.customer or il.consignor_customer
+
+    # -------------------------------------------------
+    # 🔹 Build response
+    # -------------------------------------------------
     return {
         # -------- Header Fields --------
+        "incoming_logistics": il.name,
+        "type": il.type,
         "lr_quantity": il.lr_quantity,
         "document_no": il.lr_document_no,
         "declaration_amount": il.declaration_amount,
-        "qty_as_per_invoice":il.received_qty,
+        "qty_as_per_invoice": il.received_qty,
 
-        # -------- Purchase Orders --------
+        # -------- Party Logic --------
+        "party_type": party_type,     # Supplier / Customer
+        "party": party,               # Supplier name / Customer name
+
+        # -------- References (Purchase / Job / etc) --------
         "purchase_orders": [
             {
-                "purchase_order": row.purchase_order
+                "reference_doctype": row.reference_doctype,
+                "reference_name": row.reference_name
             }
             for row in il.purchase_ids
         ],

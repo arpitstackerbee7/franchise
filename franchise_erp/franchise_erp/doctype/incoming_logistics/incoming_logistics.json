@@ -13,6 +13,7 @@
   "owner_site",
   "date",
   "transporter",
+  "c_transporter",
   "invoice_date",
   "gate_entry",
   "gate_entry_no",
@@ -58,7 +59,8 @@
   "others_section",
   "remarks",
   "gate_entry_box_barcode",
-  "purchase_ids"
+  "purchase_ids",
+  "references"
  ],
  "fields": [
   {
@@ -102,13 +104,14 @@
    "options": "Supplier"
   },
   {
+   "depends_on": "eval:doc.consignor",
    "fetch_from": "consignor.custom_transporter",
    "fetch_if_empty": 1,
    "fieldname": "transporter",
    "fieldtype": "Link",
    "label": "Transporter",
-   "options": "Supplier",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.consignor",
+   "options": "Supplier"
   },
   {
    "fieldname": "invoice_no",
@@ -365,6 +368,7 @@
   {
    "fieldname": "purchase_ids",
    "fieldtype": "Table",
+   "hidden": 1,
    "label": "Purchase Id's",
    "options": "Purchase Items Details"
   },
@@ -373,6 +377,23 @@
    "fieldtype": "Link",
    "label": "Customer ",
    "options": "Customer"
+  },
+  {
+   "depends_on": "eval:doc.consignor_customer",
+   "fetch_from": "consignor_customer.custom_transporter",
+   "fetch_if_empty": 1,
+   "fieldname": "c_transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "mandatory_depends_on": "eval:doc.consignor_customer",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "references",
+   "fieldtype": "Table",
+   "label": "References",
+   "options": "Outgoing Logistics Reference",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -384,7 +405,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-02-12 17:32:10.246934",
+ "modified": "2026-02-20 15:46:05.993042",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

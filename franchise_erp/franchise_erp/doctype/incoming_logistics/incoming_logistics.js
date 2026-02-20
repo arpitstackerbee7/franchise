@@ -1,58 +1,67 @@
 frappe.ui.form.on("Incoming Logistics", {
-    refresh(frm) {
-        frm.set_query("transporter", function() {
-            return { filters: { is_transporter: 1 } };
-        });
+        refresh(frm) {
 
-        frm.set_query("consignor", function() {
-            return { 
-                filters: [
-                        ["is_transporter", "=", 0],
-                        ["custom_is_agent", "=", 0],
-                        ["custom_gate_entry", "=", 1]
-                    ]
-             };
-        });
+        frm.set_query("transporter", () => ({
+            filters: { is_transporter: 1 }
+        }));
 
+        frm.set_query("consignor", () => ({
+            filters: [
+                ["is_transporter", "=", 0],
+                ["custom_is_agent", "=", 0],
+                ["custom_gate_entry", "=", 1]
+            ]
+        }));
+
+        // ==============================
+        // FETCH ID BUTTON
+        // ==============================
         if (frm.doc.docstatus === 0) {
             frm.add_custom_button(
-                __("Fetch ID "),
-                () => open_purchase_order_mapper(frm),
+                __("Fetch ID"),
+                () => open_incoming_mapper_by_type(frm),
                 __("Get Items From")
             );
         }
 
-        // Only show button for Submitted docs
-        if (frm.doc.docstatus !== 1) return;
-        if (frm.doc.status === "Received") return;
+        // ==============================
+        // CREATE GATE ENTRY BUTTON
+        // ==============================
+        if (frm.doc.docstatus !== 1 || frm.doc.status === "Received") return;
 
         frm.add_custom_button(
             __("Create Gate Entry"),
-            function () {
-                // Map all selected purchase orders
-                const po_list = (frm.doc.purchase_ids || []).map(row => row.purchase_order);
+            () => {
+
+                if (!frm.doc.references || !frm.doc.references.length) {
+                    frappe.throw("No references found");
+                }
+
+                const refs = frm.doc.references.map(r => ({
+                    source_doctype: r.source_doctype,
+                    source_name: r.source_name
+                }));
 
                 frappe.route_options = {
                     incoming_logistics: frm.doc.name,
                     owner_site: frm.doc.owner_site,
                     consignor: frm.doc.consignor,
                     transporter: frm.doc.transporter,
-                    invoice_no: frm.doc.invoice_no,
                     type: frm.doc.type,
-                    date: frm.doc.date,
-                    gate_entry_box_barcode: frm.doc.gate_entry_box_barcode,
-                    lr_quantity: frm.doc.lr_quantity,
-                    purchase_orders: po_list, // send array of POs instead of single field
-                    document_no: frm.doc.lr_document_no,
-                    declaration_amount: frm.doc.declaration_amount,
-                    purchase_ids :frm.doc.purchase_ids,
-                    quantity_as_per_invoice: frm.doc.received_qty
+                    references: refs
                 };
 
                 frappe.set_route("Form", "Gate Entry", "new-gate-entry");
             },
             __("Actions")
         );
+    },
+
+    // ✅ ONLY ONE TYPE EVENT
+    type(frm) {
+        toggle_consignor_customer_fields(frm);
+        frm.clear_table("references");
+        frm.refresh_field("references");
     },
     owner_site(frm) {
         if (frm.doc.owner_site) fetch_company_city(frm);
@@ -110,6 +119,148 @@ frappe.ui.form.on("Incoming Logistics", {
     //     hide_fields.forEach(field => frm.set_df_property(field, 'hidden', hide));
     }
 });
+
+// ===================================================
+// TYPE → DOCTYPE MAP
+// ===================================================
+const INCOMING_TYPE_MAP = {
+    "Job Receipt": "Job Work Receipt",
+    "Purchase": "Purchase Order",
+    "Sales Return": "Sales Invoice",
+    "Transfer IN": "Stock Entry",
+    "WIP Return": "Stock Entry"
+};
+
+
+// ===================================================
+// FETCH HANDLER
+// ===================================================
+function open_incoming_mapper_by_type(frm) {
+
+    if (!frm.doc.type) frappe.throw("Please select Type first");
+    if (!frm.doc.owner_site) frappe.throw("Please select Owner Site first");
+
+    const map = {
+        "Purchase": open_purchase_order_mapper,
+        "Job Receipt": open_job_receipt_mapper
+    };
+    map[frm.doc.type]?.(frm);
+    // map[frm.doc.type]?.(frm) || frappe.throw("Invalid Incoming Type");
+}
+
+
+// ===================================================
+// PURCHASE ORDER
+// ===================================================
+function open_purchase_order_mapper(frm) {
+
+    if (!frm.doc.consignor) {
+        frappe.throw("Please select Supplier first");
+    }
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Purchase Order",
+        target: frm,
+        setters: {
+            supplier: frm.doc.consignor,
+            company: frm.doc.owner_site
+        },
+        get_query() {
+            return {
+                filters: [
+                    ["docstatus", "=", 1],
+                    ["supplier", "=", frm.doc.consignor],
+                    ["company", "=", frm.doc.owner_site]
+                ]
+            };
+        },
+        action(selections) {
+            add_reference_rows(frm, selections);
+            this.dialog.hide();
+        }
+    });
+}
+
+
+// ===================================================
+// JOB RECEIPT
+// ===================================================
+function open_job_receipt_mapper(frm) {
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Job Work Receipt",
+        target: frm,
+        setters: {
+            company: frm.doc.owner_site
+        },
+        get_query() {
+            return {
+                filters: [
+                    // ["docstatus", "=", 1],
+                    ["company", "=", frm.doc.owner_site]
+                ]
+            };
+        },
+        action(selections) {
+            add_reference_rows(frm, selections);
+            this.dialog.hide();
+        }
+    });
+}
+
+
+// ===================================================
+// ADD ROWS INTO `references` CHILD TABLE
+// ===================================================
+function add_reference_rows(frm, selections) {
+
+    const source_doctype = INCOMING_TYPE_MAP[frm.doc.type];
+    if (!source_doctype) frappe.throw("Invalid Type mapping");
+
+    const existing = (frm.doc.references || []).map(
+        r => `${r.source_doctype}::${r.source_name}`
+    );
+
+    selections.forEach(name => {
+
+        const key = `${source_doctype}::${name}`;
+        if (existing.includes(key)) return;
+
+        let row = frm.add_child("references");
+        row.source_doctype = source_doctype;
+        row.source_name = name;
+    });
+
+    frm.refresh_field("references");
+}
+
+
+// ===================================================
+// CONSIGNOR / CUSTOMER TOGGLE
+// ===================================================
+function toggle_consignor_customer_fields(frm) {
+
+    const supplier_types = ["Purchase", "Job Receipt", "WIP Return"];
+    const customer_types = ["Sales Return"];
+
+    if (supplier_types.includes(frm.doc.type)) {
+        frm.set_df_property("consignor", "hidden", 0);
+        frm.set_df_property("customer", "hidden", 1);
+        frm.set_value("customer", null);
+    }
+    else if (customer_types.includes(frm.doc.type)) {
+        frm.set_df_property("customer", "hidden", 0);
+        frm.set_df_property("consignor", "hidden", 1);
+        frm.set_value("consignor", null);
+    }
+    else {
+        frm.set_df_property("customer", "hidden", 1);
+        frm.set_df_property("consignor", "hidden", 1);
+    }
+}
+
+
+
 
 /* ---------------- COMPANY → station_to ---------------- */
 async function fetch_company_city(frm) {
@@ -170,58 +321,7 @@ function validate_date_not_future(frm, fieldname) {
     }
 }
 
-function open_purchase_order_mapper(frm) {
-    if (!frm.doc.consignor) frappe.throw({ title: __("Mandatory"), message: __("Please select consignor first") });
-    if (!frm.doc.owner_site) frappe.throw({ title: __("Mandatory"), message: __("Please select Owner Site first") });
 
-   new frappe.ui.form.MultiSelectDialog({
-    doctype: "Purchase Order",
-    target: frm,
-    setters: {
-        supplier: frm.doc.consignor,
-        company: frm.doc.owner_site
-    },
-    add_filters_group: 1,
-    date_field: "transaction_date",
-    columns: [
-        { fieldname: "name", label: __("Purchase Order"), fieldtype: "Link", options: "Purchase Order" },
-        "supplier", "company", "schedule_date"
-    ],
-    get_query() {
-        return {
-            filters: [
-                ["Purchase Order", "docstatus", "=", 1],
-                ["Purchase Order", "status", "=", "To Receive and Bill"],
-                ["Purchase Order", "supplier", "=", frm.doc.consignor],
-                ["Purchase Order", "company", "=", frm.doc.owner_site],
-
-                // ✅ NEW CONDITION
-                // ["Purchase Order Item", "custom_incoming_logistic", "is", "not set"]
-            ]
-        };
-    },
-  action(selections) {
-    if (!selections || !selections.length) {
-        frappe.msgprint(__("Please select at least one Purchase Order"));
-        return;
-    }
-
-    // Get list of already added POs
-    const existing_pos = (frm.doc.purchase_ids || []).map(r => r.purchase_order);
-
-    selections.forEach(po => {
-        // Add only if not already in table
-        if (!existing_pos.includes(po)) {
-            let row = frm.add_child("purchase_ids");
-            row.purchase_order = po;
-        }
-    });
-
-    frm.refresh_field("purchase_ids");
-    this.dialog.hide();
-}
-    });
-}
 
 frappe.ui.form.on("Incoming Logistics", {
     refresh(frm) {
@@ -235,12 +335,26 @@ frappe.ui.form.on("Incoming Logistics", {
 
 
 
+// frappe.ui.form.on("Incoming Logistics", {
+//     validate(frm) {
+//         if (!frm.doc.purchase_ids || frm.doc.purchase_ids.length === 0) {
+//             frappe.msgprint({
+//                 title: __("Validation Error"),
+//                 message: __("Please add at least one Purchase Order before saving."),
+//                 indicator: "red"
+//             });
+
+//             frappe.validated = false;
+//         }
+//     }
+// });
+
 frappe.ui.form.on("Incoming Logistics", {
     validate(frm) {
-        if (!frm.doc.purchase_ids || frm.doc.purchase_ids.length === 0) {
+        if (!frm.doc.references || frm.doc.references.length === 0) {
             frappe.msgprint({
                 title: __("Validation Error"),
-                message: __("Please add at least one Purchase Order before saving."),
+                message: __("Please add at least one Purchase Id before saving."),
                 indicator: "red"
             });
 
@@ -248,7 +362,6 @@ frappe.ui.form.on("Incoming Logistics", {
         }
     }
 });
-
 function toggle_consignor_fields(frm) {
     if (!frm.doc.type) return;
 
