@@ -195,7 +195,7 @@ function open_purchase_order_mapper(frm) {
 function open_job_receipt_mapper(frm) {
 
     new frappe.ui.form.MultiSelectDialog({
-        doctype: "Job Work Receipt",
+        doctype: "Subcontracting Receipt",
         target: frm,
         setters: {
             company: frm.doc.owner_site
