@@ -131,7 +131,7 @@ frappe.ui.form.on("Incoming Logistics", {
 // TYPE → DOCTYPE MAP
 // ===================================================
 const INCOMING_TYPE_MAP = {
-    "Job Receipt": "Job Work Receipt",
+    "Job Receipt": "Subcontracting Receipt",
     "Purchase": "Purchase Order",
     "Sales Return": "Sales Invoice",
     "Transfer IN": "Stock Entry",
