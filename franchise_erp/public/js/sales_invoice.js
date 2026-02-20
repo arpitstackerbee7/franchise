@@ -331,10 +331,11 @@ frappe.ui.form.on("Sales Invoice", {
                         // Append child row
                         let row = frappe.model.add_child(
                             doc,
-                            "sales_invoice_no",
-                            "sales_invoice_no"
+                            "references",
+                            "references"
                         );
-                        row.sales_invoice = frm.doc.name;
+                        row.source_doctype = 'Sales Invoice';
+                        row.source_name = frm.doc.name;
 
                         frappe.set_route("Form", "Outgoing Logistics", doc.name);
                     });
