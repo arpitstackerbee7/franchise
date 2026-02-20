@@ -169,12 +169,15 @@ frappe.ui.form.on("Gate Entry", {
                 // -------------------------------
                 // References (Purchase / Job etc)
                 // -------------------------------
-                frm.clear_table("references");
-                (data.purchase_orders || []).forEach(row => {
-                    let child = frm.add_child("references");
-                    child.source_doctype = row.reference_doctype;
-                    child.source_name = row.reference_name;
-                });
+               frm.clear_table("references");
+
+(data.purchase_orders || []).forEach(row => {
+    let child = frm.add_child("references");
+    child.source_doctype = row.reference_doctype;
+    child.source_name = row.reference_name;
+});
+
+frm.refresh_field("references");
 
                 // -------------------------------
                 // Box Barcodes
