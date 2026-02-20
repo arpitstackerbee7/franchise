@@ -196,7 +196,7 @@ function open_job_receipt_mapper(frm) {
         get_query() {
             return {
                 filters: [
-                    // ["docstatus", "=", 1],
+                    ["docstatus", "=", 1],
                     ["company", "=", frm.doc.owner_site]
                 ]
             };

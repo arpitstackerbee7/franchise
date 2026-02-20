@@ -64,13 +64,15 @@ class GateEntry(Document):
 #             for row in il.gate_entry_box_barcode
 #         ]
 #     }
+import frappe
+
 @frappe.whitelist()
 def get_data_for_gate_entry(incoming_logistics):
 
     il = frappe.get_doc("Incoming Logistics", incoming_logistics)
 
     # -------------------------------------------------
-    # 🔹 Detect party based on Incoming Type
+    # 🔹 Detect party based on Incoming Logistics Type
     # -------------------------------------------------
     party_type = None
     party = None
@@ -84,7 +86,6 @@ def get_data_for_gate_entry(incoming_logistics):
 
         elif getattr(type_doc, "is_customer", 0):
             party_type = "Customer"
-            # 👉 agar field name different ho to yaha change karo
             party = il.customer or il.consignor_customer
 
     # -------------------------------------------------
@@ -100,16 +101,16 @@ def get_data_for_gate_entry(incoming_logistics):
         "qty_as_per_invoice": il.received_qty,
 
         # -------- Party Logic --------
-        "party_type": party_type,     # Supplier / Customer
-        "party": party,               # Supplier name / Customer name
+        "party_type": party_type,   # Supplier / Customer
+        "party": party,
 
-        # -------- References (Purchase / Job / etc) --------
+        # -------- References (🔥 KEY MATCH FIX) --------
         "purchase_orders": [
             {
-                "reference_doctype": row.reference_doctype,
-                "reference_name": row.reference_name
+                "reference_doctype": row.source_doctype,
+                "reference_name": row.source_name
             }
-            for row in il.purchase_ids
+            for row in il.references
         ],
 
         # -------- Box Barcodes --------
@@ -381,3 +382,8 @@ def get_pending_gate_entries(supplier):
             })
 
     return result
+
+
+def validate(self):
+    if not self.references or len(self.references) == 0:
+        frappe.throw("At least one Reference is required before saving.")

@@ -81,6 +81,7 @@
    "fieldtype": "Link",
    "label": "Type",
    "options": "Incoming Logistics Type",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -88,6 +89,7 @@
    "fieldtype": "Link",
    "label": "Consignor",
    "options": "Supplier",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -249,6 +251,7 @@
    "options": "Purchase Items Details"
   },
   {
+   "default": "0",
    "fieldname": "references",
    "fieldtype": "Table",
    "label": "References",
@@ -265,7 +268,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-02-20 15:49:38.876075",
+ "modified": "2026-02-20 17:26:45.216711",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
