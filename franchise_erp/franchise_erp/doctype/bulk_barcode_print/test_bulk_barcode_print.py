@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestBulkBarcodePrinting(FrappeTestCase):
+class TestBulkBarcodePrint(FrappeTestCase):
 	pass
