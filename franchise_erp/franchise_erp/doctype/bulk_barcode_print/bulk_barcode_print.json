@@ -1,15 +1,15 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-02-18 13:31:43.304718",
+ "autoname": "BBP-.YYYY.MM.-.#####",
+ "creation": "2026-02-20 14:01:29.753397",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "is_serialized",
   "scan_barcode",
-  "column_break_byyf",
-  "item_type",
-  "section_break_mkrw",
-  "items"
+  "section_break_ndbh",
+  "table_xmqw"
  ],
  "fields": [
   {
@@ -18,33 +18,29 @@
    "label": "Scan Barcode"
   },
   {
-   "fieldname": "section_break_mkrw",
+   "fieldname": "section_break_ndbh",
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "items",
+   "default": "0",
+   "fieldname": "is_serialized",
+   "fieldtype": "Check",
+   "label": "Is Serialized"
+  },
+  {
+   "fieldname": "table_xmqw",
    "fieldtype": "Table",
-   "label": "Bulk Barcode Item",
    "options": "Bulk Barcode Item"
-  },
-  {
-   "fieldname": "column_break_byyf",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "item_type",
-   "fieldtype": "Select",
-   "label": "Item Type",
-   "options": "Serial No\nNon Serial No"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-18 21:23:43.286315",
+ "modified": "2026-02-20 15:50:29.593158",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
- "name": "Bulk Barcode Printing",
+ "name": "Bulk Barcode Print",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

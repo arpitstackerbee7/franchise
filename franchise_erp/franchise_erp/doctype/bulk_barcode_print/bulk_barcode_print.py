@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class BulkBarcodePrinting(Document):
+class BulkBarcodePrint(Document):
 	pass
