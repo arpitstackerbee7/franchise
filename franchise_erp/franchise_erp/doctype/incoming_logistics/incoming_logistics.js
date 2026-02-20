@@ -41,6 +41,12 @@ frappe.ui.form.on("Incoming Logistics", {
                     source_doctype: r.source_doctype,
                     source_name: r.source_name
                 }));
+                const barcode = frm.doc.gate_entry_box_barcode.map(r => ({
+                    box_barcode: r.box_barcode,
+                    status: r.status,
+                    incoming_logistics_no: r.incoming_logistics_no,
+                    total_barcode_qty: r.total_barcode_qty
+                }));
 
                 frappe.route_options = {
                     incoming_logistics: frm.doc.name,
@@ -48,7 +54,8 @@ frappe.ui.form.on("Incoming Logistics", {
                     consignor: frm.doc.consignor,
                     transporter: frm.doc.transporter,
                     type: frm.doc.type,
-                    references: refs
+                    references: refs,
+                    gate_entry_box_barcode:barcode
                 };
 
                 frappe.set_route("Form", "Gate Entry", "new-gate-entry");
