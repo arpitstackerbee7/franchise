@@ -41,11 +41,11 @@ class IncomingLogistics(Document):
                 continue
 
             # =================================================
-            # 🔹 JOB WORK RECEIPT → Subcontracting Receipt Item
+            # 🔹 JOB WORK ORDER → Subcontracting ORDER Item
             # =================================================
-            if row.reference_doctype == "Job Work Receipt":
+            if row.reference_doctype == "Job Work Order":
                 frappe.db.sql("""
-                    UPDATE `tabSubcontracting Receipt Item`
+                    UPDATE `tabSubcontracting Order Item`
                     SET custom_incoming_logistic = %s
                     WHERE parent = %s
                 """, (self.name, row.reference_name))
