@@ -131,7 +131,7 @@ frappe.ui.form.on("Incoming Logistics", {
 // TYPE → DOCTYPE MAP
 // ===================================================
 const INCOMING_TYPE_MAP = {
-    "Job Receipt": "Subcontracting Receipt",
+    "Job Receipt": "Subcontracting Order",
     "Purchase": "Purchase Order",
     "Sales Return": "Sales Invoice",
     "Transfer IN": "Stock Entry",
@@ -195,7 +195,7 @@ function open_purchase_order_mapper(frm) {
 function open_job_receipt_mapper(frm) {
 
     new frappe.ui.form.MultiSelectDialog({
-        doctype: "Subcontracting Receipt",
+        doctype: "Subcontracting Order",
         target: frm,
         setters: {
             company: frm.doc.owner_site
