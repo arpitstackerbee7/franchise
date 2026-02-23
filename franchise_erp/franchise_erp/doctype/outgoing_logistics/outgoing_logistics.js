@@ -45,7 +45,7 @@ function open_mapper_by_type(frm) {
         "Sales Invoice": open_sales_invoice_mapper,
         "Job Order": open_job_order_mapper,
         "Purchase Return": open_purchase_return_mapper,
-        "Stock Entry": open_stock_entry_mapper
+        "Transfer Out": open_stock_entry_mapper
     };
 
     if (!type_map[frm.doc.type]) {
@@ -84,9 +84,52 @@ function open_sales_invoice_mapper(frm) {
         }
     });
 }
-function open_job_order_mapper(frm) { new frappe.ui.form.MultiSelectDialog({ doctype: "Subcontracting Order", target: frm, setters: { company: frm.doc.owner_site }, get_query() { let filters = [ ["Subcontracting Order", "docstatus", "=", 1], ["Subcontracting Order", "custom_outgoing_logistics_reference", "is", "not set"], ["Subcontracting Order", "company", "=", frm.doc.owner_site] ]; if (frm.doc.consignee) { filters.push(["Job Order", "customer", "=", frm.doc.consignee]); } if (frm.doc.supplier) { filters.push(["Job Order", "supplier", "=", frm.doc.supplier]); } return { filters }; }, action(selections) { add_rows(frm, selections); this.dialog.hide(); } }); }
+// function open_job_order_mapper(frm) { 
+//     new frappe.ui.form.MultiSelectDialog({ doctype: "Subcontracting Order", target: frm, setters: { company: frm.doc.owner_site }, get_query() { let filters = [ ["Subcontracting Order", "docstatus", "=", 1], ["Subcontracting Order", "custom_outgoing_logistics_reference", "is", "not set"], ["Subcontracting Order", "company", "=", frm.doc.owner_site] ]; if (frm.doc.consignee) { filters.push(["Job Order", "customer", "=", frm.doc.consignee]); } if (frm.doc.supplier) { filters.push(["Job Order", "supplier", "=", frm.doc.supplier]); } return { filters }; }, action(selections) { add_rows(frm, selections); this.dialog.hide(); } }); }
 
+function open_job_order_mapper(frm) {
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Subcontracting Order",
+        target: frm,
 
+        setters: {
+            company: frm.doc.owner_site
+        },
+
+        get_query() {
+            let filters = [
+                ["Subcontracting Order", "docstatus", "=", 1],
+                ["Subcontracting Order", "custom_outgoing_logistics_reference", "is", "not set"],
+                ["Subcontracting Order", "company", "=", frm.doc.owner_site]
+            ];
+
+            if (frm.doc.consignee) {
+                filters.push([
+                    "Subcontracting Order",
+                    "customer",
+                    "=",
+                    frm.doc.consignee
+                ]);
+            }
+
+            if (frm.doc.supplier) {
+                filters.push([
+                    "Subcontracting Order",
+                    "supplier",
+                    "=",
+                    frm.doc.supplier
+                ]);
+            }
+
+            return { filters };
+        },
+
+        action(selections) {
+            add_rows(frm, selections);
+            this.dialog.hide();
+        }
+    });
+}
 function open_purchase_return_mapper(frm) {
 
     if (!frm.doc.consignee_supplier) {
@@ -435,3 +478,5 @@ frappe.ui.form.on("Outgoing Logistics", {
         frm.refresh_field("sales_invoice_no");
     }
 });
+
+

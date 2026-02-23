@@ -9,7 +9,7 @@ def create_incoming_logistics_from_scr(subcontracting_receipt):
     # --- Reference ---
     il.reference_doctype = "Subcontracting Receipt"
     il.invoice_no = scr.name
-
+    il.type = "Job Receipt"
     # --- Dates & Mode ---
     il.mode = scr.mode_of_transport or "Road"
     il.lr_date = scr.lr_date
