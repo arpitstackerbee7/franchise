@@ -246,8 +246,8 @@ def validate_intercompany_transfer(doc, method):
         if doc.company == doc.custom_to_company:
             frappe.throw(_("From Company and To Company cannot be same"))
 
-        if doc.custom_transaction_type:
-            frappe.throw(_("Transaction Type must be empty"))
+        # if doc.custom_transaction_type:
+        #     frappe.throw(_("Transaction Type must be empty"))
 
 
 import frappe
