@@ -31,6 +31,7 @@ class OutgoingLogistics(Document):
                 row.source_doctype,
                 row.source_name,
                 {
+                    "custom_outgoing_logistics_reference": self.name,
                     "custom_outgoing_logistics_no": self.name,
                     "custom_document_nolr_no": self.document_no
                 },
