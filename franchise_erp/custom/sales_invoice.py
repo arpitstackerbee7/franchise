@@ -642,10 +642,6 @@ def get_purchase_tax_template(company, supplier):
 import frappe
 from frappe import _
 
-import frappe
-from frappe import _
-
-
 @frappe.whitelist()
 def create_inter_company_purchase_receipt(sales_invoice):
 
@@ -730,17 +726,30 @@ def create_inter_company_purchase_receipt(sales_invoice):
     # =====================================================
     # WAREHOUSE
     # =====================================================
+    # warehouse = frappe.get_value(
+    #     "Warehouse",
+    #     {
+    #         "company": pr.company,
+    #         "is_group": 0
+    #     },
+    #     "name"
+    # )
+
+
+    # if not warehouse:
+    #     frappe.throw(_("No warehouse found for company {0}").format(pr.company))
+
     warehouse = frappe.get_value(
-        "Warehouse",
-        {
-            "company": pr.company,
-            "is_group": 0
-        },
-        "name"
+        "SIS Configuration",   # <-- aapka config doctype
+        {"name": pr.company},
+        "warehouse"  # <-- aapka warehouse field
     )
 
     if not warehouse:
-        frappe.throw(_("No warehouse found for company {0}").format(pr.company))
+        frappe.throw(
+            _("Default Warehouse not set in SIS Configuration for company {0}")
+            .format(pr.company)
+        )
 
     # =====================================================
     # ITEMS (COPY SERIAL NO ALSO)
