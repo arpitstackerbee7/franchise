@@ -653,3 +653,113 @@ function make_items_negative(frm) {
     });
 }
 
+
+
+
+frappe.ui.form.on('Sales Invoice', {
+    refresh(frm) {
+        frm.add_custom_button(__('Export Packing Excel'), function() {
+            let item_codes = [...new Set(frm.doc.items.map(i => i.item_code))];
+            frappe.call({
+                method: "frappe.client.get_list",
+                args: {
+                    doctype: "Item",
+                    filters: { "name": ["in", item_codes] },
+                    fields: ["name", "custom_group_collection", "custom_top_fabrics", "custom_colour_name", "custom_size"],
+                    limit_page_length: 500
+                },
+                callback: function(r) {
+                    let item_map = {};
+                    if (r.message) {
+                        r.message.forEach(d => { item_map[d.name] = d; });
+                    }
+                    generate_fixed_excel(frm, item_map);
+                }
+            });
+        }, __("Actions"));
+    }
+});
+
+function generate_fixed_excel(frm, item_map) {
+    let items = frm.doc.items;
+    let totalQty = 0;
+    let totalAmt = 0;
+
+    // Excel structure with explicit attributes for LibreOffice
+    let excel_html = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+        <meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">
+        <style>
+            td, th { border: 0.5pt solid #000000; font-family: Calibri, sans-serif; font-size: 10pt; padding: 5px; }
+            .title { font-size: 14pt; font-weight: bold; text-align: center; }
+            .header { font-weight: bold; background-color: #D3D3D3; text-align: center; }
+        </style>
+        </head>
+        <body>
+        <table border="1">
+            <!-- Title Row with Yellow Background -->
+            <tr>
+                <th colspan="12" bgcolor="#FFFF00" style="background-color: yellow; height: 35pt; vertical-align: middle;" class="title">
+                    ${frm.doc.customer_name.toUpperCase()} - PACKING SLIP FORMAT
+                </th>
+            </tr>
+
+            <!-- Header Row with fixed widths -->
+            <tr bgcolor="#E0E0E0">
+                <th width="120">Invoice No.</th>
+                <th width="100">Invoice date</th>
+                <th width="200">Serial No./BARCODE</th> <!-- Column bada kiya -->
+                <th width="90">HSN Code</th>
+                <th width="120">STYLE NO</th>
+                <th width="200">Department</th> <!-- Column bada kiya -->
+                <th width="100">FABRIC</th>
+                <th width="100">COLOR</th>
+                <th width="100">SIZE</th>
+                <th width="70">QTY</th>
+                <th width="100">MRP</th>
+                <th width="120">Gross Amount</th>
+            </tr>
+    `;
+
+    items.forEach(item => {
+        let m = item_map[item.item_code] || {};
+        totalQty += flt(item.qty);
+        totalAmt += flt(item.amount);
+        
+        excel_html += `
+            <tr>
+                <td>${frm.doc.name}</td>
+                <td>${frm.doc.posting_date}</td>
+                <td>${(item.serial_no ? item.serial_no.split('\n')[0] : '')}</td>
+                <td>${item.gst_hsn_code || ''}</td>
+                <td>${item.item_code}</td>
+                <td>${m.custom_group_collection || ''}</td>
+                <td>${m.custom_top_fabrics || ''}</td>
+                <td>${m.custom_colour_name || ''}</td>
+                <td>${m.custom_size || ''}</td>
+                <td align="center">${item.qty}</td>
+                <td align="right">${item.price_list_rate || 0}</td>
+                <td align="right">${item.amount.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    // Total Row: "TOTAL" word placed exactly under "SIZE" column (9th column)
+    excel_html += `
+            <tr style="font-weight: bold;">
+                <td colspan="8" align="right" style="border-right: none;">TOTAL</td>
+                <td align="center" style="border-left: none;"></td> <!-- Size column empty or show word TOTAL here -->
+                <td align="center" bgcolor="#F2F2F2">${totalQty}</td>
+                <td></td>
+                <td align="right" bgcolor="#F2F2F2">${totalAmt.toFixed(2)}</td>
+            </tr>
+        </table>
+        </body></html>`;
+
+    let blob = new Blob([excel_html], { type: 'application/vnd.ms-excel' });
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `${frm.doc.name}_Packing_Slip.xls`);
+    link.click();
+}
