@@ -334,35 +334,64 @@ function set_station_from_company(frm) {
 }
 
 
+// function set_station_to_customer(frm) {
+//     if (!frm.doc.consignee) {
+//         frm.set_value("station_to", "");
+//         return;
+//     }
+
+//     frappe.db.get_value(
+//         "Customer",
+//         frm.doc.consignee,
+//         "customer_primary_address"
+//     ).then(r => {
+//         const address = r.message?.customer_primary_address;
+//         if (!address) return;
+
+//         frappe.db.get_value(
+//             "Address",
+//             address,
+//             "custom_citytown"
+//         ).then(addr => {
+//             if (addr.message?.custom_citytown) {
+//                 frm.set_value(
+//                     "station_to",
+//                     addr.message.custom_citytown
+//                 );
+//             }
+//         });
+//     });
+// }
 function set_station_to_customer(frm) {
-    if (!frm.doc.consignee) {
+    let address_name = null;
+
+    // 1️⃣ Pehle Shipping Address check karo
+    if (frm.doc.shipping_address_name) {
+        address_name = frm.doc.shipping_address_name;
+    } 
+    // 2️⃣ Agar Shipping Address nahi hai to Billing Address lo
+    else if (frm.doc.customer_address) {
+        address_name = frm.doc.customer_address;
+    }
+
+    if (!address_name) {
         frm.set_value("station_to", "");
         return;
     }
 
+    // Address DocType se city fetch karo
     frappe.db.get_value(
-        "Customer",
-        frm.doc.consignee,
-        "customer_primary_address"
+        "Address",
+        address_name,
+        ["city", "custom_citytown"]  // agar custom field use kar rahe ho
     ).then(r => {
-        const address = r.message?.customer_primary_address;
-        if (!address) return;
+        let city = r.message?.custom_citytown || r.message?.city;
 
-        frappe.db.get_value(
-            "Address",
-            address,
-            "custom_citytown"
-        ).then(addr => {
-            if (addr.message?.custom_citytown) {
-                frm.set_value(
-                    "station_to",
-                    addr.message.custom_citytown
-                );
-            }
-        });
+        if (city) {
+            frm.set_value("station_to", city);
+        }
     });
 }
-
 
 frappe.ui.form.on("Outgoing Logistics", {
     refresh(frm) {
