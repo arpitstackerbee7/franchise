@@ -739,10 +739,14 @@ def create_inter_company_purchase_receipt(sales_invoice):
     # if not warehouse:
     #     frappe.throw(_("No warehouse found for company {0}").format(pr.company))
 
+    # =====================================================
+# WAREHOUSE (FROM SIS CONFIGURATION)
+# =====================================================
+
     warehouse = frappe.get_value(
-        "SIS Configuration",   # <-- aapka config doctype
+        "SIS Configuration",
         {"name": pr.company},
-        "warehouse"  # <-- aapka warehouse field
+        "warehouse"
     )
 
     if not warehouse:
@@ -751,6 +755,8 @@ def create_inter_company_purchase_receipt(sales_invoice):
             .format(pr.company)
         )
 
+    # ✅ SET IN PARENT FIELD ALSO
+    pr.set_warehouse = warehouse
     # =====================================================
     # ITEMS (COPY SERIAL NO ALSO)
     # =====================================================
