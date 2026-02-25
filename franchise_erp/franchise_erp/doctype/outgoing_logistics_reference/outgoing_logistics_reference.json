@@ -16,7 +16,8 @@
    "in_list_view": 1,
    "label": "Source Doctype",
    "options": "DocType",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "fieldname": "source_name",
@@ -24,14 +25,15 @@
    "in_list_view": 1,
    "label": "Source Name",
    "options": "source_doctype",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-23 18:12:55.839227",
+ "modified": "2026-02-25 10:21:35.515971",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics Reference",
