@@ -300,14 +300,12 @@ function toggle_incoming_logistic_button(frm) {
     );
 }
 
+
 // frappe.ui.form.on("Sales Invoice", {
 //     refresh(frm) {
-//         // Only for submitted invoices
+
 //         if (frm.doc.docstatus !== 1) return;
-
-//         // Prevent duplicate Outgoing Logistics
 //         if (frm.doc.custom_outgoing_logistics_reference) return;
-
 //         if (!frm.doc.customer) return;
 
 //         frappe.db.get_value(
@@ -315,29 +313,58 @@ function toggle_incoming_logistic_button(frm) {
 //             frm.doc.customer,
 //             "custom_outgoing_logistics_applicable"
 //         ).then(r => {
+
 //             if (!r.message?.custom_outgoing_logistics_applicable) return;
 
 //             frm.add_custom_button(
 //                 __("Outgoing Logistics"),
 //                 () => {
-//                     frappe.new_doc("Outgoing Logistics", {}, doc => {
-//                         // Set parent fields
-//                         doc.consignee = frm.doc.customer;
-//                         doc.owner_site = frm.doc.company;
-//                         doc.transporter = frm.doc.transporter;
-//                         doc.stock_point = frm.doc.set_warehouse;
-//                         doc.type = 'Sales Invoice';
 
-//                         // Append child row
-//                         let row = frappe.model.add_child(
-//                             doc,
-//                             "references",
-//                             "references"
-//                         );
-//                         row.source_doctype = 'Sales Invoice';
-//                         row.source_name = frm.doc.name;
+//                     // 🔹 Decide which address to use
+//                     let address_name =
+//                         frm.doc.shipping_address_name ||
+//                         frm.doc.customer_address;
 
-//                         frappe.set_route("Form", "Outgoing Logistics", doc.name);
+//                     if (!address_name) {
+//                         frappe.msgprint("No Shipping or Billing Address found.");
+//                         return;
+//                     }
+
+//                     // 🔹 Fetch city from Address
+//                     frappe.db.get_value(
+//                         "Address",
+//                         address_name,
+//                         ["city", "custom_citytown"]
+//                     ).then(addr => {
+
+//                         let city =
+//                             addr.message?.custom_citytown ||
+//                             addr.message?.city ||
+//                             "";
+
+//                         // 🔹 Create Outgoing Logistics
+//                         frappe.new_doc("Outgoing Logistics", {}, doc => {
+
+//                             doc.consignee = frm.doc.customer;
+//                             doc.owner_site = frm.doc.company;
+//                             doc.transporter = frm.doc.transporter;
+//                             doc.stock_point = frm.doc.set_warehouse;
+//                             doc.type = "Sales Invoice";
+
+//                             // ✅ YAHI MAIN PART
+//                             doc.station_to = city;
+
+//                             let row = frappe.model.add_child(
+//                                 doc,
+//                                 "references",
+//                                 "references"
+//                             );
+//                             row.source_doctype = "Sales Invoice";
+//                             row.source_name = frm.doc.name;
+
+//                             frappe.set_route("Form", "Outgoing Logistics", doc.name);
+//                         });
+
 //                     });
 //                 },
 //                 __("Create")
@@ -351,73 +378,101 @@ frappe.ui.form.on("Sales Invoice", {
     refresh(frm) {
 
         if (frm.doc.docstatus !== 1) return;
-        if (frm.doc.custom_outgoing_logistics_reference) return;
         if (!frm.doc.customer) return;
 
+        const ol_ref = frm.doc.custom_outgoing_logistics_reference;
+
+        // 🔹 Case 1: No reference at all
+        if (!ol_ref) {
+            add_outgoing_logistics_button(frm);
+            return;
+        }
+
+        // 🔹 Case 2: Reference exists → check in DB
         frappe.db.get_value(
-            "Customer",
-            frm.doc.customer,
-            "custom_outgoing_logistics_applicable"
+            "Outgoing Logistics",
+            ol_ref,
+            "docstatus"
         ).then(r => {
 
-            if (!r.message?.custom_outgoing_logistics_applicable) return;
+            // ❌ Outgoing Logistics does NOT exist
+            if (!r.message) {
+                add_outgoing_logistics_button(frm);
+                return;
+            }
 
-            frm.add_custom_button(
-                __("Outgoing Logistics"),
-                () => {
+            // ❌ Exists but NOT submitted (Cancelled / Draft)
+            if (r.message.docstatus !== 1) {
+                add_outgoing_logistics_button(frm);
+                return;
+            }
 
-                    // 🔹 Decide which address to use
-                    let address_name =
-                        frm.doc.shipping_address_name ||
-                        frm.doc.customer_address;
-
-                    if (!address_name) {
-                        frappe.msgprint("No Shipping or Billing Address found.");
-                        return;
-                    }
-
-                    // 🔹 Fetch city from Address
-                    frappe.db.get_value(
-                        "Address",
-                        address_name,
-                        ["city", "custom_citytown"]
-                    ).then(addr => {
-
-                        let city =
-                            addr.message?.custom_citytown ||
-                            addr.message?.city ||
-                            "";
-
-                        // 🔹 Create Outgoing Logistics
-                        frappe.new_doc("Outgoing Logistics", {}, doc => {
-
-                            doc.consignee = frm.doc.customer;
-                            doc.owner_site = frm.doc.company;
-                            doc.transporter = frm.doc.transporter;
-                            doc.stock_point = frm.doc.set_warehouse;
-                            doc.type = "Sales Invoice";
-
-                            // ✅ YAHI MAIN PART
-                            doc.station_to = city;
-
-                            let row = frappe.model.add_child(
-                                doc,
-                                "references",
-                                "references"
-                            );
-                            row.source_doctype = "Sales Invoice";
-                            row.source_name = frm.doc.name;
-
-                            frappe.set_route("Form", "Outgoing Logistics", doc.name);
-                        });
-
-                    });
-                },
-                __("Create")
-            );
+            // ✅ Exists + Submitted → DO NOT show button
+            // nothing to do
         });
     }
 });
+
+
+function add_outgoing_logistics_button(frm) {
+
+    frappe.db.get_value(
+        "Customer",
+        frm.doc.customer,
+        "custom_outgoing_logistics_applicable"
+    ).then(r => {
+
+        if (!r.message?.custom_outgoing_logistics_applicable) return;
+
+        frm.add_custom_button(
+            __("Outgoing Logistics"),
+            () => {
+
+                let address_name =
+                    frm.doc.shipping_address_name ||
+                    frm.doc.customer_address;
+
+                if (!address_name) {
+                    frappe.msgprint("No Shipping or Billing Address found.");
+                    return;
+                }
+
+                frappe.db.get_value(
+                    "Address",
+                    address_name,
+                    ["city", "custom_citytown"]
+                ).then(addr => {
+
+                    let city =
+                        addr.message?.custom_citytown ||
+                        addr.message?.city ||
+                        "";
+
+                    frappe.new_doc("Outgoing Logistics", {}, doc => {
+
+                        doc.consignee = frm.doc.customer;
+                        doc.owner_site = frm.doc.company;
+                        doc.transporter = frm.doc.transporter;
+                        doc.stock_point = frm.doc.set_warehouse;
+                        doc.type = "Sales Invoice";
+                        doc.station_to = city;
+
+                        let row = frappe.model.add_child(
+                            doc,
+                            "references",
+                            "references"
+                        );
+                        row.source_doctype = "Sales Invoice";
+                        row.source_name = frm.doc.name;
+
+                        frappe.set_route("Form", "Outgoing Logistics", doc.name);
+                    });
+                });
+            },
+            __("Create")
+        );
+    });
+}
 frappe.ui.form.on("Sales Invoice", {
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
