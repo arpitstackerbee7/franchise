@@ -106,6 +106,7 @@ class OutgoingLogistics(Document):
                 update_modified=False
             )
 
+
 def on_cancel(self):
         """
         On cancelling Outgoing Logistics:
@@ -129,10 +130,22 @@ def on_cancel(self):
                 if hasattr(si, "references") and si.references:
                     to_remove = []
                     for r in si.references:
-                        if getattr(r, "source_doctype", "") == "Outgoing Logistics" and getattr(r, "source_name", "") == self.name:
+                        if getattr(r, "source_doctype", "") == "Sales Invoice" and getattr(r, "source_name", "") == self.name:
                             to_remove.append(r)
                     for r in to_remove:
                         si.remove(r)
 
                 # Save changes to Sales Invoice
                 si.save()
+
+
+
+
+
+
+
+
+
+
+
+
