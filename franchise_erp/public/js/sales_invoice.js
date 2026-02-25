@@ -820,16 +820,21 @@ function generate_fixed_excel(frm, item_map) {
 }
 
 frappe.ui.form.on("Sales Invoice", {
-    company(frm) {
+    refresh(frm) {
 
+        // sirf new / draft invoice ke liye
+        if (!frm.is_new()) return;
         if (!frm.doc.company) return;
+
+        // agar already set hai to overwrite na kare
+        if (frm.doc.set_warehouse) return;
 
         frappe.db.get_value(
             "SIS Configuration",
             { company: frm.doc.company },
             "warehouse"
         ).then(r => {
-            if (r.message && r.message.warehouse) {
+            if (r.message?.warehouse) {
                 frm.set_value(
                     "set_warehouse",
                     r.message.warehouse
