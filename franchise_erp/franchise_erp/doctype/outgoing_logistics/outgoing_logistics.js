@@ -546,11 +546,11 @@ function set_outgoing_type(frm) {
     }
 }
 
-frappe.ui.form.on("Outgoing Logistics", {
-    type(frm) {
-        frm.clear_table("references");
-        frm.refresh_field("references");
-    }
-});
+// frappe.ui.form.on("Outgoing Logistics", {
+//     type(frm) {
+//         frm.clear_table("references");
+//         frm.refresh_field("references");
+//     }
+// });
 
 

@@ -107,36 +107,74 @@ class OutgoingLogistics(Document):
             )
 
 
+# def on_cancel(self):
+#         """
+#         On cancelling Outgoing Logistics:
+#         - Clear custom fields in linked Sales Invoices
+#         - Remove any references in Sales Invoice linking back to this Outgoing Logistics
+#         """
+#         if not self.references:
+#             return
+
+#         for row in self.references:
+#             if row.source_doctype == "Sales Invoice" and row.source_name:
+#                 # Fetch the linked Sales Invoice
+#                 si = frappe.get_doc("Sales Invoice", row.source_name)
+
+#                 # 1️⃣ Clear custom fields
+#                 si.custom_outgoing_logistics_reference = None
+#                 if hasattr(si, "custom_outgoing_logistics_no"):
+#                     si.custom_outgoing_logistics_no = None
+
+#                 # 2️⃣ Remove any references linking back to this Outgoing Logistics
+#                 if hasattr(si, "references") and si.references:
+#                     to_remove = []
+#                     for r in si.references:
+#                         if getattr(r, "source_doctype", "") == "Sales Invoice" and getattr(r, "source_name", "") == self.name:
+#                             to_remove.append(r)
+#                     for r in to_remove:
+#                         si.remove(r)
+
+#                 # Save changes to Sales Invoice
+#                 si.save()
+
+
 def on_cancel(self):
-        """
-        On cancelling Outgoing Logistics:
-        - Clear custom fields in linked Sales Invoices
-        - Remove any references in Sales Invoice linking back to this Outgoing Logistics
-        """
         if not self.references:
             return
 
+        user = frappe.session.user
+        user_name = frappe.get_fullname(user) or user
+
         for row in self.references:
-            if row.source_doctype == "Sales Invoice" and row.source_name:
-                # Fetch the linked Sales Invoice
-                si = frappe.get_doc("Sales Invoice", row.source_name)
+            if not row.source_doctype or not row.source_name:
+                continue
 
-                # 1️⃣ Clear custom fields
-                si.custom_outgoing_logistics_reference = None
-                if hasattr(si, "custom_outgoing_logistics_no"):
-                    si.custom_outgoing_logistics_no = None
+            # check document exists
+            if not frappe.db.exists(row.source_doctype, row.source_name):
+                continue
 
-                # 2️⃣ Remove any references linking back to this Outgoing Logistics
-                if hasattr(si, "references") and si.references:
-                    to_remove = []
-                    for r in si.references:
-                        if getattr(r, "source_doctype", "") == "Sales Invoice" and getattr(r, "source_name", "") == self.name:
-                            to_remove.append(r)
-                    for r in to_remove:
-                        si.remove(r)
+            try:
+                doc = frappe.get_doc(row.source_doctype, row.source_name)
 
-                # Save changes to Sales Invoice
-                si.save()
+                doc.add_comment(
+                    comment_type="Info",
+                    text=f"""
+                    <b>{user_name}</b> cancelled
+                    <b>Outgoing Logistics</b>
+                    <a href="/app/outgoing-logistics/{self.name}">{self.name}</a>
+                    """
+                )
+
+                doc.save(ignore_permissions=True)
+
+            except Exception as e:
+                frappe.log_error(
+                    frappe.get_traceback(),
+                    f"Outgoing Logistics Cancel Log Failed: {row.source_doctype} {row.source_name}"
+                )
+
+        frappe.db.commit()
 
 
 
