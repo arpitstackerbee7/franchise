@@ -256,7 +256,6 @@
    "label": "Others"
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "item_barcode",
    "fieldtype": "Barcode",
    "hidden": 1,
@@ -321,23 +320,23 @@
    "options": "Supplier"
   },
   {
+   "default": "0",
    "fieldname": "references",
    "fieldtype": "Table",
    "label": "References",
    "options": "Outgoing Logistics Reference",
-   "read_only": 1
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-24 16:30:17.960766",
- "modified": "2026-02-24 15:36:27.966901",
+ "modified": "2026-02-25 10:21:09.687901",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
