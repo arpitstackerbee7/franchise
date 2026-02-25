@@ -7,6 +7,9 @@ from frappe.model.document import Document
 
 class OutgoingLogistics(Document):
 
+    def validate(self):
+        if not self.references or len(self.references) == 0:
+            frappe.throw("Reference ID is mandatory. Please add at least one row.")
     # -----------------------------
     # ON SUBMIT
     # -----------------------------
