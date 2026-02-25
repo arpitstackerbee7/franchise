@@ -52,33 +52,90 @@
 
 
 
+// frappe.ui.form.on('Subcontracting Order', {
+//     refresh(frm) {
+
+//         // ✅ Allow ONLY Open documents
+//         if (frm.doc.docstatus !== 0 || !frm.doc.supplier) return;
+
+//         // 🔁 Avoid duplicate buttons
+//         frm.remove_custom_button(__('Outgoing Logistics'), __('Create'));
+
+//         // 1️⃣ Check Stock Entry exists
+//         frappe.db.exists("Stock Entry", {
+//             subcontracting_order: frm.doc.name,
+//             docstatus: 1
+//         }).then(exists => {
+
+//             if (!exists) return;
+
+//             // 2️⃣ Check Supplier flag
+//             frappe.db.get_value(
+//                 "Supplier",
+//                 frm.doc.supplier,
+//                 "custom_gate_out_applicable"
+//             ).then(r => {
+
+//                 if (!r.message?.custom_gate_out_applicable) return;
+
+//                 // 3️⃣ Add button
+//                 frm.add_custom_button(
+//                     __('Outgoing Logistics'),
+//                     () => {
+//                         frappe.call({
+//                             method: "franchise_erp.custom.subcontracting_order.get_outgoing_logistics_data",
+//                             args: {
+//                                 subcontracting_order: frm.doc.name
+//                             },
+//                             freeze: true,
+//                             callback(res) {
+//                                 if (res.message) {
+//                                     frappe.new_doc("Outgoing Logistics", res.message);
+//                                 }
+//                             }
+//                         });
+//                     },
+//                     __('Create')
+//                 );
+//             });
+//         });
+//     }
+// });
 frappe.ui.form.on('Subcontracting Order', {
     refresh(frm) {
 
-        // ✅ Allow ONLY Open documents
+        // 🛑 1. Unsaved / New document guard
+        if (frm.is_new()) return;
+
+        // 🛑 2. Only Draft documents with Supplier
         if (frm.doc.docstatus !== 0 || !frm.doc.supplier) return;
 
-        // 🔁 Avoid duplicate buttons
+        // 🧹 3. Prevent duplicate buttons
         frm.remove_custom_button(__('Outgoing Logistics'), __('Create'));
 
-        // 1️⃣ Check Stock Entry exists
-        frappe.db.exists("Stock Entry", {
-            subcontracting_order: frm.doc.name,
-            docstatus: 1
-        }).then(exists => {
+        // 🔍 4. Check if submitted Stock Entry exists
+        frappe.db.get_value(
+            "Stock Entry",
+            {
+                subcontracting_order: frm.doc.name,
+                docstatus: 1
+            },
+            "name"
+        ).then(se => {
 
-            if (!exists) return;
+            // ❌ No Stock Entry → no button
+            if (!se.message) return;
 
-            // 2️⃣ Check Supplier flag
+            // 🔍 5. Check Supplier flag
             frappe.db.get_value(
                 "Supplier",
                 frm.doc.supplier,
                 "custom_gate_out_applicable"
             ).then(r => {
 
-                if (!r.message?.custom_gate_out_applicable) return;
+                if (!r.message || !r.message.custom_gate_out_applicable) return;
 
-                // 3️⃣ Add button
+                // ➕ 6. Add Create → Outgoing Logistics button
                 frm.add_custom_button(
                     __('Outgoing Logistics'),
                     () => {
