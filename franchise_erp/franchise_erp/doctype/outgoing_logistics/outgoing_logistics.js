@@ -79,7 +79,24 @@ function open_sales_invoice_mapper(frm) {
             };
         },
         action(selections) {
+
             add_rows(frm, selections);
+
+            if (selections && selections.length) {
+                frappe.call({
+                    method: "franchise_erp.custom.sales_invoice.get_sales_invoice_city",
+                    args: {
+                        sales_invoice: selections[0]
+                    },
+                    callback: function (r) {
+                        console.log("City response:", r.message);
+                        if (r.message) {
+                            frm.set_value("station_to", r.message);
+                        }
+                    }
+                });
+            }
+
             this.dialog.hide();
         }
     });
@@ -126,6 +143,20 @@ function open_job_order_mapper(frm) {
 
         action(selections) {
             add_rows(frm, selections);
+             if (selections && selections.length) {
+                frappe.call({
+                    method: "franchise_erp.custom.subcontracting_order.get_subcontracting_order_city",
+                     args: {
+                        subcontracting_order: selections[0]
+                    },
+                    callback: function (r) {
+                        console.log("City:", r.message);
+                        if (r.message) {
+                            frm.set_value("station_to", r.message);
+                        }
+                    }
+                });
+            }
             this.dialog.hide();
         }
     });
@@ -156,6 +187,20 @@ function open_purchase_return_mapper(frm) {
         },
         action(selections) {
             add_rows(frm, selections);
+            if (selections && selections.length) {
+        frappe.call({
+            method: "franchise_erp.custom.purchase_reciept.get_purchase_receipt_city",
+            args: {
+                purchase_receipt: selections[0]
+            },
+            callback: function (r) {
+                console.log("City:", r.message);
+                if (r.message) {
+                    frm.set_value("station_to", r.message);
+                }
+            }
+        });
+    }
             this.dialog.hide();
         }
     });
@@ -362,36 +407,36 @@ function set_station_from_company(frm) {
 //         });
 //     });
 // }
-function set_station_to_customer(frm) {
-    let address_name = null;
+// function set_station_to_customer(frm) {
+//     let address_name = null;
 
-    // 1️⃣ Pehle Shipping Address check karo
-    if (frm.doc.shipping_address_name) {
-        address_name = frm.doc.shipping_address_name;
-    } 
-    // 2️⃣ Agar Shipping Address nahi hai to Billing Address lo
-    else if (frm.doc.customer_address) {
-        address_name = frm.doc.customer_address;
-    }
+//     // 1️⃣ Pehle Shipping Address check karo
+//     if (frm.doc.shipping_address_name) {
+//         address_name = frm.doc.shipping_address_name;
+//     } 
+//     // 2️⃣ Agar Shipping Address nahi hai to Billing Address lo
+//     else if (frm.doc.customer_address) {
+//         address_name = frm.doc.customer_address;
+//     }
 
-    if (!address_name) {
-        frm.set_value("station_to", "");
-        return;
-    }
+//     if (!address_name) {
+//         frm.set_value("station_to", "");
+//         return;
+//     }
 
-    // Address DocType se city fetch karo
-    frappe.db.get_value(
-        "Address",
-        address_name,
-        ["city", "custom_citytown"]  // agar custom field use kar rahe ho
-    ).then(r => {
-        let city = r.message?.custom_citytown || r.message?.city;
+//     // Address DocType se city fetch karo
+//     frappe.db.get_value(
+//         "Address",
+//         address_name,
+//         ["city", "custom_citytown"]  // agar custom field use kar rahe ho
+//     ).then(r => {
+//         let city = r.message?.custom_citytown || r.message?.city;
 
-        if (city) {
-            frm.set_value("station_to", city);
-        }
-    });
-}
+//         if (city) {
+//             frm.set_value("station_to", city);
+//         }
+//     });
+// }
 
 frappe.ui.form.on("Outgoing Logistics", {
     refresh(frm) {
@@ -503,8 +548,8 @@ function set_outgoing_type(frm) {
 
 frappe.ui.form.on("Outgoing Logistics", {
     type(frm) {
-        frm.clear_table("sales_invoice_no");
-        frm.refresh_field("sales_invoice_no");
+        frm.clear_table("references");
+        frm.refresh_field("references");
     }
 });
 

@@ -577,3 +577,32 @@ def validate_gate_entry_qty_on_grn(doc, method):
                 _("Only {0} quantity is remaining as per invoice for Gate Entry {1}.")
                 .format(remaining_qty, gate_entry)
             )
+
+
+import frappe
+
+@frappe.whitelist()
+def get_purchase_receipt_city(purchase_receipt):
+    pr = frappe.get_doc("Purchase Receipt", purchase_receipt)
+
+    # 1️⃣ Shipping Address (priority)
+    if pr.shipping_address:
+        city = frappe.db.get_value(
+            "Address",
+            pr.shipping_address,
+            "custom_citytown"
+        )
+        if city:
+            return city
+
+    # 2️⃣ Billing Address (fallback)
+    if pr.billing_address:
+        city = frappe.db.get_value(
+            "Address",
+            pr.billing_address,
+            "custom_citytown"
+        )
+        if city:
+            return city
+
+    return None

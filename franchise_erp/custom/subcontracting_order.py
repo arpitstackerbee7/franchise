@@ -59,3 +59,35 @@ def get_outgoing_logistics_data(subcontracting_order):
             }
         ]
     }
+
+
+
+
+
+import frappe
+
+@frappe.whitelist()
+def get_subcontracting_order_city(subcontracting_order):
+    so = frappe.get_doc("Subcontracting Order", subcontracting_order)
+
+    # 1️⃣ Shipping Address (priority)
+    if so.shipping_address:
+        city = frappe.db.get_value(
+            "Address",
+            so.shipping_address,
+            "custom_citytown"
+        )
+        if city:
+            return city
+
+    # 2️⃣ Billing Address (fallback)
+    if so.billing_address:
+        city = frappe.db.get_value(
+            "Address",
+            so.billing_address,
+            "custom_citytown"
+        )
+        if city:
+            return city
+
+    return None

@@ -1581,3 +1581,30 @@ def apply_sales_term(doc, method):
 #             doc.taxes.remove(freight_doc)
 #             doc.taxes.insert(gst_index, freight_doc)
 
+
+
+@frappe.whitelist()
+def get_sales_invoice_city(sales_invoice):
+    si = frappe.get_doc("Sales Invoice", sales_invoice)
+
+    # 1️⃣ Shipping Address priority
+    if getattr(si, "shipping_address_name", None):
+        city = frappe.db.get_value(
+            "Address",
+            si.shipping_address_name,
+            "custom_citytown"
+        )
+        if city:
+            return city
+
+    # 2️⃣ Billing Address fallback
+    if getattr(si, "customer_address", None):
+        city = frappe.db.get_value(
+            "Address",
+            si.customer_address,
+            "custom_citytown"
+        )
+        if city:
+            return city
+
+    return None
