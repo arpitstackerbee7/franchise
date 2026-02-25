@@ -818,3 +818,23 @@ function generate_fixed_excel(frm, item_map) {
     link.setAttribute("download", `${frm.doc.name}_Packing_Slip.xls`);
     link.click();
 }
+
+frappe.ui.form.on("Sales Invoice", {
+    company(frm) {
+
+        if (!frm.doc.company) return;
+
+        frappe.db.get_value(
+            "SIS Configuration",
+            { company: frm.doc.company },
+            "warehouse"
+        ).then(r => {
+            if (r.message && r.message.warehouse) {
+                frm.set_value(
+                    "set_warehouse",
+                    r.message.warehouse
+                );
+            }
+        });
+    }
+});
