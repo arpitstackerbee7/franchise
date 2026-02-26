@@ -93,28 +93,6 @@ function apply_discount_hide(frm, cdt, cdn) {
         }
     );
 }
-
-/* ------------------------------------------------
-   3. SIS Calculation
------------------------------------------------- */
-// function calculate_sis(frm, cdt, cdn) {
-//     const row = locals[cdt][cdn];
-//     if (!row?.rate || !frm.doc.customer) return;
-
-//     frappe.call({
-//         method: "franchise_erp.custom.sales_invoice.calculate_sis_values",
-//         args: {
-//             customer: frm.doc.customer,
-//             rate: row.rate
-//         },
-//         callback(r) {
-//             if (!r.message) return;
-//             Object.keys(r.message).forEach(k => {
-//                 frappe.model.set_value(cdt, cdn, k, r.message[k]);
-//             });
-//         }
-//     });
-// }
 frappe.ui.form.on('Sales Invoice', {
     validate(frm) {
         if (!frm.doc.customer) return;
@@ -237,28 +215,6 @@ function handle_inter_company_grn(frm) {
     }
 }
 
-
-// function toggle_incoming_logistic_button(frm) {
-//     // SAFELY clear only CREATE buttons
-//     if (frm.page && frm.page.clear_custom_buttons) {
-//         frm.page.clear_custom_buttons(__("Create"));
-//     }
-
-//     if (frm.doc.is_return) {
-//         frm.add_custom_button(
-//             __("Incoming Logistic"),
-//             () => {
-//                 frappe.new_doc("Incoming Logistics", {
-//                     sales_invoice: frm.doc.name,
-//                     consignor: frm.doc.customer,
-//                     sales_inovice_no: frm.doc.name,
-//                     transporter: frm.doc.transporter
-//                 });
-//             },
-//             __("Create")
-//         );
-//     }
-// }
 function toggle_incoming_logistic_button(frm) {
     // SAFELY clear only CREATE buttons
     if (frm.page && frm.page.clear_custom_buttons) {
@@ -478,82 +434,6 @@ frappe.ui.form.on("Sales Invoice", {
         frm.set_df_property("title", "read_only", 1);
     }
 });
-
-
-
-// frappe.ui.form.on("Sales Invoice Item", {
-//     item_code: function(frm, cdt, cdn) {
-
-//     let row = locals[cdt][cdn];
-//     if (!row.item_code) return;
-
-//     // Check Product Bundle
-//         frappe.call({
-//             method: "frappe.client.get",
-//             args: {
-//             doctype: "Product Bundle",
-//             name: row.item_code
-//             },
-//             callback: function(r) {
-//             if (!r.message) return;
-
-//             let bundle = r.message;
-
-//             // ❌ remove scanned bundle row
-//             frm.get_field("items")
-//             .grid.grid_rows[row.idx - 1].remove();
-
-//             // ✅ add child items
-//             bundle.items.forEach(function(it) {
-
-//             let child = frm.add_child("items");
-
-//             frappe.call({
-//             method: "erpnext.stock.get_item_details.get_item_details",
-//             args: {
-//             args: {
-//             item_code: it.item_code,
-//             company: frm.doc.company,
-//             customer: frm.doc.customer,
-//             selling_price_list: frm.doc.selling_price_list,
-//             price_list_currency: frm.doc.currency,
-//             plc_conversion_rate: frm.doc.plc_conversion_rate,
-//             conversion_rate: frm.doc.conversion_rate,
-//             qty: it.qty,
-//             doctype: frm.doc.doctype,
-//             name: frm.doc.name || "",
-//             child_docname: child.name
-//             }
-//             },
-//             callback: function(res) {
-//             if (!res.message) return;
-
-//             let d = res.message;
-
-//             // set values returned by ERPNext
-//             frappe.model.set_value(child.doctype, child.name, "item_code", it.item_code);
-//             frappe.model.set_value(child.doctype, child.name, "qty", it.qty);
-//             frappe.model.set_value(child.doctype, child.name, "uom", d.uom);
-//             frappe.model.set_value(child.doctype, child.name, "price_list_rate", d.price_list_rate);
-//             frappe.model.set_value(child.doctype, child.name, "rate", d.rate);
-//             frappe.model.set_value(child.doctype, child.name, "item_tax_template", d.item_tax_template);
-
-//             // 🔥 store bundle name
-//             frappe.model.set_value(
-//             child.doctype,
-//             child.name,
-//             "custom_product_bundle",
-//             bundle.name
-//             );
-//             }
-//             });
-//         });
-
-//             frm.refresh_field("items");
-//             }
-//         });
-//     }
-// });
 
 
 frappe.ui.form.on('Sales Invoice', {
@@ -841,5 +721,25 @@ frappe.ui.form.on("Sales Invoice", {
                 );
             }
         });
+    }
+});
+
+let scan_timeout;
+
+frappe.ui.form.on("Sales Invoice", {
+    scan_barcode: function(frm) {
+
+        frm.doc.ignore_pricing_rule = 1;
+        frm.doc.disable_rounded_total = 1;
+
+        // item add logic yaha
+
+        frm.refresh_field("items");
+
+        // delayed calculation (important)
+        clearTimeout(scan_timeout);
+        scan_timeout = setTimeout(() => {
+            frm.script_manager.trigger("calculate_taxes_and_totals");
+        }, 800);
     }
 });
