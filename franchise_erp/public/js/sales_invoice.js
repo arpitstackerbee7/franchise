@@ -67,6 +67,32 @@ frappe.ui.form.on('Sales Invoice Item', {
     // }
 });
 
+// function apply_discount_hide(frm, cdt, cdn) {
+//     const row = locals[cdt][cdn];
+//     if (!row?.item_code) return;
+
+//     frappe.db.get_value(
+//         'Item',
+//         row.item_code,
+//         'custom_discount_not_allowed',
+//         r => {
+//             const hide = r?.custom_discount_not_allowed == 1;
+//             const fields = [
+//                 'margin_type',
+//                 'margin_rate_or_amount',
+//                 'discount_percentage',
+//                 'discount_amount',
+//                 'distributed_discount_amount'
+//             ];
+
+//             fields.forEach(f =>
+//                 frm.fields_dict.items.grid.update_docfield_property(f, 'hidden', hide)
+//             );
+
+//             frm.refresh_field('items');
+//         }
+//     );
+// }
 function apply_discount_hide(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
     if (!row?.item_code) return;
@@ -74,24 +100,25 @@ function apply_discount_hide(frm, cdt, cdn) {
     frappe.db.get_value(
         'Item',
         row.item_code,
-        'custom_discount_not_allowed',
-        r => {
-            const hide = r?.custom_discount_not_allowed == 1;
-            const fields = [
+        'custom_discount_not_allowed'
+    ).then(r => {
+
+        const hide = r?.message?.custom_discount_not_allowed == 1;
+
+        let grid_row = frm.fields_dict.items.grid.get_row(cdn);
+
+        if (grid_row) {
+            [
                 'margin_type',
                 'margin_rate_or_amount',
                 'discount_percentage',
                 'discount_amount',
                 'distributed_discount_amount'
-            ];
-
-            fields.forEach(f =>
-                frm.fields_dict.items.grid.update_docfield_property(f, 'hidden', hide)
-            );
-
-            frm.refresh_field('items');
+            ].forEach(field => {
+                grid_row.toggle_display(field, !hide);
+            });
         }
-    );
+    });
 }
 frappe.ui.form.on('Sales Invoice', {
     validate(frm) {
@@ -732,14 +759,14 @@ frappe.ui.form.on("Sales Invoice", {
         frm.doc.ignore_pricing_rule = 1;
         frm.doc.disable_rounded_total = 1;
 
-        // item add logic yaha
+        // ❌ Full grid refresh avoid karo
+        // frm.refresh_field("items");
 
-        frm.refresh_field("items");
-
-        // delayed calculation (important)
+        // Only delayed calculation
         clearTimeout(scan_timeout);
         scan_timeout = setTimeout(() => {
-            frm.script_manager.trigger("calculate_taxes_and_totals");
-        }, 800);
+            if (!frm.is_dirty()) return;
+            frm.trigger("calculate_taxes_and_totals");
+        }, 600);
     }
 });
