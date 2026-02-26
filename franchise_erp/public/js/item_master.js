@@ -243,3 +243,32 @@ frappe.ui.form.on("Item", {
         });
     }
 });
+
+
+
+// Logic: Hide data if user is 'SIS Counter' AND NOT an Admin/System Manager
+frappe.ui.form.on('Item', {
+    refresh: function(frm) {
+        let user_roles = frappe.user_roles;
+        let is_privileged_user = (frappe.session.user === 'Administrator' || user_roles.includes('System Manager'));
+        let is_sis_counter = user_roles.includes('SIS Counter');
+
+        if (is_sis_counter && !is_privileged_user) {
+            
+            // Hide the Custom Item Prices table
+            frm.toggle_display('custom_item_prices', false);
+            
+            // Hide specific purchasing fields
+            frm.toggle_display('last_purchase_rate', false);
+            frm.toggle_display('is_customer_provided_item', false);
+            
+        } else {
+            
+            // Explicitly show these fields for all other roles (Admin, Stock User, etc.)
+            frm.toggle_display('custom_item_prices', true);
+            frm.toggle_display('last_purchase_rate', true);
+            frm.toggle_display('is_customer_provided_item', true);
+            
+        }
+    }
+});
