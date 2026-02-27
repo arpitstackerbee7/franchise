@@ -101,34 +101,58 @@ frappe.ui.form.on("Sales Invoice Item", {
 /* =====================================================
    PRODUCT BUNDLE SCAN
 ===================================================== */
+let scan_lock = false;
+
 function scan_product_bundle(frm) {
 
+    if (scan_lock) return;
     if (!frm.doc.custom_scan_product_bundle) return;
+
+    scan_lock = true;
 
     let serial = frm.doc.custom_scan_product_bundle.trim();
 
     frappe.db.get_value(
         "Product Bundle",
         { custom_bundle_serial_no: serial },
-        "new_item_code"
+        ["new_item_code"]
     ).then(r => {
 
         if (!r.message?.new_item_code) {
             frappe.msgprint("No Item found for scanned bundle serial");
             frm.set_value("custom_scan_product_bundle", "");
+            scan_lock = false;
             return;
         }
 
-        let row = frm.doc.items.find(d => !d.item_code) || frm.add_child("items");
+        let item_code = r.message.new_item_code;
 
-        frappe.model.set_value(row.doctype, row.name, "item_code", r.message.new_item_code);
-        frappe.model.set_value(row.doctype, row.name, "qty", row.qty || 1);
+        // 🔴 STRICT CHECK: Serial already exists?
+        let serial_exists = frm.doc.items.some(row =>
+            row.serial_no && row.serial_no.includes(serial)
+        );
+
+        if (serial_exists) {
+            frappe.msgprint("This Serial Already Scanned");
+            frm.set_value("custom_scan_product_bundle", "");
+            scan_lock = false;
+            return;
+        }
+
+        let row = frm.add_child("items");
+
+        frappe.model.set_value(row.doctype, row.name, "item_code", item_code);
+        frappe.model.set_value(row.doctype, row.name, "serial_no", serial);
+        frappe.model.set_value(row.doctype, row.name, "qty", 1);
 
         frm.refresh_field("items");
         frm.set_value("custom_scan_product_bundle", "");
+
+        setTimeout(() => {
+            scan_lock = false;
+        }, 700);
     });
 }
-
 
 /* =====================================================
    DISCOUNT HIDE
