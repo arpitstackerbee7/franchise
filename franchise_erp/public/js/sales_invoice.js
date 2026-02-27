@@ -54,9 +54,9 @@ frappe.ui.form.on("Sales Invoice", {
         handle_sis_calculation(frm);
     },
 
-    custom_scan_product_bundle(frm) {
-        scan_product_bundle(frm);
-    },
+    // custom_scan_product_bundle(frm) {
+    //     scan_product_bundle(frm);
+    // },
     
     
 });
