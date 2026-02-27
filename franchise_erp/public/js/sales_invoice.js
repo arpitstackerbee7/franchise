@@ -54,11 +54,14 @@ frappe.ui.form.on("Sales Invoice", {
         handle_sis_calculation(frm);
     },
 
-    // custom_scan_product_bundle(frm) {
-    //     scan_product_bundle(frm);
-    // },
+    custom_scan_product_bundle(frm) {
+        scan_product_bundle(frm);
+    },
     
-    
+    scan_barcode(frm) {
+        // Jab barcode scan ho tab flag set karo
+        frm._from_barcode_scan = true;
+    },
 });
 
 
@@ -121,18 +124,19 @@ frappe.ui.form.on("Sales Invoice Item", {
     item_code(frm, cdt, cdn) {
 
         let row = locals[cdt][cdn];
-
         if (!row.item_code) return;
 
-        // ✅ Agar serial_no present hai (scan case) → allow
-        if (row.serial_no && row.serial_no.trim() !== "") {
+        // ✅ Agar barcode scan se aaya hai to allow
+        if (frm._from_barcode_scan) {
+
+            frm._from_barcode_scan = false; // reset flag
 
             apply_discount_hide(frm, cdt, cdn);
             toggle_update_stock(frm);
             return;
         }
 
-        // ❌ Manual selection case
+        // ❌ Manual selection pe error
         frappe.msgprint({
             title: "Not Allowed",
             message: "Please scan barcode/item name",
