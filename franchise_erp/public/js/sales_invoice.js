@@ -65,11 +65,81 @@ frappe.ui.form.on("Sales Invoice", {
 /* =====================================================
    SALES INVOICE ITEM EVENTS
 ===================================================== */
+// frappe.ui.form.on("Sales Invoice Item", {
+
+//     item_code(frm, cdt, cdn) {
+
+//         let row = locals[cdt][cdn];
+
+//         if (!row.item_code) return;
+
+//         // ❌ Agar scan se nahi aaya hai
+//         if (!frm.__from_barcode_scan) {
+
+//             frappe.msgprint({
+//                 title: "Not Allowed",
+//                 message: "Please scan barcode/item name",
+//                 indicator: "red"
+//             });
+
+//             row.item_code = "";
+//             frm.refresh_field("items");
+//             return;
+//         }
+
+//         apply_discount_hide(frm, cdt, cdn);
+//         toggle_update_stock(frm);
+//     },
+
+//     qty(frm, cdt, cdn) {
+//         toggle_update_stock(frm);
+
+//         if (frm.doc.is_return) {
+//             let row = locals[cdt][cdn];
+//             if (row.qty > 0) {
+//                 frappe.model.set_value(cdt, cdn, "qty", -Math.abs(row.qty));
+//             }
+//         }
+//     },
+
+//     serial_no(frm, cdt, cdn) {
+//         if (!frm.doc.is_return) return;
+
+//         setTimeout(() => {
+//             let row = locals[cdt][cdn];
+//             if (!row.serial_no) return;
+
+//             let count = row.serial_no.split("\n").filter(s => s.trim()).length;
+
+//             frappe.model.set_value(cdt, cdn, "qty", -Math.abs(count));
+//         }, 300);
+//     }
+// });
+
 frappe.ui.form.on("Sales Invoice Item", {
 
     item_code(frm, cdt, cdn) {
-        apply_discount_hide(frm, cdt, cdn);
-        toggle_update_stock(frm);
+
+        let row = locals[cdt][cdn];
+
+        if (!row.item_code) return;
+
+        // ✅ Agar serial_no present hai (scan case) → allow
+        if (row.serial_no && row.serial_no.trim() !== "") {
+
+            apply_discount_hide(frm, cdt, cdn);
+            toggle_update_stock(frm);
+            return;
+        }
+
+        // ❌ Manual selection case
+        frappe.msgprint({
+            title: "Not Allowed",
+            message: "Please scan barcode/item name",
+            indicator: "red"
+        });
+
+        frappe.model.set_value(cdt, cdn, "item_code", "");
     },
 
     qty(frm, cdt, cdn) {
@@ -83,21 +153,18 @@ frappe.ui.form.on("Sales Invoice Item", {
         }
     },
 
-    // serial_no(frm, cdt, cdn) {
-    //     if (!frm.doc.is_return) return;
+    serial_no(frm, cdt, cdn) {
+        if (!frm.doc.is_return) return;
 
-    //     setTimeout(() => {
-    //         let row = locals[cdt][cdn];
-    //         if (!row.serial_no) return;
+        setTimeout(() => {
+            let row = locals[cdt][cdn];
+            if (!row.serial_no) return;
 
-    //         let count = row.serial_no.split("\n").filter(s => s.trim()).length;
-
-    //         frappe.model.set_value(cdt, cdn, "qty", -Math.abs(count));
-    //     }, 300);
-    // }
+            let count = row.serial_no.split("\n").filter(s => s.trim()).length;
+            frappe.model.set_value(cdt, cdn, "qty", -Math.abs(count));
+        }, 300);
+    }
 });
-
-
 /* =====================================================
    PRODUCT BUNDLE SCAN
 ===================================================== */
@@ -125,23 +192,12 @@ function scan_product_bundle(frm) {
             return;
         }
 
-        let item_code = r.message.new_item_code;
-
-        // 🔴 STRICT CHECK: Serial already exists?
-        let serial_exists = frm.doc.items.some(row =>
-            row.serial_no && row.serial_no.includes(serial)
-        );
-
-        if (serial_exists) {
-            frappe.msgprint("This Serial Already Scanned");
-            frm.set_value("custom_scan_product_bundle", "");
-            scan_lock = false;
-            return;
-        }
-
         let row = frm.add_child("items");
 
-        frappe.model.set_value(row.doctype, row.name, "item_code", item_code);
+        // ✅ MARK THIS ROW AS SCANNED
+        row.__from_scan = true;
+
+        frappe.model.set_value(row.doctype, row.name, "item_code", r.message.new_item_code);
         frappe.model.set_value(row.doctype, row.name, "serial_no", serial);
         frappe.model.set_value(row.doctype, row.name, "qty", 1);
 
@@ -150,7 +206,7 @@ function scan_product_bundle(frm) {
 
         setTimeout(() => {
             scan_lock = false;
-        }, 700);
+        }, 400);
     });
 }
 
