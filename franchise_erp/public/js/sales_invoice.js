@@ -122,9 +122,15 @@ frappe.ui.form.on("Sales Invoice", {
                 );
             }
         });
-        
+        make_total_qty_bold(frm);
+    },
+    onload: function(frm) {
+        make_total_qty_bold(frm);
     },
 
+    items_add: function(frm) {
+        make_total_qty_bold(frm);
+    },
     customer(frm) {
 
         if (frm.doc.payment_terms_template) {
@@ -851,3 +857,14 @@ function generate_fixed_excel(frm, item_map) {
 }
 
 
+function make_total_qty_bold(frm) {
+    if (frm.fields_dict.total_qty && frm.fields_dict.total_qty.$wrapper) {
+        frm.fields_dict.total_qty.$wrapper
+            .find(".control-value")
+            .css({
+                "font-weight": "bold",
+                "font-size": "18px",
+                "color":"#222"
+            });
+    }
+}
