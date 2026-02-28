@@ -164,6 +164,8 @@ frappe.ui.form.on("Sales Invoice", {
         // Jab barcode scan ho tab flag set karo
         frm._from_barcode_scan = true;
     },
+
+    
 });
 
 function check_duplicate_serials(frm) {
@@ -186,56 +188,36 @@ function check_duplicate_serials(frm) {
         });
     });
 
-    if (duplicate_serial) {
+    if (!duplicate_serial) return;
 
-        // Remove duplicates
-        let seen = {};
+    let seen = {};
 
-        frm.doc.items.forEach(row => {
-            if (!row.serial_no) return;
+    frm.doc.items.forEach(row => {
+        if (!row.serial_no) return;
 
-            let unique = [];
+        let unique = [];
 
-            row.serial_no.split("\n").forEach(s => {
-                s = s.trim();
-                if (!s) return;
+        row.serial_no.split("\n").forEach(s => {
+            s = s.trim();
+            if (!s) return;
 
-                if (!seen[s]) {
-                    seen[s] = true;
-                    unique.push(s);
-                }
-            });
-
-            row.serial_no = unique.join("\n");
-        });
-
-        frm.refresh_field("items");
-
-        // CENTER BIG MODAL
-        let d = new frappe.ui.Dialog({
-            title: "Duplicate Serial No",
-            indicator: "red",
-            size: "large",
-            fields: [
-                {
-                    fieldtype: "HTML",
-                    options: `
-                        <div style="
-                            text-align:center;
-                            font-size:20px;
-                            padding:40px;">
-                            <b>Already scanned this Serial No</b>
-                        </div>`
-                }
-            ],
-            primary_action_label: "OK",
-            primary_action() {
-                d.hide();
+            if (!seen[s]) {
+                seen[s] = true;
+                unique.push(s);
             }
         });
 
-        d.show();
-    }
+        row.serial_no = unique.join("\n");
+    });
+
+    // ❌ DO NOT refresh entire grid
+    // frm.refresh_field("items");
+
+    frappe.msgprint({
+        title: "Duplicate Serial No",
+        message: "Already scanned this Serial No",
+        indicator: "red"
+    });
 }
 /* =====================================================
    SALES INVOICE ITEM EVENTS
@@ -328,23 +310,7 @@ frappe.ui.form.on("Sales Invoice Item", {
             }
         }
     },
-    //  serial_no(frm, cdt, cdn) {
-
-    //     let row = locals[cdt][cdn];
-    //     if (!row.serial_no || !row.item_code) return;
-
-    //     frappe.db.get_value("Item", row.item_code, "has_serial_no")
-    //     .then(r => {
-
-    //         if (!r.message?.has_serial_no) return;
-
-    //         setTimeout(() => {
-    //             check_duplicate_serials(frm);
-    //         }, 200);
-
-    //     });
-    // }
-    serial_no(frm, cdt, cdn) {
+     serial_no(frm, cdt, cdn) {
 
         let row = locals[cdt][cdn];
         if (!row.serial_no || !row.item_code) return;
@@ -355,31 +321,12 @@ frappe.ui.form.on("Sales Invoice Item", {
             if (!r.message?.has_serial_no) return;
 
             setTimeout(() => {
-
-                // Split serials
-                let serials = row.serial_no
-                    .split("\n")
-                    .map(s => s.trim())
-                    .filter(Boolean);
-
-                if (!serials.length) return;
-
-                // ✅ Keep ONLY last scanned serial
-                let last_serial = serials[serials.length - 1];
-
-                // Force only that serial
-                frappe.model.set_value(cdt, cdn, "serial_no", last_serial);
-
-                // Force qty = 1
-                frappe.model.set_value(cdt, cdn, "qty", 1);
-
-                // Check duplicate across rows
                 check_duplicate_serials(frm);
-
-            }, 300);
+            }, 200);
 
         });
     }
+    
     // serial_no(frm, cdt, cdn) {
     //     if (!frm.doc.is_return) return;
 
@@ -864,7 +811,7 @@ function make_total_qty_bold(frm) {
             .css({
                 "font-weight": "bold",
                 "font-size": "18px",
-                "color":"#222"
+                "color":"rgb(99 175 244)"
             });
     }
 }
