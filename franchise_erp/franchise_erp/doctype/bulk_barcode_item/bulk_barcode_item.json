@@ -39,8 +39,7 @@
    "fieldname": "qty",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "Qty",
-   "read_only": 1
+   "label": "Qty"
   },
   {
    "default": "0",
@@ -54,7 +53,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-21 10:09:02.903248",
+ "modified": "2026-02-27 17:29:08.702550",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Bulk Barcode Item",
