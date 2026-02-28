@@ -27,6 +27,102 @@ frappe.ui.form.on("Sales Invoice", {
 
         // Export Button
         add_export_button(frm);
+        // Delay hook after barcode processing
+
+        // Override default alert (only in this form)
+        if (!frm.__alert_overridden) {
+
+            frm.__alert_overridden = true;
+
+            const original_alert = frappe.show_alert;
+
+            frappe.show_alert = function(message, seconds) {
+
+                if (typeof message === "object" &&
+                    message.message &&
+                    message.message.includes("Serial No")) {
+
+                    // Extract Serial No from message
+                    let serial_match = message.message.match(/Serial No\s(.+?)\s/);
+                    let serial_no = serial_match ? serial_match[1] : "";
+
+                    let d = new frappe.ui.Dialog({
+                        title: "Duplicate Serial No",
+                        indicator: "red",
+                        size: "large",
+                        fields: [
+                            {
+                                fieldtype: "HTML",
+                                options: `
+                                    <div style="
+                                        text-align:center;
+                                        font-size:20px;
+                                        padding:40px;">
+                                        <b>Serial No Already Scanned</b><br><br>
+                                        <span style="color:#d9534f; font-size:24px;">
+                                            <b>${serial_no}</b>
+                                        </span>
+                                    </div>`
+                            }
+                        ],
+                        primary_action_label: "OK",
+                        primary_action() {
+                            d.hide();
+                        }
+                    });
+
+                    d.onhide = function() {
+
+                        // Clear barcode field
+                        frm.set_value("scan_barcode", "");
+
+                        setTimeout(() => {
+                            frm.fields_dict.scan_barcode.$input.focus();
+                        }, 200);
+                    };
+
+                    d.show();
+                    return; // Stop default toast
+                }
+
+                original_alert(message, seconds);
+            };
+        }
+        // Disable barcode scan popup after save
+        if (frm.doc.docstatus === 0 || frm.doc.docstatus === 1) {
+
+            // Remove default scanner trigger
+            if (frm.scan_barcode) {
+                frm.scan_barcode = null;
+            }
+
+            // Override serial no dialog
+            if (frm.events.scan_barcode) {
+                frm.events.scan_barcode = function() {
+                    // Do nothing (block popup)
+                };
+            }
+        }
+        // sirf new / draft invoice ke liye
+        if (!frm.is_new()) return;
+        if (!frm.doc.company) return;
+
+        // agar already set hai to overwrite na kare
+        if (frm.doc.set_warehouse) return;
+
+        frappe.db.get_value(
+            "SIS Configuration",
+            { company: frm.doc.company },
+            "warehouse"
+        ).then(r => {
+            if (r.message?.warehouse) {
+                frm.set_value(
+                    "set_warehouse",
+                    r.message.warehouse
+                );
+            }
+        });
+        
     },
 
     customer(frm) {
@@ -64,7 +160,77 @@ frappe.ui.form.on("Sales Invoice", {
     },
 });
 
+function check_duplicate_serials(frm) {
 
+    let serial_count = {};
+    let duplicate_serial = null;
+
+    (frm.doc.items || []).forEach(row => {
+        if (!row.serial_no) return;
+
+        row.serial_no.split("\n").forEach(s => {
+            s = s.trim();
+            if (!s) return;
+
+            serial_count[s] = (serial_count[s] || 0) + 1;
+
+            if (serial_count[s] > 1) {
+                duplicate_serial = s;
+            }
+        });
+    });
+
+    if (duplicate_serial) {
+
+        // Remove duplicates
+        let seen = {};
+
+        frm.doc.items.forEach(row => {
+            if (!row.serial_no) return;
+
+            let unique = [];
+
+            row.serial_no.split("\n").forEach(s => {
+                s = s.trim();
+                if (!s) return;
+
+                if (!seen[s]) {
+                    seen[s] = true;
+                    unique.push(s);
+                }
+            });
+
+            row.serial_no = unique.join("\n");
+        });
+
+        frm.refresh_field("items");
+
+        // CENTER BIG MODAL
+        let d = new frappe.ui.Dialog({
+            title: "Duplicate Serial No",
+            indicator: "red",
+            size: "large",
+            fields: [
+                {
+                    fieldtype: "HTML",
+                    options: `
+                        <div style="
+                            text-align:center;
+                            font-size:20px;
+                            padding:40px;">
+                            <b>Already scanned this Serial No</b>
+                        </div>`
+                }
+            ],
+            primary_action_label: "OK",
+            primary_action() {
+                d.hide();
+            }
+        });
+
+        d.show();
+    }
+}
 /* =====================================================
    SALES INVOICE ITEM EVENTS
 ===================================================== */
@@ -156,7 +322,58 @@ frappe.ui.form.on("Sales Invoice Item", {
             }
         }
     },
+    //  serial_no(frm, cdt, cdn) {
 
+    //     let row = locals[cdt][cdn];
+    //     if (!row.serial_no || !row.item_code) return;
+
+    //     frappe.db.get_value("Item", row.item_code, "has_serial_no")
+    //     .then(r => {
+
+    //         if (!r.message?.has_serial_no) return;
+
+    //         setTimeout(() => {
+    //             check_duplicate_serials(frm);
+    //         }, 200);
+
+    //     });
+    // }
+    serial_no(frm, cdt, cdn) {
+
+        let row = locals[cdt][cdn];
+        if (!row.serial_no || !row.item_code) return;
+
+        frappe.db.get_value("Item", row.item_code, "has_serial_no")
+        .then(r => {
+
+            if (!r.message?.has_serial_no) return;
+
+            setTimeout(() => {
+
+                // Split serials
+                let serials = row.serial_no
+                    .split("\n")
+                    .map(s => s.trim())
+                    .filter(Boolean);
+
+                if (!serials.length) return;
+
+                // ✅ Keep ONLY last scanned serial
+                let last_serial = serials[serials.length - 1];
+
+                // Force only that serial
+                frappe.model.set_value(cdt, cdn, "serial_no", last_serial);
+
+                // Force qty = 1
+                frappe.model.set_value(cdt, cdn, "qty", 1);
+
+                // Check duplicate across rows
+                check_duplicate_serials(frm);
+
+            }, 300);
+
+        });
+    }
     // serial_no(frm, cdt, cdn) {
     //     if (!frm.doc.is_return) return;
 
@@ -632,3 +849,5 @@ function generate_fixed_excel(frm, item_map) {
 
     URL.revokeObjectURL(url);
 }
+
+
