@@ -124,3 +124,5 @@ function apply_sis_counter_minimal_ui(frm) {
     // Set simplified page title
     frm.page.set_title("SIS Counter Sale");
 }
+
+
