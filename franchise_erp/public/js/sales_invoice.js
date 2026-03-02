@@ -18,7 +18,7 @@ frappe.ui.form.on("Sales Invoice", {
         toggle_outgoing_logistics_button(frm);
 
         // Update stock auto check
-        toggle_update_stock(frm);
+        // toggle_update_stock(frm);
 
         // Make negative for return
         // if (frm.doc.is_return) {
@@ -88,21 +88,7 @@ frappe.ui.form.on("Sales Invoice", {
                 original_alert(message, seconds);
             };
         }
-        // Disable barcode scan popup after save
-        if (frm.doc.docstatus === 0 || frm.doc.docstatus === 1) {
-
-            // Remove default scanner trigger
-            if (frm.scan_barcode) {
-                frm.scan_barcode = null;
-            }
-
-            // Override serial no dialog
-            if (frm.events.scan_barcode) {
-                frm.events.scan_barcode = function() {
-                    // Do nothing (block popup)
-                };
-            }
-        }
+        
         // sirf new / draft invoice ke liye
         if (!frm.is_new()) return;
         if (!frm.doc.company) return;
@@ -160,12 +146,16 @@ frappe.ui.form.on("Sales Invoice", {
     //     scan_product_bundle(frm);
     // },
     
-    scan_barcode(frm) {
-        // Jab barcode scan ho tab flag set karo
-        frm._from_barcode_scan = true;
-    },
+   scan_barcode(frm) {
 
-    
+    if (!frm.doc.scan_barcode) return;
+
+    frm._from_barcode_scan = true;
+
+    setTimeout(() => {
+        frm._from_barcode_scan = false;
+    }, 1000);
+}
 });
 
 function check_duplicate_serials(frm) {
@@ -190,29 +180,6 @@ function check_duplicate_serials(frm) {
 
     if (!duplicate_serial) return;
 
-    let seen = {};
-
-    frm.doc.items.forEach(row => {
-        if (!row.serial_no) return;
-
-        let unique = [];
-
-        row.serial_no.split("\n").forEach(s => {
-            s = s.trim();
-            if (!s) return;
-
-            if (!seen[s]) {
-                seen[s] = true;
-                unique.push(s);
-            }
-        });
-
-        row.serial_no = unique.join("\n");
-    });
-
-    // ❌ DO NOT refresh entire grid
-    // frm.refresh_field("items");
-
     frappe.msgprint({
         title: "Duplicate Serial No",
         message: "Already scanned this Serial No",
@@ -222,56 +189,7 @@ function check_duplicate_serials(frm) {
 /* =====================================================
    SALES INVOICE ITEM EVENTS
 ===================================================== */
-// frappe.ui.form.on("Sales Invoice Item", {
 
-//     item_code(frm, cdt, cdn) {
-
-//         let row = locals[cdt][cdn];
-
-//         if (!row.item_code) return;
-
-//         // ❌ Agar scan se nahi aaya hai
-//         if (!frm.__from_barcode_scan) {
-
-//             frappe.msgprint({
-//                 title: "Not Allowed",
-//                 message: "Please scan barcode/item name",
-//                 indicator: "red"
-//             });
-
-//             row.item_code = "";
-//             frm.refresh_field("items");
-//             return;
-//         }
-
-//         apply_discount_hide(frm, cdt, cdn);
-//         toggle_update_stock(frm);
-//     },
-
-//     qty(frm, cdt, cdn) {
-//         toggle_update_stock(frm);
-
-//         if (frm.doc.is_return) {
-//             let row = locals[cdt][cdn];
-//             if (row.qty > 0) {
-//                 frappe.model.set_value(cdt, cdn, "qty", -Math.abs(row.qty));
-//             }
-//         }
-//     },
-
-//     serial_no(frm, cdt, cdn) {
-//         if (!frm.doc.is_return) return;
-
-//         setTimeout(() => {
-//             let row = locals[cdt][cdn];
-//             if (!row.serial_no) return;
-
-//             let count = row.serial_no.split("\n").filter(s => s.trim()).length;
-
-//             frappe.model.set_value(cdt, cdn, "qty", -Math.abs(count));
-//         }, 300);
-//     }
-// });
 
 frappe.ui.form.on("Sales Invoice Item", {
 
@@ -280,28 +198,24 @@ frappe.ui.form.on("Sales Invoice Item", {
         let row = locals[cdt][cdn];
         if (!row.item_code) return;
 
-        // ✅ Agar barcode scan se aaya hai to allow
-        if (frm._from_barcode_scan) {
-
-            frm._from_barcode_scan = false; // reset flag
-
-            apply_discount_hide(frm, cdt, cdn);
-            toggle_update_stock(frm);
+        // ✅ If coming from barcode
+        if (frm.__barcode_scanning || frappe.flags.in_barcode_scan) {
+            frappe.model.set_value(cdt, cdn, "custom_scanned_via_barcode", 1);
             return;
         }
 
-        // ❌ Manual selection pe error
-        frappe.msgprint({
-            title: "Not Allowed",
-            message: "Please scan barcode/item name",
-            indicator: "red"
-        });
+        
+        // frappe.msgprint({
+        //     title: "Scan Required",
+        //     message: "Please scan Item using Barcode. Manual selection not allowed.",
+        //     indicator: "red"
+        // });
 
         frappe.model.set_value(cdt, cdn, "item_code", "");
     },
 
     qty(frm, cdt, cdn) {
-        toggle_update_stock(frm);
+        // toggle_update_stock(frm);
 
         if (frm.doc.is_return) {
             let row = locals[cdt][cdn];
@@ -310,22 +224,19 @@ frappe.ui.form.on("Sales Invoice Item", {
             }
         }
     },
-     serial_no(frm, cdt, cdn) {
+   serial_no(frm, cdt, cdn) {
 
-        let row = locals[cdt][cdn];
-        if (!row.serial_no || !row.item_code) return;
+    if (frm._from_barcode_scan) return;
 
-        frappe.db.get_value("Item", row.item_code, "has_serial_no")
-        .then(r => {
+    let row = locals[cdt][cdn];
+    if (!row.serial_no) return;
 
-            if (!r.message?.has_serial_no) return;
+    let count = row.serial_no
+        .split("\n")
+        .filter(s => s.trim()).length;
 
-            setTimeout(() => {
-                check_duplicate_serials(frm);
-            }, 200);
-
-        });
-    }
+    frappe.model.set_value(cdt, cdn, "qty", count);
+}
     
     // serial_no(frm, cdt, cdn) {
     //     if (!frm.doc.is_return) return;
@@ -472,25 +383,25 @@ function set_custom_due_date(frm) {
 /* =====================================================
    UPDATE STOCK AUTO
 ===================================================== */
-function toggle_update_stock(frm) {
+// function toggle_update_stock(frm) {
 
-    let promises = [];
+//     let promises = [];
 
-    (frm.doc.items || []).forEach(row => {
-        if (row.item_code) {
-            promises.push(
-                frappe.db.get_value("Item", row.item_code, "is_stock_item")
-            );
-        }
-    });
+//     (frm.doc.items || []).forEach(row => {
+//         if (row.item_code) {
+//             promises.push(
+//                 frappe.db.get_value("Item", row.item_code, "is_stock_item")
+//             );
+//         }
+//     });
 
-    Promise.all(promises).then(results => {
+//     Promise.all(promises).then(results => {
 
-        let has_stock = results.some(r => r.message?.is_stock_item);
+//         let has_stock = results.some(r => r.message?.is_stock_item);
 
-        frm.set_value("update_stock", has_stock ? 1 : 0);
-    });
-}
+//         frm.set_value("update_stock", has_stock ? 1 : 0);
+//     });
+// }
 
 
 /* =====================================================
