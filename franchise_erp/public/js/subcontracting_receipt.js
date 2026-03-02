@@ -66,58 +66,182 @@ frappe.ui.form.on("Subcontracting Receipt", {
 });
 
 
+// frappe.ui.form.on("Subcontracting Receipt", {
+
+//     custom_scan_barcode: function(frm) {
+
+//         if (!frm.doc.custom_scan_barcode) return;
+
+//         let serial_no = frm.doc.custom_scan_barcode;
+
+//         // Serial No fetch karo
+//         frappe.db.get_doc("Serial No", serial_no).then(serial => {
+
+//             if (!serial) {
+//                 frappe.msgprint("Invalid Serial No");
+//                 return;
+//             }
+
+//             // Check karo item already table me hai ya nahi
+//             let existing_row = frm.doc.items.find(row => 
+//                 row.item_code === serial.item_code
+//             );
+
+//             if (existing_row) {
+
+//                 // ✅ Qty increase karo
+//                 existing_row.qty = flt(existing_row.qty) + 1;
+//                 existing_row.received_qty = flt(existing_row.received_qty) + 1;
+
+//                 // Serial No append karo
+//                 if (existing_row.serial_no) {
+//                     existing_row.serial_no += "\n" + serial_no;
+//                 } else {
+//                     existing_row.serial_no = serial_no;
+//                 }
+
+//                 frm.refresh_field("items");
+
+//             } else {
+
+//                 // ✅ New row add karo
+//                 let child = frm.add_child("items");
+
+//                 child.item_code = serial.item_code;
+//                 child.qty = 1;
+//                 child.received_qty = 1;
+//                 child.serial_no = serial_no;
+//                 child.warehouse = serial.warehouse;
+
+//                 frm.refresh_field("items");
+//             }
+
+//             // Scan field clear karo
+//             frm.set_value("custom_scan_barcode", "");
+//         });
+//     }
+// });
+
+
 frappe.ui.form.on("Subcontracting Receipt", {
 
-    custom_scan_barcode: function(frm) {
+    custom_scan_barcode(frm) {
+        let scanned_value = frm.doc.custom_scan_barcode;
+        if (!scanned_value) return;
 
-        if (!frm.doc.custom_scan_barcode) return;
+        scanned_value = scanned_value.trim();
 
-        let serial_no = frm.doc.custom_scan_barcode;
+        // ===================================
+        // 1️⃣ BARCODE SCAN CHECK
+        // ===================================
+        frappe.call({
+            method: "franchise_erp.custom.purchase_reciept.get_item_by_barcode",
+            args: { barcode: scanned_value },
+            callback: function(res) {
 
-        // Serial No fetch karo
-        frappe.db.get_doc("Serial No", serial_no).then(serial => {
+                if (res.message && res.message.item_code) {
+                    let item_code = res.message.item_code;
 
-            if (!serial) {
-                frappe.msgprint("Invalid Serial No");
-                return;
-            }
+                    // 🔹 If item already exists → increase qty
+                    let existing_row = (frm.doc.items || []).find(
+                        d => d.item_code === item_code
+                    );
 
-            // Check karo item already table me hai ya nahi
-            let existing_row = frm.doc.items.find(row => 
-                row.item_code === serial.item_code
-            );
+                    if (existing_row) {
+                        let current_qty = existing_row.qty || 0;
 
-            if (existing_row) {
+                        frappe.model.set_value(
+                            existing_row.doctype,
+                            existing_row.name,
+                            "qty",
+                            current_qty + 1
+                        );
 
-                // ✅ Qty increase karo
-                existing_row.qty = flt(existing_row.qty) + 1;
-                existing_row.received_qty = flt(existing_row.received_qty) + 1;
+                        frm.refresh_field("items");
+                        update_total_qty(frm);
+                        frm.set_value("custom_scan_barcode", "");
+                        return;
+                    }
 
-                // Serial No append karo
-                if (existing_row.serial_no) {
-                    existing_row.serial_no += "\n" + serial_no;
-                } else {
-                    existing_row.serial_no = serial_no;
+                    // 🔹 Use empty row or create new
+                    let empty_row = (frm.doc.items || []).find(d => !d.item_code);
+                    let row = empty_row || frm.add_child("items");
+
+                    frappe.model.set_value(row.doctype, row.name, "item_code", item_code);
+                    frappe.model.set_value(row.doctype, row.name, "qty", 1);
+
+                    frm.refresh_field("items");
+                    update_total_qty(frm);
+                    frm.set_value("custom_scan_barcode", "");
+                    return;
                 }
 
-                frm.refresh_field("items");
+                // ===================================
+                // 2️⃣ DUPLICATE SERIAL CHECK (CURRENT GRN)
+                // ===================================
+                for (let row of (frm.doc.items || [])) {
+                    if (row.serial_no) {
+                        let serials = row.serial_no
+                            .split("\n")
+                            .map(s => s.trim());
 
-            } else {
+                        if (serials.includes(scanned_value)) {
+                            frm.set_value("custom_scan_barcode", "");
+                            frappe.throw(
+                                `Serial No <b>${scanned_value}</b> already scanned in this GRN`
+                            );
+                        }
+                    }
+                }
 
-                // ✅ New row add karo
-                let child = frm.add_child("items");
+                // ===================================
+                // 3️⃣ SERIAL VALIDATION FROM PO
+                // ===================================
+                let po_items = (frm.doc.items || [])
+                    .filter(d => d.purchase_order_item)
+                    .map(d => d.purchase_order_item);
 
-                child.item_code = serial.item_code;
-                child.qty = 1;
-                child.received_qty = 1;
-                child.serial_no = serial_no;
-                child.warehouse = serial.warehouse;
+                if (!po_items.length) {
+                    frm.set_value("custom_scan_barcode", "");
+                    frappe.throw("No Purchase Order linked in items");
+                }
 
-                frm.refresh_field("items");
+                frappe.call({
+                    method: "franchise_erp.custom.purchase_reciept.validate_po_serial",
+                    args: {
+                        scanned_serial: scanned_value,
+                        po_items
+                    },
+                    callback: function(r) {
+                        if (!r.message) return;
+
+                        let { purchase_order_item } = r.message;
+
+                        let row = frm.doc.items.find(
+                            d => d.purchase_order_item === purchase_order_item
+                        );
+
+                        if (!row) {
+                            frappe.throw("Matching GRN item row not found");
+                        }
+
+                        let serials = row.serial_no
+                            ? row.serial_no.split("\n").map(s => s.trim())
+                            : [];
+
+                        serials.push(scanned_value);
+
+                        row.serial_no = serials.join("\n");
+                        row.qty = (row.qty || 0) + 1;
+
+                        frm.refresh_field("items");
+                        update_total_qty(frm);
+                    },
+                    always() {
+                        frm.set_value("custom_scan_barcode", "");
+                    }
+                });
             }
-
-            // Scan field clear karo
-            frm.set_value("custom_scan_barcode", "");
         });
     }
 });
