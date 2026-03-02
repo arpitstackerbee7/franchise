@@ -222,12 +222,12 @@ frappe.ui.form.on('Customer', {
 
             // 🔹 Mandatory toggle
             frm.toggle_reqd('customer_group', flag);
-            // frm.toggle_reqd('custom_transporter', flag);
             frm.toggle_reqd('custom_agent', flag);
             frm.toggle_reqd('default_price_list', flag);
 
             // 🔹 If unchecked → set default price list = MRP (only if exists & enabled)
             if (!flag) {
+                 frm.set_value('tax_category', 'In-State');
                 frappe.db.get_value(
                     'Price List',
                     'MRP',
@@ -246,6 +246,7 @@ frappe.ui.form.on('Customer', {
                     // Exists & enabled
                     if (!frm.doc.default_price_list) {
                         frm.set_value('default_price_list', 'MRP');
+                        
                     }
                 });
             }

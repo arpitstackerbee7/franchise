@@ -11,7 +11,11 @@ frappe.ui.form.on("Sales Invoice", {
 
         // Read Only Title
         frm.set_df_property("title", "read_only", 1);
-
+        frm.fields_dict.items.grid.update_docfield_property(
+            "item_code",
+            "read_only",
+            1
+        );
         // Button handlers
         handle_inter_company_grn(frm);
         toggle_incoming_logistic_button(frm);
@@ -146,16 +150,16 @@ frappe.ui.form.on("Sales Invoice", {
     //     scan_product_bundle(frm);
     // },
     
-   scan_barcode(frm) {
+//    scan_barcode(frm) {
 
-    if (!frm.doc.scan_barcode) return;
+//     if (!frm.doc.scan_barcode) return;
 
-    frm._from_barcode_scan = true;
+//     frm._from_barcode_scan = true;
 
-    setTimeout(() => {
-        frm._from_barcode_scan = false;
-    }, 1000);
-}
+//     setTimeout(() => {
+//         frm._from_barcode_scan = false;
+//     }, 1000);
+// }
 });
 
 function check_duplicate_serials(frm) {
@@ -193,26 +197,25 @@ function check_duplicate_serials(frm) {
 
 frappe.ui.form.on("Sales Invoice Item", {
 
-    item_code(frm, cdt, cdn) {
+    // item_code(frm, cdt, cdn) {
 
-        let row = locals[cdt][cdn];
-        if (!row.item_code) return;
-
-        // ✅ If coming from barcode
-        if (frm.__barcode_scanning || frappe.flags.in_barcode_scan) {
-            frappe.model.set_value(cdt, cdn, "custom_scanned_via_barcode", 1);
-            return;
-        }
+    //     let row = locals[cdt][cdn];
+    //     if (!row.item_code) return;
+    //     // ✅ If coming from barcode
+    //     if (frm.__barcode_scanning || frappe.flags.in_barcode_scan) {
+    //         frappe.model.set_value(cdt, cdn, "custom_scanned_via_barcode", 1);
+    //         return;
+    //     }
 
         
-        // frappe.msgprint({
-        //     title: "Scan Required",
-        //     message: "Please scan Item using Barcode. Manual selection not allowed.",
-        //     indicator: "red"
-        // });
+    //     // frappe.msgprint({
+    //     //     title: "Scan Required",
+    //     //     message: "Please scan Item using Barcode. Manual selection not allowed.",
+    //     //     indicator: "red"
+    //     // });
 
-        frappe.model.set_value(cdt, cdn, "item_code", "");
-    },
+    //     // frappe.model.set_value(cdt, cdn, "item_code", "");
+    // },
 
     qty(frm, cdt, cdn) {
         // toggle_update_stock(frm);
@@ -224,19 +227,33 @@ frappe.ui.form.on("Sales Invoice Item", {
             }
         }
     },
-   serial_no(frm, cdt, cdn) {
+    // serial_no(frm, cdt, cdn) {
 
-    if (frm._from_barcode_scan) return;
+    //     let row = locals[cdt][cdn];
+    //     if (!row.serial_no) return;
 
-    let row = locals[cdt][cdn];
-    if (!row.serial_no) return;
+    //     // Remove duplicate serials
+    //     let unique_serials = [...new Set(
+    //         row.serial_no
+    //             .split("\n")
+    //             .map(s => s.trim())
+    //             .filter(s => s)
+    //     )];
 
-    let count = row.serial_no
-        .split("\n")
-        .filter(s => s.trim()).length;
+    //     frappe.model.set_value(
+    //         cdt,
+    //         cdn,
+    //         "serial_no",
+    //         unique_serials.join("\n")
+    //     );
 
-    frappe.model.set_value(cdt, cdn, "qty", count);
-}
+    //     frappe.model.set_value(
+    //         cdt,
+    //         cdn,
+    //         "qty",
+    //         unique_serials.length
+    //     );
+    // }
     
     // serial_no(frm, cdt, cdn) {
     //     if (!frm.doc.is_return) return;
