@@ -1230,3 +1230,40 @@ def get_sales_invoice_city(sales_invoice):
             return city
 
     return None
+
+
+
+import frappe
+
+# @frappe.whitelist()
+# def get_sales_invoice_by_serial(serial):
+
+#     if not serial:
+#         return []
+
+#     serial = serial.strip()
+
+#     invoices = frappe.db.sql("""
+#         SELECT DISTINCT parent
+#         FROM `tabSales Invoice Item`
+#         WHERE FIND_IN_SET(%s, REPLACE(serial_no, '\n', ','))
+#         OR serial_no LIKE %s
+#     """, (serial, "%" + serial + "%"), as_dict=True)
+
+#     return [d.parent for d in invoices]
+
+import frappe
+
+@frappe.whitelist()
+def get_sales_invoice_by_serial(serial):
+
+    if not serial:
+        return []
+
+    invoices = frappe.db.sql("""
+        SELECT DISTINCT parent
+        FROM `tabSales Invoice Item`
+        WHERE serial_no LIKE %s
+    """, ("%" + serial + "%"))
+
+    return [d[0] for d in invoices]

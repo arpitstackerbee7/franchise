@@ -215,7 +215,8 @@ app_include_js = [
     "/assets/franchise_erp/js/customer_quick_entry.js",
     "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     "/assets/franchise_erp/js/uploader_patch.js",
-    "/assets/franchise_erp/js/barcode_scanner_override.js"
+    "/assets/franchise_erp/js/barcode_scanner_override.js",
+    # "/assets/franchise_erp/js/sales_invoice_list.js"
 ]
 
    
@@ -250,7 +251,12 @@ doctype_tree_js = {
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
-doctype_list_js = {"Stock Entry" : "public/js/stock_entry_list.js"}
+doctype_list_js = {
+    
+    "Stock Entry" : "public/js/stock_entry_list.js",
+    "Sales Invoice": "public/js/sales_invoice_list.js"
+    }
+
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
