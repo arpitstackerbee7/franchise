@@ -401,37 +401,34 @@ def apply_purchase_term_freight(doc, method):
     if not doc.custom_purchase_term:
         return
 
+    # Get Purchase Term Template
     term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
 
-    has_freight = any(
-        row.charge_type == "Freight"
-        for row in term.purchase_term_charges
-    )
-
-    if not has_freight:
-        return
-
+    # Get configured freight account for company
     freight_account = get_freight_account(doc.company)
 
+    # Get freight value from purchase term template
+    freight_value = 0
     for row in term.purchase_term_charges:
-        if row.charge_type != "Freight":
-            continue
+        if row.charge_type == "Freight":
+            freight_value = row.value or 0
+            break
 
-        if any(
-            t.account_head == freight_account
-            and t.charge_type == "Actual"
-            for t in doc.taxes
+    if not freight_value:
+        return
+
+    # Now update existing tax row (DO NOT append)
+    for tax in doc.taxes:
+        if (
+            tax.account_head == freight_account
+            and tax.charge_type == "Actual"
         ):
-            continue
+            tax.tax_amount = freight_value
+            # no need to manually set total
+            break
 
-        tax = doc.append("taxes", {})
-        tax.charge_type = "Actual"
-        tax.category = "Total"
-        tax.add_deduct_tax = "Add"
-        tax.account_head = freight_account
-        tax.tax_amount = row.value
-        tax.total = row.value + doc.total
-        tax.description = "Freight Charges (Purchase Term)"
+    # Let ERPNext recalculate everything properly
+    doc.calculate_taxes_and_totals()
 
 
 
@@ -453,7 +450,6 @@ def get_freight_account(company):
 
     return account
 
-import frappe
 
 @frappe.whitelist()
 def get_gate_entry_with_po_child(doctype, txt, filters, page_length=20, start=0):
