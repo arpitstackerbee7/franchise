@@ -596,7 +596,8 @@ function add_export_button(frm) {
                 "custom_group_collection",
                 "custom_top_fabrics",
                 "custom_colour_name",
-                "custom_size"
+                "custom_size",
+                "custom_barcode_code"
             ],
             limit: 500
         });
@@ -639,7 +640,7 @@ function generate_fixed_excel(frm, item_map) {
                 <td>${frm.doc.posting_date || ''}</td>
                 <td>${item.serial_no ? item.serial_no.split('\n')[0] : ''}</td>
                 <td>${item.gst_hsn_code || ''}</td>
-                <td>${item.item_code || ''}</td>
+                <td>${m.custom_barcode_code || ''}</td>
                 <td>${m.custom_group_collection || ''}</td>
                 <td>${m.custom_top_fabrics || ''}</td>
                 <td>${m.custom_colour_name || ''}</td>
@@ -684,7 +685,7 @@ function generate_fixed_excel(frm, item_map) {
                     </th>
                 </tr>
 
-                <tr bgcolor="#E0E0E0">
+                <tr bgcolor="#C6E0B4" style="font-weight:bold; height:25pt; text-align:center;">
                     <th width="120">Invoice No.</th>
                     <th width="100">Invoice date</th>
                     <th width="200">Serial No./BARCODE</th>
