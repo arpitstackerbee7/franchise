@@ -64,7 +64,6 @@ doc_events = {
         # "before_insert": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
         "on_submit": ["franchise_erp.api.create_selling_price_from_po","franchise_erp.custom.purchase_order.generate_serials_on_po_submit"],
         "before_validate": ["franchise_erp.custom.purchase_order.apply_purchase_term"],
-        "before_save": "franchise_erp.custom.purchase_order.apply_purchase_term_freight",
         # "on_change": "franchise_erp.api.on_change"
     },
     "Purchase Receipt": {

@@ -397,54 +397,6 @@ def apply_purchase_term(doc, method):
         doc.discount_amount = total_flat_discount
 
 
-def apply_purchase_term_freight(doc, method):
-    if not doc.custom_purchase_term:
-        return
-
-    term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
-
-    # Get all freight accounts for company
-    freight_accounts = get_freight_accounts(doc.company)
-
-    if not freight_accounts:
-        return
-
-    # Get freight value from purchase term template
-    freight_value = 0
-    for row in term.purchase_term_charges:
-        if row.charge_type == "Freight":
-            freight_value = row.value or 0
-            break
-
-    if not freight_value:
-        return
-
-    updated = False
-
-    # Update existing tax rows
-    for tax in doc.taxes:
-        if (
-            tax.account_head in freight_accounts
-            and tax.charge_type == "Actual"
-        ):
-            tax.tax_amount = freight_value
-            updated = True
-
-    if updated:
-        doc.calculate_taxes_and_totals()
-
-
-
-def get_freight_accounts(company):
-    return frappe.get_all(
-        "Account",
-        filters={
-            "company": company,
-            "custom_is_freight_account": 1,
-            "is_group": 0
-        },
-        pluck="name"
-    )
 
 @frappe.whitelist()
 def get_gate_entry_with_po_child(doctype, txt, filters, page_length=20, start=0):
