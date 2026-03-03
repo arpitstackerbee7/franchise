@@ -11,11 +11,11 @@ frappe.ui.form.on("Sales Invoice", {
 
         // Read Only Title
         frm.set_df_property("title", "read_only", 1);
-        frm.fields_dict.items.grid.update_docfield_property(
-            "item_code",
-            "read_only",
-            1
-        );
+        // frm.fields_dict.items.grid.update_docfield_property(
+        //     "item_code",
+        //     "read_only",
+        //     1
+        // );
         // Button handlers
         handle_inter_company_grn(frm);
         toggle_incoming_logistic_button(frm);
