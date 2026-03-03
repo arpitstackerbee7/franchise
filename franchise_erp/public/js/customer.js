@@ -220,20 +220,16 @@ frappe.ui.form.on('Customer', {
         ).then(r => {
             const flag = r.message.custom_disable_validation_for_counter;
 
-            // 🔹 Mandatory toggle
             frm.toggle_reqd('customer_group', flag);
             frm.toggle_reqd('custom_agent', flag);
             frm.toggle_reqd('default_price_list', flag);
 
-            // 🔹 If unchecked → set default price list = MRP (only if exists & enabled)
+            // Set defaults if validation disabled
             if (!flag) {
-                 frm.set_value('tax_category', 'In-State');
-                frappe.db.get_value(
-                    'Price List',
-                    'MRP',
-                    'enabled'
-                ).then(res => {
-                    // Price List not found OR disabled
+                frm.set_value('tax_category', 'In-State');
+
+                // Set default price list = MRP
+                frappe.db.get_value('Price List', {price_list_name: 'MRP'}, 'enabled').then(res => {
                     if (!res.message || res.message.enabled != 1) {
                         frappe.msgprint({
                             title: __('Invalid Price List'),
@@ -242,16 +238,26 @@ frappe.ui.form.on('Customer', {
                         });
                         return;
                     }
-
-                    // Exists & enabled
                     if (!frm.doc.default_price_list) {
                         frm.set_value('default_price_list', 'MRP');
-                        
+                    }
+                });
+
+                // Set default customer group = Retail
+                frappe.db.get_value('Customer Group', {customer_group_name: 'Retail'}, 'name').then(res => {
+                    if (!res.message) {
+                        frappe.msgprint({
+                            title: __('Invalid Customer Group'),
+                            message: __('Please create <b>Retail</b> Customer Group'),
+                            indicator: 'red'
+                        });
+                        return;
+                    }
+                    if (!frm.doc.customer_group) {
+                        frm.set_value('customer_group', res.message.name);
                     }
                 });
             }
-
-            // console.log('Disable Validation For Counter:', flag);
         });
     }
 });
