@@ -35,3 +35,73 @@ def create_incoming_logistics_from_scr(subcontracting_receipt):
         row.warehouse = item.warehouse
 
     return il.as_dict()
+
+
+
+@frappe.whitelist()
+def get_item_by_barcode(barcode):
+    """Return item_code for a barcode"""
+    if not barcode:
+        return None
+
+    item = frappe.db.get_value(
+        "Item Barcode",
+        {"barcode": barcode},
+        "parent"
+    )
+
+    if not item:
+        return None
+
+    return {"item_code": item}
+
+ 
+
+@frappe.whitelist()
+def validate_po_serial(scanned_serial, po_items):
+    """
+    Validate scanned serial:
+    1. Must exist in custom_generated_serials
+    2. Must NOT exist in custom_used_serials
+    """
+
+    if isinstance(po_items, str):
+        po_items = frappe.parse_json(po_items)
+
+    for poi in po_items:
+        values = frappe.db.get_value(
+            "Purchase Order Item",
+            poi,
+            ["custom_generated_serials", "custom_used_serials"],
+            as_dict=True
+        )
+
+        if not values or not values.custom_generated_serials:
+            continue
+
+        generated_serials = [
+            s.strip() for s in values.custom_generated_serials.split("\n")
+            if s.strip()
+        ]
+
+        used_serials = [
+            s.strip() for s in (values.custom_used_serials or "").split("\n")
+            if s.strip()
+        ]
+
+        # ❌ Already used serial validation
+        if scanned_serial in used_serials:
+            frappe.throw(
+                f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> is already used"
+            )
+
+        # ✅ Valid serial
+        if scanned_serial in generated_serials:
+            return {
+                "purchase_order_item": poi
+            }
+
+    # ❌ Serial not found in PO
+    frappe.throw(
+        f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
+    )
