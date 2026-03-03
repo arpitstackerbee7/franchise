@@ -37,7 +37,7 @@ function apply_charge_rules(frm, row) {
 
     /* ---------------- VALUE TYPE RULES ---------------- */
 
-    if (["Rate Diff", "Freight"].includes(row.charge_type)) {
+    if (["Rate Diff"].includes(row.charge_type)) {
         grid.update_docfield_property("value_type", "options", ["Amount"]);
         grid.update_docfield_property("value_type", "read_only", 1);
         frappe.model.set_value(row.doctype, row.name, "value_type", "Amount");
@@ -71,7 +71,7 @@ frappe.ui.form.on("Purchase Term Charges", {
 });
 
 function hide_add_row_after_render(frm) {
-    const max_rows = 3;
+    const max_rows = 2;
 
     // wait for grid re-render
     setTimeout(() => {

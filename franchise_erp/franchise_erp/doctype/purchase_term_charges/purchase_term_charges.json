@@ -19,7 +19,6 @@
    "label": "Value"
   },
   {
-   "depends_on": "eval:doc.charge_type!=\"Freight\"",
    "fieldname": "apply_on",
    "fieldtype": "Select",
    "label": "Apply On",
@@ -37,14 +36,14 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Charge Type",
-   "options": "\nRate Diff\nDiscount\nFreight"
+   "options": "\nRate Diff\nDiscount"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-01-13 11:20:32.457439",
+ "modified": "2026-03-03 16:07:03.689145",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Purchase Term Charges",
