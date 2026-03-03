@@ -200,7 +200,13 @@ frappe.ui.form.on("Purchase Receipt", {
                     let row = empty_row || frm.add_child("items");
 
                     frappe.model.set_value(row.doctype, row.name, "item_code", item_code);
-                    frappe.model.set_value(row.doctype, row.name, "qty", 1);
+                    // frappe.model.set_value(row.doctype, row.name, "qty", 1);
+                    
+                    // added by mayuri
+                    // Exact Fix for New Barcode Row
+                    let step = frm.doc.is_return ? -1 : 1;
+                    frappe.model.set_value(row.doctype, row.name, "qty", step);
+                    frappe.model.set_value(row.doctype, row.name, "received_qty", step);
 
                     frm.refresh_field("items");
                     update_total_qty(frm);
@@ -264,7 +270,13 @@ frappe.ui.form.on("Purchase Receipt", {
                         serials.push(scanned_value);
 
                         row.serial_no = serials.join("\n");
-                        row.qty = (row.qty || 0) + 1;
+                        // row.qty = (row.qty || 0) + 1;
+
+                        // added by mayuri
+                        // Exact Fix for Serial Number Scan
+                        let step = frm.doc.is_return ? -1 : 1;
+                        row.qty = flt(row.qty || 0) + step;
+                        row.received_qty = row.qty; // Very important to fix mismatch error
 
                         frm.refresh_field("items");
                         update_total_qty(frm);
