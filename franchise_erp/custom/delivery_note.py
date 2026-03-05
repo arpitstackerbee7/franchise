@@ -150,3 +150,20 @@ def apply_sales_person_rules(doc, method=None):
             "allocated_amount": allocated_amount,
             "incentives": incentives
         })
+
+
+
+
+@frappe.whitelist()
+def get_delivery_note_by_serial(serial):
+
+    if not serial:
+        return []
+
+    invoices = frappe.db.sql("""
+        SELECT DISTINCT parent
+        FROM `tabDelivery Note Item`
+        WHERE serial_no LIKE %s
+    """, ("%" + serial + "%"))
+
+    return [d[0] for d in invoices]

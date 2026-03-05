@@ -13,7 +13,7 @@ def create_custom_fields():
                 "options": "Company",
                 "insert_after": "username",
                 "permlevel": 0,
-                "reqd": 1
+                "reqd": 0
             },
             # {
             #     "fieldname": "franchise_company",

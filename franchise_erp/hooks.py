@@ -252,7 +252,8 @@ doctype_tree_js = {
 doctype_list_js = {
     
     "Stock Entry" : "public/js/stock_entry_list.js",
-    "Sales Invoice": "public/js/sales_invoice_list.js"
+    "Sales Invoice": "public/js/sales_invoice_list.js",
+    "Delivery Note": "public/js/delivery_note_list.js"
     }
 
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
