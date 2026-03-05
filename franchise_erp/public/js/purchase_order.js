@@ -240,3 +240,25 @@ frappe.ui.form.on("Purchase Order Item", {
 
    
 });
+
+// by mayuri Tupe
+frappe.ui.form.on('Purchase Order', {
+    refresh: function(frm) {
+        // Filter Transporter field to show only Suppliers marked as Transporter
+        frm.set_query('custom_transporter', function() {
+            return {
+                filters: {
+                    'is_transporter': 1
+                }
+            };
+        });
+        // Filter Agent field to show only Suppliers marked as Agent
+        frm.set_query('custom_agent_supplier', function() {
+            return {
+                filters: {
+                    'custom_is_agent': 1
+                }
+            };
+        });
+    }
+});
