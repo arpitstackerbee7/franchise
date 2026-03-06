@@ -51,3 +51,25 @@ def create_custom_fields():
             except Exception:
                 frappe.log_error(message=frappe.get_traceback(),
                                  title="Custom Field Creation Failed")
+
+# import frappe
+# from frappe.custom.doctype.custom_field.custom_field import create_custom_field
+
+# def create_custom_fields():
+
+#     custom_fields = {
+#         "User": [
+#             {
+#                 "fieldname": "company",
+#                 "label": "Company",
+#                 "fieldtype": "Link",
+#                 "options": "Company",
+#                 "insert_after": "username",
+#                 "reqd": 0
+#             }
+#         ]
+#     }
+
+#     for doctype, fields in custom_fields.items():
+#         for field in fields:
+#             create_custom_field(doctype, field)

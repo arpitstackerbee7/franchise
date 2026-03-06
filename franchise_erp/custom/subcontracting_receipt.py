@@ -105,3 +105,22 @@ def validate_po_serial(scanned_serial, po_items):
     frappe.throw(
         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
     )
+
+
+import frappe
+
+
+@frappe.whitelist()
+def get_po_item_qty(po_item):
+
+    if not po_item:
+        return 0
+
+    # ignore permissions
+    qty = frappe.db.get_value(
+        "Purchase Order Item",
+        po_item,
+        "qty"
+    )
+
+    return qty or 0
