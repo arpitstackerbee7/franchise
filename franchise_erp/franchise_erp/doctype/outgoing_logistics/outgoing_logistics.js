@@ -168,7 +168,7 @@ function open_purchase_return_mapper(frm) {
     }
 
     new frappe.ui.form.MultiSelectDialog({
-        doctype: "Purchase Receipt",
+        doctype: "Purchase Invoice",
         target: frm,
         setters: {
             supplier: frm.doc.consignee_supplier,
@@ -177,11 +177,11 @@ function open_purchase_return_mapper(frm) {
         get_query() {
             return {
                 filters: [
-                    ["Purchase Receipt", "is_return", "=", 1],
-                    ["Purchase Receipt", "docstatus", "=", 1],
-                    ["Purchase Receipt", "custom_outgoing_logistics_reference", "is", "not set"],
-                    ["Purchase Receipt", "supplier", "=", frm.doc.consignee_supplier],
-                    ["Purchase Receipt", "company", "=", frm.doc.owner_site]
+                    ["Purchase Invoice", "is_return", "=", 1],
+                    ["Purchase Invoice", "docstatus", "=", 1],
+                    ["Purchase Invoice", "custom_outgoing_logistics_reference", "is", "not set"],
+                    ["Purchase Invoice", "supplier", "=", frm.doc.consignee_supplier],
+                    ["Purchase Invoice", "company", "=", frm.doc.owner_site]
                 ]
             };
         },
@@ -189,9 +189,9 @@ function open_purchase_return_mapper(frm) {
             add_rows(frm, selections);
             if (selections && selections.length) {
         frappe.call({
-            method: "franchise_erp.custom.purchase_reciept.get_purchase_receipt_city",
+            method: "franchise_erp.custom.purchase_invoice.get_purchase_invoice_city",
             args: {
-                purchase_receipt: selections[0]
+                purchase_invoice: selections[0]
             },
             callback: function (r) {
                 console.log("City:", r.message);
@@ -235,7 +235,7 @@ function open_stock_entry_mapper(frm) {
 const TYPE_DOCTYPE_MAP = {
     "Sales Invoice": "Sales Invoice",
     "Job Order": "Subcontracting Order",
-    "Purchase Return": "Purchase Receipt",
+    "Purchase Return": "Purchase Invoice",
     "Stock Entry": "Stock Entry"
 };
 function add_rows(frm, selections) {
