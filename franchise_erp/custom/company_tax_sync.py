@@ -17,7 +17,7 @@ def update_gst_hsn_code_taxes(docname, company):
         frappe.throw(f"Abbreviation not found for Company: {company}")
 
     # Get HSN SAC and Tax Categories document
-    main_doc = frappe.get_doc("HSN SAC and Tax Categories", docname)
+    main_doc = frappe.get_doc("Bulk Update HSN SAC and Tax Categories", docname)
 
     if not main_doc.hsn__and_taxes:
         return "No HSN Codes found to process"
