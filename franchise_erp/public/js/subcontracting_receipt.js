@@ -457,6 +457,7 @@ frappe.ui.form.on("Subcontracting Receipt", {
 //     });
 // }
 
+
 // function clear_barcode_field(frm) {
 
 //     frm.doc.custom_scan_barcode = "";
@@ -488,9 +489,14 @@ frappe.ui.form.on("Subcontracting Receipt", {
 //     frm.set_value("total_qty", total);
 
 // }
+
+let scan_in_progress = false;
+
 frappe.ui.form.on("Subcontracting Receipt", {
 
-    custom_scan_barcode(frm) {
+    custom_scan_barcode: async function(frm) {
+
+        if (scan_in_progress) return;
 
         let scanned_value = frm.doc.custom_scan_barcode;
 
@@ -500,218 +506,204 @@ frappe.ui.form.on("Subcontracting Receipt", {
 
         if (!scanned_value) return;
 
+        scan_in_progress = true;
 
-        // -------------------------------------------------
-        // CHECK DUPLICATE SERIAL IN CURRENT GRN
-        // -------------------------------------------------
+        try {
 
-        for (let row of (frm.doc.items || [])) {
+            // -------------------------
+            // DUPLICATE SERIAL CHECK
+            // -------------------------
 
-            if (row.serial_no) {
+            for (let row of (frm.doc.items || [])) {
 
-                let serials = row.serial_no.split("\n").map(s => s.trim());
+                if (row.serial_no) {
 
-                if (serials.includes(scanned_value)) {
+                    let serials = row.serial_no.split("\n").map(s => s.trim());
 
-                    clear_barcode_field(frm);
+                    if (serials.includes(scanned_value)) {
 
-                    frappe.throw(`Serial No <b>${scanned_value}</b> already scanned`);
+                        frappe.throw(`Serial No <b>${scanned_value}</b> already scanned`);
+                    }
                 }
             }
-        }
 
 
-        // -------------------------------------------------
-        // CHECK IF BARCODE IS ITEM BARCODE
-        // -------------------------------------------------
+            // -------------------------
+            // CHECK ITEM BARCODE
+            // -------------------------
 
-        frappe.call({
-            method: "franchise_erp.custom.subcontracting_receipt.get_item_by_barcode",
-            args: { barcode: scanned_value },
+            let item_res = await frappe.call({
 
-            callback: function(res) {
+                method: "franchise_erp.custom.subcontracting_receipt.get_item_by_barcode",
 
-                // -------------------------------------------------
-                // ITEM BARCODE FOUND
-                // -------------------------------------------------
+                args: { barcode: scanned_value }
 
-                if (res.message && res.message.item_code) {
+            });
 
-                    let item_code = res.message.item_code;
 
-                    let existing_row = (frm.doc.items || []).find(
-                        d => d.item_code === item_code
-                    );
+            if (item_res.message && item_res.message.item_code) {
 
-                    if (existing_row) {
+                let item_code = item_res.message.item_code;
 
-                        check_po_qty_and_update(frm, existing_row);
-                        clear_barcode_field(frm);
-                        return;
-                    }
+                let row = (frm.doc.items || []).find(d => d.item_code === item_code);
 
-                    let empty_row = (frm.doc.items || []).find(d => !d.item_code);
+                if (!row) {
 
-                    let row = empty_row || frm.add_child("items");
+                    row = frm.add_child("items");
 
-                    frappe.model.set_value(
-                        row.doctype,
-                        row.name,
-                        "item_code",
-                        item_code
-                    );
+                    await frappe.model.set_value(row.doctype, row.name, "item_code", item_code);
 
                     row.qty = 0;
-
-                    frm.refresh_field("items");
-
-                    check_po_qty_and_update(frm, row);
-
-                    clear_barcode_field(frm);
-
-                    return;
                 }
 
+                await increase_qty(frm, row);
 
-                // -------------------------------------------------
-                // SERIAL VALIDATION
-                // -------------------------------------------------
+                frm.refresh_field("items");
 
-                let po_items = (frm.doc.items || [])
-                    .filter(d => d.purchase_order_item)
-                    .map(d => d.purchase_order_item);
+                clear_barcode_field(frm);
 
-                if (!po_items.length) {
+                scan_in_progress = false;
 
-                    clear_barcode_field(frm);
-
-                    frappe.throw("No Purchase Order linked in items");
-                }
-
-
-                frappe.call({
-
-                    method: "franchise_erp.custom.subcontracting_receipt.validate_po_serial",
-
-                    args: {
-                        scanned_serial: scanned_value,
-                        po_items
-                    },
-
-                    callback: function(r) {
-
-                        if (!r.message) return;
-
-                        let { purchase_order_item } = r.message;
-
-                        let row = frm.doc.items.find(
-                            d => d.purchase_order_item === purchase_order_item
-                        );
-
-                        if (!row)
-                            frappe.throw("Matching GRN item row not found");
-
-
-                        // -------------------------------------
-                        // ADD SERIAL
-                        // -------------------------------------
-
-                        let serials = row.serial_no
-                            ? row.serial_no.split("\n").map(s => s.trim())
-                            : [];
-
-                        if (!serials.includes(scanned_value)) {
-                            serials.push(scanned_value);
-                        }
-
-                        row.serial_no = serials.join("\n");
-
-                        frm.refresh_field("items");
-
-
-                        // -------------------------------------
-                        // INCREASE QTY
-                        // -------------------------------------
-
-                        check_po_qty_and_update(frm, row);
-
-                    },
-
-                    always() {
-
-                        clear_barcode_field(frm);
-
-                    }
-
-                });
-
+                return;
             }
 
-        });
+
+            // -------------------------
+            // SERIAL VALIDATION
+            // -------------------------
+
+            let po_items = (frm.doc.items || [])
+                .filter(d => d.purchase_order_item)
+                .map(d => d.purchase_order_item);
+
+
+            if (!po_items.length) {
+
+                frappe.throw("No Purchase Order linked in items");
+            }
+
+
+            let serial_res = await frappe.call({
+
+                method: "franchise_erp.custom.subcontracting_receipt.validate_po_serial",
+
+                args: {
+                    scanned_serial: scanned_value,
+                    po_items
+                }
+
+            });
+
+
+            if (!serial_res.message) {
+
+                frappe.throw("Invalid Serial No");
+            }
+
+
+            let { purchase_order_item } = serial_res.message;
+
+            let row = frm.doc.items.find(
+                d => d.purchase_order_item === purchase_order_item
+            );
+
+            if (!row) {
+
+                frappe.throw("Matching GRN item row not found");
+            }
+
+
+            // -------------------------
+            // ADD SERIAL
+            // -------------------------
+
+            let serials = row.serial_no
+                ? row.serial_no.split("\n").map(s => s.trim())
+                : [];
+
+            serials.push(scanned_value);
+
+            row.serial_no = serials.join("\n");
+
+            // enable serial view in edit
+            row.use_serial_batch_fields = 1;
+
+            frm.refresh_field("items");
+
+
+            // -------------------------
+            // INCREASE QTY
+            // -------------------------
+
+            await increase_qty(frm, row);
+
+            update_total_qty(frm);
+
+        }
+
+        catch (e) {
+
+            frappe.msgprint(e.message);
+
+        }
+
+        finally {
+
+            clear_barcode_field(frm);
+
+            scan_in_progress = false;
+
+        }
 
     }
 
 });
 
 
-// -------------------------------------------------
-// CHECK PO QTY
-// -------------------------------------------------
+// -------------------------
+// INCREASE QTY WITH PO CHECK
+// -------------------------
 
-function check_po_qty_and_update(frm, row) {
+async function increase_qty(frm, row) {
 
-    if (!row.purchase_order_item) {
-
-        frappe.throw(`Purchase Order Item missing for <b>${row.item_code}</b>`);
-    }
-
-    frappe.call({
+    let res = await frappe.call({
 
         method: "franchise_erp.custom.subcontracting_receipt.get_po_item_qty",
 
         args: {
             po_item: row.purchase_order_item
-        },
-
-        callback: function(r) {
-
-            let po_qty = r.message || 0;
-
-            let current_qty = row.qty || 0;
-
-            if (current_qty + 1 > po_qty) {
-
-                frappe.throw(
-                    `You cannot scan more than PO Qty (${po_qty}) for Item <b>${row.item_code}</b>`
-                );
-            }
-
-            frappe.model.set_value(
-                row.doctype,
-                row.name,
-                "qty",
-                current_qty + 1
-            );
-
-            frm.refresh_field("items");
-
-            update_total_qty(frm);
         }
 
     });
 
+    let po_qty = res.message || 0;
+
+    let current_qty = row.qty || 0;
+
+    if (current_qty + 1 > po_qty) {
+
+        frappe.throw(
+            `You cannot scan more than PO Qty (${po_qty}) for Item <b>${row.item_code}</b>`
+        );
+    }
+
+    await frappe.model.set_value(
+        row.doctype,
+        row.name,
+        "qty",
+        current_qty + 1
+    );
+
 }
 
 
-// -------------------------------------------------
+// -------------------------
 // CLEAR BARCODE FIELD
-// -------------------------------------------------
+// -------------------------
 
 function clear_barcode_field(frm) {
 
-    frm.doc.custom_scan_barcode = "";
-
-    frm.refresh_field("custom_scan_barcode");
+    frm.set_value("custom_scan_barcode", "");
 
     setTimeout(() => {
 
@@ -726,9 +718,9 @@ function clear_barcode_field(frm) {
 }
 
 
-// -------------------------------------------------
+// -------------------------
 // UPDATE TOTAL QTY
-// -------------------------------------------------
+// -------------------------
 
 function update_total_qty(frm) {
 
