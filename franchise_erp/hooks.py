@@ -176,6 +176,9 @@ doctype_js = {
     "Supplier Group": "public/js/supplier_group.js",
     "Item Group": "public/js/item_group.js",
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
+    # "Customer": "public/js/customer_quick_entry.js",
+    # "Customer": "public/js/customer_quick_entry_patch.js"
+
 }
 
 
@@ -212,7 +215,7 @@ app_include_js = [
     "/assets/franchise_erp/js/doctype_overrides.js",
     "/assets/franchise_erp/js/session_company.js?v=120",
     "/assets/franchise_erp/js/customer_quick_entry.js",
-    "/assets/franchise_erp/js/customer_quick_entry_patch.js",
+    # "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     "/assets/franchise_erp/js/uploader_patch.js",
     "/assets/franchise_erp/js/barcode_scanner_override.js",
 ]

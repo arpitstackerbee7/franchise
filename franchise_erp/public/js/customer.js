@@ -23,27 +23,27 @@ frappe.ui.form.on("Customer", {
 frappe.ui.form.on("Customer", {
     onload(frm) {
         apply_company_credit_rules(frm);
-        set_required_fields(frm);
+        // set_required_fields(frm);
         // toggle_parent_company_fields(frm);
 
     },
     onload_post_render(frm) {
         //  EDIT FULL FORM FIX
-        set_required_fields(frm);
+        // set_required_fields(frm);
         apply_company_credit_rules(frm);
         // toggle_parent_company_fields(frm);
 
     },
 
     refresh(frm) {
-        set_required_fields(frm);
+        // set_required_fields(frm);
         apply_company_credit_rules(frm);
         // toggle_parent_company_fields(frm);
 
     },
 
     custom_company(frm) {
-        set_required_fields(frm);
+        // set_required_fields(frm);
         apply_company_credit_rules(frm);
         // toggle_parent_company_fields(frm);
     }
@@ -51,31 +51,37 @@ frappe.ui.form.on("Customer", {
 
 
 
-function set_required_fields(frm) {
+// function set_required_fields(frm) {
+//     // 🔒 form / fields ready hone ke baad hi run ho
 
-    // field hamesha visible rahe
-    frm.toggle_display("custom_mobile_no_customer", 1);
+//     if (!frm.doc.custom_company) {
+//         setTimeout(() => {
 
-    if (!frm.doc.custom_company) {
-        frm.set_df_property("custom_mobile_no_customer", "reqd", 0);
-        frm.refresh_field("custom_mobile_no_customer");
-        return;
-    }
+//             frm.set_df_property("custom_mobile_no_customer", "reqd", 0);
+//             frm.toggle_display("custom_mobile_no_customer", 1);
 
-    frappe.db.get_value("Company", frm.doc.custom_company, "is_group")
-        .then(r => {
-            const is_group = r.message?.is_group || 0;
+//             frm.refresh_field("custom_mobile_no_customer");
+//         }, 0);
+//         return;
+//     }
 
-            // sirf mandatory change hoga
-            frm.set_df_property(
-                "custom_mobile_no_customer",
-                "reqd",
-                is_group ? 0 : 1
-            );
+//     frappe.db.get_value("Company", frm.doc.custom_company, "is_group")
+//         .then(r => {
+//             const is_group = r.message?.is_group;
 
-            frm.refresh_field("custom_mobile_no_customer");
-        });
-}
+//             setTimeout(() => {
+
+//                 frm.set_df_property(
+//                     "custom_mobile_no_customer",
+//                     "reqd",
+//                     is_group ? 0 : 1
+//                 );
+//                 frm.toggle_display("custom_mobile_no_customer", !is_group);
+
+//                 frm.refresh_field("custom_mobile_no_customer");
+//             }, 0);
+//         });
+// }
 
 function apply_company_credit_rules(frm) {
     if (!frm.doc.custom_company) return;
