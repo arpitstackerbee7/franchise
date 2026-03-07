@@ -198,7 +198,6 @@ doctype_js = {
 #     "franchise_erp.patches.add_user_custom_fields"
 # ]
 
-
 # hooks.py
 after_migrate = [
     "franchise_erp.event.add_user_custom_fields.create_custom_fields",
@@ -448,10 +447,10 @@ jinja = {
 # Authentication and authorization
 # --------------------------------
 
-# auth_hooks = [
-# 	"franchise_erp.auth.validate"
-# ]
 
+# auth_hooks = [
+#     "franchise_erp.auth.check_single_session"
+# ]
 # Automatically update python controller files with type annotations for this app.
 # export_python_type_annotations = True
 

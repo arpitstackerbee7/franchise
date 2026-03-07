@@ -175,3 +175,28 @@ def get_supplier_stats(supplier, company):
 
 
 
+@frappe.whitelist()
+def get_purchase_invoice_city(purchase_invoice):
+    pr = frappe.get_doc("Purchase Invoice", purchase_invoice)
+
+    # 1️⃣ Shipping Address (priority)
+    if pr.shipping_address:
+        city = frappe.db.get_value(
+            "Address",
+            pr.shipping_address,
+            "custom_citytown"
+        )
+        if city:
+            return city
+
+    # 2️⃣ Billing Address (fallback)
+    if pr.billing_address:
+        city = frappe.db.get_value(
+            "Address",
+            pr.billing_address,
+            "custom_citytown"
+        )
+        if city:
+            return city
+
+    return None
