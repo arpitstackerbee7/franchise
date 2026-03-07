@@ -76,7 +76,7 @@ frappe.ui.form.on("Customer", {
 //                     "reqd",
 //                     is_group ? 0 : 1
 //                 );
-//                 frm.toggle_display("custom_mobile_no_customer", !is_group);
+//                 // frm.toggle_display("custom_mobile_no_customer", !is_group);
 
 //                 frm.refresh_field("custom_mobile_no_customer");
 //             }, 0);
