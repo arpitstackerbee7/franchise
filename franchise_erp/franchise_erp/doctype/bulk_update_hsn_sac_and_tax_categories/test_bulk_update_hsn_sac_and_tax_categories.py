@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestHSNSACandTaxCategories(FrappeTestCase):
+class TestBulkUpdateHSNSACandTaxCategories(FrappeTestCase):
 	pass

@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class HSNSACandTaxCategories(Document):
+class BulkUpdateHSNSACandTaxCategories(Document):
 	pass

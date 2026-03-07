@@ -1,4 +1,4 @@
-frappe.ui.form.on("HSN SAC and Tax Categories", {
+frappe.ui.form.on("Bulk Update HSN SAC and Tax Categories", {
 
     refresh(frm) {
 
