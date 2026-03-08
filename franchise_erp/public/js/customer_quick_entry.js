@@ -1,101 +1,129 @@
 frappe.provide("frappe.ui.form");
 
-if (!frappe.ui.form.CustomerQuickEntryForm.is_overridden) {
+frappe.ui.form.CustomerQuickEntryForm = class CustomerQuickEntryForm extends frappe.ui.form.QuickEntryForm {
 
-    frappe.ui.form.CustomerQuickEntryForm = class CustomerQuickEntryForm extends frappe.ui.form.QuickEntryForm {
+    setup() {
+        this.mandatory = (this.mandatory || []).filter(
+            f => f !== "custom_mobile_no_customer"
+        );
 
-        render_dialog() {
+        return super.setup();
+    }
 
-            const allowed_fields = [
-                "customer_name",
-                "custom_company",
-                "custom_date_of_birth",
-                "custom_anniversary_date",
-                "custom_mobile_no_customer",
-                "customer_group",
-                "custom_agent",
-                "default_price_list",
-                "custom_company_abbrevation"
-            ];
+    render_dialog() {
+        super.render_dialog();
 
-            this.fields = this.fields.filter(df => allowed_fields.includes(df.fieldname));
+        const fields_to_hide = [
+            "customer_type",
+            "custom_transporter",
+            "gst_category",
+            "customer_group",
+            "default_price_list"
+        ];
 
-            super.render_dialog();
-
-            setTimeout(() => {
-                if (this.dialog) {
-                    this.dialog.set_primary_action(__('Save'), async () => {
-                        await this.save();
-                        if (this.dialog) {
-                            this.dialog.hide();
-                        }
-                    });
-
-                    this.dialog.get_primary_btn().text(__('Save'));
-                }
-            }, 100);
-            
-
-            if (this.dialog.fields_dict.custom_company_abbrevation) {
-                this.dialog.fields_dict.custom_company_abbrevation.$wrapper.hide();
+        fields_to_hide.forEach(fieldname => {
+            const field = this.dialog.fields_dict[fieldname];
+            if (field) {
+                field.$wrapper.hide();   // sirf Quick Entry
             }
 
-            this.init_custom_logic();
+        
+        });
+
+        const company_field = this.dialog.fields_dict.custom_company;
+        const mobile_field = this.dialog.fields_dict.custom_mobile_no_customer;
+
+        if (!company_field || !mobile_field) return;
+
+        const set_required_fields = (company) => {
+            if (!company) {
+                mobile_field.df.reqd = 0;
+                mobile_field.refresh();
+                return;
+            }
+
+            frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                    doctype: "Company",
+                    filters: { name: company },
+                    fieldname: ["is_group"]
+                },
+                callback: (r) => {
+                    const is_group = r?.message?.is_group || 0;
+
+                    // Parent company (is_group = 1) → mobile NOT mandatory
+                    // Normal company → mobile mandatory
+                    mobile_field.df.reqd = is_group ? 0 : 1;
+                    mobile_field.refresh();
+                }
+            });
+        };
+
+        // On dialog load
+        set_required_fields(company_field.get_value());
+
+        // On company change
+        company_field.df.onchange = () => {
+            set_required_fields(company_field.get_value());
+        };
+
+        const parent_only_fields = [
+        "customer_group",
+        "custom_agent",
+        "default_price_list"
+    ];
+
+    const handle_parent_company_fields = (company) => {
+        if (!company) {
+            parent_only_fields.forEach(fname => {
+                const field = this.dialog.fields_dict[fname];
+                if (field) {
+                    field.df.reqd = 0;
+                    field.$wrapper.hide();
+                    field.refresh();
+                }
+            });
+            return;
         }
 
-        init_custom_logic() {
+        frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+                doctype: "Company",
+                filters: { name: company },
+                fieldname: ["is_group"]
+            },
+            callback: (r) => {
+                const is_group = r?.message?.is_group || 0;
 
-            const f = this.dialog.fields_dict;
-            if (!f.custom_company) return;
+                parent_only_fields.forEach(fname => {
+                    const field = this.dialog.fields_dict[fname];
+                    if (!field) return;
 
-            const handle_logic = (company) => {
-
-                if (!company) return;
-
-                frappe.call({
-                    method: "frappe.client.get_value",
-                    args: {
-                        doctype: "Company",
-                        filters: { name: company },
-                        fieldname: "is_group"
-                    },
-                    callback: (r) => {
-
-                        const is_group = r.message?.is_group || 0;
-
-                        if (f.custom_mobile_no_customer) {
-                            f.custom_mobile_no_customer.df.reqd = is_group ? 0 : 1;
-                            f.custom_mobile_no_customer.refresh();
-                        }
-
-                        const p_fields = [
-                            "customer_group",
-                            "custom_agent",
-                            "default_price_list"
-                        ];
-
-                        p_fields.forEach(fname => {
-                            const field = f[fname];
-                            if (field) {
-                                is_group ? field.$wrapper.show() : field.$wrapper.hide();
-                                field.df.reqd = is_group ? 1 : 0;
-                                field.refresh();
-                            }
-                        });
-
+                    if (is_group) {
+                        field.$wrapper.show();
+                        field.df.reqd = 1;
+                    } else {
+                        field.$wrapper.hide();
+                        field.df.reqd = 0;
                     }
+                    field.refresh();
                 });
-            };
-
-            handle_logic(f.custom_company.get_value());
-
-            f.custom_company.df.onchange = () => {
-                handle_logic(f.custom_company.get_value());
-            };
-        }
+            }
+        });
     };
 
-    frappe.ui.form.quick_entry_callbacks["Customer"] = frappe.ui.form.CustomerQuickEntryForm;
+    handle_parent_company_fields(company_field.get_value());
 
-    frappe.ui.form.CustomerQuickEntryForm.is_overridden = true;
+    // ⚠️ IMPORTANT:
+    // onchange overwrite NA ho, isliye wrap karo
+    const old_onchange = company_field.df.onchange;
+    company_field.df.onchange = () => {
+        if (old_onchange) old_onchange();
+        handle_parent_company_fields(company_field.get_value());
+    };
+
 }
+    
+};
