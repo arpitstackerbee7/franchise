@@ -625,9 +625,6 @@ frappe.ui.form.on("Subcontracting Receipt", {
 
             row.serial_no = serials.join("\n");
 
-            // enable serial view in edit
-            row.use_serial_batch_fields = 1;
-
             frm.refresh_field("items");
 
 
