@@ -28,6 +28,9 @@ def set_session_company_from_user():
     if user == "Guest":
         return
 
+    if user == "Administrator":
+        return
+
     # 🔥 User master se company uthao
     user_company = frappe.db.get_value("User", user, "company")
 
