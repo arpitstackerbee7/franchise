@@ -36,30 +36,30 @@ class IncomingLogistics(Document):
    
     def on_submit(self):
 
-        for row in self.purchase_ids:
-            if not row.reference_doctype or not row.reference_name:
+        for row in self.references:
+
+            if not row.source_doctype or not row.source_name:
                 continue
 
             # =================================================
-            # 🔹 JOB WORK ORDER → Subcontracting ORDER Item
+            # 🔹 SUBCONTRACTING ORDER
             # =================================================
-            if row.reference_doctype == "Job Work Order":
+            if row.source_doctype == "Subcontracting Order":
                 frappe.db.sql("""
                     UPDATE `tabSubcontracting Order Item`
                     SET custom_incoming_logistic = %s
                     WHERE parent = %s
-                """, (self.name, row.reference_name))
+                """, (self.name, row.source_name))
 
             # =====================================
-            # 🔹 PURCHASE ORDER → Purchase Order Item
+            # 🔹 PURCHASE ORDER
             # =====================================
-            elif row.reference_doctype == "Purchase Order":
+            elif row.source_doctype == "Purchase Order":
                 frappe.db.sql("""
                     UPDATE `tabPurchase Order Item`
                     SET custom_incoming_logistic = %s
                     WHERE parent = %s
-                """, (self.name, row.reference_name))
-
+                """, (self.name, row.source_name))
 
     # def validate(self):
 

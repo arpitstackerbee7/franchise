@@ -508,3 +508,13 @@ frappe.ui.form.on("Purchase Receipt", {
 });
 
 
+// frappe.ui.form.on("Purchase Receipt Item", {
+//     item_code(frm, cdt, cdn) {
+//         let row = locals[cdt][cdn];
+
+//         if (frm.doc.is_subcontracted) {
+//             frappe.model.set_value(cdt, cdn, "use_serial_batch_fields", 0);
+//             frappe.model.set_value(cdt, cdn, "serial_no", "");
+//         }
+//     }
+// });
