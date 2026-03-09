@@ -6,5 +6,5 @@
 # Patches added in this section will be executed after doctypes are migrated
 
 
-
 franchise_erp.patches.remove_customer_mandatory_fields
+franchise_erp.patches.add_company_field_in_user_master

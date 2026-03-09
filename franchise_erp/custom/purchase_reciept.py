@@ -241,6 +241,81 @@ def validate_item(doc, method=None):
                 f"remaining PO Qty <b>{remaining_qty}</b>"
             )
 
+# def assign_serials_from_po_on_submit(doc, method=None):
+#     """
+#     On submit of Purchase Receipt:
+#     - Fetch serials from PO.custom_unused_serials
+#     - If empty → fallback to PO.custom_generated_serials
+#     - Assign serials based on qty
+#     - Avoid duplicates & already scanned serials
+#     """
+
+#     for row in doc.items:
+
+#         # 🔹 Skip if no PO item or qty
+#         if not row.purchase_order_item or not row.qty:
+#             continue
+
+#         # 🔹 Fetch both fields
+#         po_item = frappe.db.get_value(
+#             "Purchase Order Item",
+#             row.purchase_order_item,
+#             ["custom_unused_serials", "custom_generated_serials"],
+#             as_dict=True
+#         )
+
+#         if not po_item:
+#             continue
+
+#         # 🔹 Priority: unused → generated
+#         if not po_item.custom_generated_serials:
+#             return
+            
+#         source_serials = (
+#             po_item.custom_unused_serials
+#             or po_item.custom_generated_serials
+#         )
+
+#         if not source_serials:
+#             frappe.throw(
+#                 f"No serial numbers found in Purchase Order for item {row.item_code}"
+#             )
+
+#         po_serial_list = [
+#             s.strip() for s in source_serials.split("\n") if s.strip()
+#         ]
+
+#         # 🔹 Already scanned serials in PR
+#         existing_serials = []
+#         if row.serial_no:
+#             existing_serials = [
+#                 s.strip() for s in row.serial_no.split("\n") if s.strip()
+#             ]
+
+#         # 🔹 Remove already used serials
+#         available_serials = [
+#             s for s in po_serial_list if s not in existing_serials
+#         ]
+
+#         # 🔹 Required serial count
+#         required_qty = int(row.qty) - len(existing_serials)
+
+#         if required_qty <= 0:
+#             continue
+
+#         # 🔹 Fetch required serials only
+#         fetched_serials = available_serials[:required_qty]
+
+#         if len(fetched_serials) < required_qty:
+#             frappe.throw(
+#                 f"Not enough serial numbers available in Purchase Order for item {row.item_code}"
+#             )
+
+#         # 🔹 Merge existing + fetched
+#         final_serials = existing_serials + fetched_serials
+
+#         row.serial_no = "\n".join(final_serials)
+
 def assign_serials_from_po_on_submit(doc, method=None):
     """
     On submit of Purchase Receipt:
@@ -251,6 +326,13 @@ def assign_serials_from_po_on_submit(doc, method=None):
     """
 
     for row in doc.items:
+
+       
+        item_doc = frappe.get_cached_doc("Item", row.item_code)
+
+       
+        if not item_doc.is_stock_item or not item_doc.has_serial_no:
+            continue
 
         # 🔹 Skip if no PO item or qty
         if not row.purchase_order_item or not row.qty:
@@ -269,7 +351,7 @@ def assign_serials_from_po_on_submit(doc, method=None):
 
         # 🔹 Priority: unused → generated
         if not po_item.custom_generated_serials:
-            return
+            continue
             
         source_serials = (
             po_item.custom_unused_serials
@@ -285,25 +367,21 @@ def assign_serials_from_po_on_submit(doc, method=None):
             s.strip() for s in source_serials.split("\n") if s.strip()
         ]
 
-        # 🔹 Already scanned serials in PR
         existing_serials = []
         if row.serial_no:
             existing_serials = [
                 s.strip() for s in row.serial_no.split("\n") if s.strip()
             ]
 
-        # 🔹 Remove already used serials
         available_serials = [
             s for s in po_serial_list if s not in existing_serials
         ]
 
-        # 🔹 Required serial count
         required_qty = int(row.qty) - len(existing_serials)
 
         if required_qty <= 0:
             continue
 
-        # 🔹 Fetch required serials only
         fetched_serials = available_serials[:required_qty]
 
         if len(fetched_serials) < required_qty:
@@ -311,10 +389,9 @@ def assign_serials_from_po_on_submit(doc, method=None):
                 f"Not enough serial numbers available in Purchase Order for item {row.item_code}"
             )
 
-        # 🔹 Merge existing + fetched
         final_serials = existing_serials + fetched_serials
-
         row.serial_no = "\n".join(final_serials)
+     
 
 def on_cancel(doc, method):
     # 🔹 Collect all Gate Entry IDs from PR level and item level

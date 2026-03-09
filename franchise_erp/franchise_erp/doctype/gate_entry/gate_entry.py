@@ -360,6 +360,9 @@ def make_pr_from_gate_entry(gate_entry):
     pr.run_method("calculate_taxes_and_totals")
 
     return pr
+
+
+
 # @frappe.whitelist()
 # def get_pending_gate_entries(supplier):
 #     result = []
