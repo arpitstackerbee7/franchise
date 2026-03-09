@@ -199,10 +199,10 @@ doctype_js = {
 # ]
 
 # hooks.py
-after_migrate = [
-    "franchise_erp.event.add_user_custom_fields.create_custom_fields",
-    # "franchise_erp.config.workspace.create_sidebar_items"
-]
+# after_migrate = [
+#     "franchise_erp.event.add_user_custom_fields.create_custom_fields",
+#     # "franchise_erp.config.workspace.create_sidebar_items"
+# ]
 
 # after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
 

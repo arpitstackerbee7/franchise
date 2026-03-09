@@ -25,10 +25,7 @@ import frappe
 def set_session_company_from_user():
     user = frappe.session.user
 
-    if user == "Guest":
-        return
-
-    if user == "Administrator":
+    if user in ["Guest", "Administrator","System User"]:
         return
 
     # 🔥 User master se company uthao
