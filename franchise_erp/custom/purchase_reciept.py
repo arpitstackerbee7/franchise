@@ -584,7 +584,8 @@ def validate_gate_entry(doc, method):
     # 🔹 IF Source Sales Invoice present → allow save
     if doc.custom_source_sales_invoice:
         return
-
+    if doc.is_subcontracted:
+        return
     # Supplier gate entry flag
     gate_required = frappe.db.get_value(
         "Supplier",
