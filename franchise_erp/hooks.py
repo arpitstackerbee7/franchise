@@ -26,6 +26,7 @@ app_license = "mit"
 
 # on_login = "franchise_erp.custom.customs.validate_user_status"
 
+
 on_session_creation = [
     "franchise_erp.custom.session_company.set_session_company_from_user"
 ]
@@ -37,12 +38,8 @@ doc_events = {
 
 
    "Purchase Invoice": {
-       "before_save": "franchise_erp.custom.purchase_invoice.apply_intercompany_gst",
-       "validate": ["franchise_erp.custom.purchase_invoice_hooks.apply_item_gst",
+       "validate": [
                     "franchise_erp.custom.purchase_invoice.set_buffer_due_date"],
-       "before_submit": "franchise_erp.custom.purchase_invoice_hooks.update_serial_input_gst",
-       "before_insert": "franchise_erp.custom.customs.set_customer_email_as_owner",
-       "on_submit": "franchise_erp.custom.purchase_invoice_hooks.calculate_single_item_gst"
     },
     "Journal Entry": {
         "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
@@ -116,8 +113,10 @@ doc_events = {
         "on_submit": "franchise_erp.custom.bom.create_subcontracting_bom"
     },
     "Customer": {
-        "before_save": "franchise_erp.custom.customer.before_save",
-         "validate": "franchise_erp.custom.customer.validate_customer_counter_rules"
+        "before_save": [
+            "franchise_erp.custom.customer.before_save",
+        ],
+         "validate": "franchise_erp.custom.customer.validate_customer_counter_rules",
     },
     "Item Price": {
         "validate": "franchise_erp.custom.item_price.validate_item_price"
@@ -176,8 +175,6 @@ doctype_js = {
     "Supplier Group": "public/js/supplier_group.js",
     "Item Group": "public/js/item_group.js",
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
-    # "Customer": "public/js/customer_quick_entry.js",
-    # "Customer": "public/js/customer_quick_entry_patch.js"
 
 }
 
