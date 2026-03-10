@@ -67,6 +67,10 @@ def calculate_sis_values(customer, rate):
 
 
 def apply_sis_pricing(doc, method=None):
+
+    # if doc.is_return:
+    #     return
+    
     if not doc.customer or not doc.items:
         return
 

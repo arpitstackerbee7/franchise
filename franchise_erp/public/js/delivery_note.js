@@ -38,32 +38,7 @@ frappe.ui.form.on('Delivery Note', {
         }
     },
 
-    // Logic: Enter Mobile Number -> Search & Select Customer
-    /* custom_customer_mobile_number: function(frm) {
-        let mobile_val = frm.doc.custom_customer_mobile_number;
-        if (mobile_val && mobile_val.length >= 10 && !frm.doc.customer) {
-            frappe.call({
-                method: "frappe.client.get_value",
-                args: {
-                    doctype: "Customer",
-                    filters: { "custom_mobile_no_customer": mobile_val }, 
-                    fieldname: ["name", "customer_name"]
-                },
-                callback: function(r) {
-                    if (r.message) {
-                        frm.set_value('customer', r.message.name);
-                        frappe.show_alert({message: __("Customer Found"), indicator: 'green'});
-                    } else {
-                        frappe.confirm(__("Customer with mobile {0} not found. Create new?", [mobile_val]), 
-                            function() {
-                                frappe.new_doc('Customer', { "custom_mobile_no_customer": mobile_val });
-                            }
-                        );
-                    }
-                }
-            });
-        }
-    }, */
+   
 
     // Handle re-rendering when customer is selected
     customer: function(frm) {
