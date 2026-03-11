@@ -586,13 +586,15 @@ def validate_gate_entry(doc, method):
         return
     if doc.is_subcontracted:
         return
+    # Gate Entry not required for purchase return
+    if doc.is_return ==1:
+        return
     # Supplier gate entry flag
     gate_required = frappe.db.get_value(
         "Supplier",
         doc.supplier,
         "custom_gate_entry"
     )
-
     # Agar supplier ke liye gate entry required nahi
     if not gate_required:
         return
