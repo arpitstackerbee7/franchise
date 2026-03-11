@@ -24,8 +24,8 @@ app_license = "mit"
 # Includes in <head>
 # ------------------
 
-# on_login = "franchise_erp.custom.customs.validate_user_status"
 
+on_login = "franchise_erp.login_one_machine.check_single_session"
 
 on_session_creation = [
     "franchise_erp.custom.session_company.set_session_company_from_user"
