@@ -52,12 +52,12 @@ frappe.ui.form.on("Incoming Logistics", {
                     incoming_logistics: frm.doc.name,
                     owner_site: frm.doc.owner_site,
                     consignor: frm.doc.consignor,
+                    consignor_customer: frm.doc.consignor_customer,
                     transporter: frm.doc.transporter,
                     type: frm.doc.type,
                     references: refs,
                     gate_entry_box_barcode:barcode
                 };
-
                 frappe.set_route("Form", "Gate Entry", "new-gate-entry");
             },
             __("Actions")
@@ -75,6 +75,9 @@ frappe.ui.form.on("Incoming Logistics", {
     },
     consignor(frm) {
         if (frm.doc.consignor) fetch_supplier_city(frm);
+    },
+    consignor_customer(frm) {
+        if (frm.doc.consignor_customer) fetch_customer_city(frm);
     },
     charged_weight(frm) {
         calculate_freight_and_total(frm);
@@ -149,7 +152,8 @@ function open_incoming_mapper_by_type(frm) {
 
     const map = {
         "Purchase": open_purchase_order_mapper,
-        "Job Receipt": open_job_receipt_mapper
+        "Job Receipt": open_job_receipt_mapper,
+        "Sales Return": open_sales_return_mapper
     };
     map[frm.doc.type]?.(frm);
     // map[frm.doc.type]?.(frm) || frappe.throw("Invalid Incoming Type");
@@ -215,7 +219,38 @@ function open_job_receipt_mapper(frm) {
     });
 }
 
+// ===================================================
+// SALES RETURN
+// ===================================================
+function open_sales_return_mapper(frm) {
 
+    if (!frm.doc.consignor_customer) {
+        frappe.throw("Please select Customer first");
+    }
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Sales Invoice",
+        target: frm,
+        setters: {
+            customer: frm.doc.consignor_customer,
+            company: frm.doc.owner_site
+        },
+        get_query() {
+            return {
+                filters: [
+                    ["docstatus", "=", 1],
+                    ["is_return", "=", 1],
+                    ["customer", "=", frm.doc.consignor_customer],
+                    ["company", "=", frm.doc.owner_site]
+                ]
+            };
+        },
+        action(selections) {
+            add_reference_rows(frm, selections);
+            this.dialog.hide();
+        }
+    });
+}
 // ===================================================
 // ADD ROWS INTO `references` CHILD TABLE
 // ===================================================
@@ -252,16 +287,16 @@ function toggle_consignor_customer_fields(frm) {
 
     if (supplier_types.includes(frm.doc.type)) {
         frm.set_df_property("consignor", "hidden", 0);
-        frm.set_df_property("customer", "hidden", 1);
-        frm.set_value("customer", null);
+        frm.set_df_property("consignor_customer", "hidden", 1);
+        frm.set_value("consignor_customer", null);
     }
     else if (customer_types.includes(frm.doc.type)) {
-        frm.set_df_property("customer", "hidden", 0);
+        frm.set_df_property("consignor_customer", "hidden", 0);
         frm.set_df_property("consignor", "hidden", 1);
         frm.set_value("consignor", null);
     }
     else {
-        frm.set_df_property("customer", "hidden", 1);
+        frm.set_df_property("consignor_customer", "hidden", 1);
         frm.set_df_property("consignor", "hidden", 1);
     }
 }
@@ -287,6 +322,18 @@ async function fetch_supplier_city(frm) {
     const r = await frappe.call({
         method: "frappe.contacts.doctype.address.address.get_default_address",
         args: { doctype: "Supplier", name: frm.doc.consignor }
+    });
+
+    if (r.message) {
+        const addr = await frappe.db.get_value("Address", r.message, "custom_citytown");
+        if (addr?.message?.custom_citytown) frm.set_value("station_from", addr.message.custom_citytown);
+    }
+}
+
+async function fetch_customer_city(frm) {
+    const r = await frappe.call({
+        method: "frappe.contacts.doctype.address.address.get_default_address",
+        args: { doctype: "Customer", name: frm.doc.consignor_customer }
     });
 
     if (r.message) {
