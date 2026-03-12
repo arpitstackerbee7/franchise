@@ -212,21 +212,45 @@ function open_stock_entry_mapper(frm) {
         doctype: "Stock Entry",
         target: frm,
         setters: {
-            stock_entry_type: "Transfer Out"
+            stock_entry_type: "Material Issue"
         },
         get_query() {
             return {
                 filters: [
                     ["Stock Entry", "docstatus", "=", 1],
-                    ["Stock Entry", "stock_entry_type", "=", "Transfer Out"],
-                    ["Stock Entry", "is_return", "=", 1],
+                    ["Stock Entry", "stock_entry_type", "=", "Material Issue"],
                     ["Stock Entry", "custom_outgoing_logistics_reference", "is", "not set"],
                     ["Stock Entry", "company", "=", frm.doc.owner_site]
                 ]
             };
         },
         action(selections) {
+            // Add selected Stock Entry rows to references
             add_rows(frm, selections);
+
+            // Fetch city from Customer master based on Consignee
+            if (frm.doc.consignee) {
+                frappe.db.get_value("Customer", frm.doc.consignee, "customer_primary_address")
+                .then(r => {
+                    const primary_address = r.message.customer_primary_address;
+                    if (primary_address) {
+                        frappe.db.get_value("Address", primary_address, "custom_citytown").then(addr_r => {
+                            const city = addr_r.message.custom_citytown;
+                            if (city) {
+                                // Append city to station_to if not already there
+                                if (frm.doc.station_to) {
+                                    if (!frm.doc.station_to.includes(city)) {
+                                        frm.set_value("station_to", frm.doc.station_to + ", " + city);
+                                    }
+                                } else {
+                                    frm.set_value("station_to", city);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
             this.dialog.hide();
         }
     });
@@ -236,7 +260,7 @@ const TYPE_DOCTYPE_MAP = {
     "Sales Invoice": "Sales Invoice",
     "Job Order": "Subcontracting Order",
     "Purchase Return": "Purchase Invoice",
-    "Stock Entry": "Stock Entry"
+    "Transfer Out": "Stock Entry"
 };
 function add_rows(frm, selections) {
 
