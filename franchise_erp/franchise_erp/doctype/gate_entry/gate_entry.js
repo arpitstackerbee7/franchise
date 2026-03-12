@@ -117,30 +117,33 @@
 //     }
 // });
 frappe.ui.form.on("Gate Entry", {
+
     onload(frm) {
         if (!frappe.route_options) return;
 
         if (frappe.route_options.incoming_logistics) {
-            frm.set_value(
-                "incoming_logistics",
-                frappe.route_options.incoming_logistics
-            );
+            frm.set_value("incoming_logistics", frappe.route_options.incoming_logistics);
         }
 
         frappe.route_options = null;
     },
-    type: function(frm) {
+
+    type(frm) {
         toggle_consignor_fields(frm);
     },
+
     incoming_logistics(frm) {
+
         if (!frm.doc.incoming_logistics) {
+
             frm.clear_table("references");
             frm.clear_table("gate_entry_box_barcode");
 
-            frm.set_value("consignor", null);
-            frm.set_value("consignor_customer", null);
+            frm.set_value("consignor", "");
+            frm.set_value("consignor_customer", "");
 
             frm.refresh_fields();
+
             return;
         }
 
@@ -149,69 +152,71 @@ frappe.ui.form.on("Gate Entry", {
             args: {
                 incoming_logistics: frm.doc.incoming_logistics
             },
+
             callback(r) {
+
                 if (!r.message) return;
 
                 const data = r.message;
 
-                // -------------------------------
                 // Header fields
-                // -------------------------------
                 frm.set_value("type", data.type);
                 frm.set_value("lr_quantity", data.lr_quantity);
                 frm.set_value("document_no", data.document_no);
                 frm.set_value("declaration_amount", data.declaration_amount);
                 frm.set_value("quantity_as_per_invoice", data.qty_as_per_invoice);
 
-                // -------------------------------
-                // ✅ PARTY LOGIC (IMPORTANT FIX)
-                // -------------------------------
-               frappe.db.get_value(
-    "Incoming Logistics Type",
-    data.type,
-    ["is_supplier", "is_customer"]
-).then(r => {
+                // Party Logic
+                if (data.party_type === "Supplier") {
 
-    // Clear both first
-    frm.set_value("consignor", null);
-    frm.set_value("consignor_customer", null);
+                    frm.set_value("consignor_customer", "");
 
-    if (r.message.is_supplier) {
-        frm.set_value("consignor", data.party);
-    }
+                    frm.set_value("consignor", data.party);
 
-    if (r.message.is_customer) {
-        frm.set_value("consignor_customer", data.party);
-    }
+                }
 
-});
+                if (data.party_type === "Customer") {
 
-                // -------------------------------
-                // References (Purchase / Job etc)
-                // -------------------------------
-               frm.clear_table("references");
+                    frm.set_value("consignor", "");
 
-(data.purchase_orders || []).forEach(row => {
-    let child = frm.add_child("references");
-    child.source_doctype = row.reference_doctype;
-    child.source_name = row.reference_name;
-});
+                    frm.set_value("consignor_customer", data.party);
 
-frm.refresh_field("references");
+                }
 
-                // -------------------------------
-                // Box Barcodes
-                // -------------------------------
-                frm.clear_table("gate_entry_box_barcode");
-                (data.box_barcodes || []).forEach(row => {
-                    let child = frm.add_child("gate_entry_box_barcode");
-                    Object.assign(child, row);
+                // References
+                frm.clear_table("references");
+
+                (data.purchase_orders || []).forEach(row => {
+
+                    let child = frm.add_child("references");
+
+                    child.source_doctype = row.reference_doctype;
+                    child.source_name = row.reference_name;
+
                 });
 
-                frm.refresh_fields();
+                frm.refresh_field("references");
+
+
+                // Box Barcodes
+                frm.clear_table("gate_entry_box_barcode");
+
+                (data.box_barcodes || []).forEach(row => {
+
+                    let child = frm.add_child("gate_entry_box_barcode");
+
+                    child.box_barcode = row.box_barcode;
+                    child.incoming_logistics_no = row.incoming_logistics_no;
+                    child.status = row.status;
+
+                });
+
+                frm.refresh_field("gate_entry_box_barcode");
+
             }
         });
     }
+
 });
 
 

@@ -86,8 +86,6 @@
    "reqd": 1
   },
   {
-   "fetch_from": "type.is_supplier",
-   "fetch_if_empty": 1,
    "fieldname": "consignor",
    "fieldtype": "Link",
    "label": "Consignor",
@@ -261,8 +259,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "type.is_customer",
-   "fetch_if_empty": 1,
    "fieldname": "consignor_customer",
    "fieldtype": "Link",
    "label": "Consignor",
@@ -280,7 +276,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-03-12 09:19:08.050672",
+ "modified": "2026-03-12 09:37:29.159083",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
