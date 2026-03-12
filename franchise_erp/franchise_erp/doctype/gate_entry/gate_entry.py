@@ -71,28 +71,25 @@ def get_data_for_gate_entry(incoming_logistics):
 
     il = frappe.get_doc("Incoming Logistics", incoming_logistics)
 
-    # -------------------------------------------------
-    # 🔹 Detect party based on Incoming Logistics Type
-    # -------------------------------------------------
     party_type = None
     party = None
 
     if il.type:
         type_doc = frappe.get_doc("Incoming Logistics Type", il.type)
 
-        if getattr(type_doc, "is_supplier", 0):
+        # Supplier case
+        if type_doc.is_supplier:
             party_type = "Supplier"
-            party = il.consignor
+            if il.consignor:
+                party = frappe.db.get_value("Supplier", il.consignor, "name")
 
-        elif getattr(type_doc, "is_customer", 0):
+        # Customer case
+        elif type_doc.is_customer:
             party_type = "Customer"
-            party = il.consignor_customer
+            if il.consignor_customer:
+                party = frappe.db.get_value("Customer", il.consignor_customer, "name")
 
-    # -------------------------------------------------
-    # 🔹 Build response
-    # -------------------------------------------------
     return {
-        # -------- Header Fields --------
         "incoming_logistics": il.name,
         "type": il.type,
         "lr_quantity": il.lr_quantity,
@@ -100,11 +97,9 @@ def get_data_for_gate_entry(incoming_logistics):
         "declaration_amount": il.declaration_amount,
         "qty_as_per_invoice": il.received_qty,
 
-        # -------- Party Logic --------
-        "party_type": party_type,   # Supplier / Customer
+        "party_type": party_type,
         "party": party,
 
-        # -------- References (🔥 KEY MATCH FIX) --------
         "purchase_orders": [
             {
                 "reference_doctype": row.source_doctype,
@@ -113,7 +108,6 @@ def get_data_for_gate_entry(incoming_logistics):
             for row in il.references
         ],
 
-        # -------- Box Barcodes --------
         "box_barcodes": [
             {
                 "box_barcode": row.box_barcode,
@@ -123,7 +117,6 @@ def get_data_for_gate_entry(incoming_logistics):
             for row in il.gate_entry_box_barcode
         ]
     }
-
 #update status only for box barcode table
 @frappe.whitelist()
 def mark_box_barcode_received(box_barcode, incoming_logistics_no):
