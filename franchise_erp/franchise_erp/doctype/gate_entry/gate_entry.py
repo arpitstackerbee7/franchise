@@ -86,7 +86,7 @@ def get_data_for_gate_entry(incoming_logistics):
 
         elif getattr(type_doc, "is_customer", 0):
             party_type = "Customer"
-            party = il.customer or il.consignor_customer
+            party = il.consignor_customer
 
     # -------------------------------------------------
     # 🔹 Build response

@@ -15,6 +15,7 @@
   "column_break_kknq",
   "type",
   "consignor",
+  "consignor_customer",
   "document_date",
   "status",
   "column_break_cred",
@@ -85,12 +86,13 @@
    "reqd": 1
   },
   {
+   "fetch_from": "type.is_supplier",
+   "fetch_if_empty": 1,
    "fieldname": "consignor",
    "fieldtype": "Link",
    "label": "Consignor",
    "options": "Supplier",
-   "read_only": 1,
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "column_break_cred",
@@ -257,6 +259,16 @@
    "label": "References",
    "options": "Outgoing Logistics Reference",
    "read_only": 1
+  },
+  {
+   "fetch_from": "type.is_customer",
+   "fetch_if_empty": 1,
+   "fieldname": "consignor_customer",
+   "fieldtype": "Link",
+   "label": "Consignor",
+   "no_copy": 1,
+   "options": "Customer",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -268,11 +280,11 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-02-20 17:26:45.216711",
+ "modified": "2026-03-12 09:19:08.050672",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
