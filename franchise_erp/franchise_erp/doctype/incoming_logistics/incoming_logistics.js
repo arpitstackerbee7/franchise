@@ -137,7 +137,7 @@ const INCOMING_TYPE_MAP = {
     "Job Receipt": "Subcontracting Order",
     "Purchase": "Purchase Order",
     "Sales Return": "Sales Invoice",
-    "Transfer IN": "Stock Entry",
+    "Transfer In": "Stock Entry",
     "WIP Return": "Stock Entry"
 };
 
@@ -153,7 +153,8 @@ function open_incoming_mapper_by_type(frm) {
     const map = {
         "Purchase": open_purchase_order_mapper,
         "Job Receipt": open_job_receipt_mapper,
-        "Sales Return": open_sales_return_mapper
+        "Sales Return": open_sales_return_mapper,
+        "Transfer In": open_stock_entry_mapper
     };
     map[frm.doc.type]?.(frm);
     // map[frm.doc.type]?.(frm) || frappe.throw("Invalid Incoming Type");
@@ -247,6 +248,34 @@ function open_sales_return_mapper(frm) {
         },
         action(selections) {
             add_reference_rows(frm, selections);
+            this.dialog.hide();
+        }
+    });
+}
+
+function open_stock_entry_mapper(frm) {
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Stock Entry",
+        target: frm,
+        setters: {
+            stock_entry_type: "Material Issue"
+        },
+        get_query() {
+            return {
+                filters: [
+                    ["Stock Entry", "docstatus", "=", 1],
+                    ["Stock Entry", "stock_entry_type", "=", "Material Issue"],
+                    ["Stock Entry", "company", "=", frm.doc.owner_site]
+                ]
+            };
+        },
+        action(selections) {
+            // Add selected Stock Entry rows to references
+            add_reference_rows(frm, selections);
+
+            
+
             this.dialog.hide();
         }
     });
