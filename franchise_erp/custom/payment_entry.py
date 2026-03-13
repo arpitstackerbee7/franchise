@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import getdate
 from frappe.utils import today
+from frappe import _
 
 def apply_early_payment_discount(doc, method):
     if doc.party_type != "Supplier":
@@ -125,3 +126,24 @@ def create_discount_debit_note(pi, discount_amount, company):
 
     je.insert()
     je.submit()
+
+
+# by mayuri
+def validate_duplicate_cheque_no(doc, method=None):
+    """
+    Validation to prevent duplicate Cheque/Reference No for 'Pay' type Payment Entries.
+    Checks against Draft (0) and Submitted (1) documents.
+    """
+    if doc.payment_type == "Pay" and doc.reference_no:
+        duplicate = frappe.db.get_value("Payment Entry", {
+            "reference_no": doc.reference_no,
+            "payment_type": "Pay",
+            "company": doc.company,
+            "name": ["!=", doc.name],
+            "docstatus": ["<", 2]  # 0 = Draft, 1 = Submitted
+        }, "name")
+
+        if duplicate:
+            msg = _("The Cheque/Reference No {0} is already used in Payment Entry {1}. "
+                    "Duplicate entries are not allowed for 'Pay' type unless the existing entry is cancelled.")
+            frappe.throw(msg.format(frappe.bold(doc.reference_no), frappe.bold(duplicate)))
