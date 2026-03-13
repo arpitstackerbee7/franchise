@@ -32,7 +32,7 @@ def check_single_session(login_manager):
         return
 
     # System Settings se session expiry lo
-    expiry_setting = frappe.db.get_single_value("System Settings", "session_expiry") or "01:00"
+    expiry_setting = frappe.db.get_single_value("System Settings", "session_expiry") or "00:01"
 
     h, m = map(int, expiry_setting.split(":"))
     expiry_delta = timedelta(hours=h, minutes=m)
