@@ -28,14 +28,16 @@ from datetime import datetime, timedelta
 def check_single_session(login_manager):
     user = login_manager.user
 
+    # Skip system users
     if user in ["Guest", "Administrator"]:
         return
 
-    # System Settings se session expiry lo
-    expiry_setting = frappe.db.get_single_value("System Settings", "session_expiry") or "00:01"
-
+    # System Settings se expiry lo
+    expiry_setting = frappe.db.get_single_value("System Settings", "session_expiry") or "00:30"
     h, m = map(int, expiry_setting.split(":"))
     expiry_delta = timedelta(hours=h, minutes=m)
+
+    now = datetime.now()
 
     sessions = frappe.db.sql("""
         SELECT sid, lastupdate
@@ -43,11 +45,23 @@ def check_single_session(login_manager):
         WHERE user=%s
     """, (user,), as_dict=True)
 
-    now = datetime.now()
+    active_sessions = []
 
     for s in sessions:
         expiry_time = s.lastupdate + expiry_delta
 
-        # Agar session abhi bhi active hai
-        if expiry_time > now:
-            frappe.throw("User already logged in. Please logout from previous session.")
+        # expired session delete kar do
+        if expiry_time <= now:
+            frappe.db.sql("DELETE FROM `tabSessions` WHERE sid=%s", s.sid)
+        else:
+            active_sessions.append(s.sid)
+
+    frappe.db.commit()
+
+    # current session remove karo list se
+    current_sid = frappe.session.sid
+    active_sessions = [sid for sid in active_sessions if sid != current_sid]
+
+    # agar koi aur active session hai to block
+    if active_sessions:
+        frappe.throw("User already logged in on another device.")
