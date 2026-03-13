@@ -71,7 +71,7 @@ class BulkPurchaseReturn(Document):
             return_doc.return_against = pr
             return_doc.supplier = self.supplier
             return_doc.company = self.company
-
+            return_doc.custom_bulk_purchase_return= self.name
             for row in items:
 
                 pr_item = frappe.get_doc("Purchase Receipt Item", row.purchase_receipt_item)
@@ -93,6 +93,7 @@ class BulkPurchaseReturn(Document):
                 })
 
             return_doc.insert()
+            return_doc.submit()
 
 @frappe.whitelist()
 def get_returnable_items(supplier, company, item_code=None):
@@ -110,10 +111,13 @@ def get_returnable_items(supplier, company, item_code=None):
             pri.qty AS received_qty,
             pri.returned_qty,
             (pri.qty - pri.returned_qty) AS returnable_qty,
-            0 AS return_qty
+            0 AS return_qty,
+            i.has_serial_no
         FROM `tabPurchase Receipt Item` pri
         JOIN `tabPurchase Receipt` pr
             ON pr.name = pri.parent
+        LEFT JOIN `tabItem` i
+            ON i.name = pri.item_code
         WHERE pr.docstatus = 1
         AND pr.is_return = 0
         AND pri.qty > IFNULL(pri.returned_qty,0)
@@ -126,7 +130,6 @@ def get_returnable_items(supplier, company, item_code=None):
         "item_code": item_code
     },
     as_dict=1)
-
     return items
 
 
@@ -137,15 +140,18 @@ def get_pr_item_details(items):
     result = []
 
     for d in items:
-        
-        pr_item = frappe.get_doc("Purchase Receipt Item", d.get("purchase_receipt_item"))
 
-        # serials received in original PR
+        pr_item = frappe.get_doc("Purchase Receipt Item", d.get("purchase_receipt_item"))
+        item_doc = frappe.get_doc("Item", pr_item.item_code)
+
+        is_serialized = item_doc.has_serial_no
+
+        # original PR serials
         pr_serials = []
         if pr_item.serial_no:
             pr_serials = pr_item.serial_no.split("\n")
 
-        # serials already returned via Purchase Return
+        # returned serials
         returned_serials = frappe.db.sql("""
             SELECT pri.serial_no
             FROM `tabPurchase Receipt Item` pri
@@ -162,22 +168,114 @@ def get_pr_item_details(items):
             if r.serial_no:
                 returned_list.extend(r.serial_no.split("\n"))
 
-        # available serials
         available_serials = list(set(pr_serials) - set(returned_list))
 
-        result.append({
-            "name": pr_item.name,
-            "purchase_receipt": pr_item.parent,
-            "item_code": pr_item.item_code,
-            "item_name": pr_item.item_name,
-            "warehouse": pr_item.warehouse,
-            "uom": pr_item.uom,
-            "stock_uom": pr_item.stock_uom,
-            "conversion_factor": pr_item.conversion_factor,
-            "rate": pr_item.rate,
-            "qty": d.get("return_qty"),
-            "returnable_quantity": d.get("returnable_qty"),
-            "available_serial_nos": "\n".join(sorted(available_serials))
-        })
+        scanned_serials = []
+
+        if d.get("serial_nos"):
+            scanned_serials = [s.strip() for s in d.get("serial_nos").split("\n") if s.strip()]
+
+        # validation
+        invalid_serials = list(set(scanned_serials) - set(available_serials))
+        if invalid_serials:
+            frappe.throw(
+                f"Invalid Serial(s) for Item {pr_item.item_code}: {', '.join(invalid_serials)}"
+            )
+
+        # warehouse grouping
+        warehouse_map = {}
+
+        if is_serialized:
+
+            for serial in scanned_serials:
+
+                serial_doc = frappe.get_doc("Serial No", serial)
+                wh = serial_doc.warehouse or pr_item.warehouse
+
+                warehouse_map.setdefault(wh, []).append(serial)
+
+            for wh, serial_list in warehouse_map.items():
+
+                result.append({
+                    "name": pr_item.name,
+                    "purchase_receipt": pr_item.parent,
+                    "purchase_receipt_item": pr_item.name,
+                    "item_code": pr_item.item_code,
+                    "item_name": pr_item.item_name,
+                    "warehouse": wh,
+                    "uom": pr_item.uom,
+                    "stock_uom": pr_item.stock_uom,
+                    "conversion_factor": pr_item.conversion_factor,
+                    "rate": pr_item.rate,
+                    "qty": len(serial_list),
+                    "returnable_quantity": d.get("returnable_qty"),
+                    "serial_nos": "\n".join(serial_list),
+                    "available_serial_nos": "\n".join(available_serials)
+                })
+
+        else:
+
+            qty = d.get("return_qty")
+            wh = pr_item.warehouse
+
+            warehouse_map.setdefault(wh, 0)
+            warehouse_map[wh] += qty
+
+            for wh, qty in warehouse_map.items():
+
+                result.append({
+                    "name": pr_item.name,
+                    "purchase_receipt": pr_item.parent,
+                    "purchase_receipt_item": pr_item.name,
+                    "item_code": pr_item.item_code,
+                    "item_name": pr_item.item_name,
+                    "warehouse": wh,
+                    "uom": pr_item.uom,
+                    "stock_uom": pr_item.stock_uom,
+                    "conversion_factor": pr_item.conversion_factor,
+                    "rate": pr_item.rate,
+                    "qty": qty,
+                    "returnable_quantity": d.get("returnable_qty"),
+                    "serial_nos": "",
+                    "available_serial_nos": ""
+                })
 
     return result
+
+@frappe.whitelist()
+def get_pr_from_serial(serial_no, company):
+
+    # Find PR Item containing this serial
+    pr_item = frappe.db.sql("""
+        SELECT
+            pri.name,
+            pri.parent AS purchase_receipt,
+            pri.item_code,
+            pri.qty,
+            pri.returned_qty
+        FROM `tabPurchase Receipt Item` pri
+        JOIN `tabPurchase Receipt` pr
+            ON pr.name = pri.parent
+        WHERE pr.docstatus = 1
+        AND pr.company = %s
+        AND pri.serial_no LIKE %s
+        LIMIT 1
+    """, (company, f"%{serial_no}%"), as_dict=True)
+
+    if not pr_item:
+        return None
+
+    pr_item = pr_item[0]
+
+    serial = frappe.get_doc("Serial No", serial_no)
+
+    return {
+        "purchase_receipt": pr_item.purchase_receipt,
+        "purchase_receipt_item": pr_item.name,
+        "item_code": pr_item.item_code,
+        "serial_no": serial_no,
+        "status": serial.status,
+        "returnable_qty": 1,
+        "returned_qty": pr_item.returned_qty or 0,
+        "return_qty": 1
+    }

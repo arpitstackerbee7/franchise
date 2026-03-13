@@ -1,7 +1,7 @@
 frappe.ui.form.on("Bulk Purchase Return", {
     refresh(frm) {
 
-        if (frm.is_new()) return;
+        if (frm.is_new() || frm.doc.docstatus !== 0) return;
 
         frm.add_custom_button("Get Items from GRN", () => {
             open_return_items_dialog(frm);
@@ -39,6 +39,94 @@ function open_return_items_dialog(frm) {
                     load_returnable_items(frm, dialog);
                 }
             },
+            {
+                fieldname: "serial_no",
+                label: "Scan Serial",
+                fieldtype: "Data",
+            
+                onchange() {
+            
+                    let serial = dialog.get_value("serial_no");
+                    if (!serial) return;
+            
+                    frappe.call({
+                        method: "franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.get_pr_from_serial",
+                        args: {
+                            serial_no: serial,
+                            company: frm.doc.company
+                        },
+            
+                        callback: function(r) {
+
+                            if (!r.message) {
+                                frappe.msgprint(`Serial ${serial} not found`);
+                                dialog.set_value("serial_no", "");
+                                return;
+                            }
+                        
+                            // ❌ Condition 1 — Serial status Delivered
+                            if (r.message.status === "Delivered") {
+                                frappe.msgprint(`Serial ${serial} is already Delivered and cannot be returned.`);
+                                dialog.set_value("serial_no", "");
+                                dialog.fields_dict.serial_no.$input.focus();
+                                return;
+                            }
+                        
+                            // ❌ Condition 2 — Serial already exists in Items child table
+                            let serial_exists = false;
+                        
+                            (frm.doc.items || []).forEach(row => {
+                                if (row.serial_nos && row.serial_nos.split("\n").includes(serial)) {
+                                    serial_exists = true;
+                                }
+                            });
+                        
+                            if (serial_exists) {
+                                frappe.msgprint(`Serial ${serial} already exists in the Items table.`);
+                                dialog.set_value("serial_no", "");
+                                dialog.fields_dict.serial_no.$input.focus();
+                                return;
+                            }
+                        
+                            let table = dialog.fields_dict.items_table.grid;
+                            let rows = table.get_data();
+                        
+                            let existing = rows.find(d =>
+                                d.purchase_receipt === r.message.purchase_receipt &&
+                                d.item_code === r.message.item_code
+                            );
+                        
+                            if (existing) {
+                        
+                                // Prevent duplicate serial inside dialog
+                                if (existing.serial_nos && existing.serial_nos.split("\n").includes(serial)) {
+                                    frappe.msgprint(`Serial ${serial} already scanned`);
+                                } else {
+                        
+                                    existing.return_qty = (existing.return_qty || 0) + 1;
+                        
+                                    existing.serial_nos =
+                                        existing.serial_nos
+                                            ? existing.serial_nos + "\n" + serial
+                                            : serial;
+                                }
+                        
+                            } else {
+                        
+                                r.message.return_qty = 1;
+                                r.message.serial_nos = serial;
+                        
+                                rows.push(r.message);
+                            }
+                        
+                            table.refresh();
+                        
+                            dialog.set_value("serial_no", "");
+                            dialog.fields_dict.serial_no.$input.focus();
+                        }
+                    });
+                }
+            },
 
             {
                 fieldname: "items_table",
@@ -49,13 +137,13 @@ function open_return_items_dialog(frm) {
 
                 fields: [
 
-                    { fieldname: "purchase_receipt", label: "GRN", fieldtype: "Data", read_only: 1, in_list_view: 1 },
+                    { fieldname: "purchase_receipt", label: "GRN", fieldtype: "Data", read_only: 1, in_list_view: 1},
 
-                    { fieldname: "item_code", label: "Item", fieldtype: "Data", read_only: 1, in_list_view: 1 },
-
+                    { fieldname: "item_code", label: "Item", fieldtype: "Data", read_only: 1, in_list_view: 1},
+                    
                     { fieldname: "returnable_qty", label: "Returnable Qty", fieldtype: "Float", read_only: 1, in_list_view: 1 },
-
-                    { fieldname: "returned_qty", label: "Already Returned", fieldtype: "Float", read_only: 1, in_list_view: 1 },
+                    
+                    { fieldname: "returned_qty", label: "Already Returned", fieldtype: "Float", read_only: 1, in_list_view: 1},
 
                     {
                         fieldname: "return_qty",
@@ -63,26 +151,54 @@ function open_return_items_dialog(frm) {
                         fieldtype: "Float",
                         in_list_view: 1,
                         onchange() {
-
-                            let rows = dialog.fields_dict.items_table.grid.get_data();
-
-                            rows.forEach(d => {
-
-                                if (d.return_qty > d.returnable_qty) {
-
-                                    frappe.msgprint(
-                                        `Return Qty cannot exceed Returnable Qty for Item ${d.item_code}`
-                                    );
-
-                                    d.return_qty = d.returnable_qty;
-
-                                    dialog.fields_dict.items_table.grid.refresh();
+                    
+                            let grid = dialog.fields_dict.items_table.grid;
+                            let row = grid.get_row(this.doc.name);
+                            let d = row.doc;
+                    
+                            // Serialized item rule
+                            if (d.has_serial_no == 1) {
+                    
+                                let serial_count = 0;
+                    
+                                if (d.serial_nos) {
+                                    serial_count = d.serial_nos
+                                        .split("\n")
+                                        .filter(s => s.trim()).length;
                                 }
-
-                            });
-
+                    
+                                if (serial_count === 0) {
+                    
+                                    frappe.msgprint(
+                                        __("Scan Serial Numbers first for serialized item {0}.", [d.item_code])
+                                    );
+                    
+                                    d.return_qty = 0;
+                                    grid.refresh();
+                                    return;
+                                }
+                    
+                                // always sync qty with serial count
+                                d.return_qty = serial_count;
+                    
+                                grid.refresh();
+                                return;
+                            }
+                    
+                            // Normal validation for non-serialized
+                            if (flt(d.return_qty) > flt(d.returnable_qty)) {
+                    
+                                frappe.msgprint(
+                                    __("Return Qty cannot exceed Returnable Qty for Item {0}", [d.item_code])
+                                );
+                    
+                                d.return_qty = d.returnable_qty;
+                                grid.refresh();
+                            }
                         }
-                    }
+                    },
+
+                    { fieldname: "serial_nos", label: "Serial Nos", fieldtype: "Small Text", read_only: 1, in_list_view: 1},
 
                 ]
             }
@@ -115,72 +231,134 @@ function open_return_items_dialog(frm) {
                     );
                 }
             }
+            let merged_rows = {};
+
+            selected_rows.forEach(d => {
+
+                let key = d.purchase_receipt_item;
+
+                if (!merged_rows[key]) {
+                    merged_rows[key] = {...d};
+                } else {
+
+                    merged_rows[key].return_qty =
+                        flt(merged_rows[key].return_qty) + flt(d.return_qty);
+
+                    if (d.serial_nos) {
+
+                        merged_rows[key].serial_nos =
+                            (merged_rows[key].serial_nos || "") +
+                            "\n" +
+                            d.serial_nos;
+                    }
+                }
+
+            });
         
+            selected_rows = Object.values(merged_rows);
+
             frappe.call({
                 method: "franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.get_pr_item_details",
                 args: {
                     items: selected_rows
                 },
                 callback: function(r) {
-        
+
                     if (r.message) {
-        
-                        r.message.forEach(d => {
-        
-                            // Duplicate validation
-                            let duplicate = frm.doc.items.find(row =>
-                                row.purchase_receipt_item === d.name
-                            );
-        
-                            if (duplicate) {
-                                frappe.throw(
-                                    `Item ${d.item_code} from GRN ${d.purchase_receipt} is already added.`
+
+                        try {
+
+                            r.message.forEach(d => {
+
+                                let existing = frm.doc.items.find(row =>
+                                    row.purchase_receipt_item === d.name &&
+                                    row.warehouse === d.warehouse
                                 );
-                            }
-        
-                            let row = frm.add_child("items");
-        
-                            row.purchase_receipt = d.purchase_receipt;
-                            row.purchase_receipt_item = d.name;
-        
-                            row.item_code = d.item_code;
-                            row.item_name = d.item_name;
-        
-                            row.qty = d.qty;
-        
-                            row.uom = d.uom;
-                            row.stock_uom = d.stock_uom;
-                            row.conversion_factor = d.conversion_factor;
-        
-                            row.rate = d.rate;
-                            row.amount = flt(d.rate) * flt(d.qty);
-        
-                            row.warehouse = d.warehouse;
-                            row.returnable_quantity = d.returnable_quantity;
-                            
-                            frappe.model.set_value(
-                                row.doctype,
-                                row.name,
-                                "available_serial_nos",
-                                d.available_serial_nos
-                            );
-        
-                        });
-        
+                                if (existing) {
+
+                                    let new_qty = flt(existing.qty) + flt(d.qty);
+                                
+                                    // validation
+                                    if (new_qty > flt(existing.returnable_quantity)) {
+                                        frappe.throw(
+                                            __("Return Qty exceeded for Item {0}. Allowed Qty: {1}", 
+                                            [existing.item_code, existing.returnable_quantity])
+                                        );
+                                        return;
+                                    }
+                                
+                                    frappe.model.set_value(
+                                        existing.doctype,
+                                        existing.name,
+                                        "qty",
+                                        new_qty
+                                    );
+                                
+                                    if (d.serial_nos) {
+                                
+                                        let existing_serials = existing.serial_nos
+                                            ? existing.serial_nos.split("\n")
+                                            : [];
+                                
+                                        let new_serials = d.serial_nos
+                                            ? d.serial_nos.split("\n")
+                                            : [];
+                                
+                                        let merged = [...new Set([...existing_serials, ...new_serials])];
+                                
+                                        frappe.model.set_value(
+                                            existing.doctype,
+                                            existing.name,
+                                            "serial_nos",
+                                            merged.join("\n")
+                                        );
+                                    }
+                                
+                                    frappe.model.set_value(
+                                        existing.doctype,
+                                        existing.name,
+                                        "available_serial_nos",
+                                        d.available_serial_nos
+                                    );
+                                }
+                                 else {
+
+                                    let row = frm.add_child("items");
+
+                                    row.purchase_receipt = d.purchase_receipt;
+                                    row.purchase_receipt_item = d.name;
+                                    row.item_code = d.item_code;
+                                    row.item_name = d.item_name;
+                                    row.qty = d.qty;
+                                    row.uom = d.uom;
+                                    row.stock_uom = d.stock_uom;
+                                    row.conversion_factor = d.conversion_factor;
+                                    row.rate = d.rate;
+                                    row.warehouse = d.warehouse;
+                                    row.returnable_quantity = d.returnable_quantity;
+
+                                    frappe.model.set_value(row.doctype, row.name, "serial_nos", d.serial_nos);
+                                    frappe.model.set_value(row.doctype, row.name, "available_serial_nos", d.available_serial_nos);
+                                }
+
+                            });
+
+                        } catch (e) {
+                            console.error("Error adding items:", e);
+                        }
+
                         frm.refresh_field("items");
-        
+
                         dialog.hide();
                     }
-        
                 }
             });
-        }
-
-    });
+            }
+        });
 
     dialog.show();
 
-    load_returnable_items(frm, dialog);
+    load_returnable_items(frm,dialog);
 }
 
 
@@ -208,25 +386,3 @@ function load_returnable_items(frm, dialog) {
         }
     });
 }
-
-
-frappe.ui.form.on("Bulk Purchase Return Item Table", {
-
-    qty(frm, cdt, cdn) {
-
-        let row = locals[cdt][cdn];
-
-        // Validation
-        if (row.qty > row.returnable_quantity) {
-            frappe.throw(
-                `Row ${row.idx}: Qty cannot exceed Returnable Qty (${row.returnable_qty}) for Item ${row.item_code}`
-            );
-        }
-
-        // Calculate amount
-        row.amount = flt(row.qty) * flt(row.rate);
-
-        frm.refresh_field("items");
-    }
-
-});

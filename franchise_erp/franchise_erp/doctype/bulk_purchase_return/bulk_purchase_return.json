@@ -77,8 +77,13 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2026-03-09 16:52:29.511355",
+ "links": [
+  {
+   "link_doctype": "Purchase Receipt",
+   "link_fieldname": "custom_bulk_purchase_return"
+  }
+ ],
+ "modified": "2026-03-13 16:54:08.840444",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Bulk Purchase Return",
