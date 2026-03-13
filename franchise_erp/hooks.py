@@ -109,7 +109,8 @@ doc_events = {
         "after_insert":"franchise_erp.custom.product_bundle.set_product_bundle_series"
     },
     "Payment Entry":{
-        "on_submit":"franchise_erp.custom.payment_entry.apply_early_payment_discount"
+        "on_submit":"franchise_erp.custom.payment_entry.apply_early_payment_discount",
+        "validate": "franchise_erp.custom.payment_entry.validate_duplicate_cheque_no"
     },
     "BOM": {
         "on_submit": "franchise_erp.custom.bom.create_subcontracting_bom"
