@@ -24,7 +24,11 @@ app_license = "mit"
 # Includes in <head>
 # ------------------
 
-# on_login = "franchise_erp.login_one_machine.check_single_session"
+# before_login
+
+on_login = "franchise_erp.auth.check_session_limit"
+
+# web_include_js = "/assets/franchise_erp/js/login_custom.js"
 
 on_session_creation = [
      
@@ -58,6 +62,10 @@ doc_events = {
         "franchise_erp.custom.sales_invoice.validate_item_from_so"
         ],
         "before_validate": ["franchise_erp.custom.sales_invoice.apply_sales_term"],
+        "on_submit": [
+            "franchise_erp.send_whatsapp_notification.send_text_msg_on_whatsapp_sales_invoice",
+            "franchise_erp.send_whatsapp_notification.send_pdf_on_whatsapp_sales_invoice",
+        ]
     },
     "Purchase Order": {
         # "before_insert": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
@@ -217,6 +225,7 @@ app_include_js = [
     "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     "/assets/franchise_erp/js/uploader_patch.js",
     "/assets/franchise_erp/js/barcode_scanner_override.js",
+    "/assets/franchise_erp/js/login_custom.js"
 ]
 
    
