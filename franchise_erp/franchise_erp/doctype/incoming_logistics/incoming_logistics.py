@@ -190,3 +190,22 @@ class IncomingLogistics(Document):
                     f"already exists for Consignor <b>{self.consignor}</b>."
                 )
             )
+
+
+
+
+@frappe.whitelist()
+def get_used_source_ids(source_doctype):
+    """
+    Returns a list of source_names (IDs) already present in the 
+    'Outgoing Logistics Reference' table.
+    """
+    used_ids = frappe.get_all("Outgoing Logistics Reference", 
+        filters={
+            "parenttype": "Incoming Logistics",
+            "source_doctype": source_doctype,
+            "docstatus": ["<", 2] # Cancelled documents ko filter se hata deta hai
+        }, 
+        pluck="source_name"
+    )
+    return list(set(used_ids))
