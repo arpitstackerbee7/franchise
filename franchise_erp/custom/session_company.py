@@ -47,4 +47,3 @@ def set_session_company_from_user():
     )
 
 
-
