@@ -20,6 +20,8 @@
 #         frappe.logger().info(
 #             f"Session company auto-set from User master: {user_company} for {user}"
 #         )
+
+
 import frappe
 
 def set_session_company_from_user():
