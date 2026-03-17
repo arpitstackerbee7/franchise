@@ -535,6 +535,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
             "sis_debit_note_creation_period",
             "auto_credit_note_percent",
             "discount_threshold",
+            "output_gst_min_net_rate"
         ],
         as_dict=True
     )
@@ -547,6 +548,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
     period_type = config.sis_debit_note_creation_period
     auto_credit_note_percent = D(config.auto_credit_note_percent)
     discount_threshold = D(config.discount_threshold)
+    output_gst_min_net_rate = D(config.output_gst_min_net_rate)
 
     # -------------------------------------------------------------------
     # CLEAN DATE INPUTS
@@ -653,7 +655,11 @@ def fetch_invoices(company, from_date=None, to_date=None):
         # -------------------------------------------------------------------
         # OUTPUT GST
         # -------------------------------------------------------------------
-        gst_percent = D(5) if net_amount <= D(2500) else D(18)
+        # gst_percent = D(5) if net_amount <= D(2500) else D(18)
+        # out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
+        # out_put_gst_value = R2(out_put_gst_value)
+        # net_sale_value = net_amount - out_put_gst_value
+        gst_percent = D(5) if net_amount <= output_gst_min_net_rate else D(18)
         out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
         out_put_gst_value = R2(out_put_gst_value)
         net_sale_value = net_amount - out_put_gst_value

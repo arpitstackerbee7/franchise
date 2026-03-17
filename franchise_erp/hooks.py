@@ -28,7 +28,6 @@ app_license = "mit"
 
 on_login = "franchise_erp.auth.check_session_limit"
 
-# web_include_js = "/assets/franchise_erp/js/login_custom.js"
 
 on_session_creation = [
      
@@ -225,7 +224,6 @@ app_include_js = [
     "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     "/assets/franchise_erp/js/uploader_patch.js",
     "/assets/franchise_erp/js/barcode_scanner_override.js",
-    "/assets/franchise_erp/js/login_custom.js"
 ]
 
    
