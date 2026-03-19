@@ -272,3 +272,19 @@ frappe.ui.form.on('Item', {
         }
     }
 });
+
+// by mayuri
+frappe.ui.form.on('Item', {
+    refresh: function(frm) {
+        if (!frm.is_new() && frappe.user_roles.includes('SIS Counter')) {
+            frm.disable_save();
+            frm.set_read_only();
+            frm.page.clear_menu();
+
+            // Forcefully lock all fields to avoid conflicts
+            frm.meta.fields.forEach(df => {
+                frm.set_df_property(df.fieldname, "read_only", 1);
+            });
+        }
+    }
+});
