@@ -254,29 +254,36 @@ function open_sales_return_mapper(frm) {
 }
 
 function open_stock_entry_mapper(frm) {
+    // 🚩 Pehle database se used IDs mangwayein
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_used_source_ids",
+        args: { source_doctype: "Stock Entry" },
+        callback: function(r) {
+            const used_ids = r.message || [];
 
-    new frappe.ui.form.MultiSelectDialog({
-        doctype: "Stock Entry",
-        target: frm,
-        setters: {
-            stock_entry_type: "Material Issue"
-        },
-        get_query() {
-            return {
-                filters: [
-                    ["Stock Entry", "docstatus", "=", 1],
-                    ["Stock Entry", "stock_entry_type", "=", "Material Issue"],
-                    ["Stock Entry", "company", "=", frm.doc.owner_site]
-                ]
-            };
-        },
-        action(selections) {
-            // Add selected Stock Entry rows to references
-            add_reference_rows(frm, selections);
-
-            
-
-            this.dialog.hide();
+            // 🚩 Ab Dialog open karein
+            new frappe.ui.form.MultiSelectDialog({
+                doctype: "Stock Entry",
+                target: frm,
+                setters: {
+                    stock_entry_type: "Material Issue"
+                },
+                get_query() {
+                    return {
+                        filters: [
+                            ["Stock Entry", "docstatus", "=", 1],
+                            ["Stock Entry", "stock_entry_type", "=", "Material Issue"],
+                            ["Stock Entry", "company", "=", frm.doc.owner_site],
+                            ["Stock Entry", "name", "not in", used_ids] // 🚩 YAHI LINE MAIN CHECK HAI
+                        ]
+                    };
+                },
+                action(selections) {
+                    // Add selected Stock Entry rows to references
+                    add_reference_rows(frm, selections);
+                    this.dialog.hide();
+                }
+            });
         }
     });
 }
@@ -487,40 +494,4 @@ function toggle_consignor_fields(frm) {
 }
 
 
-
-function open_stock_entry_mapper(frm) {
-    // Check this line to ensure what the Stock Entry type should be.
-// If you are doing it for Subcontracting, then it should be "Send to Subcontractor".
-    let target_type = "Send to Subcontractor"; 
-
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_used_source_ids",
-        args: { source_doctype: "Stock Entry" },
-        callback: function(r) {
-            const used_ids = r.message || [];
-
-            new frappe.ui.form.MultiSelectDialog({
-                doctype: "Stock Entry",
-                target: frm,
-                setters: {
-                    stock_entry_type: target_type // Yaha dynamic value jaye
-                },
-                get_query() {
-                    return {
-                        filters: [
-                            ["Stock Entry", "docstatus", "=", 1],
-                            ["Stock Entry", "company", "=", frm.doc.owner_site],
-                            ["Stock Entry", "stock_entry_type", "=", target_type], // Is line ko check karein
-                            ["Stock Entry", "name", "not in", used_ids]
-                        ]
-                    };
-                },
-                action(selections) {
-                    add_reference_rows(frm, selections);
-                    this.dialog.hide();
-                }
-            });
-        }
-    });
-}
 
