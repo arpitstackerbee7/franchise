@@ -240,7 +240,7 @@ function open_sales_return_mapper(frm) {
             return {
                 filters: [
                     ["docstatus", "=", 1],
-                    ["is_return", "=", 1],
+                    ["is_return", "=", 0],
                     ["customer", "=", frm.doc.consignor_customer],
                     ["company", "=", frm.doc.owner_site]
                 ]
@@ -254,14 +254,14 @@ function open_sales_return_mapper(frm) {
 }
 
 function open_stock_entry_mapper(frm) {
-    // 🚩 Pehle database se used IDs mangwayein
+    //Pehle database se used IDs mangwayein
     frappe.call({
         method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_used_source_ids",
         args: { source_doctype: "Stock Entry" },
         callback: function(r) {
             const used_ids = r.message || [];
 
-            // 🚩 Ab Dialog open karein
+            //Ab Dialog open karein
             new frappe.ui.form.MultiSelectDialog({
                 doctype: "Stock Entry",
                 target: frm,
