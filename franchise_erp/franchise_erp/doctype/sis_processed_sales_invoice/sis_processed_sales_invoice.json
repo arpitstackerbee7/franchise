@@ -64,8 +64,9 @@
   },
   {
    "fieldname": "company",
-   "fieldtype": "Data",
-   "label": "Company"
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
   },
   {
    "fieldname": "column_break_qxvj",
@@ -163,7 +164,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-01 23:47:33.454010",
+ "modified": "2026-03-19 18:37:23.382497",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "SIS Processed Sales Invoice",

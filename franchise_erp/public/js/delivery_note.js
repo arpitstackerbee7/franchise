@@ -101,3 +101,24 @@ function apply_sis_counter_minimal_ui(frm) {
 }
 
 
+frappe.ui.form.on("Delivery Note Item", {
+    item_code: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+
+        if (row.item_code) {
+            frappe.db.get_value("Item", row.item_code, [
+                "custom_barcode_code",
+                "custom_colour_name",
+                "custom_size"
+            ]).then(r => {
+
+                if (r.message) {
+                    frappe.model.set_value(cdt, cdn, "custom_style", r.message.custom_barcode_code);
+                    frappe.model.set_value(cdt, cdn, "custom_color", r.message.custom_colour_name);
+                    frappe.model.set_value(cdt, cdn, "custom_size", r.message.custom_size);
+                }
+
+            });
+        }
+    }
+});

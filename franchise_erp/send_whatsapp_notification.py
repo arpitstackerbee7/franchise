@@ -114,3 +114,105 @@ def send_pdf_on_whatsapp_sales_invoice(doc, method=None):
         files["file"].close()
         if os.path.exists(file_path):
             os.remove(file_path)
+
+
+import frappe
+import os
+import requests
+
+def send_sales_invoice_pdf_from_outgoing_logistics(doc, method=None):
+
+    for row in doc.references:
+
+        if row.source_doctype != "Sales Invoice":
+            continue
+
+        sales_invoice = row.source_name
+        if not sales_invoice:
+            continue
+
+        # Sales Invoice doc
+        si_doc = frappe.get_doc("Sales Invoice", sales_invoice)
+
+        # Mobile
+        mobile = frappe.db.get_value("Customer", si_doc.customer, "custom_mobile_no_customer")
+
+        if not mobile:
+            frappe.log_error(f"No mobile for {si_doc.customer}", f"WhatsApp Skip {sales_invoice}")
+            continue
+
+        chatId = f"91{mobile}@c.us"
+
+        # -----------------------------
+        # TOTAL QTY CALCULATE
+        # -----------------------------
+        total_qty = sum([item.qty for item in si_doc.items])
+
+        # -----------------------------
+        # MESSAGE SEND
+        # -----------------------------
+        message = f"""Hello {si_doc.customer},
+
+Your Sales Invoice has been generated.
+
+Invoice No : {si_doc.name}
+Total Qty : {total_qty}
+Grand Total : {si_doc.grand_total}
+
+Thank you!"""
+
+        msg_url = "https://7103.api.greenapi.com/waInstance7103539592/sendMessage/9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+
+        msg_payload = {
+            "chatId": chatId,
+            "message": message
+        }
+
+        try:
+            requests.post(msg_url, json=msg_payload)
+        except Exception as e:
+            frappe.log_error(str(e), f"WhatsApp Msg Error {si_doc.name}")
+
+        # -----------------------------
+        # PDF GENERATE
+        # -----------------------------
+        pdf = frappe.get_print(
+            doctype="Sales Invoice",
+            name=si_doc.name,
+            print_format="Sales Invoice Print Format",
+            no_letterhead=1,
+            as_pdf=True
+        )
+
+        file_name = f"{si_doc.name}.pdf"
+        file_path = f"/tmp/{file_name}"
+
+        with open(file_path, "wb") as f:
+            f.write(pdf)
+
+        # -----------------------------
+        # PDF SEND
+        # -----------------------------
+        file_url = "https://7103.api.greenapi.com/waInstance7103539592/sendFileByUpload/9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+
+        data = {
+            "chatId": chatId,
+            "caption": f"Invoice {si_doc.name}",
+            "fileName": file_name
+        }
+
+        files = {"file": open(file_path, "rb")}
+
+        try:
+            response = requests.post(file_url, data=data, files=files)
+
+            if response.status_code != 200:
+                frappe.log_error(response.text, f"WhatsApp PDF Failed {si_doc.name}")
+
+        except Exception as e:
+            frappe.log_error(str(e), f"WhatsApp PDF Error {si_doc.name}")
+
+        finally:
+            files["file"].close()
+            if os.path.exists(file_path):
+                os.remove(file_path)
