@@ -50,7 +50,6 @@ frappe.ui.form.on("SIS Debit Note Log", {
         if (frm.doc.company) {
             frm.trigger("company");
         }
- console.log("c:",frm.doc.company);
         // Remove button every refresh
         frm.page.remove_inner_button("Create Debit Note");
 
@@ -254,186 +253,256 @@ function show_invoice_dialog(frm) {
     // -----------------------
     // Update table
     // -----------------------
-    function update_table() {
-        let filter_value = discount_ctrl.get_value();
-        let search_txt = (search_ctrl.get_value() || "").toLowerCase();
+  function update_table() {
+    let filter_value = discount_ctrl.get_value();
+    let search_txt = (search_ctrl.get_value() || "").toLowerCase();
 
-        let filtered = [...all_items];
+    let filtered = [...all_items];
 
-        if (filter_value === "<= 10%") {
-            filtered = filtered.filter(r => flt(r.discount_percentage) <= 10);
-        } else if (filter_value === "> 10%") {
-            filtered = filtered.filter(r => flt(r.discount_percentage) > 10);
-        }
-
-        filtered = filtered.filter(r =>
-            (r.item_name || "").toLowerCase().includes(search_txt) ||
-            (r.customer || "").toLowerCase().includes(search_txt) ||
-            (r.name || "").toLowerCase().includes(search_txt)
-        );
-
-        current_filtered_data = filtered;
-
-        let total_pages = Math.ceil(filtered.length / page_size) || 1;
-        page = Math.min(page, total_pages);
-
-        let start = (page - 1) * page_size;
-        let rows = filtered.slice(start, start + page_size);
-
-        let html = `
-        <div style="max-height:420px; overflow:auto; border:1px solid #ddd;">
-        <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>#</th><th>Invoice</th><th>Date</th><th>Customer</th>
-                <th>Item</th><th>Qty</th><th>MRP</th><th>Total</th>
-                <th>Discount%</th><th>Realized Sale</th><th>Output GST%</th><th>Output GST Value</th><th>Taxable Value</th><th>Margin%</th>
-                       <th>Margin Value</th>
-                       <th>INV Base Value</th>
-                       <th>Input GST Value</th>
-                       <th>Collectable</th>
-                       <th>CD/DN</th>
-            </tr>
-        </thead><tbody>`;
-
-        if (!rows.length) {
-            html += `<tr><td colspan="10" class="text-center">No Records Found</td></tr>`;
-        } else {
-            rows.forEach((r, i) => {
-                html += `
-                <tr>
-                    <td>${start + i + 1}</td>
-                    <td>${r.name}</td>
-                    <td>${r.posting_date}</td>
-                    <td>${r.customer}</td>
-                    <td>${r.item_name}</td>
-                    <td>${r.qty}</td>
-                    <td>${r.price_list_rate}</td>
-                    <td>${(r.price_list_rate * r.qty).toFixed(2)}</td> 
-                    <td>${r.discount_percentage}</td> 
-                    <td>${r.net_amount}</td> 
-                    <td>${r.gst_percent}</td> 
-                    <td>${r.gst_amount}</td> 
-                    <td>${(r.net_sale_value).toFixed(2)}</td> 
-                    <td>${r.margin_percent}</td>
-                       <td>${r.margin_amount}</td> 
-                       <td>${r.inv_base_value}</td> 
-                       <td>${r.in_put_gst_value}</td> 
-                       <td>${(r.invoice_value).toFixed(2)}</td> 
-                       <td>${(r.debit_note).toFixed(2)}</td>
-                </tr>`;
-            });
-        }
-
-        html += `</tbody></table></div>`;
-        d.get_field("items_html").$wrapper.html(html);
-
-        d.get_field("pagination_html").$wrapper.html(`
-            <div style="display:flex; justify-content:space-between; margin-top:10px;">
-                <b>Total Records: ${filtered.length}</b>
-                <div>
-                    <button class="btn btn-sm btn-primary prev" ${page === 1 ? "disabled" : ""}>Prev</button>
-                    Page ${page} of ${total_pages}
-                    <button class="btn btn-sm btn-primary next" ${page === total_pages ? "disabled" : ""}>Next</button>
-                </div>
-            </div>
-        `);
-
-        d.$wrapper.find(".prev").on("click", () => { page--; update_table(); });
-        d.$wrapper.find(".next").on("click", () => { page++; update_table(); });
+    if (filter_value === "<= 10%") {
+        filtered = filtered.filter(r => flt(r.discount_percentage) <= 10);
+    } else if (filter_value === "> 10%") {
+        filtered = filtered.filter(r => flt(r.discount_percentage) > 10);
     }
+
+    filtered = filtered.filter(r =>
+        (r.item_name || "").toLowerCase().includes(search_txt) ||
+        (r.customer || "").toLowerCase().includes(search_txt) ||
+        (r.name || "").toLowerCase().includes(search_txt)
+    );
+
+    current_filtered_data = filtered;
+
+    // -----------------------
+    // TOTAL CALCULATION
+    // -----------------------
+    let total_collectable = 0;
+    let total_cd_dn = 0;
+
+    current_filtered_data.forEach(r => {
+        total_collectable += flt(r.invoice_value);
+        total_cd_dn += flt(r.debit_note);
+    });
+
+    let total_pages = Math.ceil(filtered.length / page_size) || 1;
+    page = Math.min(page, total_pages);
+
+    let start = (page - 1) * page_size;
+    let rows = filtered.slice(start, start + page_size);
+
+    let html = `
+    <div style="max-height:420px; overflow:auto; border:1px solid #ddd;">
+    <table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>#</th><th>Invoice</th><th>Date</th><th>Customer</th>
+            <th>Item</th><th>Qty</th><th>MRP</th><th>Total</th>
+            <th>Discount%</th><th>Realized Sale</th><th>Output GST%</th>
+            <th>Output GST Value</th><th>Taxable Value</th><th>Margin%</th>
+            <th>Margin Value</th>
+            <th>INV Base Value</th>
+            <th>Input GST Value</th>
+            <th>Collectable</th>
+            <th>CD/DN</th>
+        </tr>
+    </thead>
+    <tbody>`;
+
+    if (!rows.length) {
+        html += `<tr><td colspan="19" class="text-center">No Records Found</td></tr>`;
+    } else {
+        rows.forEach((r, i) => {
+            html += `
+            <tr>
+                <td>${start + i + 1}</td>
+                <td>${r.name}</td>
+                <td>${r.posting_date}</td>
+                <td>${r.customer}</td>
+                <td>${r.item_name}</td>
+                <td>${r.qty}</td>
+                <td>${r.price_list_rate}</td>
+                <td>${(r.price_list_rate * r.qty).toFixed(2)}</td> 
+                <td>${r.discount_percentage}</td> 
+                <td>${r.net_amount}</td> 
+                <td>${r.gst_percent}</td> 
+                <td>${r.gst_amount}</td> 
+                <td>${(r.net_sale_value).toFixed(2)}</td> 
+                <td>${r.margin_percent}</td>
+                <td>${r.margin_amount}</td> 
+                <td>${r.inv_base_value}</td> 
+                <td>${r.in_put_gst_value}</td> 
+                <td>${(r.invoice_value).toFixed(2)}</td> 
+                <td>${(r.debit_note).toFixed(2)}</td>
+            </tr>`;
+        });
+
+        // ✅ TOTAL ROW (INSIDE TABLE)
+        html += `
+        <tr style="font-weight:bold; background:#f5f5f5;">
+            <td colspan="17" style="text-align:right;">Total</td>
+            <td>${total_collectable.toFixed(2)}</td>
+            <td>${total_cd_dn.toFixed(2)}</td>
+        </tr>`;
+    }
+
+    html += `</tbody></table></div>`;
+
+    d.get_field("items_html").$wrapper.html(html);
+
+    d.get_field("pagination_html").$wrapper.html(`
+        <div style="display:flex; justify-content:space-between; margin-top:10px;">
+            <b>Total Records: ${filtered.length}</b>
+            <div>
+                <button class="btn btn-sm btn-primary prev" ${page === 1 ? "disabled" : ""}>Prev</button>
+                Page ${page} of ${total_pages}
+                <button class="btn btn-sm btn-primary next" ${page === total_pages ? "disabled" : ""}>Next</button>
+            </div>
+        </div>
+    `);
+
+    d.$wrapper.find(".prev").on("click", () => { page--; update_table(); });
+    d.$wrapper.find(".next").on("click", () => { page++; update_table(); });
+}
 
     // -----------------------
     // PRINT
     // -----------------------
-    d.$wrapper.on("click", "#print_table_btn", function () {
-        if (!current_filtered_data.length) {
-            frappe.msgprint("No data to print");
-            return;
-        }
+   d.$wrapper.on("click", "#print_table_btn", function () {
+    if (!current_filtered_data.length) {
+        frappe.msgprint("No data to print");
+        return;
+    }
 
-        let rows = current_filtered_data.map((r, i) => `
+    let total_collectable = 0;
+    let total_cd_dn = 0;
+
+    let rows = current_filtered_data.map((r, i) => {
+
+        total_collectable += flt(r.invoice_value);
+        total_cd_dn += flt(r.debit_note);
+
+        return `
             <tr>
                 <td>${i + 1}</td>
                 <td>${r.name}</td>
-                    <td>${r.posting_date}</td>
-                    <td>${r.customer}</td>
-                    <td>${r.item_name}</td>
-                    <td>${r.qty}</td>
-                    <td>${r.price_list_rate}</td>
-                    <td>${(r.price_list_rate * r.qty).toFixed(2)}</td> 
-                    <td>${r.discount_percentage}</td> 
-                    <td>${r.net_amount}</td> 
-                    <td>${r.gst_percent}</td> 
-                    <td>${r.gst_amount}</td> 
-                    <td>${(r.net_sale_value).toFixed(2)}</td> 
-                    <td>${r.margin_percent}</td>
-                       <td>${r.margin_amount}</td> 
-                       <td>${r.inv_base_value}</td> 
-                       <td>${r.in_put_gst_value}</td> 
-                       <td>${(r.invoice_value).toFixed(2)}</td> 
-                       <td>${(r.debit_note).toFixed(2)}</td>
+                <td>${r.posting_date}</td>
+                <td>${r.customer}</td>
+                <td>${r.item_name}</td>
+                <td>${r.qty}</td>
+                <td>${r.price_list_rate}</td>
+                <td>${(r.price_list_rate * r.qty).toFixed(2)}</td> 
+                <td>${r.discount_percentage}</td> 
+                <td>${r.net_amount}</td> 
+                <td>${r.gst_percent}</td> 
+                <td>${r.gst_amount}</td> 
+                <td>${(r.net_sale_value).toFixed(2)}</td> 
+                <td>${r.margin_percent}</td>
+                <td>${r.margin_amount}</td> 
+                <td>${r.inv_base_value}</td> 
+                <td>${r.in_put_gst_value}</td> 
+                <td>${(r.invoice_value).toFixed(2)}</td> 
+                <td>${(r.debit_note).toFixed(2)}</td>
             </tr>
-        `).join("");
+        `;
+    }).join("");
 
-        let win = window.open("", "_blank");
-        win.document.write(`
-            <html><head>
-            <style>
-                table{width:100%;border-collapse:collapse}
-                th,td{border:1px solid #000;padding:6px;font-size:12px}
-            </style>
-            </head><body>
-            <h3>Invoice Report</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th> <th>Invoice</th><th>Date</th><th>Customer</th>
-                <th>Item</th><th>Qty</th><th>MRP</th><th>Total</th>
-                <th>Discount%</th><th>Realized Sale</th><th>Output GST%</th><th>Output GST Value</th><th>Taxable Value</th><th>Margin%</th>
-                       <th>Margin Value</th>
-                       <th>INV Base Value</th>
-                       <th>Input GST Value</th>
-                       <th>Collectable</th>
-                       <th>CD/DN</th>
+    let win = window.open("", "_blank");
+    win.document.write(`
+        <html><head>
+        <style>
+            table{width:100%;border-collapse:collapse}
+            th,td{border:1px solid #000;padding:6px;font-size:12px}
+        </style>
+        </head><body>
+        <h3>Invoice Report</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th><th>Invoice</th><th>Date</th><th>Customer</th>
+                    <th>Item</th><th>Qty</th><th>MRP</th><th>Total</th>
+                    <th>Discount%</th><th>Realized Sale</th><th>Output GST%</th>
+                    <th>Output GST Value</th><th>Taxable Value</th><th>Margin%</th>
+                    <th>Margin Value</th><th>INV Base Value</th>
+                    <th>Input GST Value</th><th>Collectable</th><th>CD/DN</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows}
+                <tr style="font-weight:bold;">
+                    <td colspan="17" style="text-align:right;">Total</td>
+                    <td>${total_collectable.toFixed(2)}</td>
+                    <td>${total_cd_dn.toFixed(2)}</td>
+                </tr>
+            </tbody>
+        </table>
+        </body></html>
+    `);
 
-                    </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
-            </body></html>
-        `);
-        win.document.close();
-        win.print();
-    });
+    win.document.close();
+    win.print();
+});
 
     // -----------------------
     // EXPORT CSV
     // -----------------------
     d.$wrapper.on("click", "#export_table_btn", function () {
-        if (!current_filtered_data.length) {
-            frappe.msgprint("No data to export");
-            return;
-        }
+    if (!current_filtered_data.length) {
+        frappe.msgprint("No data to export");
+        return;
+    }
 
-        let csv = "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN\n";
+    let csv = "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN\n";
 
-        current_filtered_data.forEach(r => {
-            csv += [
-                r.name, r.posting_date, r.customer, r.item_code,
-                r.qty, r.price_list_rate,(r.price_list_rate * r.qty).toFixed(2),r.discount_percentage, r.net_amount, r.gst_percent, r.gst_amount,
-                (r.net_sale_value).toFixed(2),r.margin_percent,r.margin_amount,  r.inv_base_value,r.in_put_gst_value, (r.invoice_value).toFixed(2),     (r.debit_note).toFixed(2),
-            ].join(",") + "\n";
-        });
+    let total_collectable = 0;
+    let total_cd_dn = 0;
 
-        let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        let url = URL.createObjectURL(blob);
-        let a = document.createElement("a");
-        a.href = url;
-        a.download = "Invoice_Report.csv";
-        a.click();
-        URL.revokeObjectURL(url);
+    current_filtered_data.forEach(r => {
+        let row_total = (r.price_list_rate * r.qty);
+
+        total_collectable += flt(r.invoice_value);
+        total_cd_dn += flt(r.debit_note);
+
+        csv += [
+            r.name,
+            r.posting_date,
+            r.customer,
+            r.item_code,
+            r.qty,
+            r.price_list_rate,
+            row_total.toFixed(2),
+            r.discount_percentage,
+            r.net_amount,
+            r.gst_percent,
+            r.gst_amount,
+            (r.net_sale_value).toFixed(2),
+            r.margin_percent,
+            r.margin_amount,
+            r.inv_base_value,
+            r.in_put_gst_value,
+            (r.invoice_value).toFixed(2),
+            (r.debit_note).toFixed(2),
+        ].join(",") + "\n";
     });
+
+    // ✅ EMPTY LINE
+    csv += "\n";
+
+    // ✅ TOTAL ROW
+    csv += [
+        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+        "Total",
+        total_collectable.toFixed(2),
+        total_cd_dn.toFixed(2)
+    ].join(",") + "\n";
+
+    let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement("a");
+    a.href = url;
+    a.download = "Invoice_Report.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+});
 
     // -----------------------
     // CSS

@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
+from franchise_erp.send_whatsapp_notification import send_sales_invoice_pdf_from_outgoing_logistics
 
 
 class OutgoingLogistics(Document):
@@ -10,6 +11,7 @@ class OutgoingLogistics(Document):
     def validate(self):
         if not self.references or len(self.references) == 0:
             frappe.throw("Reference ID is mandatory. Please add at least one row.")
+
     # -----------------------------
     # ON SUBMIT
     # -----------------------------
@@ -40,7 +42,9 @@ class OutgoingLogistics(Document):
                 },
                 update_modified=False
             )
-	
+
+        # ✅ WhatsApp PDF send call
+        send_sales_invoice_pdf_from_outgoing_logistics(self)
     # -----------------------------
     # BEFORE CANCEL
     # -----------------------------
