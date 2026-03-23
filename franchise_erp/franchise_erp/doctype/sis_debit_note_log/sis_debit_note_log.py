@@ -800,19 +800,15 @@ def create_debit_note(company, period_type=None, invoices=None):
     # Date Range
     from_date, to_date = get_period_dates(period_type)
 
-    # Penalty Account
+    # Penalty Account from SIS Configuration
     penalty_account = frappe.db.get_value(
-        "Account",
-        {
-            "company": company,
-            "root_type": "Expense",
-            "name": ["like", f"TZU Penalty%{company_abbr}"]
-        },
-        "name"
+        "SIS Configuration",
+        {"company": company},
+        "sis_debit_note_account"
     )
 
     if not penalty_account:
-        frappe.throw(f"Create Penalty Expense Account like 'TZU Penalty Exp - {company_abbr}'.")
+        frappe.throw("Please set 'SIS Debit Note Account' in SIS Configuration.")
 
     # --- Create Journal Entry ---
     je = frappe.new_doc("Journal Entry")
