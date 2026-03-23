@@ -132,13 +132,16 @@ doc_events = {
         "before_validate": "franchise_erp.custom.sales_order.apply_sales_term"
     },
     "Delivery Note": {
+
         "before_save": [
             "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
             "franchise_erp.custom.delivery_note.set_promo_group_id",
             "franchise_erp.custom.delivery_note.set_percent_off_promo_flags"
         ],
-        "before_insert": "franchise_erp.custom.delivery_note.set_dn_naming_series",
-        "validate": ["franchise_erp.custom.delivery_note.disable_eway_notification","franchise_erp.custom.delivery_note.apply_sales_person_rules"]
+        "before_naming": "franchise_erp.custom.delivery_note.set_delivery_note_name",        
+        # "before_insert": "franchise_erp.custom.delivery_note.set_dn_naming_series",
+        "validate": ["franchise_erp.custom.delivery_note.disable_eway_notification",
+        "franchise_erp.custom.delivery_note.apply_sales_person_rules"]
         
         # "after_save": [
         #     # "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",

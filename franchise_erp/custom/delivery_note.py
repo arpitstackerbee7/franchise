@@ -1,4 +1,5 @@
 import frappe
+from frappe.model.naming import make_autoname
 
 #for 2 get 1 free item
 def set_promo_group_id(doc, method=None):
@@ -43,12 +44,24 @@ def set_percent_off_promo_flags(doc, method=None):
         item.db_set("custom_promo_discount_percent", discount_percent)
 
 
-
-def set_dn_naming_series(doc, method):
+def set_delivery_note_name(doc, method=None):
+    # 1. Series pattern decide karein
     if doc.is_return:
-        doc.naming_series = "DRET-.YY.-"
+        series = "DRET-.YY.-"
+    elif doc.get("custom_abbr"):
+        series = f"DN-{doc.custom_abbr}-.YY.-"
     else:
-        doc.naming_series = "DN-.YY.-"
+        series = "DN-.YY.-"
+
+    # 2. Sirf naming_series set karein, counter system khud sambhal lega
+    # Isse "Value missing" wala error nahi aayega
+    doc.naming_series = series
+    
+# def set_dn_naming_series(doc, method):
+#     if doc.is_return:
+#         doc.naming_series = "DRET-.YY.-"
+#     else:
+#         doc.naming_series = "DN-.YY.-"
 
 
 def disable_eway_notification(doc, method):
@@ -167,3 +180,4 @@ def get_delivery_note_by_serial(serial):
     """, ("%" + serial + "%"))
 
     return [d[0] for d in invoices]
+
