@@ -273,18 +273,39 @@ frappe.ui.form.on('Item', {
     }
 });
 
-// by mayuri
+// by mayuri - Dynamic Role Check via TZU Setting
 frappe.ui.form.on('Item', {
     refresh: function(frm) {
-        if (!frm.is_new() && frappe.user_roles.includes('SIS Counter')) {
-            frm.disable_save();
-            frm.set_read_only();
-            frm.page.clear_menu();
+        if (!frm.is_new()) {
+            // TZU Setting se data fetch karein
+            frappe.db.get_doc('TZU Setting', null).then(settings => {
+                if (settings.item_restricted_roles && settings.item_restricted_roles.length > 0) {
+                    
+                    // Check karein ki kya current user ke paas koi restricted role hai
+                    let user_has_restricted_role = settings.item_restricted_roles.some(row => 
+                        frappe.user_roles.includes(row.role)
+                    );
 
-            // Forcefully lock all fields to avoid conflicts
-            frm.meta.fields.forEach(df => {
-                frm.set_df_property(df.fieldname, "read_only", 1);
+                    if (user_has_restricted_role) {
+                        apply_item_restrictions(frm);
+                    }
+                }
             });
         }
     }
 });
+
+// Restriction apply karne ka function
+function apply_item_restrictions(frm) {
+    frm.disable_save();
+    frm.set_read_only();
+    frm.page.clear_menu();
+
+    // Forcefully lock all fields
+    frm.meta.fields.forEach(df => {
+        frm.set_df_property(df.fieldname, "read_only", 1);
+    });
+    
+    // Optional: User ko message dikhane ke liye
+    // frappe.show_alert({message: __("You only have read-only access to Items."), indicator: 'orange'});
+}
