@@ -15,7 +15,8 @@
   "item_name",
   "batch_uom",
   "enter_series_length",
-  "box_barcode_series_length"
+  "box_barcode_series_length",
+  "item_restricted_roles"
  ],
  "fields": [
   {
@@ -73,13 +74,19 @@
    "label": "Transport Service Item",
    "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
    "options": "Item"
+  },
+  {
+   "fieldname": "item_restricted_roles",
+   "fieldtype": "Table",
+   "label": "Item Restricted Roles",
+   "options": "Restricted Role Detail"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-01-09 12:57:52.044898",
+ "modified": "2026-03-23 14:32:20.448254",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
