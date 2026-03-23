@@ -1,5 +1,7 @@
 import frappe
 from frappe.model.naming import make_autoname
+import re
+
 
 #for 2 get 1 free item
 def set_promo_group_id(doc, method=None):
@@ -45,16 +47,16 @@ def set_percent_off_promo_flags(doc, method=None):
 
 
 def set_delivery_note_name(doc, method=None):
-    # 1. Series pattern decide karein
+    # Clean abbreviation (allow only letters & numbers)
+    abbr = re.sub(r"[^A-Za-z0-9]", "", doc.custom_abbr or "")
+
     if doc.is_return:
-        series = "DRET-.YY.-"
-    elif doc.get("custom_abbr"):
-        series = f"DN-{doc.custom_abbr}-.YY.-"
+        series = f"DRET-{abbr}-.YY.-"
+    elif abbr:
+        series = f"DN-{abbr}-.YY.-"
     else:
         series = "DN-.YY.-"
 
-    # 2. Sirf naming_series set karein, counter system khud sambhal lega
-    # Isse "Value missing" wala error nahi aayega
     doc.naming_series = series
     
 # def set_dn_naming_series(doc, method):
