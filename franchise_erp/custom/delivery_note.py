@@ -1,4 +1,7 @@
 import frappe
+from frappe.model.naming import make_autoname
+import re
+
 
 #for 2 get 1 free item
 def set_promo_group_id(doc, method=None):
@@ -43,12 +46,24 @@ def set_percent_off_promo_flags(doc, method=None):
         item.db_set("custom_promo_discount_percent", discount_percent)
 
 
+def set_delivery_note_name(doc, method=None):
+    # Clean abbreviation (allow only letters & numbers)
+    abbr = re.sub(r"[^A-Za-z0-9]", "", doc.custom_abbr or "")
 
-def set_dn_naming_series(doc, method):
     if doc.is_return:
-        doc.naming_series = "DRET-.YY.-"
+        series = f"DRET-{abbr}-.YY.-"
+    elif abbr:
+        series = f"DN-{abbr}-.YY.-"
     else:
-        doc.naming_series = "DN-.YY.-"
+        series = "DN-.YY.-"
+
+    doc.naming_series = series
+    
+# def set_dn_naming_series(doc, method):
+#     if doc.is_return:
+#         doc.naming_series = "DRET-.YY.-"
+#     else:
+#         doc.naming_series = "DN-.YY.-"
 
 
 def disable_eway_notification(doc, method):
@@ -167,3 +182,4 @@ def get_delivery_note_by_serial(serial):
     """, ("%" + serial + "%"))
 
     return [d[0] for d in invoices]
+
