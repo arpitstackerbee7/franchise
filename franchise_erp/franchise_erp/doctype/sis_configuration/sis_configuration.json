@@ -21,7 +21,8 @@
   "output_gst_max_net_rate",
   "column_break_dbci",
   "warehouse",
-  "delivery_note_warehouse"
+  "delivery_note_warehouse",
+  "sis_debit_note_account"
  ],
  "fields": [
   {
@@ -140,13 +141,21 @@
    "fieldtype": "Link",
    "label": "Delivery Note Warehouse",
    "options": "Warehouse"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "sis_debit_note_account",
+   "fieldtype": "Link",
+   "label": "SIS Debit Note Account",
+   "options": "Account",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-02-11 11:51:58.732014",
+ "modified": "2026-03-23 13:56:42.381947",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "SIS Configuration",
