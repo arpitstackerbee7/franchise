@@ -659,11 +659,34 @@ def fetch_invoices(company, from_date=None, to_date=None):
         # out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
         # out_put_gst_value = R2(out_put_gst_value)
         # net_sale_value = net_amount - out_put_gst_value
-        gst_percent = D(5) if net_amount <= output_gst_min_net_rate else D(18)
+
+        # gst_percent = D(5) if net_amount <= output_gst_min_net_rate else D(18)
+        # out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
+        # out_put_gst_value = R2(out_put_gst_value)
+        # net_sale_value = net_amount - out_put_gst_value
+        
+        # -------------------------------
+        # OUTPUT GST (FINAL FIX)
+        # -------------------------------
+
+        is_return = r.is_return or 0
+
+        # 🔥 IMPORTANT: use absolute value for GST decision
+        check_amount = abs(net_amount)
+
+        if is_return == 1:
+            if check_amount > output_gst_min_net_rate:
+                gst_percent = D(18)
+            else:
+                gst_percent = D(5)
+        else:
+            gst_percent = D(5) if check_amount <= output_gst_min_net_rate else D(18)
+
+        # GST calculation (original net_amount use karo, sign same rahega)
         out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
         out_put_gst_value = R2(out_put_gst_value)
-        net_sale_value = net_amount - out_put_gst_value
 
+        net_sale_value = net_amount - out_put_gst_value
         # -------------------------------------------------------------------
         # MARGIN LOGIC
         # -------------------------------------------------------------------
