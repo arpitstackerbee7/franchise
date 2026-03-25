@@ -561,9 +561,186 @@ function add_outgoing_logistics_button(frm) {
    EXPORT PACKING EXCEL (Final Optimized)
 ===================================================== */
 
+// function add_export_button(frm) {
+
+//     // Prevent duplicate button on refresh
+//     if (frm.__export_button_added) return;
+//     frm.__export_button_added = true;
+
+//     frm.add_custom_button("Export Packing Excel", async () => {
+
+//         if (!frm.doc.items || !frm.doc.items.length) {
+//             frappe.msgprint("No items found to export.");
+//             return;
+//         }
+
+//         // Unique + valid item codes
+//         let item_codes = [
+//             ...new Set(
+//                 frm.doc.items
+//                     .map(i => i.item_code)
+//                     .filter(Boolean)
+//             )
+//         ];
+
+//         if (!item_codes.length) {
+//             frappe.msgprint("No valid item codes found.");
+//             return;
+//         }
+
+//         // Fetch item master data
+//         let items = await frappe.db.get_list("Item", {
+//             filters: { name: ["in", item_codes] },
+//             fields: [
+//                 "name",
+//                 "custom_group_collection",
+//                 "custom_top_fabrics",
+//                 "custom_colour_name",
+//                 "custom_size",
+//                 "custom_barcode_code"
+//             ],
+//             limit: 500
+//         });
+
+//         let item_map = {};
+//         (items || []).forEach(d => item_map[d.name] = d);
+
+//         generate_fixed_excel(frm, item_map);
+
+//     }, "Actions");
+// }
+
+
+
+/* =====================================================
+   GENERATE EXCEL FILE
+===================================================== */
+
+// function generate_fixed_excel(frm, item_map) {
+
+//     let items = frm.doc.items || [];
+//     let totalQty = 0;
+//     let totalAmt = 0;
+
+//     let rows = [];
+
+//     items.forEach(item => {
+
+//         let m = item_map[item.item_code] || {};
+
+//         let qty = flt(item.qty);
+//         let amt = flt(item.amount);
+
+//         totalQty += qty;
+//         totalAmt += amt;
+
+//         rows.push(`
+//             <tr>
+//                 <td>${frm.doc.name || ''}</td>
+//                 <td>${frm.doc.posting_date || ''}</td>
+//                 <td>${item.serial_no ? item.serial_no.split('\n')[0] : ''}</td>
+//                 <td>${item.gst_hsn_code || ''}</td>
+//                 <td>${m.custom_barcode_code || ''}</td>
+//                 <td>${m.custom_group_collection || ''}</td>
+//                 <td>${m.custom_top_fabrics || ''}</td>
+//                 <td>${m.custom_colour_name || ''}</td>
+//                 <td>${m.custom_size || ''}</td>
+//                 <td align="center">${qty}</td>
+//                 <td align="right">${flt(item.price_list_rate)}</td>
+//                 <td align="right">${amt.toFixed(2)}</td>
+//             </tr>
+//         `);
+//     });
+
+//     let excel_html = `
+//         <html xmlns:o="urn:schemas-microsoft-com:office:office"
+//               xmlns:x="urn:schemas-microsoft-com:office:excel"
+//               xmlns="http://www.w3.org/TR/REC-html40">
+//         <head>
+//             <meta http-equiv="content-type"
+//                   content="application/vnd.ms-excel; charset=UTF-8">
+//             <style>
+//                 td, th {
+//                     border: 0.5pt solid #000;
+//                     font-family: Calibri, sans-serif;
+//                     font-size: 10pt;
+//                     padding: 5px;
+//                 }
+//                 .title {
+//                     font-size: 14pt;
+//                     font-weight: bold;
+//                     text-align: center;
+//                 }
+//             </style>
+//         </head>
+//         <body>
+//             <table border="1">
+
+//                 <tr>
+//                     <th colspan="12"
+//                         bgcolor="#FFFF00"
+//                         style="height:35pt; vertical-align:middle;"
+//                         class="title">
+//                         ${(frm.doc.customer_name || '').toUpperCase()} - PACKING SLIP FORMAT
+//                     </th>
+//                 </tr>
+
+//                 <tr bgcolor="#C6E0B4" style="font-weight:bold; height:25pt; text-align:center;">
+//                     <th width="120">Invoice No.</th>
+//                     <th width="100">Invoice date</th>
+//                     <th width="200">Serial No./BARCODE</th>
+//                     <th width="90">HSN Code</th>
+//                     <th width="120">STYLE NO</th>
+//                     <th width="200">Department</th>
+//                     <th width="100">FABRIC</th>
+//                     <th width="100">COLOR</th>
+//                     <th width="100">SIZE</th>
+//                     <th width="70">QTY</th>
+//                     <th width="100">MRP</th>
+//                     <th width="120">Gross Amount</th>
+//                 </tr>
+
+//                 ${rows.join("")}
+
+//                 <tr style="font-weight:bold;">
+//                     <td colspan="8" align="right">TOTAL</td>
+//                     <td></td>
+//                     <td align="center" bgcolor="#F2F2F2">${totalQty}</td>
+//                     <td></td>
+//                     <td align="right" bgcolor="#F2F2F2">${totalAmt.toFixed(2)}</td>
+//                 </tr>
+
+//             </table>
+//         </body>
+//         </html>
+//     `;
+
+//     let blob = new Blob([excel_html], {
+//         type: 'application/vnd.ms-excel'
+//     });
+
+//     let url = URL.createObjectURL(blob);
+
+//     let link = document.createElement("a");
+//     link.href = url;
+//     link.download = `${frm.doc.name}_Packing_Slip.xls`;
+
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+
+//     URL.revokeObjectURL(url);
+// }
+
+
+// new
+
+/* =====================================================
+   EXPORT PACKING EXCEL (FINAL FIXED)
+===================================================== */
+
 function add_export_button(frm) {
 
-    // Prevent duplicate button on refresh
     if (frm.__export_button_added) return;
     frm.__export_button_added = true;
 
@@ -574,7 +751,7 @@ function add_export_button(frm) {
             return;
         }
 
-        // Unique + valid item codes
+        // Unique item codes
         let item_codes = [
             ...new Set(
                 frm.doc.items
@@ -588,32 +765,70 @@ function add_export_button(frm) {
             return;
         }
 
-        // Fetch item master data
-        let items = await frappe.db.get_list("Item", {
-            filters: { name: ["in", item_codes] },
-            fields: [
-                "name",
-                "custom_group_collection",
-                "custom_top_fabrics",
-                "custom_colour_name",
-                "custom_size",
-                "custom_barcode_code"
-            ],
-            limit: 500
-        });
+        try {
+            frappe.dom.freeze("Preparing Excel...");
 
-        let item_map = {};
-        (items || []).forEach(d => item_map[d.name] = d);
+            // ✅ FIX: chunk + POST
+            let items = await get_items_in_chunks(item_codes);
 
-        generate_fixed_excel(frm, item_map);
+            let item_map = {};
+            (items || []).forEach(d => item_map[d.name] = d);
+
+            generate_fixed_excel(frm, item_map);
+
+        } catch (e) {
+            console.error(e);
+            frappe.msgprint("Error while generating Excel");
+        } finally {
+            frappe.dom.unfreeze();
+        }
 
     }, "Actions");
 }
 
 
+/* =====================================================
+   FETCH ITEMS IN CHUNKS (IMPORTANT FIX)
+===================================================== */
+
+async function get_items_in_chunks(item_codes) {
+
+    let all_items = [];
+    let chunk_size = 50; // safe size
+
+    for (let i = 0; i < item_codes.length; i += chunk_size) {
+
+        let chunk = item_codes.slice(i, i + chunk_size);
+
+        let res = await frappe.call({
+            method: "frappe.client.get_list",
+            type: "POST", // 🔥 FIX
+            args: {
+                doctype: "Item",
+                filters: {
+                    name: ["in", chunk]
+                },
+                fields: [
+                    "name",
+                    "custom_group_collection",
+                    "custom_top_fabrics",
+                    "custom_colour_name",
+                    "custom_size",
+                    "custom_barcode_code"
+                ],
+                limit_page_length: 50
+            }
+        });
+
+        all_items = all_items.concat(res.message || []);
+    }
+
+    return all_items;
+}
+
 
 /* =====================================================
-   GENERATE EXCEL FILE
+   GENERATE EXCEL
 ===================================================== */
 
 function generate_fixed_excel(frm, item_map) {
@@ -685,19 +900,19 @@ function generate_fixed_excel(frm, item_map) {
                     </th>
                 </tr>
 
-                <tr bgcolor="#C6E0B4" style="font-weight:bold; height:25pt; text-align:center;">
-                    <th width="120">Invoice No.</th>
-                    <th width="100">Invoice date</th>
-                    <th width="200">Serial No./BARCODE</th>
-                    <th width="90">HSN Code</th>
-                    <th width="120">STYLE NO</th>
-                    <th width="200">Department</th>
-                    <th width="100">FABRIC</th>
-                    <th width="100">COLOR</th>
-                    <th width="100">SIZE</th>
-                    <th width="70">QTY</th>
-                    <th width="100">MRP</th>
-                    <th width="120">Gross Amount</th>
+                <tr bgcolor="#C6E0B4" style="font-weight:bold; text-align:center;">
+                    <th>Invoice No.</th>
+                    <th>Invoice date</th>
+                    <th>Serial No./BARCODE</th>
+                    <th>HSN Code</th>
+                    <th>STYLE NO</th>
+                    <th>Department</th>
+                    <th>FABRIC</th>
+                    <th>COLOR</th>
+                    <th>SIZE</th>
+                    <th>QTY</th>
+                    <th>MRP</th>
+                    <th>Gross Amount</th>
                 </tr>
 
                 ${rows.join("")}
@@ -731,6 +946,10 @@ function generate_fixed_excel(frm, item_map) {
 
     URL.revokeObjectURL(url);
 }
+
+
+
+
 
 
 function make_total_qty_bold(frm) {
