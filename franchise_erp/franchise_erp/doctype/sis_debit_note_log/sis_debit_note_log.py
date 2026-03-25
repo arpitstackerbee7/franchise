@@ -535,7 +535,8 @@ def fetch_invoices(company, from_date=None, to_date=None):
             "sis_debit_note_creation_period",
             "auto_credit_note_percent",
             "discount_threshold",
-            "output_gst_min_net_rate"
+            "output_gst_min_net_rate",
+            "input_gst_for_opening_stock"
         ],
         as_dict=True
     )
@@ -549,6 +550,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
     auto_credit_note_percent = D(config.auto_credit_note_percent)
     discount_threshold = D(config.discount_threshold)
     output_gst_min_net_rate = D(config.output_gst_min_net_rate)
+    input_gst_for_opening_stock = D(config.input_gst_for_opening_stock)
 
     # -------------------------------------------------------------------
     # CLEAN DATE INPUTS
@@ -659,11 +661,35 @@ def fetch_invoices(company, from_date=None, to_date=None):
         # out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
         # out_put_gst_value = R2(out_put_gst_value)
         # net_sale_value = net_amount - out_put_gst_value
-        gst_percent = D(5) if net_amount <= output_gst_min_net_rate else D(18)
+
+        # gst_percent = D(5) if net_amount <= output_gst_min_net_rate else D(18)
+        # out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
+        # out_put_gst_value = R2(out_put_gst_value)
+        # net_sale_value = net_amount - out_put_gst_value
+        
+        # -------------------------------
+        # OUTPUT GST (FINAL FIX)
+        # -------------------------------
+
+        
+        is_return = r.is_return or 0
+
+        # 🔥 IMPORTANT: use absolute value for GST decision
+        check_amount = abs(net_amount)
+
+        if is_return == 1:
+            if check_amount > output_gst_min_net_rate:
+                gst_percent = D(18)
+            else:
+                gst_percent = D(5)
+        else:
+            gst_percent = D(5) if check_amount <= output_gst_min_net_rate else D(18)
+
+        # GST calculation (original net_amount use karo, sign same rahega)
         out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
         out_put_gst_value = R2(out_put_gst_value)
-        net_sale_value = net_amount - out_put_gst_value
 
+        net_sale_value = net_amount - out_put_gst_value
         # -------------------------------------------------------------------
         # MARGIN LOGIC
         # -------------------------------------------------------------------
@@ -675,6 +701,8 @@ def fetch_invoices(company, from_date=None, to_date=None):
         margin_amount = (net_amount * margin_percent) / D(100)
         inv_base_value = net_sale_value - margin_amount
         inv_base_value = R2(inv_base_value)
+        
+
         # -------------------------------------------------------------------
         # INPUT GST
         # -------------------------------------------------------------------
@@ -682,9 +710,53 @@ def fetch_invoices(company, from_date=None, to_date=None):
             r.item_code, company
         )
 
-        gst_amount_per_item = D(gst_amount_per_item)
-        single_item_rate = D(single_item_rate)
 
+        # -------------------------------------------------------------------
+        # CONDITION: Only when GST is 0
+        # -------------------------------------------------------------------
+        if gst_amount_per_item == 0:
+
+                    # STEP 1: MRP
+            mrp1 = D(r.price_list_rate or 0)
+
+            # STEP 2: OUTPUT GST %
+            if abs(mrp1) <= output_gst_min_net_rate:
+                output_gst_percent1 = D(5)
+            else:
+                output_gst_percent1 = D(18)
+
+            # STEP 3: OUTPUT GST VALUE (INCLUSIVE)
+            output_gst_value1 = (mrp1 * output_gst_percent1) / (D(100) + output_gst_percent1)
+            output_gst_value1 = R2(output_gst_value1)
+
+            # NET SALE
+            net_sale_value1 = mrp1 - output_gst_value1
+            net_sale_value1 = R2(net_sale_value1)
+
+            # STEP 4: MARGIN
+            margin_amount1 = (mrp1 * fresh_margin) / D(100)
+            margin_amount1 = R2(margin_amount1)
+
+            # STEP 5: INVENTORY BASE VALUE
+            inv_base_value1 = net_sale_value1 - margin_amount1
+            inv_base_value1 = R2(inv_base_value1)
+
+            # STEP 6: INPUT GST %
+            if abs(inv_base_value1) <= input_gst_for_opening_stock:
+                st_percent1 = D(5)
+            else:
+                st_percent1 = D(18)
+
+            # STEP 7: INPUT GST VALUE (EXCLUSIVE) ✅ IMPORTANT
+            input_gst1 = (inv_base_value1 * st_percent1) / D(100)
+            input_gst1 = R2(input_gst1)
+
+            # STEP 8: FINAL
+            gst_amount_per_item = input_gst1
+            invoice_value = inv_base_value1 + input_gst1
+            invoice_value = R2(invoice_value)
+
+            
         # total_serial_invoice_value = single_item_rate + gst_amount_per_item
         # invoice_value = inv_base_value + gst_amount_per_item
         # debit_note_value = total_serial_invoice_value - invoice_value
@@ -697,7 +769,11 @@ def fetch_invoices(company, from_date=None, to_date=None):
 
         total_serial_invoice_value = single_item_rate + gst_amount_per_item
         invoice_value = inv_base_value + gst_amount_per_item
-        debit_note_value = single_item_rate - inv_base_value
+
+        if discount_percentage == 0:
+           debit_note_value = 0
+        else:
+           debit_note_value = single_item_rate - inv_base_value
 
         # -------------------------------------------------------------------
         # FINAL UPDATE
@@ -811,10 +887,23 @@ def create_debit_note(company, period_type=None, invoices=None):
         frappe.throw("Please set 'SIS Debit Note Account' in SIS Configuration.")
 
     # --- Create Journal Entry ---
+
+     # Get company from SIS Configuration
+    company1 = frappe.db.get_value(
+        "TZU Setting",
+        {},
+        "sis_debit_note_company"
+    )
+
+    if not company1:
+        frappe.throw("Please set Company in TZU Setting")
+
+    # Create Journal Entry
     je = frappe.new_doc("Journal Entry")
     je.posting_date = today()
-    je.company = company
+    je.company = company1
     je.voucher_type = "Credit Note"
+
 
     total_penalty = 0
     item_codes = []

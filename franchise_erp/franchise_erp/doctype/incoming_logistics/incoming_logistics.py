@@ -36,14 +36,16 @@ class IncomingLogistics(Document):
    
     def on_submit(self):
 
-        for row in self.references:
+     for row in self.references:
 
-            if not row.source_doctype or not row.source_name:
-                continue
+        if not row.source_doctype or not row.source_name:
+            continue
 
-            # =================================================
-            # 🔹 SUBCONTRACTING ORDER
-            # =================================================
+        # =================================================
+        # 🔹 TYPE: JOB RECEIPT
+        # =================================================
+        if self.type == "Job Receipt":
+
             if row.source_doctype == "Subcontracting Order":
                 frappe.db.sql("""
                     UPDATE `tabSubcontracting Order Item`
@@ -51,12 +53,48 @@ class IncomingLogistics(Document):
                     WHERE parent = %s
                 """, (self.name, row.source_name))
 
-            # =====================================
-            # 🔹 PURCHASE ORDER
-            # =====================================
-            elif row.source_doctype == "Purchase Order":
+            elif row.source_doctype == "Subcontracting Receipt":
+                frappe.db.sql("""
+                    UPDATE `tabSubcontracting Receipt Item`
+                    SET custom_incoming_logistic = %s
+                    WHERE parent = %s
+                """, (self.name, row.source_name))
+
+
+        # =================================================
+        # 🔹 TYPE: PURCHASE
+        # =================================================
+        elif self.type == "Purchase":
+
+            if row.source_doctype == "Purchase Order":
                 frappe.db.sql("""
                     UPDATE `tabPurchase Order Item`
+                    SET custom_incoming_logistic = %s
+                    WHERE parent = %s
+                """, (self.name, row.source_name))
+
+
+        # =================================================
+        # 🔹 TYPE: SALES RETURN
+        # =================================================
+        elif self.type == "Sales Return":
+
+            if row.source_doctype == "Sales Invoice":
+                frappe.db.sql("""
+                    UPDATE `tabSales Invoice Item`
+                    SET custom_incoming_logistic = %s
+                    WHERE parent = %s
+                """, (self.name, row.source_name))
+
+
+        # =================================================
+        # 🔹 TYPE: TRANSFER IN
+        # =================================================
+        elif self.type == "Transfer In":
+
+            if row.source_doctype == "Stock Entry":
+                frappe.db.sql("""
+                    UPDATE `tabStock Entry Detail`
                     SET custom_incoming_logistic = %s
                     WHERE parent = %s
                 """, (self.name, row.source_name))
