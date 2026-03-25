@@ -203,13 +203,16 @@ function open_job_receipt_mapper(frm) {
         doctype: "Subcontracting Order",
         target: frm,
         setters: {
+            supplier: frm.doc.consignor,
             company: frm.doc.owner_site
         },
         get_query() {
             return {
                 filters: [
                     ["docstatus", "=", 1],
-                    ["company", "=", frm.doc.owner_site]
+                    ["supplier", "=", frm.doc.consignor],
+                    ["company", "=", frm.doc.owner_site],
+                    
                 ]
             };
         },
