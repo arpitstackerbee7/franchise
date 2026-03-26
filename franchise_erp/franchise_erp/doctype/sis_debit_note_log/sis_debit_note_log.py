@@ -1085,8 +1085,8 @@ def create_debit_note(company, period_type=None, invoices=None):
 
     # if not supplier_info:
     #     frappe.throw("Supplier could not be identified for these items.")
-    if supplier_info[0].supplier:
-       supplier = supplier_info[0].supplier
+    if supplier_info and supplier_info[0].supplier:
+        supplier = supplier_info[0].supplier
     else:
         supplier = frappe.db.get_value(
             "TZU Setting",
