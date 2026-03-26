@@ -22,7 +22,8 @@
   "column_break_dbci",
   "warehouse",
   "delivery_note_warehouse",
-  "sis_debit_note_account"
+  "sis_debit_note_account",
+  "input_gst_for_opening_stock"
  ],
  "fields": [
   {
@@ -149,13 +150,20 @@
    "label": "SIS Debit Note Account",
    "options": "Account",
    "reqd": 1
+  },
+  {
+   "default": "2500",
+   "fieldname": "input_gst_for_opening_stock",
+   "fieldtype": "Data",
+   "label": "Input GST For Opening Stock",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-23 13:56:42.381947",
+ "modified": "2026-03-25 14:37:33.244720",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "SIS Configuration",
