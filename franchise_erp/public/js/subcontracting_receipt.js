@@ -701,3 +701,16 @@ function update_total_qty(frm) {
     frm.set_value("total_qty", total);
 
 }
+
+// frappe.ui.form.on("Subcontracting Receipt", {
+//     setup(frm) {
+//         frm.set_query("custom_gate_entry", () => {
+//             return {
+//                 filters: {
+//                     consignor: frm.doc.supplier,
+//                     type: "Job Receipt"
+//                 }
+//             };
+//         });
+//     }
+// });
