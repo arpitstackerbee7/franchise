@@ -940,10 +940,16 @@ def create_debit_note(company, period_type=None, invoices=None):
     # Date Range
     from_date, to_date = get_period_dates(period_type)
 
+     # Get company from SIS Configuration
+    company1 = frappe.db.get_value(
+        "TZU Setting",
+        {},
+        "sis_debit_note_company",
+    )
     # Penalty Account from SIS Configuration
     penalty_account = frappe.db.get_value(
         "SIS Configuration",
-        {"company": company},
+        {"company": company1},
         "sis_debit_note_account"
     )
 
@@ -952,12 +958,7 @@ def create_debit_note(company, period_type=None, invoices=None):
 
     # --- Create Journal Entry ---
 
-     # Get company from SIS Configuration
-    company1 = frappe.db.get_value(
-        "TZU Setting",
-        {},
-        "sis_debit_note_company",
-    )
+    
 
     if not company1:
         frappe.throw("Please set Company in TZU Setting")
@@ -1096,20 +1097,25 @@ def create_debit_note(company, period_type=None, invoices=None):
 
 
     # Payable account
-    creditors_account = frappe.db.get_value(
-        "Account",
-        {
-            "company": company,
-            "is_group": 0,
-            "account_type": "Payable",
-            "root_type": "Liability",
-            "name": ["like", "%Creditors%"]
-        },
-        "name"
-    )
+    # creditors_account = frappe.db.get_value(
+    #     "Account",
+    #     {
+    #         "company": company1,
+    #         "is_group": 0,
+    #         "account_type": "Payable",
+    #         "root_type": "Liability",
+    #         "name": ["like", "%Creditors%"]
+    #     },
+    #     "name"
+    # )
 
-    if not creditors_account:
-        frappe.throw(f"No Creditors account found for company {company}")
+    # if not creditors_account:
+    #     frappe.throw(f"No Creditors account found for company {company1}")
+    creditors_account = frappe.db.get_value(
+            "TZU Setting",
+            {},
+            "sis_debit_note_creditors",
+        )
 
     # Summary row
     je.append("accounts", {
