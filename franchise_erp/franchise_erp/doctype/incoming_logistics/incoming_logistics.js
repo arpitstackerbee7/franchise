@@ -138,7 +138,7 @@ const INCOMING_TYPE_MAP = {
     "Purchase": "Purchase Order",
     "Sales Return": "Sales Invoice",
     "Transfer In": "Stock Entry",
-    "WIP Return": "Stock Entry"
+    "WIP Return": "Subcontracting Order"
 };
 
 
@@ -154,7 +154,8 @@ function open_incoming_mapper_by_type(frm) {
         "Purchase": open_purchase_order_mapper,
         "Job Receipt": open_job_receipt_mapper,
         "Sales Return": open_sales_return_mapper,
-        "Transfer In": open_stock_entry_mapper
+        "Transfer In": open_stock_entry_mapper,
+        "WIP Return": open_wip_return_mapper
     };
     map[frm.doc.type]?.(frm);
     // map[frm.doc.type]?.(frm) || frappe.throw("Invalid Incoming Type");
@@ -287,6 +288,35 @@ function open_stock_entry_mapper(frm) {
                     this.dialog.hide();
                 }
             });
+        }
+    });
+}
+
+// ===================================================
+// WIP RETURN
+// ===================================================
+function open_wip_return_mapper(frm) {
+
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Subcontracting Order",
+        target: frm,
+        setters: {
+            supplier: frm.doc.consignor,
+            company: frm.doc.owner_site
+        },
+        get_query() {
+            return {
+                filters: [
+                    ["docstatus", "=", 1],
+                    ["supplier", "=", frm.doc.consignor],
+                    ["company", "=", frm.doc.owner_site],
+                    
+                ]
+            };
+        },
+        action(selections) {
+            add_reference_rows(frm, selections);
+            this.dialog.hide();
         }
     });
 }

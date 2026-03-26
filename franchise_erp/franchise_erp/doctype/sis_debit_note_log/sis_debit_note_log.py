@@ -752,28 +752,84 @@ def fetch_invoices(company, from_date=None, to_date=None):
             input_gst1 = R2(input_gst1)
 
             # STEP 8: FINAL
-            gst_amount_per_item = input_gst1
-            invoice_value = inv_base_value1 + input_gst1
-            invoice_value = R2(invoice_value)
+            invoice_value1 = inv_base_value1 + input_gst1
+            invoice_value1 = R2(invoice_value1)
+
+            # print("MRP:", mrp1)
+
+            # print("Output GST %:", output_gst_percent1)
+
+            # print("Output GST Value:", output_gst_value1)
+
+            # print("Net Sale Value:", net_sale_value1)
+
+            # print("Margin %:", fresh_margin)
+            # print("Margin Value:", margin_amount1)
+
+            # print("Inventory Base Value:", inv_base_value1)
+
+            # print("Input GST %:", st_percent1)
+
+            # print("Input GST Value:", input_gst1)
+
+            # print("Final Invoice Value:", invoice_value1)
+
+            gst_amount_per_item = D(input_gst1)
+            single_item_rate = D(invoice_value1)
+            total_serial_invoice_value = single_item_rate + gst_amount_per_item
+            invoice_value1 = inv_base_value + gst_amount_per_item
+            if discount_percentage == 0:
+                debit_note_value = 0
+            else:
+                debit_note_value = single_item_rate - invoice_value1
+            # Return case → GST negative
+            is_return = r.is_return or 0   # 0 or 1
+            if is_return == 1:
+                gst_amount_per_item1 = -gst_amount_per_item
+                single_item_rate1 = -single_item_rate
+                invoice_value1 = inv_base_value + gst_amount_per_item1
+                debit_note_value = single_item_rate1 - (invoice_value1)
+                # print("0:", gst_amount_per_item1)
+
+           
+
+        else:
+            gst_amount_per_item = D(gst_amount_per_item)
+            single_item_rate = D(single_item_rate)
+            total_serial_invoice_value = single_item_rate + gst_amount_per_item
+            invoice_value1 = inv_base_value + gst_amount_per_item
+            if discount_percentage == 0:
+                debit_note_value = 0
+            else:
+                debit_note_value = total_serial_invoice_value - invoice_value1
+            # Return case → GST negative
+            is_return = r.is_return or 0   # 0 or 1
+            if is_return == 1:
+                gst_amount_per_item1 = -gst_amount_per_item
+                single_item_rate1 = -single_item_rate
+                invoice_value1 = inv_base_value + gst_amount_per_item1
+                debit_note_value1 = single_item_rate1 - (invoice_value1)
+                debit_note_value = debit_note_value1 + (gst_amount_per_item1)
+                # print("0:", gst_amount_per_item1)
 
             
-        # total_serial_invoice_value = single_item_rate + gst_amount_per_item
-        # invoice_value = inv_base_value + gst_amount_per_item
-        # debit_note_value = total_serial_invoice_value - invoice_value
 
-        # Return case → GST negative
-        is_return = r.is_return or 0   # 0 or 1
-        if is_return == 1:
-           gst_amount_per_item = -gst_amount_per_item
-           single_item_rate = -single_item_rate
 
-        total_serial_invoice_value = single_item_rate + gst_amount_per_item
-        invoice_value = inv_base_value + gst_amount_per_item
+        
+           
+        #    total_serial_invoice_value = single_item_rate1 + gst_amount_per_item1
+        #    invoice_value1 = inv_base_value + gst_amount_per_item1
+        #    if discount_percentage == 0:
+        #         debit_note_value = 0
+        #    else:
+        #         debit_note_value = invoice_value1 - total_serial_invoice_value
+            
+        
 
-        if discount_percentage == 0:
-           debit_note_value = 0
-        else:
-           debit_note_value = single_item_rate - inv_base_value
+        
+
+        
+      
 
         # -------------------------------------------------------------------
         # FINAL UPDATE
@@ -790,7 +846,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
             "margin_amount": float(margin_amount),
             "inv_base_value": float(inv_base_value),
             "in_put_gst_value": float(gst_amount_per_item),
-            "invoice_value": float(invoice_value),
+            "invoice_value": float(invoice_value1),
             "debit_note": float(debit_note_value),
         })
 
