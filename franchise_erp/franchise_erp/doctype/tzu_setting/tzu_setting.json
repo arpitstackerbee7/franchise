@@ -13,6 +13,7 @@
   "transport_service_item",
   "sis_debit_note_company",
   "update_items_allowed_roles",
+  "sis_debit_note_supplier",
   "column_break_dltx",
   "item_name",
   "batch_uom",
@@ -104,6 +105,13 @@
    "fieldtype": "Table MultiSelect",
    "label": "Update Items Allowed Roles",
    "options": "Restricted Role Detail"
+  },
+  {
+   "fieldname": "sis_debit_note_supplier",
+   "fieldtype": "Link",
+   "label": "SIS Debit Note Supplier",
+   "options": "Supplier",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,

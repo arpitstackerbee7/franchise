@@ -956,7 +956,7 @@ def create_debit_note(company, period_type=None, invoices=None):
     company1 = frappe.db.get_value(
         "TZU Setting",
         {},
-        "sis_debit_note_company"
+        "sis_debit_note_company",
     )
 
     if not company1:
@@ -1083,10 +1083,17 @@ def create_debit_note(company, period_type=None, invoices=None):
         LIMIT 1
         """, (tuple(item_codes), company), as_dict=True)
 
-    if not supplier_info:
-        frappe.throw("Supplier could not be identified for these items.")
+    # if not supplier_info:
+    #     frappe.throw("Supplier could not be identified for these items.")
+    if supplier_info[0].supplier:
+       supplier = supplier_info[0].supplier
+    else:
+        supplier = frappe.db.get_value(
+            "TZU Setting",
+            {},
+            "sis_debit_note_supplier",
+        )
 
-    supplier = supplier_info[0].supplier
 
     # Payable account
     creditors_account = frappe.db.get_value(
