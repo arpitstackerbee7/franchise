@@ -11,7 +11,6 @@
   "product_bundle_series",
   "box_barcode_series",
   "transport_service_item",
-  "update_items_allowed_roles",
   "sis_debit_note_company",
   "column_break_dltx",
   "item_name",
@@ -33,42 +32,15 @@
    "options": "UOM Detail"
   },
   {
-   "fieldname": "batch_uom",
-   "fieldtype": "Table MultiSelect",
-   "label": "Batch UOM",
-   "options": "UOM Detail"
-  },
-  {
-   "fieldname": "item_name",
-   "fieldtype": "Link",
-   "label": "Item Name",
-   "options": "Incoming Logistics Item"
-  },
-  {
    "fieldname": "product_bundle_series",
    "fieldtype": "Data",
    "label": "Product Bundle Series",
    "length": 3
   },
   {
-   "fieldname": "enter_series_length",
-   "fieldtype": "Int",
-   "label": "Enter Series Length ",
-   "length": 1
-  },
-  {
    "fieldname": "box_barcode_series",
    "fieldtype": "Data",
    "label": "Box Barcode Series"
-  },
-  {
-   "fieldname": "column_break_dltx",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "box_barcode_series_length",
-   "fieldtype": "Int",
-   "label": "Box Barcode Series Length"
   },
   {
    "fieldname": "transport_service_item",
@@ -78,29 +50,52 @@
    "options": "Item"
   },
   {
+   "fieldname": "sis_debit_note_company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "SIS Debit Note Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_dltx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Link",
+   "label": "Item Name",
+   "options": "Incoming Logistics Item"
+  },
+  {
+   "fieldname": "batch_uom",
+   "fieldtype": "Table MultiSelect",
+   "label": "Batch UOM",
+   "options": "UOM Detail"
+  },
+  {
+   "fieldname": "enter_series_length",
+   "fieldtype": "Int",
+   "label": "Enter Series Length ",
+   "length": 1
+  },
+  {
+   "fieldname": "box_barcode_series_length",
+   "fieldtype": "Int",
+   "label": "Box Barcode Series Length"
+  },
+  {
    "fieldname": "item_restricted_roles",
    "fieldtype": "Table",
    "label": "Item Restricted Roles",
    "options": "Restricted Role Detail"
-  },
-  {
-   "fieldname": "update_items_allowed_roles",
-   "fieldtype": "Table MultiSelect",
-   "label": "Update Items Allowed Roles",
-   "options": "Restricted Role Detail"
-   "fieldname": "sis_debit_note_company",
-   "fieldtype": "Link",
-   "label": "SIS Debit Note Company",
-   "options": "Company",
-   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-26 10:52:46.419377",
- "modified": "2026-03-24 20:29:15.905913",
+ "modified": "2026-03-26 15:19:38.252261",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",

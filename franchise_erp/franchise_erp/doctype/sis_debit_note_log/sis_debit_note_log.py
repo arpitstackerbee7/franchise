@@ -510,6 +510,8 @@ from decimal import Decimal, ROUND_HALF_UP
 
 def R2(val):
     return val.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
 @frappe.whitelist()
 def fetch_invoices(company, from_date=None, to_date=None):
 
