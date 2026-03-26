@@ -12,8 +12,8 @@
   "box_barcode_series",
   "transport_service_item",
   "sis_debit_note_company",
-  "update_items_allowed_roles",
   "sis_debit_note_supplier",
+  "sis_debit_note_creditors",
   "column_break_dltx",
   "item_name",
   "batch_uom",
@@ -101,16 +101,17 @@
    "reqd": 1
   },
   {
-   "fieldname": "update_items_allowed_roles",
-   "fieldtype": "Table MultiSelect",
-   "label": "Update Items Allowed Roles",
-   "options": "Restricted Role Detail"
-  },
-  {
    "fieldname": "sis_debit_note_supplier",
    "fieldtype": "Link",
    "label": "SIS Debit Note Supplier",
    "options": "Supplier",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sis_debit_note_creditors",
+   "fieldtype": "Link",
+   "label": "SIS Debit Note Creditors",
+   "options": "Account",
    "reqd": 1
   }
  ],
@@ -118,7 +119,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-26 15:54:00.766610",
+ "modified": "2026-03-26 18:59:04.082758",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
