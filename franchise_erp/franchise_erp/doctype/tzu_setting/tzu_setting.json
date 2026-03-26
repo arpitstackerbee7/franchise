@@ -11,6 +11,7 @@
   "product_bundle_series",
   "box_barcode_series",
   "transport_service_item",
+  "update_items_allowed_roles",
   "sis_debit_note_company",
   "column_break_dltx",
   "item_name",
@@ -83,6 +84,10 @@
    "options": "Restricted Role Detail"
   },
   {
+   "fieldname": "update_items_allowed_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Update Items Allowed Roles",
+   "options": "Restricted Role Detail"
    "fieldname": "sis_debit_note_company",
    "fieldtype": "Link",
    "label": "SIS Debit Note Company",
@@ -94,6 +99,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
+ "modified": "2026-03-26 10:52:46.419377",
  "modified": "2026-03-24 20:29:15.905913",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
