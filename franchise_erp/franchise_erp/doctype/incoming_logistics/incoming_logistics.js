@@ -138,7 +138,7 @@ const INCOMING_TYPE_MAP = {
     "Purchase": "Purchase Order",
     "Sales Return": "Sales Invoice",
     "Transfer In": "Stock Entry",
-    "WIP Return": "Subcontracting Order"
+    "WIP Return": "Subcontracting Order",
 };
 
 
@@ -155,7 +155,8 @@ function open_incoming_mapper_by_type(frm) {
         "Job Receipt": open_job_receipt_mapper,
         "Sales Return": open_sales_return_mapper,
         "Transfer In": open_stock_entry_mapper,
-        "WIP Return": open_wip_return_mapper
+        "WIP Return": open_wip_return_mapper,
+        
     };
     map[frm.doc.type]?.(frm);
     // map[frm.doc.type]?.(frm) || frappe.throw("Invalid Incoming Type");
@@ -291,6 +292,7 @@ function open_stock_entry_mapper(frm) {
         }
     });
 }
+
 
 // ===================================================
 // WIP RETURN
