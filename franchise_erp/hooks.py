@@ -44,7 +44,10 @@ doc_events = {
 
    "Purchase Invoice": {
        "validate": [
-                    "franchise_erp.custom.purchase_invoice.set_buffer_due_date"],
+                    "franchise_erp.custom.purchase_invoice.set_buffer_due_date",
+                    
+                    ],
+                    # "before_save": "franchise_erp.custom.purchase_invoice.copy_grn_discount"
     },
     "Journal Entry": {
         "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
@@ -156,6 +159,9 @@ doc_events = {
         "validate": "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
         "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
     },
+    "Subcontracting Receipt": {
+        "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting"
+    }
 }
    
 
@@ -185,7 +191,6 @@ doctype_js = {
     "Supplier Group": "public/js/supplier_group.js",
     "Item Group": "public/js/item_group.js",
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
-    # "Company": "public/js/company.js"
 
 }
 

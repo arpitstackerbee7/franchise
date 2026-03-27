@@ -124,3 +124,77 @@ def get_po_item_qty(po_item):
     )
 
     return qty or 0
+
+
+
+
+
+
+
+import frappe
+from frappe import _
+
+def validate_gate_entry_qty_on_subcontracting(doc, method):
+    if doc.is_return:
+        return
+
+    # ✅ Gate Entry Parent se lo
+    gate_entry = doc.custom_gate_entry
+    if not gate_entry:
+        return
+
+    # Total Invoice Qty
+    invoice_qty = frappe.db.get_value(
+        "Gate Entry",
+        gate_entry,
+        "quantity_as_per_invoice"
+    ) or 0
+
+    # Already Used Qty
+    used_qty = frappe.db.sql("""
+        SELECT IFNULL(SUM(sri.qty), 0)
+        FROM `tabSubcontracting Receipt Item` sri
+        JOIN `tabSubcontracting Receipt` sr ON sr.name = sri.parent
+        WHERE sr.custom_gate_entry = %s
+        AND sr.docstatus = 1
+        AND sr.name != %s
+    """, (gate_entry, doc.name))[0][0] or 0
+
+    remaining_qty = invoice_qty - used_qty
+
+    # 🚨 FULLY USED BLOCK
+    if remaining_qty <= 0:
+        frappe.throw(
+            _("Gate Entry {0} already fully used. Remaining qty is 0.")
+            .format(gate_entry)
+        )
+
+    # 🚨 Qty validation
+    total_qty = sum([item.qty for item in doc.items])
+
+    if total_qty > remaining_qty:
+        frappe.throw(
+            _("Only {0} total qty allowed for Gate Entry {1}")
+            .format(remaining_qty, gate_entry)
+        )
+# ✅ DROPDOWN FILTER METHOD
+@frappe.whitelist()
+def get_available_gate_entries(doctype, txt, searchfield, start, page_len, filters):
+
+    return frappe.db.sql("""
+        SELECT ge.name
+        FROM `tabGate Entry` ge
+        LEFT JOIN (
+            SELECT sri.custom_gate_entry, SUM(sri.qty) as used_qty
+            FROM `tabSubcontracting Receipt Item` sri
+            JOIN `tabSubcontracting Receipt` sr ON sr.name = sri.parent
+            WHERE sr.docstatus = 1
+            GROUP BY sri.custom_gate_entry
+        ) used ON used.custom_gate_entry = ge.name
+
+        WHERE ge.docstatus = 1
+        AND (ge.quantity_as_per_invoice - IFNULL(used.used_qty, 0)) > 0
+        AND ge.name LIKE %s
+
+        LIMIT %s, %s
+    """, ("%{}%".format(txt), start, page_len))
