@@ -14,7 +14,6 @@
   "sis_debit_note_company",
   "sis_debit_note_supplier",
   "sis_debit_note_creditors",
-  "show_list_settings_for_roles",
   "column_break_dltx",
   "item_name",
   "batch_uom",
@@ -121,19 +120,13 @@
    "fieldtype": "Table MultiSelect",
    "label": "Update Items Allowed Roles",
    "options": "Restricted Role Detail"
-  },
-  {
-   "fieldname": "show_list_settings_for_roles",
-   "fieldtype": "Table MultiSelect",
-   "label": "Show List Settings For Roles",
-   "options": "Restricted Role Detail"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-27 15:12:21.325738",
+ "modified": "2026-03-27 20:14:14.145568",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
