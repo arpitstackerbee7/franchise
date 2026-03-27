@@ -19,7 +19,8 @@
   "batch_uom",
   "enter_series_length",
   "box_barcode_series_length",
-  "item_restricted_roles"
+  "item_restricted_roles",
+  "update_items_allowed_roles"
  ],
  "fields": [
   {
@@ -113,13 +114,19 @@
    "label": "SIS Debit Note Creditors",
    "options": "Account",
    "reqd": 1
+  },
+  {
+   "fieldname": "update_items_allowed_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Update Items Allowed Roles",
+   "options": "Restricted Role Detail"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-26 18:59:04.082758",
+ "modified": "2026-03-26 19:56:36.791537",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
