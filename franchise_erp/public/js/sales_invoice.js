@@ -30,6 +30,9 @@ frappe.ui.form.on("Sales Invoice", {
         // }
 
         // Export Button
+        // 🔥 reset flag every time
+        frm.__export_button_added = false;
+
         add_export_button(frm);
         // Delay hook after barcode processing
 
