@@ -157,7 +157,11 @@ doc_events = {
         "validate": "franchise_erp.custom.sales_person.validate_unique_custom_user"
     },
     "Stock Entry":{
-        "validate": "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
+        "validate": [
+            "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
+            "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_wip_return_stock_entry"
+             "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_transfer_in_stock_entry"
+        ],
         "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
     },
     "Subcontracting Receipt": {
