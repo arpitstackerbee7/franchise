@@ -57,6 +57,7 @@ doc_events = {
         "validate":[
             # "franchise_erp.custom.promotional_scheme.apply_promotions",
                     "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+                    "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return"
                     ],
 
         "before_save": ["franchise_erp.custom.sales_invoice.apply_sis_pricing",

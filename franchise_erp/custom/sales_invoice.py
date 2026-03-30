@@ -1271,3 +1271,79 @@ def get_sales_invoice_by_serial(serial):
     """, ("%" + serial + "%"))
 
     return [d[0] for d in invoices]
+
+
+
+import frappe
+from frappe import _
+
+def validate_gate_entry_qty_on_sales_return(doc, method):
+
+    if not doc.is_return:
+        return
+
+    gate_entry = doc.custom_gate_entry
+    if not gate_entry:
+        return
+
+    # 1️⃣ Gate Entry Qty (Positive)
+    invoice_qty = frappe.db.get_value(
+        "Gate Entry",
+        gate_entry,
+        "quantity_as_per_invoice"
+    ) or 0
+
+    # 2️⃣ Current doc qty (convert to positive)
+    current_qty = abs(sum([item.qty for item in doc.items]))
+
+    # 3️⃣ Already used qty (IMPORTANT FIX 🔥)
+    used_qty = frappe.db.sql("""
+        SELECT IFNULL(SUM(ABS(si.total_qty)), 0)
+        FROM `tabSales Invoice` si
+        WHERE si.custom_gate_entry = %s
+        AND si.is_return = 1
+        AND si.docstatus = 1
+        AND si.name != %s
+    """, (gate_entry, doc.name))[0][0] or 0
+
+    remaining_qty = invoice_qty - used_qty
+
+    # 🚨 FULLY USED
+    if remaining_qty <= 0:
+        frappe.throw(
+            _("Gate Entry {0} already fully used. Remaining qty is 0.")
+            .format(gate_entry)
+        )
+
+    # 🚨 OVER USE
+    if current_qty > remaining_qty:
+        frappe.throw(
+            _("Only {0} qty allowed for Gate Entry {1}")
+            .format(remaining_qty, gate_entry)
+        )
+        
+@frappe.whitelist()
+def get_available_gate_entries_sales(doctype, txt, searchfield, start, page_len, filters):
+
+    return frappe.db.sql("""
+        SELECT ge.name
+        FROM `tabGate Entry` ge
+
+        LEFT JOIN (
+            SELECT si.custom_gate_entry, SUM(sii.qty) as used_qty
+            FROM `tabSales Invoice Item` sii
+            JOIN `tabSales Invoice` si ON si.name = sii.parent
+            WHERE si.docstatus = 1
+            AND si.is_return = 1
+            GROUP BY si.custom_gate_entry
+        ) used ON used.custom_gate_entry = ge.name
+
+        WHERE ge.docstatus = 1
+        AND (
+            ge.quantity_as_per_invoice - IFNULL(used.used_qty, 0)
+        ) > 0
+
+        AND ge.name LIKE %s
+
+        LIMIT %s, %s
+    """, ("%{}%".format(txt), start, page_len))
