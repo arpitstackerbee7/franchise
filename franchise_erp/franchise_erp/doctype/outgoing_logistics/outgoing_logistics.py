@@ -2,15 +2,50 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe.model.naming import make_autoname 
+from erpnext.accounts.utils import get_fiscal_year
 from frappe.model.document import Document
 from franchise_erp.send_whatsapp_notification import send_sales_invoice_pdf_from_outgoing_logistics
-
 
 class OutgoingLogistics(Document):
 
     def validate(self):
         if not self.references or len(self.references) == 0:
             frappe.throw("Reference ID is mandatory. Please add at least one row.")
+
+    def autoname(self):
+        # Fetch metadata from the document fields
+        abbr = self.company_abbreviation
+        fy = get_fiscal_year(self.date, company=self.owner_site)[0]
+        series_key = f"{abbr}-OL-"
+
+        # Synchronize series counter with existing records
+        res = frappe.db.sql("""
+            SELECT name FROM `tabOutgoing Logistics` 
+            WHERE name LIKE %s ORDER BY name DESC LIMIT 1
+        """, (f"{abbr}-OL-%",))
+
+        if res:
+            try:
+                last_name = res[0][0]
+                parts = last_name.split("-")
+                max_idx = int(parts[2])
+
+                db_val = frappe.db.sql("SELECT `current` FROM `tabSeries` WHERE name=%s", (series_key,))
+                current_val = db_val[0][0] if db_val else 0
+                
+                if max_idx > int(current_val):
+                    frappe.db.sql("""
+                        INSERT INTO `tabSeries` (name, `current`) 
+                        VALUES (%s, %s) ON DUPLICATE KEY UPDATE `current` = %s
+                    """, (series_key, max_idx, max_idx))
+            except (IndexError, ValueError):
+                pass
+
+        # Generate final dynamic document name
+        self.name = make_autoname(f"{abbr}-OL-.#####.-{fy}")
+
+
 
     # -----------------------------
     # ON SUBMIT
