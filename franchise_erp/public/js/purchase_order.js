@@ -263,28 +263,28 @@ frappe.ui.form.on('Purchase Order', {
     }
 });
 
-// frappe.ui.form.on('Purchase Order', {
-//     refresh: function(frm) {
-//         // Only run for submitted documents
-//         if (frm.doc.docstatus === 1) {            
-//             // Wait for standard buttons to load then check permissions from TZU Setting
-//             setTimeout(() => {
-//                 frappe.db.get_doc('TZU Setting', 'TZU Setting').then(doc => {
-//                     let allowed_roles = (doc.update_items_allowed_roles || []).map(row => row.role);
-//                     let has_access = allowed_roles.some(role => frappe.user_roles.includes(role));
-//                     if (!has_access) {
-//                         // Remove 'Update Items' button if user role is not in the allowed list
-//                         frm.remove_custom_button(__('Update Items'));                        
-//                         if (frm.page && frm.page.remove_inner_button) {
-//                             frm.page.remove_inner_button(__('Update Items'));
-//                             frm.page.remove_inner_button(__('Update Items'), __('Status'));
-//                             frm.page.remove_inner_button(__('Update Items'), __('Actions'));
-//                         }
-//                     }
-//                 });
-//             }, 800);
-//         }
-//     }
-// });
+frappe.ui.form.on('Purchase Order', {
+    refresh: function(frm) {
+        // Only run for submitted documents
+        if (frm.doc.docstatus === 1) {            
+            // Wait for standard buttons to load then check permissions from TZU Setting
+            setTimeout(() => {
+                frappe.db.get_doc('TZU Setting', 'TZU Setting').then(doc => {
+                    let allowed_roles = (doc.update_items_allowed_roles || []).map(row => row.role);
+                    let has_access = allowed_roles.some(role => frappe.user_roles.includes(role));
+                    if (!has_access) {
+                        // Remove 'Update Items' button if user role is not in the allowed list
+                        frm.remove_custom_button(__('Update Items'));                        
+                        if (frm.page && frm.page.remove_inner_button) {
+                            frm.page.remove_inner_button(__('Update Items'));
+                            frm.page.remove_inner_button(__('Update Items'), __('Status'));
+                            frm.page.remove_inner_button(__('Update Items'), __('Actions'));
+                        }
+                    }
+                });
+            }, 800);
+        }
+    }
+});
 
 
