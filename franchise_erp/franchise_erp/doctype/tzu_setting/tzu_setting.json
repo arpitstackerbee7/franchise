@@ -111,7 +111,7 @@
   {
    "fieldname": "sis_debit_note_creditors",
    "fieldtype": "Link",
-   "label": "SIS Debit Note Creditors",
+   "label": "SIS Debit Note Debtor",
    "options": "Account",
    "reqd": 1
   },
@@ -126,7 +126,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-27 20:14:14.145568",
+ "modified": "2026-03-31 12:40:22.923123",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
