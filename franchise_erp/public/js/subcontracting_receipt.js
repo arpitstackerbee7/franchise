@@ -714,12 +714,12 @@ function update_total_qty(frm) {
 //         });
 //     }
 // });
-// frappe.ui.form.on('Subcontracting Receipt', {
-//     onload: function(frm) {
-//         frm.fields_dict.items.grid.get_field('custom_gate_entry').get_query = function() {
-//             return {
-//                 query: "franchise_erp.custom.subcontracting_receipt.get_available_gate_entries"
-//             };
-//         };
-//     }
-// });
+frappe.ui.form.on('Subcontracting Receipt', {
+    onload: function(frm) {
+        frm.fields_dict.items.grid.get_field('custom_gate_entry').get_query = function() {
+            return {
+                query: "franchise_erp.custom.subcontracting_receipt.get_available_gate_entries"
+            };
+        };
+    }
+});

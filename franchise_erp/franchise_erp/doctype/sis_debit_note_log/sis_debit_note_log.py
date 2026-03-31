@@ -1048,7 +1048,7 @@ def create_debit_note(company, period_type=None, invoices=None):
         # -----------------------------
         je.append("accounts", {
             "account": penalty_account,
-            "credit_in_account_currency": penalty_amount,
+            "debit_in_account_currency": penalty_amount,
             "custom_penalty_invoice": invoice_name,
             "remarks": (
                 f"{item_code} (Disc {discount}%, "
@@ -1120,9 +1120,9 @@ def create_debit_note(company, period_type=None, invoices=None):
     # Summary row
     je.append("accounts", {
         "account": creditors_account,
-        "debit_in_account_currency": total_penalty,
-        "party_type": "Supplier",
-        "party": supplier,
+        "credit_in_account_currency": total_penalty,
+        "party_type": "Customer",
+        "party": company,
         "custom_penalty_invoice": "Summary",
         "remarks": "Total Penalty Summary"
     })
