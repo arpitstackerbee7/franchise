@@ -438,7 +438,7 @@ def get_available_gate_entries_for_transfer_in_stock(doctype, txt, searchfield, 
             FROM `tabStock Entry Detail` sed
             JOIN `tabStock Entry` ste ON ste.name = sed.parent
             WHERE ste.docstatus = 1
-            AND ste.stock_entry_type = 'Material Issue'
+            AND ste.stock_entry_type = 'Material Receipt'
             GROUP BY ste.custom_gate_entrys
         ) used ON used.custom_gate_entrys = ge.name
 
@@ -457,8 +457,8 @@ from frappe import _
 
 def validate_gate_entry_qty_on_transfer_in_stock_entry(doc, method):
 
-    # ✅ Only Material Transfer
-    if doc.stock_entry_type != "Material Issue":
+    # ✅ Only Material Receipt
+    if doc.stock_entry_type != "Material Receipt":
         return
 
     gate_entry = doc.custom_gate_entrys
@@ -482,7 +482,7 @@ def validate_gate_entry_qty_on_transfer_in_stock_entry(doc, method):
         JOIN `tabStock Entry` ste ON ste.name = sed.parent
         WHERE ste.custom_gate_entrys = %s
         AND ste.docstatus = 1
-        AND ste.stock_entry_type = 'Material Issue'
+        AND ste.stock_entry_type = 'Material Receipt'
         AND ste.name != %s
     """, (gate_entry, doc.name))[0][0] or 0
 

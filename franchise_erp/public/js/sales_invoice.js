@@ -996,16 +996,16 @@ frappe.ui.form.on("Sales Invoice Item", {
 });
 
 
-frappe.ui.form.on('Sales Invoice', {
-    onload: function(frm) {
+// frappe.ui.form.on('Sales Invoice', {
+//     onload: function(frm) {
 
-        // Only for Return
-        if (!frm.doc.is_return) return;
+//         // Only for Return
+//         if (!frm.doc.is_return) return;
 
-        frm.set_query("custom_gate_entry", function() {
-            return {
-                query: "franchise_erp.custom.sales_invoice.get_available_gate_entries_sales"
-            };
-        });
-    }
-});
+//         frm.set_query("custom_gate_entry", function() {
+//             return {
+//                 query: "franchise_erp.custom.sales_invoice.get_available_gate_entries_sales"
+//             };
+//         });
+//     }
+// });
