@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "format:{company_abbreviation}-OL-{#####}-{FY}",
  "creation": "2026-01-03 11:46:27.642230",
  "default_view": "List",
@@ -339,7 +340,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-27 21:26:24.555372",
+ "modified": "2026-03-31 10:50:24.044760",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
