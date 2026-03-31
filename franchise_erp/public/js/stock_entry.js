@@ -264,28 +264,28 @@ function toggle_intercompany_flag(frm) {
 }
 
 
-frappe.ui.form.on('Stock Entry', {
-    onload: function(frm) {
+// frappe.ui.form.on('Stock Entry', {
+//     onload: function(frm) {
 
-        if (frm.doc.stock_entry_type !== "Material Transfer") return;
+//         if (frm.doc.stock_entry_type !== "Material Transfer") return;
 
-        frm.set_query("custom_gate_entry", function() {
-            return {
-                query: "franchise_erp.custom.stock_entry.get_available_gate_entries_for_wip_return_stock"
-            };
-        });
-    }
-});
+//         frm.set_query("custom_gate_entry", function() {
+//             return {
+//                 query: "franchise_erp.custom.stock_entry.get_available_gate_entries_for_wip_return_stock"
+//             };
+//         });
+//     }
+// });
 
-frappe.ui.form.on('Stock Entry', {
-    onload: function(frm) {
+// frappe.ui.form.on('Stock Entry', {
+//     onload: function(frm) {
 
-        if (frm.doc.stock_entry_type !== "Material Issue") return;
+//         if (frm.doc.stock_entry_type !== "Material Receipt") return;
 
-        frm.set_query("custom_gate_entrys", function() {
-            return {
-                query: "franchise_erp.custom.stock_entry.get_available_gate_entries_for_transfer_in_stock"
-            };
-        });
-    }
-});
+//         frm.set_query("custom_gate_entrys", function() {
+//             return {
+//                 query: "franchise_erp.custom.stock_entry.get_available_gate_entries_for_transfer_in_stock"
+//             };
+//         });
+//     }
+// });
