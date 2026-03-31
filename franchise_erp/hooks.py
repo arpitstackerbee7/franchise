@@ -166,6 +166,22 @@ doc_events = {
     },
     "Subcontracting Receipt": {
         "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting"
+    },
+    "Leave Application":{
+        "on_submit": "franchise_erp.custom.leave_application.update_late_log_on_short_leave"
+    },
+    "Leave Type":{
+        "validate": "franchise_erp.custom.leave_type.validate_only_one_short_leave"
+    },
+    "Employee Checkin":{
+        "after_insert": "franchise_erp.custom.employee_checkin.process_late_entry"
+    },
+    "Salary Component":{
+        "validate": "franchise_erp.custom.salary_component.validate_short_leave_component"
+    },
+    "Salary Slip":{
+        "before_validate": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions",
+        "on_submit": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions"
     }
 }
    

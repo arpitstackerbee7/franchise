@@ -1,0 +1,37 @@
+<div style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+    
+    <p>Dear Team,</p>
+
+    <p>
+        A late entry has been recorded for the following employee:
+    </p>
+
+    <table style="border-collapse: collapse; width: 100%; margin-top: 10px;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><b>Employee</b></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ doc.employee_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><b>Date</b></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ doc.posting_date }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><b>Status</b></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ doc.status }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;"><b>Late Minutes</b></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ doc.late_minutes or 0 }}</td>
+        </tr>
+    </table>
+
+    <p style="margin-top: 15px;">
+        Please review the record and take appropriate action if required.
+    </p>
+
+    <p style="margin-top: 20px;">
+        Regards,<br>
+        HR Team
+    </p>
+
+</div>
