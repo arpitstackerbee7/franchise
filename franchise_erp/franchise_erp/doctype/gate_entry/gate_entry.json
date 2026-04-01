@@ -232,12 +232,13 @@
    "search_index": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "transport_service_item",
    "fieldtype": "Link",
-   "hidden": 1,
    "label": "Transport Service Item",
    "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
-   "options": "Item"
+   "options": "Item",
+   "read_only": 1
   },
   {
    "fieldname": "quantity_as_per_invoice",
@@ -283,7 +284,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-04-01 07:37:00.071914",
+ "modified": "2026-04-01 15:25:07.713481",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

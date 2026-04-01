@@ -289,6 +289,7 @@ frappe.ui.form.on("Purchase Receipt", {
         });
     }
 });
+
 // function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
 
 //     if (!gate_entry) {
@@ -323,8 +324,42 @@ frappe.ui.form.on("Purchase Receipt", {
 
 
 
+function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
 
+    let gate_entries = [];
 
+    if (!gate_entry) {
+        frappe.msgprint(__("Gate Entry not selected"));
+        return;
+    }
+
+    if (Array.isArray(gate_entry)) {
+        gate_entries = gate_entry;
+    } else {
+        gate_entries = [gate_entry];
+    }
+
+    console.log("Gate Entries:", gate_entries);
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.make_pr_from_gate_entries",
+        args: {
+            gate_entries: gate_entries
+        },
+        freeze: true,
+        freeze_message: __("Creating Purchase Receipt from Gate Entries..."),
+        callback(r) {
+
+            if (!r.message) {
+                frappe.msgprint(__("Failed to create Purchase Receipt"));
+                return;
+            }
+
+            frappe.model.sync(r.message);
+            frappe.set_route("Form", "Purchase Receipt", r.message.name);
+        }
+    });
+}
 
 
 
@@ -387,31 +422,7 @@ frappe.ui.form.on("Purchase Receipt", {
 
 
 
-function map_gate_entry_to_purchase_receipt(frm, gate_entries) {
 
-    if (!gate_entries || !gate_entries.length) {
-        frappe.msgprint(__("Gate Entry not selected"));
-        return;
-    }
-
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.make_pr_from_gate_entries",
-        args: {
-            gate_entries: gate_entries   // 🔥 array pass karo
-        },
-        freeze: true,
-        freeze_message: __("Creating Purchase Receipt from Gate Entries..."),
-        callback(r) {
-            if (!r.message) {
-                frappe.msgprint(__("Failed to create Purchase Receipt"));
-                return;
-            }
-
-            frappe.model.sync(r.message);
-            frappe.set_route("Form", "Purchase Receipt", r.message.name);
-        }
-    });
-}
 
 
 
@@ -472,9 +483,8 @@ function open_gate_entry_mapper(frm) {
                         return;
                     }
 
-                    selections.forEach(ge => {
-                        map_gate_entry_to_purchase_receipt(frm, ge);
-                    });
+                    // 🔥 SINGLE CALL (IMPORTANT FIX)
+                    map_gate_entry_to_purchase_receipt(frm, selections);
 
                     dialog.dialog.hide();
                 }
@@ -483,7 +493,29 @@ function open_gate_entry_mapper(frm) {
     });
 }
 
+frappe.ui.form.on("Purchase Receipt Item", {
+    item_code: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
 
+        if (row.item_code) {
+            frappe.db.get_value("Item", row.item_code, [
+                "custom_barcode_code",
+                "custom_colour_name",
+                "custom_size",
+                "custom_departments"
+            ]).then(r => {
+
+                if (r.message) {
+                    frappe.model.set_value(cdt, cdn, "custom_style", r.message.custom_barcode_code);
+                    frappe.model.set_value(cdt, cdn, "custom_color", r.message.custom_colour_name);
+                    frappe.model.set_value(cdt, cdn, "custom_size", r.message.custom_size);
+                    frappe.model.set_value(cdt, cdn, "custom_department", r.message.custom_departments);
+                }
+
+            });
+        }
+    }
+});
 frappe.ui.form.on('Purchase Receipt', {
     before_submit: async function (frm) {
 

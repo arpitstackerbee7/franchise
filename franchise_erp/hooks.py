@@ -41,6 +41,9 @@ doc_events = {
 
     # apps/franchise_erp/franchise_erp/hooks.py
 
+    "*": {
+        "before_validate": "franchise_erp.utils.fy_naming.short_fy_naming"
+    },
 
    "Purchase Invoice": {
        "validate": [
