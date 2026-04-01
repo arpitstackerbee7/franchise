@@ -14,36 +14,54 @@ class OutgoingLogistics(Document):
             frappe.throw("Reference ID is mandatory. Please add at least one row.")
 
     def autoname(self):
-        # Fetch metadata from the document fields
+        """
+        Custom autoname for Outgoing Logistics
+
+        Format:
+        TZUPL-OL-00001-2026-2027
+
+        Features:
+        - FY last me
+        - Har FY me counter reset
+        - Automatic series handling
+        """
+
+        # ✅ Safety checks
+        if not self.owner_site:
+            frappe.throw("Company is required for naming")
+
+        if not self.date:
+            frappe.throw("Date is required for naming")
+
+        if not self.company_abbreviation:
+            frappe.throw("Company Abbreviation is required")
+
+        # ✅ Get values
         abbr = self.company_abbreviation
+
+        # 🔥 Correct FY fetch
         fy = get_fiscal_year(self.date, company=self.owner_site)[0]
-        series_key = f"{abbr}-OL-"
 
-        # Synchronize series counter with existing records
-        res = frappe.db.sql("""
-            SELECT name FROM `tabOutgoing Logistics` 
-            WHERE name LIKE %s ORDER BY name DESC LIMIT 1
-        """, (f"{abbr}-OL-%",))
+        # 🔥 Hidden FY-based series (important for reset)
+        # ERPNext isko unique series maanega
+        series_pattern = f"{abbr}-OL-{fy}-.#####."
 
-        if res:
-            try:
-                last_name = res[0][0]
-                parts = last_name.split("-")
-                max_idx = int(parts[2])
+        # ✅ Generate temporary name
+        # Example: TZUPL-OL-2026-2027-00001
+        temp_name = make_autoname(series_pattern)
 
-                db_val = frappe.db.sql("SELECT `current` FROM `tabSeries` WHERE name=%s", (series_key,))
-                current_val = db_val[0][0] if db_val else 0
-                
-                if max_idx > int(current_val):
-                    frappe.db.sql("""
-                        INSERT INTO `tabSeries` (name, `current`) 
-                        VALUES (%s, %s) ON DUPLICATE KEY UPDATE `current` = %s
-                    """, (series_key, max_idx, max_idx))
-            except (IndexError, ValueError):
-                pass
+        try:
+            parts = temp_name.split("-")
 
-        # Generate final dynamic document name
-        self.name = make_autoname(f"{abbr}-OL-.#####.-{fy}")
+            # Last part = running number
+            number = parts[-1]
+
+        except Exception:
+            frappe.throw("Error while generating naming series")
+
+        # ✅ Final required format (FY last me)
+        # TZUPL-OL-00001-2026-2027
+        self.name = f"{abbr}-OL-{number}-{fy}"
 
 
 
