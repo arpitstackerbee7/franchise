@@ -311,6 +311,79 @@ def get_gate_entry_with_pos(supplier=None):
 #     pr.run_method("calculate_taxes_and_totals")
 
 #     return pr
+@frappe.whitelist()
+def make_pr_from_gate_entries(gate_entries):
+    import json
+    import erpnext.buying.doctype.purchase_order.purchase_order as po
+
+    # ✅ handle input
+    if isinstance(gate_entries, str):
+        try:
+            gate_entries = json.loads(gate_entries)
+        except:
+            gate_entries = [gate_entries]
+
+    if not isinstance(gate_entries, list):
+        gate_entries = [gate_entries]
+
+    if not gate_entries:
+        frappe.throw("No Gate Entries selected")
+
+    all_po_list = []
+    po_gate_map = {}   # 🔥 PO → Gate Entry mapping
+
+    # 🔁 STEP 1: collect PO + mapping
+    for gate_entry in gate_entries:
+        ge = frappe.get_doc("Gate Entry", gate_entry)
+
+        for row in ge.references:
+            if row.source_doctype == "Purchase Order" and row.source_name:
+
+                po_name = row.source_name
+
+                if po_name not in all_po_list:
+                    all_po_list.append(po_name)
+
+                # 🔥 map PO → Gate Entry
+                po_gate_map[po_name] = gate_entry
+
+    if not all_po_list:
+        frappe.throw("No Purchase Orders linked")
+
+    pr = None
+
+    # 🔁 STEP 2: use ERPNext mapping
+    for po_name in all_po_list:
+        mapped_pr = po.make_purchase_receipt(po_name)
+
+        if not pr:
+            pr = mapped_pr
+
+            # 🔥 FIX FIRST PR ITEMS
+            for item in pr.items:
+                item.custom_bulk_gate_entry = po_gate_map.get(item.purchase_order)
+
+        else:
+            for item in mapped_pr.items:
+                item.idx = 0
+
+                # 🔥 SET CORRECT GATE ENTRY PER ITEM
+                item.custom_bulk_gate_entry = po_gate_map.get(po_name)
+
+                pr.append("items", item)
+
+    # 🔗 STEP 3: header level (multiple allowed)
+    pr.custom_bulk_gate_entry = ", ".join(gate_entries)
+
+    # 🔥 STEP 4: fix numbering
+    for i, item in enumerate(pr.items, start=1):
+        item.idx = i
+
+    # 🔥 STEP 5: recalc
+    pr.run_method("set_missing_values")
+    pr.run_method("calculate_taxes_and_totals")
+
+    return pr
 # @frappe.whitelist()
 # def make_pr_from_gate_entry(gate_entry):
 #     import erpnext.buying.doctype.purchase_order.purchase_order as po
@@ -354,61 +427,7 @@ def get_gate_entry_with_pos(supplier=None):
 
 #     return pr
 
-@frappe.whitelist()
-def make_pr_from_gate_entries(gate_entries):
-    import json
-    import erpnext.buying.doctype.purchase_order.purchase_order as po
 
-    # ✅ HANDLE ALL CASES
-    if isinstance(gate_entries, str):
-        try:
-            gate_entries = json.loads(gate_entries)  # agar JSON array hai
-        except:
-            gate_entries = [gate_entries]  # agar single string hai
-
-    if not isinstance(gate_entries, list):
-        gate_entries = [gate_entries]
-
-    if not gate_entries:
-        frappe.throw("No Gate Entries selected")
-
-    pr = None
-    all_po_list = set()
-
-    # 🔁 LOOP ALL GATE ENTRIES
-    for gate_entry in gate_entries:
-        ge = frappe.get_doc("Gate Entry", gate_entry)
-
-        po_list = [
-            row.source_name
-            for row in ge.references
-            if row.source_doctype == "Purchase Order" and row.source_name
-        ]
-
-        all_po_list.update(po_list)
-
-    if not all_po_list:
-        frappe.throw("No Purchase Orders linked")
-
-    # 🔁 CREATE PR FROM ALL PO
-    for po_name in all_po_list:
-        mapped_pr = po.make_purchase_receipt(po_name)
-
-        if not pr:
-            pr = mapped_pr
-        else:
-            for item in mapped_pr.items:
-                pr.append("items", item)
-
-    # 🔗 LINK GATE ENTRIES
-    pr.custom_bulk_gate_entry = ", ".join(gate_entries)
-
-    for item in pr.items:
-        item.custom_bulk_gate_entry = ", ".join(gate_entries)
-
-    pr.run_method("calculate_taxes_and_totals")
-
-    return pr
 
 # @frappe.whitelist()
 # def get_pending_gate_entries(supplier):
