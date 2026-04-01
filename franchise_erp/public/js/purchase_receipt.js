@@ -289,35 +289,35 @@ frappe.ui.form.on("Purchase Receipt", {
         });
     }
 });
-function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
+// function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
 
-    if (!gate_entry) {
-        frappe.msgprint(__("Gate Entry not selected"));
-        return;
-    }
+//     if (!gate_entry) {
+//         frappe.msgprint(__("Gate Entry not selected"));
+//         return;
+//     }
 
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.make_pr_from_gate_entry",
-        args: {
-            gate_entry: gate_entry
-        },
-        freeze: true,
-        freeze_message: __("Creating Purchase Receipt from Gate Entry..."),
-        callback(r) {
-            if (!r.message) {
-                frappe.msgprint(__("Failed to create Purchase Receipt"));
-                return;
-            }
+//     frappe.call({
+//         method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.make_pr_from_gate_entry",
+//         args: {
+//             gate_entry: gate_entry
+//         },
+//         freeze: true,
+//         freeze_message: __("Creating Purchase Receipt from Gate Entry..."),
+//         callback(r) {
+//             if (!r.message) {
+//                 frappe.msgprint(__("Failed to create Purchase Receipt"));
+//                 return;
+//             }
 
-            // 🔥 VERY IMPORTANT
-            // This syncs mapped doc (items + taxes + totals)
-            frappe.model.sync(r.message);
+//             // 🔥 VERY IMPORTANT
+//             // This syncs mapped doc (items + taxes + totals)
+//             frappe.model.sync(r.message);
 
-            // Open newly created PR
-            frappe.set_route("Form", "Purchase Receipt", r.message.name);
-        }
-    });
-}
+//             // Open newly created PR
+//             frappe.set_route("Form", "Purchase Receipt", r.message.name);
+//         }
+//     });
+// }
 
 
 
@@ -387,7 +387,31 @@ function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
 
 
 
+function map_gate_entry_to_purchase_receipt(frm, gate_entries) {
 
+    if (!gate_entries || !gate_entries.length) {
+        frappe.msgprint(__("Gate Entry not selected"));
+        return;
+    }
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.make_pr_from_gate_entries",
+        args: {
+            gate_entries: gate_entries   // 🔥 array pass karo
+        },
+        freeze: true,
+        freeze_message: __("Creating Purchase Receipt from Gate Entries..."),
+        callback(r) {
+            if (!r.message) {
+                frappe.msgprint(__("Failed to create Purchase Receipt"));
+                return;
+            }
+
+            frappe.model.sync(r.message);
+            frappe.set_route("Form", "Purchase Receipt", r.message.name);
+        }
+    });
+}
 
 
 
