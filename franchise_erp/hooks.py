@@ -41,16 +41,15 @@ doc_events = {
 
     # apps/franchise_erp/franchise_erp/hooks.py
 
-    "*": {
-        "before_validate": "franchise_erp.utils.fy_naming.short_fy_naming"
-    },
+    # "*": {
+    #     "before_validate": "franchise_erp.utils.fy_naming.short_fy_naming"
+    # },
 
    "Purchase Invoice": {
        "validate": [
                     "franchise_erp.custom.purchase_invoice.set_buffer_due_date",
                     
                     ],
-                    # "before_save": "franchise_erp.custom.purchase_invoice.copy_grn_discount"
     },
     "Journal Entry": {
         "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
@@ -541,3 +540,9 @@ jinja = {
 
 
 
+fixtures = [
+      {"dt": "Property Setter",
+        # "filters": [["name", "in", ["Sales Invoice-naming_series-options"]]],
+      }
+    ]
+ 

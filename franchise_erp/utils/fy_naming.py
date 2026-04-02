@@ -25,24 +25,25 @@
 #     except Exception:
 #         frappe.log_error(frappe.get_traceback(), "FY Short Naming Error")
 
-
 import frappe
 
 def short_fy_naming(doc, method=None):
     try:
+        # ✅ ONLY FOR NEW DOC
+        if not doc.is_new():
+            return
+
         if not doc.name:
             return
 
         name = doc.name
 
-        # Split by both possible separators
         separators = ["-", "/"]
 
         for sep in separators:
             parts = name.split(sep)
 
             for part in parts:
-                # Check pattern like 2026-2027 manually
                 if len(part) == 9 and "-" in part:
                     years = part.split("-")
 
