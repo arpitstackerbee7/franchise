@@ -90,11 +90,18 @@ def create_pi_from_gate_entry(gate_entry):
     if gate.docstatus != 1:
         frappe.throw("Gate Entry must be submitted")
 
-    if not gate.consignor:
-        frappe.throw("Consignor is mandatory")
-
     if not gate.incoming_logistics:
         frappe.throw("Incoming Logistics is missing")
+
+    # ✅ Get transporter (supplier) from Incoming Logistics
+    transporter = frappe.db.get_value(
+        "Incoming Logistics",
+        gate.incoming_logistics,
+        "transporter"   # <-- field name check kar lena (important)
+    )
+
+    if not transporter:
+        frappe.throw("Transporter (Supplier) not found in Incoming Logistics")
 
     # Transport Item fallback
     transport_item = gate.transport_service_item or frappe.db.get_single_value(
@@ -125,7 +132,7 @@ def create_pi_from_gate_entry(gate_entry):
     # Payable Account
     payable_account = get_party_account(
         "Supplier",
-        gate.consignor,
+        transporter,
         gate.owner_site
     )
 
@@ -134,7 +141,7 @@ def create_pi_from_gate_entry(gate_entry):
 
     # Create PI (DRAFT)
     pi = frappe.new_doc("Purchase Invoice")
-    pi.supplier = gate.consignor
+    pi.supplier = transporter   # ✅ yaha change kiya
     pi.company = gate.owner_site
     pi.bill_date = today()
     pi.bill_no = "0"
@@ -150,16 +157,13 @@ def create_pi_from_gate_entry(gate_entry):
         "rate": rate
     })
 
-    # Optional (recommended)
     pi.set_missing_values()
     pi.calculate_taxes_and_totals()
 
-    # ✅ Only insert (DRAFT)
-    pi.flags.ignore_mandatory = True   # bypass GST mandatory
+    pi.flags.ignore_mandatory = True
     pi.insert(ignore_permissions=True)
 
     return pi.name
-
 import frappe
 from frappe.utils import flt
 
