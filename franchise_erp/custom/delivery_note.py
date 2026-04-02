@@ -47,27 +47,29 @@ def set_percent_off_promo_flags(doc, method=None):
         item.db_set("custom_promo_discount_percent", discount_percent)
 
 
+
 def set_dn_naming_series(doc, method=None):
+
     # Clean abbreviation (allow only letters & numbers)
     abbr = re.sub(r"[^A-Za-z0-9]", "", doc.custom_abbr or "")
 
-    if doc.is_return:
-        series = f"DRET-{abbr}-.YY.-"
-    elif abbr:
-        # ✅ FY only for this series
-        fy = frappe.defaults.get_user_default("fiscal_year")
+    # ✅ Get Financial Year (26-27)
+    fy = frappe.defaults.get_user_default("fiscal_year")
 
-        if fy and "-" in fy:
-            start, end = fy.split("-")
-            fy_code = f"{start[-2:]}-{end[-2:]}"
-        else:
-            year = datetime.now().year
-            fy_code = f"{str(year)[-2:]}-{str(year+1)[-2:]}"
-
-        series = f"DN-{abbr}-{fy_code}-"
-
+    if fy and "-" in fy:
+        start, end = fy.split("-")
+        fy_code = f"{start[-2:]}-{end[-2:]}"
     else:
-        series = "DN-.YY.-"
+        year = datetime.now().year
+        fy_code = f"{str(year)[-2:]}-{str(year+1)[-2:]}"
+
+    # ✅ Apply FY to ALL series
+    if doc.is_return:
+        series = f"DRET-{abbr}-{fy_code}-"
+    elif abbr:
+        series = f"DN-{abbr}-{fy_code}-"
+    else:
+        series = f"DN-{fy_code}-"
 
     doc.naming_series = series
     
