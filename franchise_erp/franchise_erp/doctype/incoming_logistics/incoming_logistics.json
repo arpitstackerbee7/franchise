@@ -353,10 +353,11 @@
    "label": "Sales Invoice Attachment"
   },
   {
+   "default": "IL./.FY./.",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Naming Series",
-   "options": "TPL-IL-#####-FY"
+   "options": "IL./.FY./."
   },
   {
    "fieldname": "sales_inovice_no",
@@ -405,7 +406,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-04-02 15:07:07.217137",
+ "modified": "2026-04-02 15:18:30.113573",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

@@ -11,17 +11,17 @@
 import frappe
 import random
 from frappe.model.document import Document, flt
-# from franchise_erp.utils.fy_naming import company_fy_autoname
+from franchise_erp.utils.fy_naming import company_fy_autoname
 class IncomingLogistics(Document):
     
-    # def autoname(self):
+    def autoname(self):
 
-    #     # 🔥 VERY IMPORTANT (bypass ERP validation)
-    #     self.naming_series = None
+        # 🔥 VERY IMPORTANT (bypass ERP validation)
+        self.naming_series = None
 
-    #     frappe.logger().info("Incoming Logistic autoname triggered")
+        frappe.logger().info("Incoming Logistic autoname triggered")
 
-    #     company_fy_autoname(self)
+        company_fy_autoname(self)
         
     def validate(self):
         self.validate_unique_lr_per_transporter()
@@ -151,6 +151,7 @@ class IncomingLogistics(Document):
 
     def before_submit(self):
         self.create_gate_entry_box_barcodes()
+
     def create_gate_entry_box_barcodes(self):
         qty = int(self.lr_quantity or 0)
         if qty <= 0:
@@ -176,7 +177,7 @@ class IncomingLogistics(Document):
         # 🔹 Extract numeric part from Incoming Logistics name
         # TPL-IL-00125-2025-2026 → 00125
         try:
-            series_no = self.name.split("-")[2]
+            series_no = self.name.split("/")[2]
         except Exception:
             frappe.throw("Invalid Incoming Logistics Naming Series")
 

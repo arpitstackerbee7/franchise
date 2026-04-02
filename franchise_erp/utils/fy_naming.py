@@ -133,9 +133,9 @@ DOCTYPE_PREFIX = {
     "Stock Entry": "STV",
     "Subcontracting Order": "JOBO",
     "Subcontracting Receipt": "JOBR",
-    # "Incoming Logistics": "IL",
-    # "Gate Entry": "IG",
-    # "Outgoing Logistics": "OL",
+    "Incoming Logistics": "IL",
+    "Gate Entry": "IG",
+    "Outgoing Logistics": "OL",
 }
 
 
@@ -177,6 +177,13 @@ def get_doc_date(doc):
 
     if hasattr(doc, "schedule_date") and doc.schedule_date:
         return getdate(doc.schedule_date)
+
+    if hasattr(doc, "invoice_date") and doc.invoice_date:
+        return getdate(doc.invoice_date)
+    
+    if hasattr(doc, "document_date") and doc.document_date:
+        return getdate(doc.document_date)
+
 
     return getdate(frappe.utils.today())
 
