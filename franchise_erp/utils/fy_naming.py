@@ -169,6 +169,11 @@ FY_START_DATE = getdate("2026-04-01")
 
 def get_doc_date(doc):
     # 🔥 priority wise check
+
+    if doc.doctype == "Subcontracting Order":
+        if hasattr(doc, "custom_posting_date") and doc.custom_posting_date:
+            return getdate(doc.custom_posting_date)
+            
     if hasattr(doc, "posting_date") and doc.posting_date:
         return getdate(doc.posting_date)
 
@@ -217,6 +222,9 @@ def company_fy_autoname(doc, method=None):
     number = get_next_number(doc.doctype, series)
 
     doc.name = f"{series}{number}"
+
+
+
 # def company_fy_autoname(doc, method=None):
 
 #     if doc.doctype not in DOCTYPE_PREFIX:
