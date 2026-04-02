@@ -356,7 +356,7 @@
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Naming Series",
-   "options": "TPL-IL-.#####.-.FY."
+   "options": "TPLIL-.#####.-.FY."
   },
   {
    "fieldname": "sales_inovice_no",
@@ -405,7 +405,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-02-20 15:46:05.993042",
+ "modified": "2026-04-02 14:29:18.439304",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
