@@ -123,21 +123,13 @@ def create_pi_from_gate_entry(gate_entry):
         frappe.throw("Purchase Invoice already created for this Gate Entry")
 
     # Get rate
-    rate = frappe.db.get_value(
-        "Incoming Logistics",
-        gate.incoming_logistics,
-        "rate"
-    ) or 0
+    # rate = frappe.db.get_value(
+    #     "Incoming Logistics",
+    #     gate.incoming_logistics,
+    #     "rate"
+    # ) or 0
 
-    # Payable Account
-    payable_account = get_party_account(
-        "Supplier",
-        transporter,
-        gate.owner_site
-    )
-
-    if not payable_account:
-        frappe.throw("Payable Account not found for Supplier")
+    
 
     # Create PI (DRAFT)
     pi = frappe.new_doc("Purchase Invoice")
@@ -145,7 +137,6 @@ def create_pi_from_gate_entry(gate_entry):
     pi.company = gate.owner_site
     pi.bill_date = today()
     pi.bill_no = "0"
-    pi.credit_to = payable_account
 
     # Link back
     pi.custom_gate_entry_ = gate.name
@@ -154,16 +145,23 @@ def create_pi_from_gate_entry(gate_entry):
     pi.append("items", {
         "item_code": transport_item,
         "qty": 1,
-        "rate": rate
+        "rate": 0,
+        "expense_account": frappe.get_value(
+            "Company",
+            gate.owner_site,
+            "default_expense_account"
+        )
     })
 
     pi.set_missing_values()
     pi.calculate_taxes_and_totals()
 
-    pi.flags.ignore_mandatory = True
     pi.insert(ignore_permissions=True)
 
+    pi.save()
     return pi.name
+
+
 import frappe
 from frappe.utils import flt
 
