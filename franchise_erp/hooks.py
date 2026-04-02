@@ -41,21 +41,25 @@ doc_events = {
 
     # apps/franchise_erp/franchise_erp/hooks.py
 
+ 
     # "*": {
     #     "before_validate": "franchise_erp.utils.fy_naming.short_fy_naming"
     # },
 
    "Purchase Invoice": {
+       "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
        "validate": [
                     "franchise_erp.custom.purchase_invoice.set_buffer_due_date",
                     
                     ],
     },
     "Journal Entry": {
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
     },
    
    "Sales Invoice": {
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate":[
             # "franchise_erp.custom.promotional_scheme.apply_promotions",
                     "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
@@ -70,12 +74,14 @@ doc_events = {
 
     },
     "Purchase Order": {
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         # "before_insert": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
         "on_submit": ["franchise_erp.api.create_selling_price_from_po","franchise_erp.custom.purchase_order.generate_serials_on_po_submit"],
         "before_validate": ["franchise_erp.custom.purchase_order.apply_purchase_term"],
         # "on_change": "franchise_erp.api.on_change"
     },
     "Purchase Receipt": {
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate":[
             "franchise_erp.custom.purchase_reciept.validate_item",
                     "franchise_erp.custom.purchase_reciept.validate_gate_entry",
@@ -119,6 +125,7 @@ doc_events = {
         "after_insert":"franchise_erp.custom.product_bundle.set_product_bundle_series"
     },
     "Payment Entry":{
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "on_submit":"franchise_erp.custom.payment_entry.apply_early_payment_discount",
         "validate": "franchise_erp.custom.payment_entry.validate_duplicate_cheque_no"
     },
@@ -135,6 +142,7 @@ doc_events = {
         "validate": "franchise_erp.custom.item_price.validate_item_price"
     },
     "Sales Order":{
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "before_validate": "franchise_erp.custom.sales_order.apply_sales_term"
     },
     "Delivery Note": {
@@ -159,6 +167,7 @@ doc_events = {
         "validate": "franchise_erp.custom.sales_person.validate_unique_custom_user"
     },
     "Stock Entry":{
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate": [
             "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
             # "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_wip_return_stock_entry"
@@ -167,6 +176,7 @@ doc_events = {
         "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
     },
     "Subcontracting Receipt": {
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting"
     },
     "Leave Application":{
@@ -184,7 +194,10 @@ doc_events = {
     "Salary Slip":{
         "before_validate": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions",
         "on_submit": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions"
-    }
+    },
+    "Subcontracting Order": {
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+    },
 }
    
 
@@ -540,9 +553,9 @@ jinja = {
 
 
 
-fixtures = [
-      {"dt": "Property Setter",
-        # "filters": [["name", "in", ["Sales Invoice-naming_series-options"]]],
-      }
-    ]
+# fixtures = [
+#       {"dt": "Property Setter",
+#         # "filters": [["name", "in", ["Sales Invoice-naming_series-options"]]],
+#       }
+#     ]
  

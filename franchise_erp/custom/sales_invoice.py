@@ -1347,3 +1347,5 @@ def get_available_gate_entries_sales(doctype, txt, searchfield, start, page_len,
 
         LIMIT %s, %s
     """, ("%{}%".format(txt), start, page_len))
+
+
