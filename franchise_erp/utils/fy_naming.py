@@ -133,9 +133,9 @@ DOCTYPE_PREFIX = {
     "Stock Entry": "STV",
     "Subcontracting Order": "JOBO",
     "Subcontracting Receipt": "JOBR",
-    "Incoming Logistics": "IL",
-    "Gate Entry": "IG",
-    "Outgoing Logistics": "OL",
+    # "Incoming Logistics": "IL",
+    # "Gate Entry": "IG",
+    # "Outgoing Logistics": "OL",
 }
 
 
