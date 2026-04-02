@@ -4,10 +4,19 @@
 import frappe
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
-
+from franchise_erp.utils.fy_naming import company_fy_autoname
 
 class GateEntry(Document):
-            
+
+    def autoname(self):
+
+        # 🔥 VERY IMPORTANT (bypass ERP validation)
+        self.naming_series = None
+
+        frappe.logger().info("Incoming Logistic autoname triggered")
+
+        company_fy_autoname(self)
+          
     def on_submit(self):
         self.status = "Submitted"
         self.db_update()  # <<<<< ADD THIS LINE

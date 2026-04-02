@@ -2,66 +2,75 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.model.naming import make_autoname 
+# from frappe.model.naming import make_autoname 
 from erpnext.accounts.utils import get_fiscal_year
 from frappe.model.document import Document
 from franchise_erp.send_whatsapp_notification import send_sales_invoice_pdf_from_outgoing_logistics
-
+from franchise_erp.utils.fy_naming import company_fy_autoname
 class OutgoingLogistics(Document):
+
+    def autoname(self):
+
+        # 🔥 VERY IMPORTANT (bypass ERP validation)
+        self.naming_series = None
+
+        frappe.logger().info("Incoming Logistic autoname triggered")
+
+        company_fy_autoname(self)
 
     def validate(self):
         if not self.references or len(self.references) == 0:
             frappe.throw("Reference ID is mandatory. Please add at least one row.")
 
-    def autoname(self):
-        """
-        Custom autoname for Outgoing Logistics
+    # def autoname(self):
+    #     """
+    #     Custom autoname for Outgoing Logistics
 
-        Format:
-        TZUPL-OL-00001-2026-2027
+    #     Format:
+    #     TZUPL-OL-00001-2026-2027
 
-        Features:
-        - FY last me
-        - Har FY me counter reset
-        - Automatic series handling
-        """
+    #     Features:
+    #     - FY last me
+    #     - Har FY me counter reset
+    #     - Automatic series handling
+    #     """
 
-        # ✅ Safety checks
-        if not self.owner_site:
-            frappe.throw("Company is required for naming")
+    #     # ✅ Safety checks
+    #     if not self.owner_site:
+    #         frappe.throw("Company is required for naming")
 
-        if not self.date:
-            frappe.throw("Date is required for naming")
+    #     if not self.date:
+    #         frappe.throw("Date is required for naming")
 
-        if not self.company_abbreviation:
-            frappe.throw("Company Abbreviation is required")
+    #     if not self.company_abbreviation:
+    #         frappe.throw("Company Abbreviation is required")
 
-        # ✅ Get values
-        abbr = self.company_abbreviation
+    #     # ✅ Get values
+    #     abbr = self.company_abbreviation
 
-        # 🔥 Correct FY fetch
-        fy = get_fiscal_year(self.date, company=self.owner_site)[0]
+    #     # 🔥 Correct FY fetch
+    #     fy = get_fiscal_year(self.date, company=self.owner_site)[0]
 
-        # 🔥 Hidden FY-based series (important for reset)
-        # ERPNext isko unique series maanega
-        series_pattern = f"{abbr}-OL-{fy}-.#####."
+    #     # 🔥 Hidden FY-based series (important for reset)
+    #     # ERPNext isko unique series maanega
+    #     series_pattern = f"{abbr}-OL-{fy}-.#####."
 
-        # ✅ Generate temporary name
-        # Example: TZUPL-OL-2026-2027-00001
-        temp_name = make_autoname(series_pattern)
+    #     # ✅ Generate temporary name
+    #     # Example: TZUPL-OL-2026-2027-00001
+    #     temp_name = make_autoname(series_pattern)
 
-        try:
-            parts = temp_name.split("-")
+    #     try:
+    #         parts = temp_name.split("-")
 
-            # Last part = running number
-            number = parts[-1]
+    #         # Last part = running number
+    #         number = parts[-1]
 
-        except Exception:
-            frappe.throw("Error while generating naming series")
+    #     except Exception:
+    #         frappe.throw("Error while generating naming series")
 
-        # ✅ Final required format (FY last me)
-        # TZUPL-OL-00001-2026-2027
-        self.name = f"{abbr}-OL-{number}-{fy}"
+    #     # ✅ Final required format (FY last me)
+    #     # TZUPL-OL-00001-2026-2027
+    #     self.name = f"{abbr}-OL-{number}-{fy}"
 
 
 
