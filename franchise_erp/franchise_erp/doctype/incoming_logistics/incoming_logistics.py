@@ -11,14 +11,17 @@
 import frappe
 import random
 from frappe.model.document import Document, flt
-from franchise_erp.utils.fy_naming import company_fy_autoname
+# from franchise_erp.utils.fy_naming import company_fy_autoname
 class IncomingLogistics(Document):
     
-    def autoname(self):
-        # 🔥 debug
-        frappe.logger().info("Incoming Logistic autoname triggered")
+    # def autoname(self):
 
-        company_fy_autoname(self)
+    #     # 🔥 VERY IMPORTANT (bypass ERP validation)
+    #     self.naming_series = None
+
+    #     frappe.logger().info("Incoming Logistic autoname triggered")
+
+    #     company_fy_autoname(self)
         
     def validate(self):
         self.validate_unique_lr_per_transporter()
