@@ -123,11 +123,11 @@ def create_pi_from_gate_entry(gate_entry):
         frappe.throw("Purchase Invoice already created for this Gate Entry")
 
     # Get rate
-    # rate = frappe.db.get_value(
-    #     "Incoming Logistics",
-    #     gate.incoming_logistics,
-    #     "rate"
-    # ) or 0
+    rate = frappe.db.get_value(
+        "Incoming Logistics",
+        gate.incoming_logistics,
+        "total_amount"
+    ) or 0
 
     
 
@@ -145,7 +145,7 @@ def create_pi_from_gate_entry(gate_entry):
     pi.append("items", {
         "item_code": transport_item,
         "qty": 1,
-        "rate": 0,
+        "rate": rate,
         "expense_account": frappe.get_value(
             "Company",
             gate.owner_site,

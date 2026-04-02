@@ -175,8 +175,8 @@ def get_doc_date(doc):
     if hasattr(doc, "transaction_date") and doc.transaction_date:
         return getdate(doc.transaction_date)
 
-    if hasattr(doc, "schedule_date") and doc.schedule_date:
-        return getdate(doc.schedule_date)
+    if hasattr(doc, "custom_posting_date") and doc.schedule_date:
+        return getdate(doc.custom_posting_date)
 
     if hasattr(doc, "invoice_date") and doc.invoice_date:
         return getdate(doc.invoice_date)
