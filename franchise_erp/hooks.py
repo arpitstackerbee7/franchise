@@ -431,6 +431,13 @@ jinja = {
 # 	],
 # }
 
+# scheduler_events = {
+#     "all": [
+#         "franchise_erp.biometric_integration.sync_punches_from_server"
+#     ]
+# }
+
+
 # Testing
 # -------
 
