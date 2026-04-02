@@ -72,6 +72,7 @@ function open_sales_invoice_mapper(frm) {
             return {
                 filters: [
                     ["Sales Invoice", "docstatus", "=", 1],
+                    ["Sales Invoice", "is_return", "!=", 1],
                     ["Sales Invoice", "custom_outgoing_logistics_reference", "is", "not set"],
                     ["Sales Invoice", "customer", "=", frm.doc.consignee],
                     ["Sales Invoice", "company", "=", frm.doc.owner_site]

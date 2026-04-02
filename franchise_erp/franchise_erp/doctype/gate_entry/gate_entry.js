@@ -401,42 +401,103 @@ function set_transport_service_item(frm) {
     });
 }
 
+// frappe.ui.form.on("Gate Entry", {
+//     refresh(frm) {
+//         if (frm.doc.docstatus === 1) {
+//             frm.add_custom_button(
+//                 __("Purchase Invoice"),
+//                 () => {
+//                     frappe.call({
+//                         method: "franchise_erp.custom.purchase_invoice.create_pi_from_gate_entry",
+//                         args: {
+//                             gate_entry: frm.doc.name
+//                         },
+//                         callback(r) {
+//                             if (r.message) {
+//                                 frappe.msgprint({
+//                                     title: __("Success"),
+//                                     message: __("Purchase Invoice created successfully"),
+//                                     indicator: "green"
+//                                 });
+
+//                                 frappe.set_route(
+//                                     "Form",
+//                                     "Purchase Invoice",
+//                                     r.message
+//                                 );
+//                             }
+//                         }
+//                     });
+//                 },
+//                 __("Create")
+//             );
+//         }
+//     }
+// });
+
+
+
 frappe.ui.form.on("Gate Entry", {
     refresh(frm) {
         if (frm.doc.docstatus === 1) {
             frm.add_custom_button(
                 __("Purchase Invoice"),
                 () => {
-                    frappe.call({
-                        method: "franchise_erp.custom.purchase_invoice.create_pi_from_gate_entry",
-                        args: {
-                            gate_entry: frm.doc.name
-                        },
-                        callback(r) {
-                            if (r.message) {
-                                frappe.msgprint({
-                                    title: __("Success"),
-                                    message: __("Purchase Invoice created successfully"),
-                                    indicator: "green"
-                                });
 
-                                frappe.set_route(
-                                    "Form",
-                                    "Purchase Invoice",
-                                    r.message
-                                );
+                    if (!frm.doc.incoming_logistics) {
+                        frappe.msgprint("Incoming Logistics is not selected");
+                        return;
+                    }
+
+                    // 🔥 Fetch to_pay from Incoming Logistics
+                    frappe.db.get_value(
+                        "Incoming Logistics",
+                        frm.doc.incoming_logistics,
+                        "to_pay",
+                        (r) => {
+
+                            console.log("to_pay:", r.to_pay);
+
+                            if (String(r.to_pay).trim().toLowerCase() === "no") {
+                                frappe.msgprint({
+                                    title: __("Not Allowed"),
+                                    message: __("Purchase Invoice cannot be created because 'Pay To' is set to 'No' in Incoming Logistics."),
+                                    indicator: "red"
+                                });
+                                return;
                             }
+
+                            // ✅ Proceed if allowed
+                            frappe.call({
+                                method: "franchise_erp.custom.purchase_invoice.create_pi_from_gate_entry",
+                                args: {
+                                    gate_entry: frm.doc.name
+                                },
+                                callback(r) {
+                                    if (r.message) {
+                                        frappe.msgprint({
+                                            title: __("Success"),
+                                            message: __("Purchase Invoice created successfully"),
+                                            indicator: "green"
+                                        });
+
+                                        frappe.set_route(
+                                            "Form",
+                                            "Purchase Invoice",
+                                            r.message
+                                        );
+                                    }
+                                }
+                            });
+
                         }
-                    });
+                    );
                 },
                 __("Create")
             );
         }
     }
 });
-
-
-
 function toggle_consignor_fields(frm) {
     if (!frm.doc.type) return;
 

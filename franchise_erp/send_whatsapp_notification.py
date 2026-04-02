@@ -176,6 +176,21 @@ Thank you!"""
         # -----------------------------
         # PDF GENERATE
         # -----------------------------
+        # pdf = frappe.get_print(
+        #     doctype="Sales Invoice",
+        #     name=si_doc.name,
+        #     print_format="Sales Invoice Print Format",
+        #     no_letterhead=1,
+        #     as_pdf=True
+        # )
+
+        # file_name = f"{si_doc.name}.pdf"
+        # file_path = f"/tmp/{file_name}"
+
+        # with open(file_path, "wb") as f:
+        #     f.write(pdf)
+
+
         pdf = frappe.get_print(
             doctype="Sales Invoice",
             name=si_doc.name,
@@ -184,7 +199,9 @@ Thank you!"""
             as_pdf=True
         )
 
-        file_name = f"{si_doc.name}.pdf"
+        # ✅ FIX: safe filename
+        safe_name = si_doc.name.replace("/", "-")
+        file_name = f"{safe_name}.pdf"
         file_path = f"/tmp/{file_name}"
 
         with open(file_path, "wb") as f:
