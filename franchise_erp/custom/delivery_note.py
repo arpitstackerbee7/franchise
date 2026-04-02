@@ -1,6 +1,7 @@
 import frappe
 from frappe.model.naming import make_autoname
 import re
+from datetime import datetime
 
 
 #for 2 get 1 free item
@@ -53,7 +54,18 @@ def set_dn_naming_series(doc, method=None):
     if doc.is_return:
         series = f"DRET-{abbr}-.YY.-"
     elif abbr:
-        series = f"DN-{abbr}-.YY.-"
+        # ✅ FY only for this series
+        fy = frappe.defaults.get_user_default("fiscal_year")
+
+        if fy and "-" in fy:
+            start, end = fy.split("-")
+            fy_code = f"{start[-2:]}-{end[-2:]}"
+        else:
+            year = datetime.now().year
+            fy_code = f"{str(year)[-2:]}-{str(year+1)[-2:]}"
+
+        series = f"DN-{abbr}-{fy_code}-"
+
     else:
         series = "DN-.YY.-"
 
