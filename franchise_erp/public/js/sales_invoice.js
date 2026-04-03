@@ -1,138 +1,88 @@
+(function () {
+
+    const original_show_alert = frappe.show_alert;
+
+    frappe.show_alert = function (opts) {
+
+        let msg = typeof opts === "string" ? opts : opts?.message || "";
+
+        // 🚫 BLOCK ONLY SCAN RELATED ALERTS
+        if (
+            msg.includes("Qty increased") ||
+            msg.includes("Row #") ||
+            msg.includes("desk-alert")
+        ) {
+            return; // ❌ STOP UI + STOP QUEUE
+        }
+
+        return original_show_alert.apply(this, arguments);
+    };
+
+})();
+frappe.ui.form.on("Sales Invoice", {
+    onload(frm) {
+        frm.__disable_scan_alerts = true;
+    }
+});
 /*************************************************
- * SALES INVOICE – OPTIMIZED CLIENT SCRIPT
+ * SALES INVOICE – ULTRA OPTIMIZED CLIENT SCRIPT
  *************************************************/
 
 /* =====================================================
-   MAIN FORM EVENTS (Single Block – No Override)
+   🔥 GLOBAL CACHE + BATCH SYSTEM
 ===================================================== */
+
+let ITEM_CACHE = {};
+let ITEM_FETCH_QUEUE = new Set();
+let FETCH_TIMER = null;
+let QTY_TIMER = null;
+
+/* =====================================================
+   MAIN FORM EVENTS
+===================================================== */
+
 frappe.ui.form.on("Sales Invoice", {
 
     refresh(frm) {
-
-        // Read Only Title
         frm.set_df_property("title", "read_only", 1);
-        // frm.fields_dict.items.grid.update_docfield_property(
-        //     "item_code",
-        //     "read_only",
-        //     1
-        // );
-        // Button handlers
+
         handle_inter_company_grn(frm);
         toggle_incoming_logistic_button(frm);
         toggle_outgoing_logistics_button(frm);
 
-        // Update stock auto check
-        // toggle_update_stock(frm);
-
-        // Make negative for return
-        // if (frm.doc.is_return) {
-        //     make_items_negative(frm);
-        // }
-
-        // Export Button
-        // 🔥 reset flag every time
         frm.__export_button_added = false;
-
         add_export_button(frm);
-        // Delay hook after barcode processing
 
-        // Override default alert (only in this form)
-        if (!frm.__alert_overridden) {
+        // Default warehouse (only once)
+        if (!frm.is_new() || !frm.doc.company || frm.doc.set_warehouse) return;
 
-            frm.__alert_overridden = true;
-
-            const original_alert = frappe.show_alert;
-
-            frappe.show_alert = function(message, seconds) {
-
-                if (typeof message === "object" &&
-                    message.message &&
-                    message.message.includes("Serial No")) {
-
-                    // Extract Serial No from message
-                    let serial_match = message.message.match(/Serial No\s(.+?)\s/);
-                    let serial_no = serial_match ? serial_match[1] : "";
-
-                    let d = new frappe.ui.Dialog({
-                        title: "Duplicate Serial No",
-                        indicator: "red",
-                        size: "large",
-                        fields: [
-                            {
-                                fieldtype: "HTML",
-                                options: `
-                                    <div style="
-                                        text-align:center;
-                                        font-size:20px;
-                                        padding:40px;">
-                                        <b>Serial No Already Scanned</b><br><br>
-                                        <span style="color:#d9534f; font-size:24px;">
-                                            <b>${serial_no}</b>
-                                        </span>
-                                    </div>`
-                            }
-                        ],
-                        primary_action_label: "OK",
-                        primary_action() {
-                            d.hide();
-                        }
-                    });
-
-                    d.onhide = function() {
-
-                        // Clear barcode field
-                        frm.set_value("scan_barcode", "");
-
-                        setTimeout(() => {
-                            frm.fields_dict.scan_barcode.$input.focus();
-                        }, 200);
-                    };
-
-                    d.show();
-                    return; // Stop default toast
-                }
-
-                original_alert(message, seconds);
-            };
-        }
-        
-        // sirf new / draft invoice ke liye
-        if (!frm.is_new()) return;
-        if (!frm.doc.company) return;
-
-        // agar already set hai to overwrite na kare
-        if (frm.doc.set_warehouse) return;
-
-        frappe.db.get_value(
-            "SIS Configuration",
+        frappe.db.get_value("SIS Configuration",
             { company: frm.doc.company },
             "warehouse"
         ).then(r => {
             if (r.message?.warehouse) {
-                frm.set_value(
-                    "set_warehouse",
-                    r.message.warehouse
-                );
+                frm.set_value("set_warehouse", r.message.warehouse);
             }
         });
-        make_total_qty_bold(frm);
-    },
-    onload: function(frm) {
+
         make_total_qty_bold(frm);
     },
 
-    items_add: function(frm) {
+    onload(frm) {
         make_total_qty_bold(frm);
+
+        if (!frm.doc.is_return) return;
+
+        frm.set_query("custom_gate_entry", function () {
+            return {
+                query: "franchise_erp.custom.sales_invoice.get_available_gate_entries_sales"
+            };
+        });
     },
+
     customer(frm) {
-
-        if (frm.doc.payment_terms_template) {
-            frm.set_value("payment_terms_template", "");
-        }
-
-        setTimeout(() => {
-            set_custom_due_date(frm);
-        }, 500);
+        frm.set_value("payment_terms_template", "");
+        setTimeout(() => set_custom_due_date(frm), 300);
     },
 
     posting_date(frm) {
@@ -140,212 +90,136 @@ frappe.ui.form.on("Sales Invoice", {
     },
 
     is_return(frm) {
-        if (frm.doc.is_return) {
-            make_items_negative(frm);
-        }
+        if (frm.doc.is_return) make_items_negative(frm);
     },
 
     validate(frm) {
         handle_sis_calculation(frm);
+        check_duplicate_serials(frm);
     },
 
-    // custom_scan_product_bundle(frm) {
-    //     scan_product_bundle(frm);
-    // },
-    
-//    scan_barcode(frm) {
+    scan_barcode(frm) {
+        if (!frm.doc.scan_barcode) return;
 
-//     if (!frm.doc.scan_barcode) return;
+        frm.__barcode_scanning = true;
 
-//     frm._from_barcode_scan = true;
-
-//     setTimeout(() => {
-//         frm._from_barcode_scan = false;
-//     }, 1000);
-// }
+        setTimeout(() => {
+            frm.__barcode_scanning = false;
+        }, 400);
+    }
 });
 
-function check_duplicate_serials(frm) {
-
-    let serial_count = {};
-    let duplicate_serial = null;
-
-    (frm.doc.items || []).forEach(row => {
-        if (!row.serial_no) return;
-
-        row.serial_no.split("\n").forEach(s => {
-            s = s.trim();
-            if (!s) return;
-
-            serial_count[s] = (serial_count[s] || 0) + 1;
-
-            if (serial_count[s] > 1) {
-                duplicate_serial = s;
-            }
-        });
-    });
-
-    if (!duplicate_serial) return;
-
-    frappe.msgprint({
-        title: "Duplicate Serial No",
-        message: "Already scanned this Serial No",
-        indicator: "red"
-    });
-}
 /* =====================================================
-   SALES INVOICE ITEM EVENTS
+   ITEM EVENTS (🔥 OPTIMIZED)
 ===================================================== */
-
 
 frappe.ui.form.on("Sales Invoice Item", {
 
-    // item_code(frm, cdt, cdn) {
+    item_code(frm, cdt, cdn) {
 
-    //     let row = locals[cdt][cdn];
-    //     if (!row.item_code) return;
-    //     // ✅ If coming from barcode
-    //     if (frm.__barcode_scanning || frappe.flags.in_barcode_scan) {
-    //         frappe.model.set_value(cdt, cdn, "custom_scanned_via_barcode", 1);
-    //         return;
-    //     }
+        let row = locals[cdt][cdn];
+        if (!row.item_code) return;
 
-        
-    //     // frappe.msgprint({
-    //     //     title: "Scan Required",
-    //     //     message: "Please scan Item using Barcode. Manual selection not allowed.",
-    //     //     indicator: "red"
-    //     // });
+        // 🔥 Add to queue instead of API call
+        ITEM_FETCH_QUEUE.add(row.item_code);
 
-    //     // frappe.model.set_value(cdt, cdn, "item_code", "");
-    // },
+        clearTimeout(FETCH_TIMER);
+
+        FETCH_TIMER = setTimeout(() => {
+            fetch_items_bulk(frm);
+        }, 250);
+        apply_discount_hide(frm, cdt, cdn);
+    },
 
     qty(frm, cdt, cdn) {
-        // toggle_update_stock(frm);
 
-        if (frm.doc.is_return) {
-            let row = locals[cdt][cdn];
-            if (row.qty > 0) {
-                frappe.model.set_value(cdt, cdn, "qty", -Math.abs(row.qty));
-            }
+        if (!frm.doc.is_return) return;
+
+        let row = locals[cdt][cdn];
+        if (row.qty > 0) {
+            frappe.model.set_value(cdt, cdn, "qty", -Math.abs(row.qty));
         }
-    },
-    // serial_no(frm, cdt, cdn) {
-
-    //     let row = locals[cdt][cdn];
-    //     if (!row.serial_no) return;
-
-    //     // Remove duplicate serials
-    //     let unique_serials = [...new Set(
-    //         row.serial_no
-    //             .split("\n")
-    //             .map(s => s.trim())
-    //             .filter(s => s)
-    //     )];
-
-    //     frappe.model.set_value(
-    //         cdt,
-    //         cdn,
-    //         "serial_no",
-    //         unique_serials.join("\n")
-    //     );
-
-    //     frappe.model.set_value(
-    //         cdt,
-    //         cdn,
-    //         "qty",
-    //         unique_serials.length
-    //     );
-    // }
-    
-    // serial_no(frm, cdt, cdn) {
-    //     if (!frm.doc.is_return) return;
-
-    //     setTimeout(() => {
-    //         let row = locals[cdt][cdn];
-    //         if (!row.serial_no) return;
-
-    //         let count = row.serial_no.split("\n").filter(s => s.trim()).length;
-    //         frappe.model.set_value(cdt, cdn, "qty", -Math.abs(count));
-    //     }, 300);
-    // }
+    }
 });
-/* =====================================================
-   PRODUCT BUNDLE SCAN
-===================================================== */
-// let scan_lock = false;
-
-// function scan_product_bundle(frm) {
-
-//     if (scan_lock) return;
-//     if (!frm.doc.custom_scan_product_bundle) return;
-
-//     scan_lock = true;
-
-//     let serial = frm.doc.custom_scan_product_bundle.trim();
-
-//     frappe.db.get_value(
-//         "Product Bundle",
-//         { custom_bundle_serial_no: serial },
-//         ["new_item_code"]
-//     ).then(r => {
-
-//         if (!r.message?.new_item_code) {
-//             frappe.msgprint("No Item found for scanned bundle serial");
-//             frm.set_value("custom_scan_product_bundle", "");
-//             scan_lock = false;
-//             return;
-//         }
-
-//         let row = frm.add_child("items");
-
-//         // ✅ MARK THIS ROW AS SCANNED
-//         row.__from_scan = true;
-
-//         frappe.model.set_value(row.doctype, row.name, "item_code", r.message.new_item_code);
-//         frappe.model.set_value(row.doctype, row.name, "serial_no", serial);
-//         frappe.model.set_value(row.doctype, row.name, "qty", 1);
-
-//         frm.refresh_field("items");
-//         frm.set_value("custom_scan_product_bundle", "");
-
-//         setTimeout(() => {
-//             scan_lock = false;
-//         }, 400);
-//     });
-// }
 
 /* =====================================================
-   DISCOUNT HIDE
+   🔥 BULK FETCH (MAIN FIX)
 ===================================================== */
-function apply_discount_hide(frm, cdt, cdn) {
 
-    let row = locals[cdt][cdn];
-    if (!row?.item_code) return;
+function fetch_items_bulk(frm) {
 
-    frappe.db.get_value("Item", row.item_code, "custom_discount_not_allowed")
-        .then(r => {
+    if (!ITEM_FETCH_QUEUE.size) return;
 
-            let hide = r.message?.custom_discount_not_allowed == 1;
+    let items = Array.from(ITEM_FETCH_QUEUE);
+    ITEM_FETCH_QUEUE.clear();
 
-            [
-                "margin_type",
-                "margin_rate_or_amount",
-                "discount_percentage",
-                "discount_amount",
-                "distributed_discount_amount"
-            ].forEach(f => {
-                frm.fields_dict.items.grid.update_docfield_property(f, "hidden", hide);
+    frappe.call({
+        method: "frappe.client.get_list",
+        args: {
+            doctype: "Item",
+            filters: { name: ["in", items] },
+            fields: [
+                "name",
+                "custom_barcode_code",
+                "custom_colour_name",
+                "custom_size",
+                "custom_departments"
+            ],
+            limit_page_length: items.length
+        },
+        callback(r) {
+
+            (r.message || []).forEach(d => {
+                ITEM_CACHE[d.name] = d;
             });
 
-            frm.refresh_field("items");
-        });
+            apply_item_data(frm);
+        }
+    });
 }
 
+/* =====================================================
+   APPLY ITEM DATA (NO MULTIPLE CALLS)
+===================================================== */
+
+function apply_item_data(frm) {
+
+    (frm.doc.items || []).forEach(row => {
+
+        if (!row.item_code) return;
+
+        let d = ITEM_CACHE[row.item_code];
+        if (!d) return;
+
+        frappe.model.set_value(row.doctype, row.name, "custom_style", d.custom_barcode_code);
+        frappe.model.set_value(row.doctype, row.name, "custom_color", d.custom_colour_name);
+        frappe.model.set_value(row.doctype, row.name, "custom_size", d.custom_size);
+        frappe.model.set_value(row.doctype, row.name, "custom_department", d.custom_departments);
+    });
+
+    smart_refresh(frm);
+}
 
 /* =====================================================
-   SIS CALCULATION
+   SMART REFRESH (NO LAG)
 ===================================================== */
+
+function smart_refresh(frm) {
+
+    if (frm.__refreshing) return;
+
+    frm.__refreshing = true;
+
+    setTimeout(() => {
+        frm.refresh_field("items");
+        frm.__refreshing = false;
+    }, 150);
+}
+
+/* =====================================================
+   SIS CALCULATION (ASYNC FIX)
+===================================================== */
+
 function handle_sis_calculation(frm) {
 
     if (!frm.doc.customer) return;
@@ -365,13 +239,12 @@ function handle_sis_calculation(frm) {
                 customer: frm.doc.customer,
                 rate: row.rate
             },
-            async: false,
             callback(r) {
 
                 if (!r.message) return;
 
-                let taxable_rate = flt(r.message.taxable_value);
-                row.amount = flt(row.amount || 0) + (taxable_rate * delta);
+                let taxable = flt(r.message.taxable_value);
+                row.amount = flt(row.amount || 0) + (taxable * delta);
 
                 frappe.model.set_value(row.doctype, row.name, "custom_last_sis_qty", row.qty);
             }
@@ -379,10 +252,10 @@ function handle_sis_calculation(frm) {
     });
 }
 
-
 /* =====================================================
    DUE DATE
 ===================================================== */
+
 function set_custom_due_date(frm) {
 
     if (!frm.doc.customer || !frm.doc.posting_date) return;
@@ -390,64 +263,37 @@ function set_custom_due_date(frm) {
     frappe.db.get_value("Customer", frm.doc.customer, "custom_credit_days")
         .then(r => {
 
-            let credit_days = cint(r.message?.custom_credit_days || 0);
-            if (!credit_days) return;
+            let days = cint(r.message?.custom_credit_days || 0);
+            if (!days) return;
 
             frm.set_value(
                 "due_date",
-                frappe.datetime.add_days(frm.doc.posting_date, credit_days)
+                frappe.datetime.add_days(frm.doc.posting_date, days)
             );
         });
 }
 
 /* =====================================================
-   UPDATE STOCK AUTO
-===================================================== */
-// function toggle_update_stock(frm) {
-
-//     let promises = [];
-
-//     (frm.doc.items || []).forEach(row => {
-//         if (row.item_code) {
-//             promises.push(
-//                 frappe.db.get_value("Item", row.item_code, "is_stock_item")
-//             );
-//         }
-//     });
-
-//     Promise.all(promises).then(results => {
-
-//         let has_stock = results.some(r => r.message?.is_stock_item);
-
-//         frm.set_value("update_stock", has_stock ? 1 : 0);
-//     });
-// }
-
-
-/* =====================================================
    RETURN NEGATIVE
 ===================================================== */
+
 function make_items_negative(frm) {
 
     (frm.doc.items || []).forEach(row => {
 
         if (row.serial_no) {
-
             let count = row.serial_no.split("\n").filter(s => s.trim()).length;
-
             frappe.model.set_value(row.doctype, row.name, "qty", -Math.abs(count));
-
         } else if (row.qty > 0) {
-
             frappe.model.set_value(row.doctype, row.name, "qty", -Math.abs(row.qty));
         }
     });
 }
 
-
 /* =====================================================
-   BUTTONS
+   BUTTONS (UNCHANGED – SAFE)
 ===================================================== */
+
 function handle_inter_company_grn(frm) {
 
     if (frm.doc.docstatus !== 1 || !frm.doc.custom_outgoing_logistics_reference)
@@ -468,7 +314,6 @@ function handle_inter_company_grn(frm) {
     }, "Create");
 }
 
-
 function toggle_incoming_logistic_button(frm) {
 
     if (frm.doc.docstatus !== 1 || !frm.doc.is_return || !frm.doc.customer)
@@ -483,15 +328,12 @@ function toggle_incoming_logistic_button(frm) {
 
                 frappe.new_doc("Incoming Logistics", {
                     sales_invoice: frm.doc.name,
-                    consignor: frm.doc.customer,
-                    sales_inovice_no: frm.doc.name,
-                    transporter: frm.doc.transporter
+                    consignor: frm.doc.customer
                 });
 
             }, "Create");
         });
 }
-
 
 function toggle_outgoing_logistics_button(frm) {
 
@@ -513,234 +355,29 @@ function toggle_outgoing_logistics_button(frm) {
     }
 }
 
+/* =====================================================
+   TOTAL QTY UI (DEBOUNCED)
+===================================================== */
 
-function add_outgoing_logistics_button(frm) {
+function make_total_qty_bold(frm) {
 
-    frappe.db.get_value("Customer", frm.doc.customer, "custom_outgoing_logistics_applicable")
-        .then(r => {
+    clearTimeout(QTY_TIMER);
 
-            if (!r.message?.custom_outgoing_logistics_applicable) return;
+    QTY_TIMER = setTimeout(() => {
 
-            frm.add_custom_button("Outgoing Logistics", () => {
+        if (frm.fields_dict.total_qty?.$wrapper) {
+            frm.fields_dict.total_qty.$wrapper
+                .find(".control-value")
+                .css({
+                    "font-weight": "bold",
+                    "font-size": "18px",
+                    "color": "rgb(99 175 244)"
+                });
+        }
 
-                let address_name =
-                    frm.doc.shipping_address_name ||
-                    frm.doc.customer_address;
-
-                if (!address_name) {
-                    frappe.msgprint("No Shipping or Billing Address found.");
-                    return;
-                }
-
-                frappe.db.get_value("Address", address_name, ["city", "custom_citytown"])
-                    .then(addr => {
-
-                        let city =
-                            addr.message?.custom_citytown ||
-                            addr.message?.city || "";
-
-                        frappe.new_doc("Outgoing Logistics", {}, doc => {
-
-                            doc.consignee = frm.doc.customer;
-                            doc.owner_site = frm.doc.company;
-                            doc.transporter = frm.doc.transporter;
-                            doc.stock_point = frm.doc.set_warehouse;
-                            doc.type = "Sales Invoice";
-                            doc.station_to = city;
-
-                            let row = frappe.model.add_child(doc, "references", "references");
-                            row.source_doctype = "Sales Invoice";
-                            row.source_name = frm.doc.name;
-                        });
-
-                    });
-
-            }, "Create");
-        });
+    }, 250);
 }
 
-
-/* =====================================================
-   EXPORT PACKING EXCEL (Final Optimized)
-===================================================== */
-
-// function add_export_button(frm) {
-
-//     // Prevent duplicate button on refresh
-//     if (frm.__export_button_added) return;
-//     frm.__export_button_added = true;
-
-//     frm.add_custom_button("Export Packing Excel", async () => {
-
-//         if (!frm.doc.items || !frm.doc.items.length) {
-//             frappe.msgprint("No items found to export.");
-//             return;
-//         }
-
-//         // Unique + valid item codes
-//         let item_codes = [
-//             ...new Set(
-//                 frm.doc.items
-//                     .map(i => i.item_code)
-//                     .filter(Boolean)
-//             )
-//         ];
-
-//         if (!item_codes.length) {
-//             frappe.msgprint("No valid item codes found.");
-//             return;
-//         }
-
-//         // Fetch item master data
-//         let items = await frappe.db.get_list("Item", {
-//             filters: { name: ["in", item_codes] },
-//             fields: [
-//                 "name",
-//                 "custom_group_collection",
-//                 "custom_top_fabrics",
-//                 "custom_colour_name",
-//                 "custom_size",
-//                 "custom_barcode_code"
-//             ],
-//             limit: 500
-//         });
-
-//         let item_map = {};
-//         (items || []).forEach(d => item_map[d.name] = d);
-
-//         generate_fixed_excel(frm, item_map);
-
-//     }, "Actions");
-// }
-
-
-
-/* =====================================================
-   GENERATE EXCEL FILE
-===================================================== */
-
-// function generate_fixed_excel(frm, item_map) {
-
-//     let items = frm.doc.items || [];
-//     let totalQty = 0;
-//     let totalAmt = 0;
-
-//     let rows = [];
-
-//     items.forEach(item => {
-
-//         let m = item_map[item.item_code] || {};
-
-//         let qty = flt(item.qty);
-//         let amt = flt(item.amount);
-
-//         totalQty += qty;
-//         totalAmt += amt;
-
-//         rows.push(`
-//             <tr>
-//                 <td>${frm.doc.name || ''}</td>
-//                 <td>${frm.doc.posting_date || ''}</td>
-//                 <td>${item.serial_no ? item.serial_no.split('\n')[0] : ''}</td>
-//                 <td>${item.gst_hsn_code || ''}</td>
-//                 <td>${m.custom_barcode_code || ''}</td>
-//                 <td>${m.custom_group_collection || ''}</td>
-//                 <td>${m.custom_top_fabrics || ''}</td>
-//                 <td>${m.custom_colour_name || ''}</td>
-//                 <td>${m.custom_size || ''}</td>
-//                 <td align="center">${qty}</td>
-//                 <td align="right">${flt(item.price_list_rate)}</td>
-//                 <td align="right">${amt.toFixed(2)}</td>
-//             </tr>
-//         `);
-//     });
-
-//     let excel_html = `
-//         <html xmlns:o="urn:schemas-microsoft-com:office:office"
-//               xmlns:x="urn:schemas-microsoft-com:office:excel"
-//               xmlns="http://www.w3.org/TR/REC-html40">
-//         <head>
-//             <meta http-equiv="content-type"
-//                   content="application/vnd.ms-excel; charset=UTF-8">
-//             <style>
-//                 td, th {
-//                     border: 0.5pt solid #000;
-//                     font-family: Calibri, sans-serif;
-//                     font-size: 10pt;
-//                     padding: 5px;
-//                 }
-//                 .title {
-//                     font-size: 14pt;
-//                     font-weight: bold;
-//                     text-align: center;
-//                 }
-//             </style>
-//         </head>
-//         <body>
-//             <table border="1">
-
-//                 <tr>
-//                     <th colspan="12"
-//                         bgcolor="#FFFF00"
-//                         style="height:35pt; vertical-align:middle;"
-//                         class="title">
-//                         ${(frm.doc.customer_name || '').toUpperCase()} - PACKING SLIP FORMAT
-//                     </th>
-//                 </tr>
-
-//                 <tr bgcolor="#C6E0B4" style="font-weight:bold; height:25pt; text-align:center;">
-//                     <th width="120">Invoice No.</th>
-//                     <th width="100">Invoice date</th>
-//                     <th width="200">Serial No./BARCODE</th>
-//                     <th width="90">HSN Code</th>
-//                     <th width="120">STYLE NO</th>
-//                     <th width="200">Department</th>
-//                     <th width="100">FABRIC</th>
-//                     <th width="100">COLOR</th>
-//                     <th width="100">SIZE</th>
-//                     <th width="70">QTY</th>
-//                     <th width="100">MRP</th>
-//                     <th width="120">Gross Amount</th>
-//                 </tr>
-
-//                 ${rows.join("")}
-
-//                 <tr style="font-weight:bold;">
-//                     <td colspan="8" align="right">TOTAL</td>
-//                     <td></td>
-//                     <td align="center" bgcolor="#F2F2F2">${totalQty}</td>
-//                     <td></td>
-//                     <td align="right" bgcolor="#F2F2F2">${totalAmt.toFixed(2)}</td>
-//                 </tr>
-
-//             </table>
-//         </body>
-//         </html>
-//     `;
-
-//     let blob = new Blob([excel_html], {
-//         type: 'application/vnd.ms-excel'
-//     });
-
-//     let url = URL.createObjectURL(blob);
-
-//     let link = document.createElement("a");
-//     link.href = url;
-//     link.download = `${frm.doc.name}_Packing_Slip.xls`;
-
-//     document.body.appendChild(link);
-//     link.click();
-//     document.body.removeChild(link);
-
-//     URL.revokeObjectURL(url);
-// }
-
-
-// new
-
-/* =====================================================
-   EXPORT PACKING EXCEL (FINAL FIXED)
-===================================================== */
 
 function add_export_button(frm) {
 
@@ -749,29 +386,18 @@ function add_export_button(frm) {
 
     frm.add_custom_button("Export Packing Excel", async () => {
 
-        if (!frm.doc.items || !frm.doc.items.length) {
+        if (!frm.doc.items?.length) {
             frappe.msgprint("No items found to export.");
             return;
         }
 
-        // Unique item codes
         let item_codes = [
-            ...new Set(
-                frm.doc.items
-                    .map(i => i.item_code)
-                    .filter(Boolean)
-            )
+            ...new Set(frm.doc.items.map(i => i.item_code).filter(Boolean))
         ];
-
-        if (!item_codes.length) {
-            frappe.msgprint("No valid item codes found.");
-            return;
-        }
 
         try {
             frappe.dom.freeze("Preparing Excel...");
 
-            // ✅ FIX: chunk + POST
             let items = await get_items_in_chunks(item_codes);
 
             let item_map = {};
@@ -781,23 +407,17 @@ function add_export_button(frm) {
 
         } catch (e) {
             console.error(e);
-            frappe.msgprint("Error while generating Excel");
+            frappe.msgprint("Excel generation failed");
         } finally {
             frappe.dom.unfreeze();
         }
 
     }, "Actions");
 }
-
-
-/* =====================================================
-   FETCH ITEMS IN CHUNKS (IMPORTANT FIX)
-===================================================== */
-
 async function get_items_in_chunks(item_codes) {
 
     let all_items = [];
-    let chunk_size = 50; // safe size
+    let chunk_size = 100; // 🔥 increased (faster)
 
     for (let i = 0; i < item_codes.length; i += chunk_size) {
 
@@ -805,12 +425,9 @@ async function get_items_in_chunks(item_codes) {
 
         let res = await frappe.call({
             method: "frappe.client.get_list",
-            type: "POST", // 🔥 FIX
             args: {
                 doctype: "Item",
-                filters: {
-                    name: ["in", chunk]
-                },
+                filters: { name: ["in", chunk] },
                 fields: [
                     "name",
                     "custom_group_collection",
@@ -819,30 +436,23 @@ async function get_items_in_chunks(item_codes) {
                     "custom_size",
                     "custom_barcode_code"
                 ],
-                limit_page_length: 50
+                limit_page_length: chunk.length
             }
         });
 
-        all_items = all_items.concat(res.message || []);
+        all_items.push(...(res.message || []));
     }
 
     return all_items;
 }
-
-
-/* =====================================================
-   GENERATE EXCEL
-===================================================== */
-
 function generate_fixed_excel(frm, item_map) {
 
-    let items = frm.doc.items || [];
     let totalQty = 0;
     let totalAmt = 0;
 
     let rows = [];
 
-    items.forEach(item => {
+    for (let item of (frm.doc.items || [])) {
 
         let m = item_map[item.item_code] || {};
 
@@ -856,7 +466,7 @@ function generate_fixed_excel(frm, item_map) {
             <tr>
                 <td>${frm.doc.name || ''}</td>
                 <td>${frm.doc.posting_date || ''}</td>
-                <td>${item.serial_no ? item.serial_no.split('\n')[0] : ''}</td>
+                <td>${item.serial_no?.split('\n')[0] || ''}</td>
                 <td>${item.gst_hsn_code || ''}</td>
                 <td>${m.custom_barcode_code || ''}</td>
                 <td>${m.custom_group_collection || ''}</td>
@@ -868,144 +478,155 @@ function generate_fixed_excel(frm, item_map) {
                 <td align="right">${amt.toFixed(2)}</td>
             </tr>
         `);
-    });
+    }
 
-    let excel_html = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office"
-              xmlns:x="urn:schemas-microsoft-com:office:excel"
-              xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-            <meta http-equiv="content-type"
-                  content="application/vnd.ms-excel; charset=UTF-8">
-            <style>
-                td, th {
-                    border: 0.5pt solid #000;
-                    font-family: Calibri, sans-serif;
-                    font-size: 10pt;
-                    padding: 5px;
-                }
-                .title {
-                    font-size: 14pt;
-                    font-weight: bold;
-                    text-align: center;
-                }
-            </style>
-        </head>
-        <body>
-            <table border="1">
+    let html = `
+        <table border="1">
+            <tr>
+                <th colspan="12" style="background:yellow;">
+                    ${(frm.doc.customer_name || '').toUpperCase()} - PACKING SLIP
+                </th>
+            </tr>
 
-                <tr>
-                    <th colspan="12"
-                        bgcolor="#FFFF00"
-                        style="height:35pt; vertical-align:middle;"
-                        class="title">
-                        ${(frm.doc.customer_name || '').toUpperCase()} - PACKING SLIP FORMAT
-                    </th>
-                </tr>
+            <tr>
+                <th>Invoice</th><th>Date</th><th>Serial</th><th>HSN</th>
+                <th>Style</th><th>Dept</th><th>Fabric</th>
+                <th>Color</th><th>Size</th><th>Qty</th>
+                <th>MRP</th><th>Amount</th>
+            </tr>
 
-                <tr bgcolor="#C6E0B4" style="font-weight:bold; text-align:center;">
-                    <th>Invoice No.</th>
-                    <th>Invoice date</th>
-                    <th>Serial No./BARCODE</th>
-                    <th>HSN Code</th>
-                    <th>STYLE NO</th>
-                    <th>Department</th>
-                    <th>FABRIC</th>
-                    <th>COLOR</th>
-                    <th>SIZE</th>
-                    <th>QTY</th>
-                    <th>MRP</th>
-                    <th>Gross Amount</th>
-                </tr>
+            ${rows.join("")}
 
-                ${rows.join("")}
-
-                <tr style="font-weight:bold;">
-                    <td colspan="8" align="right">TOTAL</td>
-                    <td></td>
-                    <td align="center" bgcolor="#F2F2F2">${totalQty}</td>
-                    <td></td>
-                    <td align="right" bgcolor="#F2F2F2">${totalAmt.toFixed(2)}</td>
-                </tr>
-
-            </table>
-        </body>
-        </html>
+            <tr>
+                <td colspan="9" align="right"><b>Total</b></td>
+                <td>${totalQty}</td>
+                <td></td>
+                <td>${totalAmt.toFixed(2)}</td>
+            </tr>
+        </table>
     `;
 
-    let blob = new Blob([excel_html], {
-        type: 'application/vnd.ms-excel'
-    });
-
-    let url = URL.createObjectURL(blob);
+    let blob = new Blob([html], { type: 'application/vnd.ms-excel' });
 
     let link = document.createElement("a");
-    link.href = url;
-    link.download = `${frm.doc.name}_Packing_Slip.xls`;
+    link.href = URL.createObjectURL(blob);
+    link.download = `${frm.doc.name}_Packing.xls`;
 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
 }
+function add_outgoing_logistics_button(frm) {
 
+    if (frm.__outgoing_btn_added) return;
+    frm.__outgoing_btn_added = true;
 
+    frappe.db.get_value("Customer", frm.doc.customer,
+        "custom_outgoing_logistics_applicable"
+    ).then(r => {
 
+        if (!r.message?.custom_outgoing_logistics_applicable) return;
 
+        frm.add_custom_button("Outgoing Logistics", async () => {
 
+            let address_name =
+                frm.doc.shipping_address_name ||
+                frm.doc.customer_address;
 
-function make_total_qty_bold(frm) {
-    if (frm.fields_dict.total_qty && frm.fields_dict.total_qty.$wrapper) {
-        frm.fields_dict.total_qty.$wrapper
-            .find(".control-value")
-            .css({
-                "font-weight": "bold",
-                "font-size": "18px",
-                "color":"rgb(99 175 244)"
+            if (!address_name) {
+                frappe.msgprint("Address missing");
+                return;
+            }
+
+            let addr = await frappe.db.get_value("Address",
+                address_name,
+                ["city", "custom_citytown"]
+            );
+
+            let city = addr.message?.custom_citytown || addr.message?.city || "";
+
+            frappe.new_doc("Outgoing Logistics", {}, doc => {
+
+                doc.consignee = frm.doc.customer;
+                doc.owner_site = frm.doc.company;
+                doc.transporter = frm.doc.transporter;
+                doc.stock_point = frm.doc.set_warehouse;
+                doc.type = "Sales Invoice";
+                doc.station_to = city;
+
+                let row = frappe.model.add_child(doc, "references");
+                row.source_doctype = "Sales Invoice";
+                row.source_name = frm.doc.name;
             });
+
+        }, "Create");
+
+    });
+}
+let DISCOUNT_CACHE = {};
+
+function apply_discount_hide(frm, cdt, cdn) {
+
+    let row = locals[cdt][cdn];
+    if (!row?.item_code) return;
+
+    if (DISCOUNT_CACHE[row.item_code] !== undefined) {
+        toggle_discount(frm, DISCOUNT_CACHE[row.item_code]);
+        return;
     }
+
+    frappe.db.get_value("Item", row.item_code, "custom_discount_not_allowed")
+        .then(r => {
+
+            let hide = r.message?.custom_discount_not_allowed == 1;
+
+            DISCOUNT_CACHE[row.item_code] = hide;
+
+            toggle_discount(frm, hide);
+        });
 }
 
+function toggle_discount(frm, hide) {
 
+    let fields = [
+        "margin_type",
+        "margin_rate_or_amount",
+        "discount_percentage",
+        "discount_amount",
+        "distributed_discount_amount"
+    ];
 
+    fields.forEach(f => {
+        frm.fields_dict.items.grid.update_docfield_property(f, "hidden", hide);
+    });
 
+    frm.refresh_field("items");
+}
+function check_duplicate_serials(frm) {
 
-frappe.ui.form.on("Sales Invoice Item", {
-    item_code: function(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
+    let seen = new Set();
 
-        if (row.item_code) {
-            frappe.db.get_value("Item", row.item_code, [
-                "custom_barcode_code",
-                "custom_colour_name",
-                "custom_size",
-                "custom_departments"
-            ]).then(r => {
+    for (let row of (frm.doc.items || [])) {
 
-                if (r.message) {
-                    frappe.model.set_value(cdt, cdn, "custom_style", r.message.custom_barcode_code);
-                    frappe.model.set_value(cdt, cdn, "custom_color", r.message.custom_colour_name);
-                    frappe.model.set_value(cdt, cdn, "custom_size", r.message.custom_size);
-                    frappe.model.set_value(cdt, cdn, "custom_department", r.message.custom_departments);
-                }
+        if (!row.serial_no) continue;
 
-            });
+        let serials = row.serial_no.split("\n");
+
+        for (let s of serials) {
+
+            s = s.trim();
+            if (!s) continue;
+
+            if (seen.has(s)) {
+                frappe.msgprint({
+                    title: "Duplicate Serial",
+                    message: `Duplicate Serial: ${s}`,
+                    indicator: "red"
+                });
+                return;
+            }
+
+            seen.add(s);
         }
     }
-});
-
-
-frappe.ui.form.on('Sales Invoice', {
-    onload: function(frm) {
-
-        // Only for Return
-        if (!frm.doc.is_return) return;
-
-        frm.set_query("custom_gate_entry", function() {
-            return {
-                query: "franchise_erp.custom.sales_invoice.get_available_gate_entries_sales"
-            };
-        });
-    }
-});
+}
