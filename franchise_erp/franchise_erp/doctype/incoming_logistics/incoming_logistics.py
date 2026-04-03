@@ -176,11 +176,50 @@ class IncomingLogistics(Document):
 
         # 🔹 Extract numeric part from Incoming Logistics name
         # TPL-IL-00125-2025-2026 → 00125
+        # try:
+        #     series_no = self.name.split("/")[2]
+        # except Exception:
+        #     frappe.throw("Invalid Incoming Logistics Naming Series")
+        import re
+
         try:
-            series_no = self.name.split("/")[2]
+            name = self.name
+
+            # ===============================
+            # 🔥 CASE 1 → New FY format
+            # IL/26-27/00005
+            # ===============================
+            if "/" in name:
+                parts = name.split("/")
+                series_no = parts[-1]          # 00005
+                barcode_prefix = f"{parts[0]}" # IL
+
+            # ===============================
+            # 🔥 CASE 2 → Old format
+            # TPL-IL-00088-2025-2026
+            # ===============================
+            else:
+                parts = name.split("-")
+
+                # TPL-IL-00088-2025-2026
+                # index: 0   1   2
+                series_no = parts[2]           # 00088
+                barcode_prefix = parts[1]      # IL
+
         except Exception:
             frappe.throw("Invalid Incoming Logistics Naming Series")
 
+        # padding = max(2, len(str(qty)))
+
+        # for i in range(qty):
+        #     box_no = str(i + 1).zfill(padding)
+
+        #     self.append("gate_entry_box_barcode", {
+        #         "incoming_logistics_no": self.name,
+        #         "box_barcode": f"{prefix}-{series_no}-{box_no}",
+        #         "total_barcode_qty": qty,
+        #         "status": "Pending"
+        #     })
         padding = max(2, len(str(qty)))
 
         for i in range(qty):
