@@ -1,102 +1,3 @@
-# # import frappe
-
-# # def short_fy_naming(doc, method=None):
-# #     try:
-# #         if not doc.name:
-# #             return
-
-# #         # Only run when FY present
-# #         if "202" not in doc.name:
-# #             return
-
-# #         name = doc.name
-# #         parts = name.split("-")
-
-# #         for i in range(len(parts)-1):
-# #             if len(parts[i]) == 4 and parts[i].isdigit():
-# #                 if len(parts[i+1]) == 4 and parts[i+1].isdigit():
-
-# #                     short_fy = parts[i][-2:] + "-" + parts[i+1][-2:]
-# #                     full_fy = parts[i] + "-" + parts[i+1]
-
-# #                     doc.name = name.replace(full_fy, short_fy)
-# #                     break
-
-# #     except Exception:
-# #         frappe.log_error(frappe.get_traceback(), "FY Short Naming Error")
-
-# # import frappe
-
-# # def short_fy_naming(doc, method=None):
-# #     try:
-# #         # ✅ ONLY FOR NEW DOC
-# #         if not doc.is_new():
-# #             return
-
-# #         if not doc.name:
-# #             return
-
-# #         name = doc.name
-
-# #         separators = ["-", "/"]
-
-# #         for sep in separators:
-# #             parts = name.split(sep)
-
-# #             for part in parts:
-# #                 if len(part) == 9 and "-" in part:
-# #                     years = part.split("-")
-
-# #                     if (
-# #                         len(years) == 2
-# #                         and years[0].isdigit()
-# #                         and years[1].isdigit()
-# #                         and len(years[0]) == 4
-# #                         and len(years[1]) == 4
-# #                     ):
-# #                         short_fy = years[0][-2:] + "-" + years[1][-2:]
-# #                         doc.name = name.replace(part, short_fy)
-# #                         return
-
-# #     except Exception:
-# #         frappe.log_error(frappe.get_traceback(), "FY Short Naming Error")
-
-
-# import frappe
-# from frappe.utils import getdate
-
-# def get_fy_short(date):
-#     year = getdate(date).year
-
-#     if getdate(date).month >= 4:
-#         start = year
-#         end = year + 1
-#     else:
-#         start = year - 1
-#         end = year
-
-#     return f"{str(start)[2:]}-{str(end)[2:]}"   # no dash = shorter
-
-# def si_autoname(doc, method=None):
-#     fy = get_fy_short(doc.posting_date or frappe.utils.today())
-
-#     # SUPER SHORT FORMAT (GST SAFE)
-#     series = f"SI/{fy}/"
-
-#     doc.name = frappe.model.naming.make_autoname(series + ".#####")
-
-
-# def get_fy_short(date):
-#     year = getdate(date).year
-
-#     if getdate(date).month >= 4:
-#         start = year
-#         end = year + 1
-#     else:
-#         start = year - 1
-#         end = year
-
-#     return f"{str(start)[2:]}-{str(end)[2:]}"
 
 import frappe
 from frappe.utils import getdate
@@ -173,7 +74,11 @@ def get_doc_date(doc):
     if doc.doctype == "Subcontracting Order":
         if hasattr(doc, "custom_posting_date") and doc.custom_posting_date:
             return getdate(doc.custom_posting_date)
-            
+        
+    if doc.doctype == "Incoming Logistics":
+        if hasattr(doc, "invoice_date") and doc.invoice_date:
+            return getdate(doc.invoice_date)
+             
     if hasattr(doc, "posting_date") and doc.posting_date:
         return getdate(doc.posting_date)
 
@@ -183,9 +88,6 @@ def get_doc_date(doc):
     if hasattr(doc, "custom_posting_date") and doc.schedule_date:
         return getdate(doc.custom_posting_date)
 
-    if hasattr(doc, "invoice_date") and doc.invoice_date:
-        return getdate(doc.invoice_date)
-    
     if hasattr(doc, "document_date") and doc.document_date:
         return getdate(doc.document_date)
 

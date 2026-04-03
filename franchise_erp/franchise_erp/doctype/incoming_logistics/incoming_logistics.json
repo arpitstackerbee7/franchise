@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "naming_series:",
+ "autoname": "naming_series:IL./.FY./.",
  "creation": "2026-01-02 15:56:40.915759",
  "default_view": "List",
  "doctype": "DocType",
@@ -406,7 +406,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-04-02 15:18:30.113573",
+ "modified": "2026-04-03 14:30:51.768890",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
