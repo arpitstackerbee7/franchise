@@ -3338,15 +3338,15 @@
    "_comments": null,
    "_liked_by": null,
    "_user_tags": null,
-   "creation": "2026-04-03 15:54:14.061605",
+   "creation": "2026-04-03 16:18:15.942983",
    "default_value": null,
    "doc_type": "Sales Invoice",
    "docstatus": 0,
    "doctype_or_field": "DocField",
    "field_name": "naming_series",
    "idx": 0,
-   "is_system_generated": 1,
-   "modified": "2026-04-03 15:54:14.061605",
+   "is_system_generated": 0,
+   "modified": "2026-04-03 16:18:15.942983",
    "modified_by": "Administrator",
    "module": null,
    "name": "Sales Invoice-naming_series-default",
@@ -3354,7 +3354,7 @@
    "property": "default",
    "property_type": "Text",
    "row_name": null,
-   "value": "SINV-.YY.-"
+   "value": ""
   },
   {
    "_assign": null,
@@ -3400,7 +3400,7 @@
    "property": "options",
    "property_type": "Text",
    "row_name": null,
-   "value": "SINV-.YY.-\nSRET-.YY.-\nACC-SINV-.YYYY.-\nACC-SINV-RET-.YYYY.-"
+   "value": "SINV-.YY.-\nSRET-.YY.-\nACC-SINV-.YYYY.-\nACC-SINV-RET-.YYYY.-\nSI/.FY./"
   },
   {
    "_assign": null,

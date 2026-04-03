@@ -48,20 +48,54 @@ RETURN_PREFIX_MAP = {
 
 
 # 🔥 GENERIC FUNCTION (WORKS FOR ALL DOCTYPES)
-def get_next_number(doctype, series):
-    last = frappe.db.sql(f"""
+# def get_next_number(doctype, series):
+#     last = frappe.db.sql(f"""
+#         SELECT name FROM `tab{doctype}`
+#         WHERE name LIKE %s
+#         ORDER BY name DESC
+#         LIMIT 1
+#     """, (series + "%",))
+
+#     if last:
+#         last_name = last[0][0]
+#         last_number = int(last_name.split("/")[-1])
+#         return str(last_number + 1).zfill(5)
+#     else:
+#         return "00001"
+
+import re
+
+import frappe
+import re
+
+import frappe
+import re
+
+def get_next_number(doctype, prefix, digits=5):
+    names = frappe.db.sql(f"""
         SELECT name FROM `tab{doctype}`
         WHERE name LIKE %s
-        ORDER BY name DESC
-        LIMIT 1
-    """, (series + "%",))
+    """, (f"{prefix}%",), as_dict=True)
 
-    if last:
-        last_name = last[0][0]
-        last_number = int(last_name.split("/")[-1])
-        return str(last_number + 1).zfill(5)
-    else:
-        return "00001"
+    max_no = 0
+
+    for row in names:
+        name = row.name
+
+        # ✅ remove amend suffix (-1, -2)
+        clean_name = re.sub(r"-\d+$", "", name)
+
+        # ✅ extract last number
+        match = re.search(r'(\d+)(?!.*\d)', clean_name)
+
+        if match:
+            num = int(match.group(1))
+            if num > max_no:
+                max_no = num
+
+    next_no = max_no + 1
+
+    return str(next_no).zfill(digits)
 
 import frappe
 from frappe.utils import getdate
