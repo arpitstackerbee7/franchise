@@ -1,355 +1,63 @@
-frappe.ui.form.on("Purchase Receipt", {
-    refresh(frm) {
-        if (frm.doc.docstatus === 0) {
-            frm.add_custom_button(
-                __("Gate Entry"),
-                () => {
-                    open_gate_entry_mapper(frm);
-                },
-                __("Get Items From")
-            );
-        }
-    },
-    onload(frm) {
-        if (!frm.is_new()) return;
+// ===================================
+// 🚀 GLOBAL CACHE
+// ===================================
+let barcode_cache = {};
+let serial_cache = new Set();
+let total_qty_cache = 0;
 
-        if (frm.doc.is_subcontracted===1)
-        return;
 
-        (frm.doc.items || []).forEach(row => {
-            if (row.purchase_order_item) {
-                row.qty = 0;
-            }
-        });
-        (frm.doc.items || []).forEach(row => {
-            if (row.purchase_order_item) {
-                row.serial_no = "";
-            }
-        });
-
-        frm.refresh_field("items");
-    },
-    // custom_scan_serial_no(frm) {
-    //     let scanned_value = frm.doc.custom_scan_serial_no;
-    //     if (!scanned_value) return;
-
-    //     scanned_value = scanned_value.trim();
-
-    //     // -----------------------------
-    //     // 1️⃣ Check if scanned value is a BARCODE
-    //     // -----------------------------
-    //     frappe.call({
-    //         method: "franchise_erp.custom.purchase_reciept.get_item_by_barcode",
-    //         args: { barcode: scanned_value },
-    //         callback: function(res) {
-
-    //             // Barcode found
-    //             if (res.message && res.message.item_code) {
-    //                 let item_code = res.message.item_code;
-
-    //                 // 🔹 Check if same item already exists in doc → increase qty
-    //                 let existing_row = (frm.doc.items || []).find(d => d.item_code === item_code);
-    //                 if (existing_row) {
-    //                     let current_qty = existing_row.qty || 0;
-    //                     frappe.model.set_value(existing_row.doctype, existing_row.name, "qty", current_qty + 1);
-    //                     frm.refresh_field("items");
-    //                     frm.set_value("custom_scan_serial_no", "");
-    //                     return; // STOP further execution
-    //                 }
-
-    //                 // 🔹 Check for empty row
-    //                 let empty_row = (frm.doc.items || []).find(d => !d.item_code);
-    //                 let row;
-    //                 if (empty_row) {
-    //                     row = empty_row;
-    //                 } else {
-    //                     row = frm.add_child("items");
-    //                 }
-
-    //                 // Set item_code like manual selection
-    //                 frappe.model.set_value(row.doctype, row.name, "item_code", item_code);
-    //                 // Default qty 1
-    //                 frappe.model.set_value(row.doctype, row.name, "qty", 1);
-
-    //                 frm.refresh_field("items");
-    //                 frm.set_value("custom_scan_serial_no", "");
-    //                 return; // STOP further execution
-    //             }
-
-    //             // -----------------------------
-    //             // 2️⃣ SERIAL NUMBER SCAN LOGIC (UNCHANGED)
-    //             // -----------------------------
-    //             for (let row of (frm.doc.items || [])) {
-    //                 if (row.serial_no) {
-    //                     let serials = row.serial_no.split("\n").map(s => s.trim());
-    //                     if (serials.includes(scanned_value)) {
-    //                         frm.set_value("custom_scan_serial_no", "");
-    //                         frappe.throw(
-    //                             `Serial No <b>${scanned_value}</b> already scanned in this GRN`
-    //                         );
-    //                     }
-    //                 }
-    //             }
-
-    //             let po_items = (frm.doc.items || [])
-    //                 .filter(d => d.purchase_order_item)
-    //                 .map(d => d.purchase_order_item);
-
-    //             if (!po_items.length) {
-    //                 frm.set_value("custom_scan_serial_no", "");
-    //                 frappe.throw("No Purchase Order linked in items");
-    //             }
-
-    //             frappe.call({
-    //                 method: "franchise_erp.custom.purchase_reciept.validate_po_serial",
-    //                 args: {
-    //                     scanned_serial: scanned_value,
-    //                     po_items
-    //                 },
-    //                 callback: function(r) {
-    //                     if (!r.message) return;
-
-    //                     let { purchase_order_item } = r.message;
-
-    //                     let row = frm.doc.items.find(
-    //                         d => d.purchase_order_item === purchase_order_item
-    //                     );
-
-    //                     if (!row) {
-    //                         frappe.throw("Matching GRN item row not found");
-    //                     }
-
-    //                     let serials = row.serial_no
-    //                         ? row.serial_no.split("\n").map(s => s.trim())
-    //                         : [];
-
-    //                     serials.push(scanned_value);
-    //                     row.serial_no = serials.join("\n");
-    //                     row.qty = (row.qty || 0) + 1;
-
-    //                     frm.refresh_field("items");
-    //                 },
-    //                 always() {
-    //                     frm.set_value("custom_scan_serial_no", "");
-    //                 }
-    //             });
-    //         }
-            
-    //     });
-    // }
-});
-// ================================
-// 🔁 Helper: Update Total Qty
-// ================================
-function update_total_qty(frm) {
-    let total_qty = 0;
+// ===================================
+// 🚀 BUILD CACHE (SAFE)
+// ===================================
+function build_initial_cache(frm) {
+    serial_cache.clear();
+    total_qty_cache = 0; // 🔥 VERY IMPORTANT FIX
 
     (frm.doc.items || []).forEach(row => {
-        total_qty += flt(row.qty || 0);
-    });
+        total_qty_cache += flt(row.qty || 0);
 
-    frm.set_value("total_qty", total_qty);
+        if (row.serial_no) {
+            row.serial_no.split("\n").forEach(s => {
+                if (s) serial_cache.add(s.trim());
+            });
+        }
+    });
+}
+
+
+// ===================================
+// 🚀 FAST TOTAL UPDATE
+// ===================================
+function update_total_qty_fast(frm, step) {
+    total_qty_cache += step;
+
+    // 🔥 SAFETY
+    if (isNaN(total_qty_cache) || total_qty_cache < 0) {
+        total_qty_cache = 0;
+        (frm.doc.items || []).forEach(row => {
+            total_qty_cache += flt(row.qty || 0);
+        });
+    }
+
+    frm.doc.total_qty = total_qty_cache;
     frm.refresh_field("total_qty");
 }
 
+
 // ===================================
-// 📦 Main Scan Function
+// 🚀 MAP GATE ENTRY
 // ===================================
-frappe.ui.form.on("Purchase Receipt", {
-
-    custom_scan_serial_no(frm) {
-        let scanned_value = frm.doc.custom_scan_serial_no;
-        if (!scanned_value) return;
-
-        scanned_value = scanned_value.trim();
-
-        // ===================================
-        // 1️⃣ BARCODE SCAN CHECK
-        // ===================================
-        frappe.call({
-            method: "franchise_erp.custom.purchase_reciept.get_item_by_barcode",
-            args: { barcode: scanned_value },
-            callback: function(res) {
-
-                if (res.message && res.message.item_code) {
-                    let item_code = res.message.item_code;
-
-                    // 🔹 If item already exists → increase qty
-                    let existing_row = (frm.doc.items || []).find(
-                        d => d.item_code === item_code
-                    );
-
-                    if (existing_row) {
-                        let current_qty = existing_row.qty || 0;
-
-                        frappe.model.set_value(
-                            existing_row.doctype,
-                            existing_row.name,
-                            "qty",
-                            current_qty + 1
-                        );
-
-                        frm.refresh_field("items");
-                        update_total_qty(frm);
-                        frm.set_value("custom_scan_serial_no", "");
-                        return;
-                    }
-
-                    // 🔹 Use empty row or create new
-                    let empty_row = (frm.doc.items || []).find(d => !d.item_code);
-                    let row = empty_row || frm.add_child("items");
-
-                    frappe.model.set_value(row.doctype, row.name, "item_code", item_code);
-                    // frappe.model.set_value(row.doctype, row.name, "qty", 1);
-                    
-                    // added by mayuri
-                    // Exact Fix for New Barcode Row
-                    let step = frm.doc.is_return ? -1 : 1;
-                    frappe.model.set_value(row.doctype, row.name, "qty", step);
-                    frappe.model.set_value(row.doctype, row.name, "received_qty", step);
-
-                    frm.refresh_field("items");
-                    update_total_qty(frm);
-                    frm.set_value("custom_scan_serial_no", "");
-                    return;
-                }
-
-                // ===================================
-                // 2️⃣ DUPLICATE SERIAL CHECK (CURRENT GRN)
-                // ===================================
-                for (let row of (frm.doc.items || [])) {
-                    if (row.serial_no) {
-                        let serials = row.serial_no
-                            .split("\n")
-                            .map(s => s.trim());
-
-                        if (serials.includes(scanned_value)) {
-                            frm.set_value("custom_scan_serial_no", "");
-                            frappe.throw(
-                                `Serial No <b>${scanned_value}</b> already scanned in this GRN`
-                            );
-                        }
-                    }
-                }
-
-                // ===================================
-                // 3️⃣ SERIAL VALIDATION FROM PO
-                // ===================================
-                let po_items = (frm.doc.items || [])
-                    .filter(d => d.purchase_order_item)
-                    .map(d => d.purchase_order_item);
-
-                if (!po_items.length) {
-                    frm.set_value("custom_scan_serial_no", "");
-                    frappe.throw("No Purchase Order linked in items");
-                }
-
-                frappe.call({
-                    method: "franchise_erp.custom.purchase_reciept.validate_po_serial",
-                    args: {
-                        scanned_serial: scanned_value,
-                        po_items
-                    },
-                    callback: function(r) {
-                        if (!r.message) return;
-
-                        let { purchase_order_item } = r.message;
-
-                        let row = frm.doc.items.find(
-                            d => d.purchase_order_item === purchase_order_item
-                        );
-
-                        if (!row) {
-                            frappe.throw("Matching GRN item row not found");
-                        }
-
-                        let serials = row.serial_no
-                            ? row.serial_no.split("\n").map(s => s.trim())
-                            : [];
-
-                        serials.push(scanned_value);
-
-                        row.serial_no = serials.join("\n");
-                        // row.qty = (row.qty || 0) + 1;
-
-                        // added by mayuri
-                        // Exact Fix for Serial Number Scan
-                        let step = frm.doc.is_return ? -1 : 1;
-                        row.qty = flt(row.qty || 0) + step;
-                        row.received_qty = row.qty; // Very important to fix mismatch error
-
-                        frm.refresh_field("items");
-                        update_total_qty(frm);
-                    },
-                    always() {
-                        frm.set_value("custom_scan_serial_no", "");
-                    }
-                });
-            }
-        });
-    }
-});
-
-// function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
-
-//     if (!gate_entry) {
-//         frappe.msgprint(__("Gate Entry not selected"));
-//         return;
-//     }
-
-//     frappe.call({
-//         method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.make_pr_from_gate_entry",
-//         args: {
-//             gate_entry: gate_entry
-//         },
-//         freeze: true,
-//         freeze_message: __("Creating Purchase Receipt from Gate Entry..."),
-//         callback(r) {
-//             if (!r.message) {
-//                 frappe.msgprint(__("Failed to create Purchase Receipt"));
-//                 return;
-//             }
-
-//             // 🔥 VERY IMPORTANT
-//             // This syncs mapped doc (items + taxes + totals)
-//             frappe.model.sync(r.message);
-
-//             // Open newly created PR
-//             frappe.set_route("Form", "Purchase Receipt", r.message.name);
-//         }
-//     });
-// }
-
-
-
-
-
 function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
 
-    let gate_entries = [];
-
-    if (!gate_entry) {
-        frappe.msgprint(__("Gate Entry not selected"));
-        return;
-    }
-
-    if (Array.isArray(gate_entry)) {
-        gate_entries = gate_entry;
-    } else {
-        gate_entries = [gate_entry];
-    }
-
-    console.log("Gate Entries:", gate_entries);
+    let gate_entries = Array.isArray(gate_entry) ? gate_entry : [gate_entry];
 
     frappe.call({
         method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.make_pr_from_gate_entries",
-        args: {
-            gate_entries: gate_entries
-        },
+        args: { gate_entries },
         freeze: true,
-        freeze_message: __("Creating Purchase Receipt from Gate Entries..."),
-        callback(r) {
+        freeze_message: __("Creating Purchase Receipt..."),
 
+        callback(r) {
             if (!r.message) {
                 frappe.msgprint(__("Failed to create Purchase Receipt"));
                 return;
@@ -362,81 +70,23 @@ function map_gate_entry_to_purchase_receipt(frm, gate_entry) {
 }
 
 
-
-
-
-// function open_gate_entry_mapper(frm) {
-//     if (!frm.doc.supplier) {
-//         frappe.throw(__("Please select Supplier first"));
-//     }
-
-//     frappe.call({
-//         method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_pending_gate_entries",
-//         args: {
-//             supplier: frm.doc.supplier
-//         },
-//         callback(r) {
-//             let data = r.message || [];
-
-//             if (!data.length) {
-//                 frappe.msgprint(__("No pending Gate Entries found"));
-//                 return;
-//             }
-
-//             let dialog = new frappe.ui.form.MultiSelectDialog({
-//                 doctype: "Gate Entry",
-//                 target: frm,
-
-//                 setters: {},
-
-//                 get_query() {
-//                     return {
-//                         filters: {
-//                             name: ["in", data.map(d => d.gate_entry)],
-//                             supplier: frm.doc.consignor
-//                         }
-//                     };
-//                 },
-
-//                 columns: [
-//                     { fieldname: "name", label: __("Gate Entry") },
-//                     { fieldname: "consignor", label: __("Supplier") }
-//                 ],
-
-//                 action(selections) {
-//                     if (!selections.length) {
-//                         frappe.msgprint(__("Please select at least one Gate Entry"));
-//                         return;
-//                     }
-
-//                     selections.forEach(ge => {
-//                         map_gate_entry_to_purchase_receipt(frm, ge);
-//                     });
-
-//                     dialog.dialog.hide();
-//                 }
-//             });
-//         }
-//     });
-// }
-
-
-
-
-
-
-
+// ===================================
+// 🚀 OPEN GATE ENTRY
+// ===================================
 function open_gate_entry_mapper(frm) {
+
     if (!frm.doc.supplier) {
         frappe.throw(__("Please select Supplier first"));
     }
 
     frappe.call({
         method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_pending_gate_entries",
-        args: {
-            supplier: frm.doc.supplier
-        },
+        args: { supplier: frm.doc.supplier },
+        freeze: true,
+        freeze_message: __("Fetching Gate Entries..."),
+
         callback(r) {
+
             let data = r.message || [];
 
             if (!data.length) {
@@ -444,11 +94,12 @@ function open_gate_entry_mapper(frm) {
                 return;
             }
 
+            let names = data.map(d => d.gate_entry);
+
             let dialog = new frappe.ui.form.MultiSelectDialog({
                 doctype: "Gate Entry",
                 target: frm,
 
-                // 👇 VERY IMPORTANT
                 setters: {
                     consignor: frm.doc.supplier
                 },
@@ -456,7 +107,7 @@ function open_gate_entry_mapper(frm) {
                 get_query() {
                     return {
                         filters: {
-                            name: ["in", data.map(d => d.gate_entry)],
+                            name: ["in", names],
                             consignor: frm.doc.supplier
                         }
                     };
@@ -483,9 +134,7 @@ function open_gate_entry_mapper(frm) {
                         return;
                     }
 
-                    // 🔥 SINGLE CALL (IMPORTANT FIX)
                     map_gate_entry_to_purchase_receipt(frm, selections);
-
                     dialog.dialog.hide();
                 }
             });
@@ -493,84 +142,236 @@ function open_gate_entry_mapper(frm) {
     });
 }
 
-frappe.ui.form.on("Purchase Receipt Item", {
-    item_code: function(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
 
-        if (row.item_code) {
-            frappe.db.get_value("Item", row.item_code, [
-                "custom_barcode_code",
-                "custom_colour_name",
-                "custom_size",
-                "custom_departments"
-            ]).then(r => {
+// ===================================
+// 🚀 HANDLE BARCODE
+// ===================================
+function handle_barcode(frm, item_code, step) {
 
-                if (r.message) {
-                    frappe.model.set_value(cdt, cdn, "custom_style", r.message.custom_barcode_code);
-                    frappe.model.set_value(cdt, cdn, "custom_color", r.message.custom_colour_name);
-                    frappe.model.set_value(cdt, cdn, "custom_size", r.message.custom_size);
-                    frappe.model.set_value(cdt, cdn, "custom_department", r.message.custom_departments);
+    let row = frm.doc.items.find(d => d.item_code === item_code);
+
+    if (!row) {
+        row = frm.add_child("items");
+        row.item_code = item_code;
+        row.qty = step;
+        row.received_qty = step;
+    } else {
+        row.qty = flt(row.qty || 0) + step;
+        row.received_qty = row.qty;
+    }
+
+    update_total_qty_fast(frm, step);
+
+    // 🔥 ONLY ROW REFRESH (IMPORTANT)
+    frm.fields_dict.items.grid.refresh_row(row.name);
+}
+
+
+// ===================================
+// 🚀 HANDLE SERIAL
+// ===================================
+function handle_serial(frm, serial, step) {
+
+    let po_items = (frm.doc.items || [])
+        .filter(d => d.purchase_order_item)
+        .map(d => d.purchase_order_item);
+
+    if (!po_items.length) {
+        frappe.throw("No Purchase Order linked");
+    }
+
+    frappe.call({
+        method: "franchise_erp.custom.purchase_reciept.validate_po_serial",
+        args: {
+            scanned_serial: serial,
+            po_items
+        },
+        freeze: false,
+
+        callback: function(r) {
+
+            if (!r.message) return;
+
+            let row = frm.doc.items.find(
+                d => d.purchase_order_item === r.message.purchase_order_item
+            );
+
+            if (!row) {
+                frappe.throw("Row not found");
+            }
+
+            if (!row.serial_no) row.serial_no = "";
+
+            row.serial_no += (row.serial_no ? "\n" : "") + serial;
+
+            row.qty = flt(row.qty || 0) + step;
+            row.received_qty = row.qty;
+
+            serial_cache.add(serial);
+
+            update_total_qty_fast(frm, step);
+
+            frm.fields_dict.items.grid.refresh_row(row.name);
+        }
+    });
+}
+
+
+// ===================================
+// 🚀 MAIN FORM
+// ===================================
+frappe.ui.form.on("Purchase Receipt", {
+
+    onload(frm) {
+
+        if (!frm.is_new()) {
+            build_initial_cache(frm);
+            return;
+        }
+
+        if (frm.doc.is_subcontracted === 1) return;
+
+        (frm.doc.items || []).forEach(row => {
+            if (row.purchase_order_item) {
+                row.qty = 0;
+                row.serial_no = "";
+            }
+        });
+
+        build_initial_cache(frm);
+
+        frm.refresh_field("items");
+    },
+
+    refresh(frm) {
+        if (frm.doc.docstatus === 0) {
+            frm.add_custom_button(
+                __("Gate Entry"),
+                () => open_gate_entry_mapper(frm),
+                __("Get Items From")
+            );
+        }
+    },
+
+    // ===================================
+    // 🚀 SCAN (OPTIMIZED)
+    // ===================================
+    custom_scan_serial_no(frm) {
+
+        let scanned_value = frm.doc.custom_scan_serial_no;
+            if (!scanned_value) return;
+
+            scanned_value = scanned_value.trim();
+
+            // 🔥 INSTANT CLEAR (VERY IMPORTANT FIX)
+            frm.set_value("custom_scan_serial_no", "");
+
+        let step = frm.doc.is_return ? -1 : 1;
+
+        // ✅ barcode cache
+        if (barcode_cache[scanned_value]) {
+            handle_barcode(frm, barcode_cache[scanned_value], step);
+            frm.set_value("custom_scan_serial_no", "");
+            return;
+        }
+
+        // ✅ serial duplicate check
+        if (serial_cache.has(scanned_value)) {
+            frm.set_value("custom_scan_serial_no", "");
+            frappe.throw(`Serial No ${scanned_value} already scanned`);
+        }
+
+        frappe.call({
+            method: "franchise_erp.custom.purchase_reciept.get_item_by_barcode",
+            args: { barcode: scanned_value },
+            freeze: false,
+
+            callback: function(res) {
+
+                if (res.message && res.message.item_code) {
+
+                    barcode_cache[scanned_value] = res.message.item_code;
+
+                    handle_barcode(frm, res.message.item_code, step);
+                    frm.set_value("custom_scan_serial_no", "");
+                    return;
                 }
 
-            });
-        }
+                handle_serial(frm, scanned_value, step);
+            }
+        });
     }
 });
-frappe.ui.form.on('Purchase Receipt', {
-    before_submit: async function (frm) {
 
-        // ✅ RUN ONLY WHEN custom_source_sales_invoice IS NOT EMPTY
-        if (!frm.doc.custom_source_sales_invoice) {
-            return; // kuch bhi mat karo
-        }
 
-        const current_user = frappe.session.user;
-        const is_return = frm.doc.is_return;
-        const owner = frm.doc.owner;
-        const represents_company = frm.doc.represents_company;
-        const modify = frm.doc.modified_by;
+// ===================================
+// 🚀 ITEM AUTO FILL
+// ===================================
+frappe.ui.form.on("Purchase Receipt Item", {
+    item_code(frm, cdt, cdn) {
 
-        // ✅ Allow Administrator
-        if (current_user === "Administrator") {
-            return;
-        }
+        let row = locals[cdt][cdn];
 
-        //Normal Purchase Receipt: owner cannot submit
-        if (is_return === 0 && current_user === owner && represents_company) {
+        if (!row.item_code) return;
+
+        frappe.db.get_value("Item", row.item_code, [
+            "custom_barcode_code",
+            "custom_colour_name",
+            "custom_size",
+            "custom_departments"
+        ]).then(r => {
+
+            if (!r.message) return;
+
+            frappe.model.set_value(cdt, cdn, "custom_style", r.message.custom_barcode_code);
+            frappe.model.set_value(cdt, cdn, "custom_color", r.message.custom_colour_name);
+            frappe.model.set_value(cdt, cdn, "custom_size", r.message.custom_size);
+            frappe.model.set_value(cdt, cdn, "custom_department", r.message.custom_departments);
+
+        });
+    }
+});
+
+
+// ===================================
+// 🚀 BEFORE SUBMIT
+// ===================================
+frappe.ui.form.on("Purchase Receipt", {
+    before_submit(frm) {
+
+        if (!frm.doc.custom_source_sales_invoice) return;
+
+        if (frappe.session.user === "Administrator") return;
+
+        if (
+            frm.doc.is_return === 0 &&
+            frappe.session.user === frm.doc.owner &&
+            frm.doc.represents_company
+        ) {
             frappe.msgprint("Supplier cannot submit Normal Purchase Receipt");
             frappe.validated = false;
-            return;
         }
-
-
     }
 });
 
-// ------------------------------------ Purchase Receipt------------------------------------------------
-// Fetch default warehouse from SIS Configuration for new Purchase Receipts
+
+// ===================================
+// 🚀 DEFAULT WAREHOUSE
+// ===================================
 frappe.ui.form.on("Purchase Receipt", {
-    company: function(frm) {
-        // Run only for new documents when a company is selected
-        if (frm.is_new() && frm.doc.company) {
-            frappe.db.get_value("SIS Configuration", { company: frm.doc.company }, "warehouse")
-                .then(r => {
-                    if (r.message && r.message.warehouse) {
-                        // 'set_warehouse' is the technical name for 'Accepted Warehouse' field
-                        frm.set_value("set_warehouse", r.message.warehouse);
-                    }
-                });
-        }
+    company(frm) {
+
+        if (!(frm.is_new() && frm.doc.company)) return;
+
+        frappe.db.get_value(
+            "SIS Configuration",
+            { company: frm.doc.company },
+            "warehouse"
+        ).then(r => {
+
+            if (r.message && r.message.warehouse) {
+                frm.set_value("set_warehouse", r.message.warehouse);
+            }
+        });
     }
 });
-
-
-// frappe.ui.form.on("Purchase Receipt Item", {
-//     item_code(frm, cdt, cdn) {
-//         let row = locals[cdt][cdn];
-
-//         if (frm.doc.is_subcontracted) {
-//             frappe.model.set_value(cdt, cdn, "use_serial_batch_fields", 0);
-//             frappe.model.set_value(cdt, cdn, "serial_no", "");
-//         }
-//     }
-// });
