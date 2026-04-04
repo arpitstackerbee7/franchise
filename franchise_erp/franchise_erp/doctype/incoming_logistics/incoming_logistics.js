@@ -29,39 +29,72 @@ frappe.ui.form.on("Incoming Logistics", {
         // ==============================
         if (frm.doc.docstatus !== 1 || frm.doc.status === "Received") return;
 
-        frm.add_custom_button(
-            __("Create Gate Entry"),
-            () => {
+        // frm.add_custom_button(
+        //     __("Create Gate Entry"),
+        //     () => {
 
-                if (!frm.doc.references || !frm.doc.references.length) {
-                    frappe.throw("No references found");
-                }
+        //         if (!frm.doc.references || !frm.doc.references.length) {
+        //             frappe.throw("No references found");
+        //         }
 
-                const refs = frm.doc.references.map(r => ({
-                    source_doctype: r.source_doctype,
-                    source_name: r.source_name
-                }));
-                const barcode = frm.doc.gate_entry_box_barcode.map(r => ({
-                    box_barcode: r.box_barcode,
-                    status: r.status,
-                    incoming_logistics_no: r.incoming_logistics_no,
-                    total_barcode_qty: r.total_barcode_qty
-                }));
+        //         const refs = frm.doc.references.map(r => ({
+        //             source_doctype: r.source_doctype,
+        //             source_name: r.source_name
+        //         }));
+        //         const barcode = frm.doc.gate_entry_box_barcode.map(r => ({
+        //             box_barcode: r.box_barcode,
+        //             status: r.status,
+        //             incoming_logistics_no: r.incoming_logistics_no,
+        //             total_barcode_qty: r.total_barcode_qty
+        //         }));
 
-                frappe.route_options = {
-                    incoming_logistics: frm.doc.name,
-                    owner_site: frm.doc.owner_site,
-                    consignor: frm.doc.consignor,
-                    consignor_customer: frm.doc.consignor_customer,
-                    transporter: frm.doc.transporter,
-                    type: frm.doc.type,
-                    references: refs,
-                    gate_entry_box_barcode:barcode
-                };
-                frappe.set_route("Form", "Gate Entry", "new-gate-entry");
-            },
-            __("Actions")
-        );
+        //         frappe.route_options = {
+        //             incoming_logistics: frm.doc.name,
+        //             owner_site: frm.doc.owner_site,
+        //             consignor: frm.doc.consignor,
+        //             consignor_customer: frm.doc.consignor_customer,
+        //             transporter: frm.doc.transporter,
+        //             type: frm.doc.type,
+        //             references: refs,
+        //             gate_entry_box_barcode:barcode
+        //         };
+        //         frappe.set_route("Form", "Gate Entry", "new-gate-entry");
+                
+        //     },
+        //     __("Actions")
+        // );
+
+        frm.add_custom_button(__("Create Gate Entry"), () => {
+
+    if (!frm.doc.references || !frm.doc.references.length) {
+        frappe.throw("No references found");
+    }
+
+    const refs = frm.doc.references.map(r => ({
+        source_doctype: r.source_doctype,
+        source_name: r.source_name
+    }));
+
+    const barcode = frm.doc.gate_entry_box_barcode.map(r => ({
+        box_barcode: r.box_barcode,
+        status: r.status,
+        incoming_logistics_no: r.incoming_logistics_no,
+        total_barcode_qty: r.total_barcode_qty
+    }));
+
+    frappe.route_options = {
+        incoming_logistics: frm.doc.name,
+        owner_site: frm.doc.owner_site,
+        consignor: frm.doc.consignor,
+        consignor_customer: frm.doc.consignor_customer,
+        transporter: frm.doc.transporter,
+        type: frm.doc.type,
+        _barcodes: barcode   // 🔥 renamed safe key
+    };
+
+    frappe.set_route("Form", "Gate Entry", "new-gate-entry");
+
+}, __("Actions"));
     },
 
     // ✅ ONLY ONE TYPE EVENT

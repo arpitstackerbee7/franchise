@@ -233,3 +233,277 @@ Thank you!"""
             files["file"].close()
             if os.path.exists(file_path):
                 os.remove(file_path)
+
+
+
+
+
+
+
+
+# daily sales for countor send to directors
+import frappe
+from frappe.utils import nowdate, getdate, formatdate
+from frappe.utils.pdf import get_pdf
+import os
+import requests
+
+# for single field mobile no
+# @frappe.whitelist()
+# def send_daily_counter_sales():
+    
+#     today = nowdate()
+#     formatted_date = formatdate(today, "dd-MMM-yy")
+#     # -----------------------------
+#     # GET COUNTER SALES DATA
+#     # -----------------------------
+#     data = frappe.db.sql("""
+#         SELECT 
+#             c.name AS counter_name,
+#             SUM(dni.qty) AS total_qty,
+#             SUM(dni.amount) AS total_amount
+#         FROM `tabDelivery Note` dn
+#         JOIN `tabDelivery Note Item` dni ON dn.name = dni.parent
+#         LEFT JOIN `tabCustomer` c 
+#             ON c.represents_company = dn.company
+#             AND c.is_internal_customer = 1
+#         WHERE 
+#             dn.docstatus = 1
+#             AND DATE(dn.posting_date) = %s
+#         GROUP BY dn.company
+#     """, (today,), as_dict=True)
+
+#     if not data:
+#         return "No data found"
+
+#     # -----------------------------
+#     # CALCULATE TOTAL
+#     # -----------------------------
+#     total_qty = sum([d.total_qty for d in data])
+#     total_amount = sum([d.total_amount for d in data])
+
+#     # -----------------------------
+#     # HTML FOR PDF
+#     # -----------------------------
+#     html = f"""
+#     <h3 style="text-align:center;">Counter Sale Dt - {formatted_date}</h3>
+#     <table border="1" cellspacing="0" cellpadding="5" width="100%">
+#         <tr>
+#             <th>Date</th>
+#             <th>Counter Name</th>
+#             <th>Net Sale Qty</th>
+#             <th>Net Sale Amount</th>
+#         </tr>
+#     """
+
+#     for d in data:
+#         html += f"""
+#         <tr>
+#             <td>{formatted_date}</td>
+#             <td>{d.counter_name}</td>
+#             <td>{int(d.total_qty)}</td>
+#             <td>{int(d.total_amount)}</td>
+#         </tr>
+#         """
+
+#     html += f"""
+#         <tr>
+#             <td><b>Total</b></td>
+#             <td></td>
+#             <td><b>{int(total_qty)}</b></td>
+#             <td><b>{int(total_amount)}</b></td>
+#         </tr>
+#     </table>
+#     """
+
+#     # -----------------------------
+#     # GENERATE PDF
+#     # -----------------------------
+#     pdf = get_pdf(html)
+
+#     file_name = f"Counter_Sales_{today}.pdf"
+#     file_path = frappe.get_site_path("private", "files", file_name)
+
+#     with open(file_path, "wb") as f:
+#         f.write(pdf)
+
+#     # -----------------------------
+#     # GET WHATSAPP NUMBER FROM SETTINGS
+#     # -----------------------------
+#     mobile_no = frappe.db.get_single_value("TZU Setting", "mobile_no")
+
+#     if not mobile_no:
+#         frappe.log_error("Mobile No not set in TZU Settings")
+#         return
+
+#     chatId = f"91{mobile_no}@c.us"
+
+#     # -----------------------------
+#     # SEND WHATSAPP PDF
+#     # -----------------------------
+#     file_url = "https://7103.api.greenapi.com/waInstance7103539592/sendFileByUpload/9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+
+#     data_req = {
+#         "chatId": chatId,
+#         "caption": f"Daily Counter Sales {today}",
+#         "fileName": file_name
+#     }
+
+#     files = {"file": open(file_path, "rb")}
+
+#     try:
+#         response = requests.post(file_url, data=data_req, files=files)
+
+#         if response.status_code != 200:
+#             frappe.log_error(response.text, "WhatsApp PDF Failed")
+
+#     except Exception as e:
+#         frappe.log_error(str(e), "WhatsApp Error")
+
+#     finally:
+#         files["file"].close()
+#         if os.path.exists(file_path):
+#             os.remove(file_path)
+
+#     return "Sent Successfully"
+
+# multiple mobile no like child table
+@frappe.whitelist()
+def send_daily_counter_sales():
+    
+    today = nowdate()
+    formatted_date = formatdate(today, "dd-MMM-yy")
+    # -----------------------------
+    # GET COUNTER SALES DATA
+    # -----------------------------
+    data = frappe.db.sql("""
+        SELECT 
+            c.name AS counter_name,
+            SUM(dni.qty) AS total_qty,
+            SUM(dni.amount) AS total_amount
+        FROM `tabDelivery Note` dn
+        JOIN `tabDelivery Note Item` dni ON dn.name = dni.parent
+        LEFT JOIN `tabCustomer` c 
+            ON c.represents_company = dn.company
+            AND c.is_internal_customer = 1
+        WHERE 
+            dn.docstatus = 1
+            AND DATE(dn.posting_date) = %s
+        GROUP BY dn.company
+    """, (today,), as_dict=True)
+
+    if not data:
+        return "No data found"
+
+    # -----------------------------
+    # CALCULATE TOTAL
+    # -----------------------------
+    total_qty = sum([d.total_qty for d in data])
+    total_amount = sum([d.total_amount for d in data])
+
+    # -----------------------------
+    # HTML FOR PDF
+    # -----------------------------
+    html = f"""
+    <h3 style="text-align:center;">Counter Sale Dt - {formatted_date}</h3>
+    <table border="1" cellspacing="0" cellpadding="5" width="100%">
+        <tr>
+            <th>Date</th>
+            <th>Counter Name</th>
+            <th>Net Sale Qty</th>
+            <th>Net Sale Amount</th>
+        </tr>
+    """
+
+    for d in data:
+        html += f"""
+        <tr>
+            <td>{formatted_date}</td>
+            <td>{d.counter_name}</td>
+            <td>{int(d.total_qty)}</td>
+            <td>{int(d.total_amount)}</td>
+        </tr>
+        """
+
+    html += f"""
+        <tr>
+            <td><b>Total</b></td>
+            <td></td>
+            <td><b>{int(total_qty)}</b></td>
+            <td><b>{int(total_amount)}</b></td>
+        </tr>
+    </table>
+    """
+
+    # -----------------------------
+    # GENERATE PDF
+    # -----------------------------
+    pdf = get_pdf(html)
+
+    file_name = f"Counter_Sales_{today}.pdf"
+    file_path = frappe.get_site_path("private", "files", file_name)
+
+    with open(file_path, "wb") as f:
+        f.write(pdf)
+
+    # -----------------------------
+    # GET ALL MOBILE NUMBERS (Child Table)
+    # -----------------------------
+    numbers = frappe.get_all(
+        "TZU WhatsApp Numbers",
+        filters={"parent": "TZU Setting"},
+        fields=["mobile_no"]
+    )
+
+    if not numbers:
+        frappe.log_error("No Mobile Numbers found in TZU Settings")
+        return
+
+    # -----------------------------
+    # SEND WHATSAPP TO EACH NUMBER
+    # -----------------------------
+    file_url = "https://7103.api.greenapi.com/waInstance7103539592/sendFileByUpload/9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+
+    for row in numbers:
+        mobile_no = row.mobile_no
+
+        if not mobile_no:
+            continue
+
+        # ✅ ensure format (91 prefix)
+        if not mobile_no.startswith("91"):
+            mobile_no = "91" + mobile_no
+
+        chatId = f"{mobile_no}@c.us"
+
+        data_req = {
+            "chatId": chatId,
+            "caption": f"Daily Counter Sales {formatted_date}",
+            "fileName": file_name
+        }
+
+        # ⚠️ IMPORTANT: file har loop me open karo
+        files = {"file": open(file_path, "rb")}
+
+        try:
+            response = requests.post(file_url, data=data_req, files=files)
+
+            if response.status_code != 200:
+                frappe.log_error(response.text, f"WhatsApp Failed: {mobile_no}")
+            else:
+                frappe.logger().info(f"Sent to {mobile_no}")
+
+        except Exception as e:
+            frappe.log_error(str(e), f"WhatsApp Error: {mobile_no}")
+
+        finally:
+            files["file"].close()
+
+    # -----------------------------
+    # DELETE FILE AFTER ALL SEND
+    # -----------------------------
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    return "Sent Successfully"
+

@@ -126,6 +126,26 @@ frappe.ui.form.on("Gate Entry", {
         }
 
         frappe.route_options = null;
+
+        if (frm.is_new() && frappe.route_options?._barcodes) {
+
+            let data = frappe.route_options._barcodes;
+
+            frm.clear_table("gate_entry_box_barcode");
+
+            data.forEach(d => {
+                let row = frm.add_child("gate_entry_box_barcode");
+                row.box_barcode = d.box_barcode;
+                row.status = d.status;
+                row.incoming_logistics_no = d.incoming_logistics_no;
+                row.total_barcode_qty = d.total_barcode_qty;
+            });
+
+            frm.refresh_field("gate_entry_box_barcode");
+
+            // clear route options after use
+            frappe.route_options._barcodes = null;
+        }
     },
 
     type(frm) {
@@ -223,61 +243,63 @@ frappe.ui.form.on("Gate Entry", {
 // scan box barcode
 frappe.ui.form.on("Gate Entry", {
 
-    scan_barcode(frm) {
-        let barcode = frm.doc.scan_barcode;
+     scan_barcode(frm) {
+
+        let barcode = (frm.doc.scan_barcode || "").trim().toUpperCase();
         if (!barcode) return;
 
         let row = frm.doc.gate_entry_box_barcode.find(
-            r => r.box_barcode === barcode
+            r => (r.box_barcode || "").trim().toUpperCase() === barcode
         );
 
         if (!row) {
-            frappe.msgprint({
-                title: "Invalid Barcode",
-                message: "Barcode not found in this Gate Entry",
-                indicator: "red"
-            });
+            frappe.msgprint("Invalid Barcode");
             frm.set_value("scan_barcode", "");
             return;
         }
 
         if (row.status === "Received") {
-            frappe.msgprint({
-                title: "Already Scanned",
-                message: "This box is already Received",
-                indicator: "orange"
-            });
+            frappe.msgprint("Already Received");
             frm.set_value("scan_barcode", "");
             return;
         }
 
-        frappe.call({
-            method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.mark_box_barcode_received",
-            args: {
-                box_barcode: barcode,
-                incoming_logistics_no: frm.doc.incoming_logistics
-            },
-            callback: function(r) {
+      frappe.call({
+    method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.mark_box_barcode_received",
+    args: {
+        box_barcode: barcode,
+        incoming_logistics_no: frm.doc.incoming_logistics
+    },
+    callback: function(r) {
 
-                // update child row locally
-                row.status = "Received";
-                row.scan_date_time = frappe.datetime.now_datetime();
+        if (r.message) {
 
-                frm.refresh_field("gate_entry_box_barcode");
+            // 🔥 1. Update LOCAL ROW ONLY
+            frm.doc.gate_entry_box_barcode.forEach(d => {
+                if (d.box_barcode === barcode) {
+                    d.status = "Received";
+                    d.scan_date_time = frappe.datetime.now_datetime();
+                }
+            });
 
-                frappe.show_alert({
-                    message: __("Box marked as Received"),
-                    indicator: "green"
-                });
+            // 🔥 2. Force child table re-render ONLY
+            frm.fields_dict.gate_entry_box_barcode.grid.refresh();
 
-                frm.set_value("scan_barcode", "");
-            }
-        });
+            // 🔥 3. Clear scanner
+            frm.set_value("scan_barcode", "");
+
+            frappe.show_alert({
+                message: "Updated Successfully",
+                indicator: "green"
+            });
+        }
+    }
+});
     },
     
 
     //BLOCK SUBMIT IF ANY BOX IS PENDING
-    before_submit(frm) {
+    before_save(frm) {
         let pending = frm.doc.gate_entry_box_barcode.filter(
             r => r.status !== "Received"
         );

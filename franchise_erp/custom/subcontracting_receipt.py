@@ -127,7 +127,95 @@ def get_po_item_qty(po_item):
 
 
 
+import frappe
 
+def assign_fifo_serials(doc, method):
+
+    for row in doc.items:
+
+        # -------------------------
+        # CHECK SERIALIZED ITEM
+        # -------------------------
+        is_serialized = frappe.db.get_value("Item", row.item_code, "has_serial_no")
+
+        if not is_serialized:
+            continue
+
+        if not row.purchase_order_item:
+            frappe.throw(f"PO Item missing for {row.item_code}")
+
+        # -------------------------
+        # GET PO DATA
+        # -------------------------
+        values = frappe.db.get_value(
+            "Purchase Order Item",
+            row.purchase_order_item,
+            [
+                "custom_generated_serials",
+                "custom_used_serials",
+                "custom_unused_serials"
+            ],
+            as_dict=True
+        )
+
+        if not values or not values.custom_generated_serials:
+            frappe.throw(f"No serials found in PO for Item {row.item_code}")
+
+        generated = [
+            s.strip() for s in values.custom_generated_serials.split("\n")
+            if s.strip()
+        ]
+
+        used = [
+            s.strip() for s in (values.custom_used_serials or "").split("\n")
+            if s.strip()
+        ]
+
+        # -------------------------
+        # AGAR USER NE SERIAL DIYA → USE SAME
+        # -------------------------
+        if row.serial_no:
+            selected = [
+                s.strip() for s in row.serial_no.split("\n") if s.strip()
+            ]
+        else:
+            # -------------------------
+            # FIFO AUTO PICK
+            # -------------------------
+            available = [s for s in generated if s not in used]
+
+            required_qty = int(row.qty or 0)
+
+            if len(available) < required_qty:
+                frappe.throw(
+                    f"Not enough serials available in PO for Item {row.item_code}"
+                )
+
+            selected = available[:required_qty]
+
+            row.serial_no = "\n".join(selected)
+
+        # -------------------------
+        # UPDATE USED SERIALS
+        # -------------------------
+        updated_used = list(set(used + selected))
+
+        # -------------------------
+        # CALCULATE UNUSED SERIALS
+        # -------------------------
+        updated_unused = [s for s in generated if s not in updated_used]
+
+        # -------------------------
+        # SAVE BACK TO PO ITEM
+        # -------------------------
+        frappe.db.set_value(
+            "Purchase Order Item",
+            row.purchase_order_item,
+            {
+                "custom_used_serials": "\n".join(updated_used),
+                "custom_unused_serials": "\n".join(updated_unused)
+            }
+        )
 
 
 
@@ -198,3 +286,9 @@ def get_available_gate_entries(doctype, txt, searchfield, start, page_len, filte
 
         LIMIT %s, %s
     """, ("%{}%".format(txt), start, page_len))
+
+
+
+
+
+
