@@ -95,7 +95,7 @@ frappe.ui.form.on("Sales Invoice", {
 
     validate(frm) {
         handle_sis_calculation(frm);
-        check_duplicate_serials(frm);
+        // check_duplicate_serials(frm);
     },
 
     scan_barcode(frm) {
@@ -602,31 +602,31 @@ function toggle_discount(frm, hide) {
 
     frm.refresh_field("items");
 }
-function check_duplicate_serials(frm) {
+// function check_duplicate_serials(frm) {
 
-    let seen = new Set();
+//     let seen = new Set();
 
-    for (let row of (frm.doc.items || [])) {
+//     for (let row of (frm.doc.items || [])) {
 
-        if (!row.serial_no) continue;
+//         if (!row.serial_no) continue;
 
-        let serials = row.serial_no.split("\n");
+//         let serials = row.serial_no.split("\n");
 
-        for (let s of serials) {
+//         for (let s of serials) {
 
-            s = s.trim();
-            if (!s) continue;
+//             s = s.trim();
+//             if (!s) continue;
 
-            if (seen.has(s)) {
-                frappe.msgprint({
-                    title: "Duplicate Serial",
-                    message: `Duplicate Serial: ${s}`,
-                    indicator: "red"
-                });
-                return;
-            }
+//             if (seen.has(s)) {
+//                 frappe.msgprint({
+//                     title: "Duplicate Serial",
+//                     message: `Duplicate Serial: ${s}`,
+//                     indicator: "red"
+//                 });
+//                 return;
+//             }
 
-            seen.add(s);
-        }
-    }
-}
+//             seen.add(s);
+//         }
+//     }
+// }
