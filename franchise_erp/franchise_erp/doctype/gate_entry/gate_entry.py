@@ -133,24 +133,24 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
     if not box_barcode or not incoming_logistics_no:
         frappe.throw("Missing barcode or Incoming Logistics No")
 
-    # Find matching child row
-    row = frappe.db.get_value(
-        "Gate Entry Box Barcode",
-        {
-            "box_barcode": box_barcode,
-            "incoming_logistics_no": incoming_logistics_no
-        },
-        ["name", "status"],
-        as_dict=True
-    )
+    box_barcode = box_barcode.strip().upper()
+
+    row = frappe.db.sql("""
+        SELECT name, status
+        FROM `tabGate Entry Box Barcode`
+        WHERE UPPER(TRIM(box_barcode)) = %s
+        AND incoming_logistics_no = %s
+        LIMIT 1
+    """, (box_barcode, incoming_logistics_no), as_dict=True)
 
     if not row:
         frappe.throw("Invalid Box Barcode")
 
+    row = row[0]
+
     if row.status == "Received":
         frappe.throw("Box already Received")
 
-    # Update status + scan datetime
     frappe.db.set_value(
         "Gate Entry Box Barcode",
         row.name,
@@ -160,9 +160,11 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
         }
     )
 
-    frappe.db.commit()
-
-    return "OK"
+    return {
+        "status": "Received",
+        "box_barcode": box_barcode,
+        "name": row.name
+    }
 
 
 # @frappe.whitelist()
@@ -510,3 +512,5 @@ def get_pending_gate_entries(supplier):
 def validate(self):
     if not self.references or len(self.references) == 0:
         frappe.throw("At least one Reference is required before saving.")
+
+

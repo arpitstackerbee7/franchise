@@ -177,7 +177,8 @@ doc_events = {
     },
     "Subcontracting Receipt": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-        "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting"
+        "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
+         "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials"
     },
     "Leave Application":{
         "on_submit": "franchise_erp.custom.leave_application.update_late_log_on_short_leave"
@@ -342,6 +343,13 @@ jinja = {
  "methods": "franchise_erp.api.generate_custom_barcode",
 }
 
+scheduler_events = {
+    "cron": {
+        "45 22 * * *": [
+            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales"
+        ]
+    }
+}
 # Installation
 # ------------
 
