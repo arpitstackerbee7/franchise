@@ -578,4 +578,11 @@ function set_outgoing_type(frm) {
 //     }
 // });
 
-
+frappe.ui.form.on('Outgoing Logistics', {
+    refresh: function(frm) {
+        frm.set_df_property('references', 'read_only', 0); 
+        frm.get_field('references').grid.cannot_add_rows = true;        
+        frm.get_field('references').grid.cannot_delete_rows = false;        
+        frm.fields_dict['references'].grid.refresh();
+    }
+});

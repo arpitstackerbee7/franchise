@@ -528,5 +528,12 @@ function toggle_consignor_fields(frm) {
     );
 }
 
-
+frappe.ui.form.on('Incoming Logistics', {
+    refresh: function(frm) {
+        frm.set_df_property('references', 'read_only', 0);         
+        frm.fields_dict['references'].grid.cannot_add_rows = true;        
+        frm.fields_dict['references'].grid.cannot_delete_rows = false;        
+        frm.refresh_field('references');
+    }
+});
 
