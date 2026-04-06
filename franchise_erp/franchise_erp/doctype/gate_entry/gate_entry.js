@@ -299,14 +299,14 @@ frappe.ui.form.on("Gate Entry", {
     
 
     //BLOCK SUBMIT IF ANY BOX IS PENDING
-    before_save(frm) {
+    before_submit(frm) {
         let pending = frm.doc.gate_entry_box_barcode.filter(
             r => r.status !== "Received"
         );
 
         if (pending.length > 0) {
             frappe.throw(
-                `You cannot submit Gate Entry.<br>
+                `You cannot submit Gate Entry. Please scan all boxes first.<br>
                  Pending Boxes: <b>${pending.length}</b>`
             );
         }
