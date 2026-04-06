@@ -68,7 +68,8 @@ doc_events = {
 
         "before_save": ["franchise_erp.custom.sales_invoice.apply_sis_pricing",
         # "franchise_erp.custom.sales_invoice.update_packed_items_serial_no",
-        "franchise_erp.custom.sales_invoice.validate_item_from_so"
+        "franchise_erp.custom.sales_invoice.validate_item_from_so",
+        "franchise_erp.custom.sales_invoice.validate_sales_invoice",
         ],
         "before_validate": ["franchise_erp.custom.sales_invoice.apply_sales_term"],
 
@@ -267,6 +268,8 @@ app_include_js = [
     "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     "/assets/franchise_erp/js/uploader_patch.js",
     "/assets/franchise_erp/js/barcode_scanner_override.js",
+
+
 ]
 
    
@@ -345,7 +348,7 @@ jinja = {
 
 scheduler_events = {
     "cron": {
-        "45 22 * * *": [
+        "45 23 * * *": [
             "franchise_erp.send_whatsapp_notification.send_daily_counter_sales"
         ]
     }

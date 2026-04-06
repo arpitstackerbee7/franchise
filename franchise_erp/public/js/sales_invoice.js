@@ -52,7 +52,7 @@ frappe.ui.form.on("Sales Invoice", {
 
         frm.__export_button_added = false;
         add_export_button(frm);
-
+        check_delivery_note(frm);
         // Default warehouse (only once)
         if (!frm.is_new() || !frm.doc.company || frm.doc.set_warehouse) return;
 
@@ -67,7 +67,9 @@ frappe.ui.form.on("Sales Invoice", {
 
         make_total_qty_bold(frm);
     },
-
+    items_add(frm) {
+        check_delivery_note(frm);
+    },
     onload(frm) {
         make_total_qty_bold(frm);
 
@@ -81,8 +83,15 @@ frappe.ui.form.on("Sales Invoice", {
     },
 
     customer(frm) {
-        frm.set_value("payment_terms_template", "");
-        setTimeout(() => set_custom_due_date(frm), 300);
+        // frm.set_value("payment_terms_template", "");
+        // setTimeout(() => set_custom_due_date(frm), 300);
+         if (frm.doc.payment_terms_template) {
+            frm.set_value("payment_terms_template", "");
+        }
+
+        setTimeout(() => {
+            set_custom_due_date(frm);
+        }, 500);
     },
 
     posting_date(frm) {
@@ -95,6 +104,7 @@ frappe.ui.form.on("Sales Invoice", {
 
     validate(frm) {
         handle_sis_calculation(frm);
+        check_delivery_note(frm);
         // check_duplicate_serials(frm);
     },
 
@@ -139,6 +149,13 @@ frappe.ui.form.on("Sales Invoice Item", {
         if (row.qty > 0) {
             frappe.model.set_value(cdt, cdn, "qty", -Math.abs(row.qty));
         }
+    },
+    delivery_note(frm, cdt, cdn) {
+        check_delivery_note(frm);
+    },
+
+    dn_detail(frm, cdt, cdn) {
+        check_delivery_note(frm);
     }
 });
 
@@ -630,3 +647,21 @@ function toggle_discount(frm, hide) {
 //         }
 //     }
 // }
+
+function check_delivery_note(frm) {
+
+    let has_dn = false;
+
+    (frm.doc.items || []).forEach(row => {
+        if (row.delivery_note || row.dn_detail) {
+            has_dn = true;
+        }
+    });
+
+    // 👉 Agar kisi bhi item me DN hai → Update Stock = 0
+    if (has_dn) {
+        if (frm.doc.update_stock) {
+            frm.set_value('update_stock', 0);
+        }
+    }
+}
