@@ -1351,39 +1351,39 @@ def get_available_gate_entries_sales(doctype, txt, searchfield, start, page_len,
 
 # Is Delivery Note Required for Sales Invoice Creation?
 
-import frappe
+# import frappe
 
-def validate_sales_invoice(doc, method):
+# def validate_sales_invoice(doc, method):
 
-    def has_delivery_note(item_row):
-        return item_row.delivery_note or item_row.dn_detail
+#     def has_delivery_note(item_row):
+#         return item_row.delivery_note or item_row.dn_detail
 
-    def is_service_item(item_code):
-        return not frappe.db.get_value("Item", item_code, "is_stock_item")
+#     def is_service_item(item_code):
+#         return not frappe.db.get_value("Item", item_code, "is_stock_item")
 
-    invalid_items = []
+#     invalid_items = []
 
-    for item in doc.items:
+#     for item in doc.items:
 
-        # ✅ Service item → allow
-        if is_service_item(item.item_code):
-            continue
+#         # ✅ Service item → allow
+#         if is_service_item(item.item_code):
+#             continue
 
-        # ✅ Delivery Note linked → allow
-        if has_delivery_note(item):
-            continue
+#         # ✅ Delivery Note linked → allow
+#         if has_delivery_note(item):
+#             continue
 
-        # ✅ Return + Update Stock → allow
-        if doc.is_return and doc.update_stock:
-            continue
+#         # ✅ Return + Update Stock → allow
+#         if doc.is_return and doc.update_stock:
+#             continue
 
-        # ❌ Update Stock without DN → block
-        if doc.update_stock:
-            invalid_items.append(item.item_code)
+#         # ❌ Update Stock without DN → block
+#         if doc.update_stock:
+#             invalid_items.append(item.item_code)
 
-    if invalid_items:
-        frappe.throw(
-            "Delivery Note is mandatory for Item(s): " + ", ".join(invalid_items)
-        )
+#     if invalid_items:
+#         frappe.throw(
+#             "Delivery Note is mandatory for Item(s): " + ", ".join(invalid_items)
+#         )
 
 
