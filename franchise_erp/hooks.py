@@ -268,9 +268,6 @@ app_include_js = [
     "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     "/assets/franchise_erp/js/uploader_patch.js",
     "/assets/franchise_erp/js/barcode_scanner_override.js",
-    "/assets/franchise_erp/js/fast_barcode.js"
-
-
 ]
 
    
