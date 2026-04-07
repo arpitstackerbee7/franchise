@@ -69,7 +69,7 @@ doc_events = {
         "before_save": ["franchise_erp.custom.sales_invoice.apply_sis_pricing",
         # "franchise_erp.custom.sales_invoice.update_packed_items_serial_no",
         "franchise_erp.custom.sales_invoice.validate_item_from_so",
-        # "franchise_erp.custom.sales_invoice.validate_sales_invoice",
+        "franchise_erp.custom.sales_invoice.validate_sales_invoice",
         ],
         "before_validate": ["franchise_erp.custom.sales_invoice.apply_sales_term"],
 
