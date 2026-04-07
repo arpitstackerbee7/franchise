@@ -17,29 +17,73 @@ class GateEntry(Document):
 
         company_fy_autoname(self)
           
+    # def on_submit(self):
+    #     self.status = "Submitted"
+    #     self.db_update()  # <<<<< ADD THIS LINE
+
+    #     if not self.incoming_logistics:
+    #         frappe.throw("Incoming Logistics is required")
+
+    #     il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
+    #     il_doc.gate_entry_no = self.name
+    #     il_doc.status = "Received" 
+    #     il_doc.save(ignore_permissions=True)
+
+    # def on_cancel(self):
+    #     self.status = "Cancelled"
+    #     self.db_update()  # <<<<< ADD THIS LINE
+
+    #     if not self.incoming_logistics:
+    #         return
+
+    #     il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
+    #     il_doc.status = "Issued"
+    #     il_doc.gate_entry_no = None
+    #     il_doc.save(ignore_permissions=True)
+
     def on_submit(self):
         self.status = "Submitted"
-        self.db_update()  # <<<<< ADD THIS LINE
+        self.db_update()
 
         if not self.incoming_logistics:
             frappe.throw("Incoming Logistics is required")
 
+        # --- PURANA LOGIC (Header update) ---
         il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
         il_doc.gate_entry_no = self.name
         il_doc.status = "Received" 
         il_doc.save(ignore_permissions=True)
 
+        # --- NAYA LOGIC (Boxes status update only on Submit) ---
+        for item in self.gate_entry_box_barcode:
+            frappe.db.set_value("Gate Entry Box Barcode", 
+                {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
+                "status", "Received")
+
     def on_cancel(self):
         self.status = "Cancelled"
-        self.db_update()  # <<<<< ADD THIS LINE
+        self.db_update()
 
-        if not self.incoming_logistics:
-            return
+        if self.incoming_logistics:
+            # --- PURANA LOGIC (Header reset) ---
+            il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
+            il_doc.status = "Issued"
+            il_doc.gate_entry_no = None
+            il_doc.save(ignore_permissions=True)
 
-        il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
-        il_doc.status = "Issued"
-        il_doc.gate_entry_no = None
-        il_doc.save(ignore_permissions=True)
+            # --- NAYA LOGIC (Boxes status reset) ---
+            for item in self.gate_entry_box_barcode:
+                frappe.db.set_value("Gate Entry Box Barcode", 
+                    {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
+                    "status", "Pending")
+
+    def on_trash(self):
+        # 🔥 NAYA LOGIC: Draft delete hone par boxes ko release karein
+        if self.incoming_logistics:
+            for item in self.gate_entry_box_barcode:
+                frappe.db.set_value("Gate Entry Box Barcode", 
+                    {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
+                    "status", "Pending")
 
 # fetch box barcode list
 # @frappe.whitelist()
@@ -127,8 +171,8 @@ def get_data_for_gate_entry(incoming_logistics):
         ]
     }
 #update status only for box barcode table
-@frappe.whitelist()
-def mark_box_barcode_received(box_barcode, incoming_logistics_no):
+# @frappe.whitelist()
+# def mark_box_barcode_received(box_barcode, incoming_logistics_no):
 
     if not box_barcode or not incoming_logistics_no:
         frappe.throw("Missing barcode or Incoming Logistics No")
@@ -166,6 +210,32 @@ def mark_box_barcode_received(box_barcode, incoming_logistics_no):
         "name": row.name
     }
 
+@frappe.whitelist()
+def mark_box_barcode_received(box_barcode, incoming_logistics_no):
+    if not box_barcode or not incoming_logistics_no:
+        frappe.throw("Missing barcode or Incoming Logistics No")
+
+    barcode = box_barcode.strip().upper()
+
+    row = frappe.db.sql("""
+        SELECT name, status
+        FROM `tabGate Entry Box Barcode`
+        WHERE UPPER(TRIM(box_barcode)) = %s
+        AND incoming_logistics_no = %s
+        LIMIT 1
+    """, (barcode, incoming_logistics_no), as_dict=True)
+
+    if not row:
+        frappe.throw("Invalid Box Barcode")
+
+    row = row[0]
+    
+    # Validation: Check if already received in database
+    if row.status == "Received":
+        frappe.throw("Box already Received")
+
+    # 🔥 NOTE: Database update removed from here to prevent early status change
+    return {"status": "Success", "box_barcode": barcode}
 
 # @frappe.whitelist()
 # def create_purchase_receipt(gate_entry):
