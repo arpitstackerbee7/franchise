@@ -127,24 +127,7 @@ def get_applicable_slab(scheme, total_qty):
 
     return None
 
-# ============================================================
-# RESET PREVIOUS PROMOTIONS (CRITICAL)
-# ============================================================
 
-# def reset_previous_promotions(doc):
-#     if doc.docstatus == 1:
-#         return
-#     # Remove promotion-created rows
-#     doc.items = [row for row in doc.items if not getattr(row, "is_free_item", 0)]
-
-#     for row in doc.items:
-#         # Always restore rate from price_list_rate
-#         if row.price_list_rate:
-#             row.rate = row.price_list_rate
-
-#         row.discount_percentage = 0
-#         row.discount_amount = 0
-#         row.is_free_item = 0
 
 def reset_previous_promotions(doc):
     if doc.docstatus == 1:
@@ -200,28 +183,44 @@ def is_scheme_applicable(scheme, doc):
     return True
 
 
-# def get_applicable_slab(scheme):
-#     return scheme.price_discount_slabs[0] if scheme.price_discount_slabs else None
 
-
-# ============================================================
-# ELIGIBLE ITEM FILTERING
-# ============================================================
 
 # def get_eligible_items(doc, scheme):
 #     items = []
 
+#     apply_on = (scheme.apply_on or "").strip()
+
+#     # ---- Pre-calc valid filters (EMPTY = ALL) ----
+#     valid_item_codes = {d.item_code for d in scheme.items if d.item_code}
+#     valid_item_groups = {d.item_group for d in scheme.item_groups if d.item_group}
+#     valid_brands = {d.brand for d in scheme.brands if d.brand}
+
 #     for row in doc.items:
+#         # Skip promo/free rows
 #         if getattr(row, "is_free_item", 0):
 #             continue
 
-#         if scheme.apply_rule_on_other == "Item Group":
-#             if scheme.other_item_group != "All Item Groups":
-#                 if row.item_group != scheme.other_item_group:
-#                     continue
+#         if flt(row.qty) <= 0 or flt(row.price_list_rate) <= 0:
+#             continue
 
-#         if row.qty > 0 and row.price_list_rate > 0:
+#         # 🔹 TRANSACTION → always all
+#         if apply_on == "Transaction":
 #             items.append(row)
+
+#         # 🔹 ITEM CODE
+#         elif apply_on == "Item Code":
+#             if not valid_item_codes or row.item_code in valid_item_codes:
+#                 items.append(row)
+
+#         # 🔹 ITEM GROUP
+#         elif apply_on == "Item Group":
+#             if not valid_item_groups or row.item_group in valid_item_groups:
+#                 items.append(row)
+
+#         # 🔹 BRAND
+#         elif apply_on == "Brand":
+#             if not valid_brands or row.brand in valid_brands:
+#                 items.append(row)
 
 #     return items
 
@@ -230,10 +229,15 @@ def get_eligible_items(doc, scheme):
 
     apply_on = (scheme.apply_on or "").strip()
 
-    # ---- Pre-calc valid filters (EMPTY = ALL) ----
+    # ---- VALID LIST ----
     valid_item_codes = {d.item_code for d in scheme.items if d.item_code}
     valid_item_groups = {d.item_group for d in scheme.item_groups if d.item_group}
     valid_brands = {d.brand for d in scheme.brands if d.brand}
+
+    # ---- RESTRICTED LIST ----
+    restricted_item_codes = {
+        d.item_code for d in getattr(scheme, "custom_restricted_item_code", []) if d.item_code
+    }
 
     for row in doc.items:
         # Skip promo/free rows
@@ -243,14 +247,20 @@ def get_eligible_items(doc, scheme):
         if flt(row.qty) <= 0 or flt(row.price_list_rate) <= 0:
             continue
 
-        # 🔹 TRANSACTION → always all
-        if apply_on == "Transaction":
-            items.append(row)
+        # 🔥 CONDITION: Only apply when Item Code
+        if apply_on == "Item Code":
 
-        # 🔹 ITEM CODE
-        elif apply_on == "Item Code":
+            # Skip restricted items FIRST
+            if row.item_code in restricted_item_codes:
+                continue
+
+            # ✅ Then check allowed items
             if not valid_item_codes or row.item_code in valid_item_codes:
                 items.append(row)
+
+        # 🔹 TRANSACTION
+        elif apply_on == "Transaction":
+            items.append(row)
 
         # 🔹 ITEM GROUP
         elif apply_on == "Item Group":
@@ -263,7 +273,6 @@ def get_eligible_items(doc, scheme):
                 items.append(row)
 
     return items
-
 # ============================================================
 # PROMOTION LOGIC
 # ============================================================
@@ -306,32 +315,7 @@ def apply_buy_n_get_x_free(doc, items, n, x):
 
 
 
-# def apply_buy_n_get_x_percent_off(doc, items, n, percent):
-#     """
-#     Buy N Get X% Off
-#     Discount applied on ONE lowest price_list_rate unit
-#     """
 
-#     if sum(int(r.qty) for r in items) < n:
-#         return
-
-#     # Sort by price_list_rate
-#     items.sort(key=lambda r: r.price_list_rate)
-#     row = items[0]
-
-#     discounted_rate = flt(row.price_list_rate * (100 - percent) / 100)
-
-#     if int(row.qty) == 1:
-#         row.rate = discounted_rate
-#     else:
-#         discount_row = doc.append("items", {})
-#         copy_item_fields(row, discount_row)
-
-#         discount_row.qty = 1
-#         discount_row.rate = discounted_rate
-#         discount_row.price_list_rate = row.price_list_rate
-
-#         row.qty -= 1
 
 def apply_buy_n_get_x_percent_off(doc, items, n, percent):
     total_qty = sum(int(r.qty) for r in items)

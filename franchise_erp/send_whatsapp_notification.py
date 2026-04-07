@@ -376,19 +376,34 @@ def send_daily_counter_sales():
     # -----------------------------
     # GET COUNTER SALES DATA
     # -----------------------------
+    # data = frappe.db.sql("""
+    #     SELECT 
+    #         c.name AS counter_name,
+    #         SUM(dni.qty) AS total_qty,
+    #         SUM(dni.amount) AS total_amount
+    #     FROM `tabDelivery Note` dn
+    #     JOIN `tabDelivery Note Item` dni ON dn.name = dni.parent
+    #     LEFT JOIN `tabCustomer` c 
+    #         ON c.represents_company = dn.company
+    #         AND c.is_internal_customer = 1
+    #     WHERE 
+    #         dn.docstatus = 1
+    #         AND DATE(dn.posting_date) = %s
+    #     GROUP BY dn.company
+    # """, (today,), as_dict=True)
     data = frappe.db.sql("""
         SELECT 
-            c.name AS counter_name,
+            c.customer_name AS counter_name,
             SUM(dni.qty) AS total_qty,
             SUM(dni.amount) AS total_amount
         FROM `tabDelivery Note` dn
         JOIN `tabDelivery Note Item` dni ON dn.name = dni.parent
-        LEFT JOIN `tabCustomer` c 
+        JOIN `tabCustomer` c 
             ON c.represents_company = dn.company
-            AND c.is_internal_customer = 1
         WHERE 
             dn.docstatus = 1
             AND DATE(dn.posting_date) = %s
+            AND c.is_internal_customer = 1
         GROUP BY dn.company
     """, (today,), as_dict=True)
 
