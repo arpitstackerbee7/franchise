@@ -119,9 +119,6 @@ doc_events = {
                      "franchise_erp.custom.item_group.validate_multiple_category_checks"],
         "autoname": "franchise_erp.custom.item_group.autoname"    
     },
-    # "Supplier": {
-    #     "validate": "franchise_erp.custom.supplier.validate_supplier"
-    # },
     "Product Bundle":{
         "after_insert":"franchise_erp.custom.product_bundle.set_product_bundle_series"
     },
@@ -200,6 +197,10 @@ doc_events = {
     "Subcontracting Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
     },
+    "Supplier": {
+        "after_insert": "franchise_erp.custom.supplier.create_supplier_warehouse",
+        "on_update": "franchise_erp.custom.supplier.create_supplier_warehouse"
+    }
 }
    
 
