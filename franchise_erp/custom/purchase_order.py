@@ -342,25 +342,92 @@ def generate_serials_on_po_submit(doc, method):
             )
 
 
+# def apply_purchase_term(doc, method):
+#     if not doc.custom_purchase_term:
+#         return
+
+#     term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
+
+#     total_flat_discount = 0.0
+#     header_discount_percent = 0.0
+
+#     # -------------------------------
+#     # 1️⃣ ITEM LEVEL : RATE DIFF ONLY
+#     # -------------------------------
+#     for item in doc.items:
+
+#         # store base rate once (idempotent)
+#         if not item.custom_base_rate_new:
+#             item.custom_base_rate_new = item.rate
+
+#         adjusted_rate = item.custom_base_rate_new
+
+#         for row in term.purchase_term_charges:
+#             if row.charge_type == "Rate Diff":
+#                 adjusted_rate -= row.value
+
+#         item.rate = adjusted_rate
+
+
+#     # -----------------------------------
+#     # 2️⃣ DOCUMENT LEVEL : DISCOUNT ONLY
+#     # -----------------------------------
+#     for row in term.purchase_term_charges:
+#         if row.charge_type == "Discount":
+
+#             # Percentage discount on Net Total / Grand Total
+#             if row.value_type == "Percentage":
+#                 header_discount_percent = row.value
+
+#             # Flat amount discount
+#             elif row.value_type == "Amount":
+#                 total_flat_discount += row.value
+
+
+#     # -----------------------------------
+#     # 3️⃣ PUSH TO ERPNext STANDARD FIELDS
+#     # -----------------------------------
+#     if header_discount_percent:
+#         doc.apply_discount_on = "Net Total"
+#         doc.additional_discount_percentage = header_discount_percent
+
+
+#     elif total_flat_discount:
+#         doc.apply_discount_on = "Net Total"
+#         doc.discount_amount = total_flat_discount
+
 def apply_purchase_term(doc, method):
+
     if not doc.custom_purchase_term:
         return
 
     term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
 
+    # -------------------------------
+    # 🔥 STEP 0: RESET ITEM DISTRIBUTED DISCOUNT
+    # -------------------------------
+    for item in doc.items:
+        item.distributed_discount_amount = 0
+
+    # -------------------------------
+    # 🔥 RESET DOC LEVEL
+    # -------------------------------
+    doc.additional_discount_percentage = 0
+    doc.discount_amount = 0
+    doc.apply_discount_on = None
+
+    doc.ignore_pricing_rule = 1
+
     total_flat_discount = 0.0
     header_discount_percent = 0.0
 
     # -------------------------------
-    # 1️⃣ ITEM LEVEL : RATE DIFF ONLY
+    # 1️⃣ ITEM LEVEL (RATE DIFF)
     # -------------------------------
     for item in doc.items:
 
-        # store base rate once (idempotent)
-        if not item.custom_base_rate_new:
-            item.custom_base_rate_new = item.rate
-
-        adjusted_rate = item.custom_base_rate_new
+        base_rate = item.price_list_rate or item.rate
+        adjusted_rate = base_rate
 
         for row in term.purchase_term_charges:
             if row.charge_type == "Rate Diff":
@@ -369,34 +436,36 @@ def apply_purchase_term(doc, method):
         item.rate = adjusted_rate
 
 
-    # -----------------------------------
-    # 2️⃣ DOCUMENT LEVEL : DISCOUNT ONLY
-    # -----------------------------------
+    # -------------------------------
+    # 2️⃣ DOCUMENT LEVEL (DISCOUNT)
+    # -------------------------------
     for row in term.purchase_term_charges:
+
         if row.charge_type == "Discount":
 
-            # Percentage discount on Net Total / Grand Total
             if row.value_type == "Percentage":
-                header_discount_percent = row.value
+                header_discount_percent += row.value
 
-            # Flat amount discount
             elif row.value_type == "Amount":
                 total_flat_discount += row.value
 
 
-    # -----------------------------------
-    # 3️⃣ PUSH TO ERPNext STANDARD FIELDS
-    # -----------------------------------
+    # -------------------------------
+    # 3️⃣ APPLY DISCOUNT
+    # -------------------------------
     if header_discount_percent:
         doc.apply_discount_on = "Net Total"
         doc.additional_discount_percentage = header_discount_percent
-
 
     elif total_flat_discount:
         doc.apply_discount_on = "Net Total"
         doc.discount_amount = total_flat_discount
 
 
+    # -----------------------------------
+    # 🔥 FINAL RECALCULATION (MANDATORY)
+    # -----------------------------------
+    doc.run_method("calculate_taxes_and_totals")
 
 @frappe.whitelist()
 def get_gate_entry_with_po_child(doctype, txt, filters, page_length=20, start=0):
