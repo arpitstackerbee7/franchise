@@ -72,7 +72,6 @@ doc_events = {
         "franchise_erp.custom.sales_invoice.validate_sales_invoice",
         ],
         "before_validate": ["franchise_erp.custom.sales_invoice.apply_sales_term"],
-
     },
     "Purchase Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
@@ -95,10 +94,10 @@ doc_events = {
                       ],
 
         "on_cancel": ["franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel",
-                       "franchise_erp.custom.purchase_reciept.on_cancel" ],
-
-
-        
+                       "franchise_erp.custom.purchase_reciept.on_cancel",
+                       "franchise_erp.custom.purchase_reciept.clear_si_grn_flags",
+                       ],
+        "on_trash": "franchise_erp.custom.purchase_reciept.clear_si_grn_flags",        
     },
 
    "Item": {

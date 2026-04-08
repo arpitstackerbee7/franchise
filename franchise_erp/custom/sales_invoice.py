@@ -443,6 +443,15 @@ def create_inter_company_purchase_receipt(sales_invoice):
     pr.run_method("calculate_taxes_and_totals")
     pr.save(ignore_permissions=True)
 
+    # =====================================================
+    # ✅ UPDATE SALES INVOICE FLAG
+    # =====================================================
+    frappe.db.set_value(
+        "Sales Invoice",
+        si.name,
+        "custom_is_draft_grn",
+        1
+    )
     frappe.db.commit()
     return pr.name
 
