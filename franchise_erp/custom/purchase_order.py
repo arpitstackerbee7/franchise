@@ -541,3 +541,63 @@ def get_items_from_gate_entry(gate_entry_name):
 #             AND po.status NOT IN ('Closed', 'On Hold')
 #     """, as_dict=True)
 
+
+#service cost updated
+import frappe
+
+@frappe.whitelist()
+def update_po_cost_and_sco(docname, items):
+	items = frappe.parse_json(items)
+
+	# -------------------------
+	# LOAD PO
+	# -------------------------
+	doc = frappe.get_doc("Purchase Order", docname)
+
+	# 🔥 BYPASS VALIDATION
+	doc.flags.ignore_validate = True
+	doc.flags.ignore_validate_update_after_submit = True
+
+	# -------------------------
+	# UPDATE ITEMS
+	# -------------------------
+	for row in doc.items:
+		for item in items:
+			if row.name == item.get("docname"):
+				row.rate = item.get("rate")
+
+	# -------------------------
+	# 🔥 MAIN MAGIC (ERP जैसा)
+	# -------------------------
+	doc.run_method("calculate_taxes_and_totals")
+
+	# payment schedule भी update
+	doc.set_payment_schedule()
+
+	# save WITHOUT restriction
+	doc.save(ignore_permissions=True)
+
+	# -------------------------
+	# UPDATE SUBCONTRACTING ORDER
+	# -------------------------
+	sco_list = frappe.get_all(
+		"Subcontracting Order",
+		filters={"purchase_order": docname},
+		fields=["name"]
+	)
+
+	for sco in sco_list:
+		sco_doc = frappe.get_doc("Subcontracting Order", sco.name)
+
+		sco_doc.flags.ignore_validate_update_after_submit = True
+
+		for row in sco_doc.items:
+			for item in items:
+
+				# 🔥 PERFECT MATCH
+				if row.purchase_order_item == item.get("docname"):
+					row.service_cost_per_qty = item.get("rate")
+
+		sco_doc.save(ignore_permissions=True)
+
+	return "Done"

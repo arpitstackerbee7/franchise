@@ -501,6 +501,18 @@ def apply_tzu_setting(doc, method):
         doc.batch_number_series = ""
         return
     
+     # ✅ NEW CONDITION (🔥 IMPORTANT - skip full logic)
+    if (
+        doc.item_group == "All Item Groups-Raw Material" or
+        doc.custom_departments == "All Item Groups-Non-Inventory"
+    ):
+        doc.has_serial_no = 0
+        doc.has_batch_no = 0
+        doc.create_new_batch = 0
+        doc.serial_no_series = ""
+        doc.batch_number_series = ""
+        return   # 🚀 yahi main cheez hai (aage ka logic skip)
+    
     if not doc.stock_uom:
         frappe.throw("Stock UOM is mandatory for Stock Item")
 
@@ -677,4 +689,6 @@ def existing_item_price_update(doc, method):
     # Very important
     frappe.clear_document_cache("Item Price")
     frappe.clear_cache()
+
+
 

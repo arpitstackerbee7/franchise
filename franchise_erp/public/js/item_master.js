@@ -84,6 +84,10 @@ frappe.ui.form.on("Item", {
                 }
             };
         });
+        set_item_group(frm);
+    },
+    custom_departments(frm) {
+        set_item_group(frm);
     }
 });
 
@@ -308,4 +312,16 @@ function apply_item_restrictions(frm) {
     
     // Optional: User ko message dikhane ke liye
     // frappe.show_alert({message: __("You only have read-only access to Items."), indicator: 'orange'});
+}
+
+
+function set_item_group(frm) {
+
+    if (frm.doc.custom_departments === "All Item Groups-Non-Inventory") {
+        
+        // Only set if empty (optional safe check)
+        if (!frm.doc.item_group) {
+            frm.set_value('item_group', "All Item Groups");
+        }
+    }
 }

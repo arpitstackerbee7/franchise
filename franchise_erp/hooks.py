@@ -111,7 +111,8 @@ doc_events = {
         # "on_update" : "franchise_erp.custom.item_master.existing_item_price_update" #existing validation
         "on_update" : [
             "franchise_erp.custom.item_master.existing_item_price_update",
-        ]
+        ],
+        
     },
     "Item Group": {
         "validate": ["franchise_erp.custom.item_group.validate_same_parent",
