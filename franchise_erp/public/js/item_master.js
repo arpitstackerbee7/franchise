@@ -84,11 +84,11 @@ frappe.ui.form.on("Item", {
                 }
             };
         });
-        set_item_group(frm);
+        // set_item_group(frm);
     },
-    custom_departments(frm) {
-        set_item_group(frm);
-    }
+    // custom_departments(frm) {
+    //     set_item_group(frm);
+    // }
 });
 
 // frappe.ui.form.on('Item', {
@@ -315,13 +315,13 @@ function apply_item_restrictions(frm) {
 }
 
 
-function set_item_group(frm) {
+// function set_item_group(frm) {
 
-    if (frm.doc.custom_departments === "All Item Groups-Non-Inventory") {
+//     if (frm.doc.custom_departments === "All Item Groups-Non-Inventory") {
         
-        // Only set if empty (optional safe check)
-        if (!frm.doc.item_group) {
-            frm.set_value('item_group', "All Item Groups");
-        }
-    }
-}
+//         // Only set if empty (optional safe check)
+//         if (!frm.doc.item_group) {
+//             frm.set_value('item_group', "All Item Groups");
+//         }
+//     }
+// }
