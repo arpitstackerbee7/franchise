@@ -686,3 +686,18 @@ def get_purchase_receipt_city(purchase_receipt):
             return city
 
     return None
+
+
+def clear_si_grn_flags(doc, method):
+
+    if not doc.custom_source_sales_invoice:
+        return
+
+    frappe.db.set_value(
+        "Sales Invoice",
+        doc.custom_source_sales_invoice,
+        {
+            "custom_is_draft_grn": 0,
+            "custom_is_received_grn": 0
+        }
+    )
