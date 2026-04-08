@@ -24,4 +24,5 @@ frappe.query_reports["Stock Book Report"] = {
 			"fieldtype": "Data"
 		}
 	]
-};
+}; 
+
