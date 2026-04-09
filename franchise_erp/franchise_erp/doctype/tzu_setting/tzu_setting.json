@@ -21,7 +21,8 @@
   "enter_series_length",
   "box_barcode_series_length",
   "item_restricted_roles",
-  "update_items_allowed_roles"
+  "update_items_allowed_roles",
+  "all_counters_name_show_on_supplier"
  ],
  "fields": [
   {
@@ -127,13 +128,19 @@
    "fieldtype": "Table",
    "label": "Whatsapp No",
    "options": "TZU WhatsApp Numbers"
+  },
+  {
+   "fieldname": "all_counters_name_show_on_supplier",
+   "fieldtype": "Table MultiSelect",
+   "label": "All Counters Name Show On Supplier",
+   "options": "Restricted Role Detail"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-03 22:30:45.723935",
+ "modified": "2026-04-09 17:57:32.465080",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
