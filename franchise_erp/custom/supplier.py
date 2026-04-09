@@ -39,3 +39,13 @@ def create_supplier_warehouse(doc, method):
 
     # ✅ THIS LINE FIXES YOUR ISSUE
     doc.db_set("custom_supplier_warehouse", warehouse)
+
+
+
+
+
+
+@frappe.whitelist()
+def get_supplier_roles_for_not_show_counters():
+    doc = frappe.get_doc('TZU Setting', 'TZU Setting')
+    return [row.role for row in doc.all_counters_name_show_on_supplier]

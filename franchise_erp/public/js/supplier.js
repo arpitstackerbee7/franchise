@@ -63,3 +63,27 @@ frappe.ui.form.on("Supplier", {
         $(".page-title .editable-title").css("pointer-events", "none");
     }
 });
+
+
+
+// all counters not showing in supplier detail
+frappe.ui.form.on('Supplier', {
+    refresh: function(frm) {
+
+        frappe.call({
+            method: 'franchise_erp.custom.supplier.get_supplier_roles_for_not_show_counters',
+            callback: function(r) {
+
+                let allowed_roles = r.message || [];
+
+                let has_access = allowed_roles.some(role =>
+                    frappe.user_roles.includes(role)
+                );
+
+                frm.set_df_property('companies', 'hidden', !has_access);
+                frm.refresh_field('companies');
+            }
+        });
+
+    }
+});
