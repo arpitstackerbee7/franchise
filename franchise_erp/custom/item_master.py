@@ -504,7 +504,8 @@ def apply_tzu_setting(doc, method):
      # ✅ NEW CONDITION (🔥 IMPORTANT - skip full logic)
     if (
         doc.item_group == "All Item Groups-Raw Material" or
-        doc.item_group == "All Item Groups-Non-Inventory"
+        # doc.item_group == "All Item Groups-Non-Inventory" or
+        doc.item_group == "All Item Groups-Non-Trading"
     ):
         doc.has_serial_no = 0
         doc.has_batch_no = 0
