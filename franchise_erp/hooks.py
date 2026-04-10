@@ -263,7 +263,7 @@ doctype_js = {
 app_include_js = [
     
     "/assets/franchise_erp/js/back_date_disabled.js",
-    # "/assets/franchise_erp/js/login_location.js?v=2.0",
+    "/assets/franchise_erp/js/login_location.js?v=2.0",
     "/assets/franchise_erp/js/item_group_overrides.js",
     "/assets/franchise_erp/js/doctype_overrides.js",
     "/assets/franchise_erp/js/session_company.js?v=120",
@@ -292,9 +292,9 @@ doctype_tree_js = {
 # include js, css files in header of web template
 # web_include_css = "/assets/franchise_erp/css/franchise_erp.css"
 # web_include_js = "/assets/franchise_erp/js/franchise_erp.js"
-# web_include_js = [
-#     "/assets/franchise_erp/js/login_location.js?v=2.0"
-# ]
+web_include_js = [
+    "/assets/franchise_erp/js/login_location.js?v=2.0"
+]
 
 
 # include custom scss in every website theme (without file extension ".scss")
