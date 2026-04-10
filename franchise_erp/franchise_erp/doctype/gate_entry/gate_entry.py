@@ -584,3 +584,59 @@ def validate(self):
         frappe.throw("At least one Reference is required before saving.")
 
 
+@frappe.whitelist()
+def get_gate_entries_match_from_pi(supplier):
+
+    # 🔥 Step 1: Incoming Logistics (to_pay = Yes)
+    incoming = frappe.get_all(
+        "Incoming Logistics",
+        filters={"to_pay": "Yes"},
+        fields=["name", "transporter"]
+    )
+
+    if not incoming:
+        return []
+
+    logistics_map = {d.name: d.transporter for d in incoming}
+    valid_logistics = list(logistics_map.keys())
+
+    # 🔥 Step 2: Get USED Gate Entries (IMPORTANT FIX)
+    used_gate_entries = frappe.db.sql("""
+        SELECT DISTINCT pii.custom_gate_entry
+        FROM `tabPurchase Invoice Item` pii
+        INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+        WHERE pi.docstatus = 1
+        # AND pi.supplier = %s
+        AND pii.custom_gate_entry IS NOT NULL
+        AND pii.custom_gate_entry != ''
+    """, (supplier,), as_dict=1)
+
+    used_list = [d.custom_gate_entry for d in used_gate_entries]
+
+    # 🔥 Step 3: Gate Entry filter (FINAL FIX)
+    filters = {
+        "consignor": supplier,
+        "docstatus": 1,
+        "incoming_logistics": ["in", valid_logistics]
+    }
+
+    # ❗ Only apply NOT IN if list has data
+    if used_list:
+        filters["name"] = ["not in", used_list]
+
+    gate_entries = frappe.get_all(
+        "Gate Entry",
+        filters=filters,
+        fields=[
+            "name",
+            "incoming_logistics",
+            "transport_service_item",
+            "consignor"
+        ]
+    )
+
+    # 🔥 Add transporter
+    for d in gate_entries:
+        d["transporter"] = logistics_map.get(d["incoming_logistics"], "")
+
+    return gate_entries
