@@ -1,6 +1,8 @@
 import frappe
 import random
 import re
+from frappe import _
+from frappe.utils.file_manager import get_file_path
 
 @frappe.whitelist()
 def get_next_item_no():
@@ -691,5 +693,187 @@ def existing_item_price_update(doc, method):
     frappe.clear_document_cache("Item Price")
     frappe.clear_cache()
 
+# by jaya 
+@frappe.whitelist()
+def smart_bulk_upload(item_code, file_url):
+    import csv, io, os
+    from urllib.parse import unquote
+
+    file_url = unquote(file_url)
+    file_path = get_file_path(file_url)
+
+    if not os.path.exists(file_path):
+        frappe.throw(f"File not found at: {file_path}. Please re-upload.")
+
+    with open(file_path, "r", encoding="utf-8-sig") as f:
+        content = f.read()
+
+    reader = csv.reader(io.StringIO(content))
+    all_rows = list(reader)
+
+    required = {"item code", "price list", "rate"}
+    header_row_idx = None
+
+    for idx, row in enumerate(all_rows):
+        cleaned = {str(c).strip().lower() for c in row}
+        if required.issubset(cleaned):
+            header_row_idx = idx
+            break
+
+    if header_row_idx is not None:
+        headers = [str(h).strip().lower() for h in all_rows[header_row_idx]]
+        data_rows = all_rows[header_row_idx + 1:]
+        idx_code = headers.index("item code")
+        idx_list = headers.index("price list")
+        idx_rate = headers.index("rate")
+    else:
+        data_rows = all_rows
+        idx_code, idx_list, idx_rate = 0, 1, 2
+
+    
+    doc = frappe.get_doc("Item", item_code)
+
+    existing_pl = {
+        str(d.price_list).strip().upper()
+        for d in (doc.get("custom_item_prices") or [])
+        if d.price_list
+    }
+
+    added = 0
+    skipped = 0
+    errors = []
+
+    for i, row in enumerate(data_rows, start=1):
+        if len(row) < 3:
+            continue
+
+        f_code = str(row[idx_code]).strip()
+        f_list = str(row[idx_list]).strip()
+        f_rate_raw = str(row[idx_rate]).strip()
+
+        # Skip junk/instruction/empty rows
+        if not f_code and not f_list:
+            continue
+        junk_phrases = {
+            "price list", "price_list", "------", "do not edit",
+            "the csv format is case sensitive", "do not edit headers",
+            "item code", "item_code"
+        }
+        if f_code.lower() in junk_phrases or f_list.lower() in junk_phrases:
+            continue
+
+        # Skip rows where item code looks like an instruction sentence (contains spaces AND is long)
+        if " " in f_code and len(f_code) > 20:
+            continue
+        
+
+        
+        if f_code and f_code != item_code:
+            frappe.throw(
+                _(f"Row {i}: Item Code '{f_code}' does not match '{item_code}'. "
+                  "Upload blocked.")
+            )
+
+        
+        try:
+            f_rate = float(f_rate_raw)
+            if f_rate <= 0:
+                raise ValueError("Rate must be greater than 0")
+        except (ValueError, TypeError):
+            errors.append(
+                f"Row {i}: '{f_list}' has invalid or empty rate '{f_rate_raw}' — skipped."
+            )
+            skipped += 1
+            continue
+
+        
+        if f_list.upper() in existing_pl:
+            skipped += 1
+            continue
+
+        doc.append("custom_item_prices", {
+            "item_code": item_code,
+            "price_list": f_list,
+            "rate": f_rate,
+        })
+        existing_pl.add(f_list.upper())
+        added += 1
+
+    if added > 0:
+        doc.save(ignore_permissions=True)
+
+    parts = []
+    if added:
+        parts.append(f" {added} new row(s) added.")
+    if skipped:
+        parts.append(f" {skipped} row(s) skipped (already exist or invalid rate).")
+    if errors:
+        parts.append(" Errors: " + " | ".join(errors))
+
+    return " ".join(parts) if parts else "No new rows were added."
 
 
+def validate_and_merge_prices(doc, method=None):
+    table_field = "custom_item_prices"
+    child_dt = "Item Price Row"
+
+    
+    db_rates = {}
+    db_rows_for_rescue = []
+
+    if not doc.is_new():
+        db_rows_for_rescue = frappe.db.get_all(
+            child_dt,
+            filters={"parent": doc.name, "parentfield": table_field},
+            fields=["name", "price_list", "rate", "item_code"],
+            order_by="idx asc",
+        )
+        db_rates = {
+            str(r.price_list).strip().upper(): r.rate
+            for r in db_rows_for_rescue
+            if r.price_list
+        }
+
+    seen_pl = set()       
+    cleaned_rows = []
+
+    for row in doc.get(table_field) or []:
+        p_list = str(row.price_list or "").strip()
+
+        # Skip rows with no price list set
+        if not p_list:
+            continue
+
+        p_list_key = p_list.upper()
+
+        
+        # Only check if the row carries an item_code that contradicts the parent
+        if row.item_code and str(row.item_code).strip() != str(doc.name).strip():
+            # Rescue: restore DB rows so the table doesn't go blank
+            if db_rows_for_rescue:
+                doc.set(table_field, db_rows_for_rescue)
+            frappe.throw(
+                _(
+                    f"Item Code mismatch on Price List '{p_list}': "
+                    f"row has '{row.item_code}' but this item is '{doc.name}'. "
+                    "Upload rejected and original data has been restored."
+                )
+            )
+
+        
+        # If we've already seen this price list in the current save, drop this row
+        if p_list_key in seen_pl:
+            continue
+
+        
+        # If this price list already existed in DB, keep the original rate
+        if p_list_key in db_rates:
+            row.rate = db_rates[p_list_key]
+
+        
+        row.item_code = doc.name
+
+        cleaned_rows.append(row)
+        seen_pl.add(p_list_key)
+
+    doc.set(table_field, cleaned_rows)
