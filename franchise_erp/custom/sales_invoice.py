@@ -1434,3 +1434,19 @@ def validate_sales_invoice(doc, method):
         frappe.throw(
             "Delivery Note is mandatory for Item(s): " + ", ".join(invalid_items)
         )
+
+import frappe
+from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
+
+class CustomSalesInvoice(SalesInvoice):
+
+    def validate(self):
+        # 🔥 पहले qty fix करो
+        if self.is_return:
+            for item in self.items:
+                item.qty = -abs(item.qty or 0)
+                if item.stock_qty:
+                    item.stock_qty = -abs(item.stock_qty)
+
+        # 🔥 फिर original validation चलाओ
+        super().validate()

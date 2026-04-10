@@ -63,7 +63,7 @@ doc_events = {
         "validate":[
             # "franchise_erp.custom.promotional_scheme.apply_promotions",
                     "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
-                    "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return"
+                    "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return",
                     ],
 
         "before_save": ["franchise_erp.custom.sales_invoice.apply_sis_pricing",
@@ -235,7 +235,9 @@ doctype_js = {
 
 
 # franchise_erp/hooks.py
-
+override_doctype_class = {
+    "Sales Invoice": "franchise_erp.custom.sales_invoice.CustomSalesInvoice"
+}
 # override_whitelisted_methods = {
 #     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"
 # }
