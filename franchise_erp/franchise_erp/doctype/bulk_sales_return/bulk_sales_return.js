@@ -1,43 +1,51 @@
-frappe.ui.form.on("Bulk Purchase Return", {
+// Copyright (c) 2026, Franchise Erp and contributors
+// For license information, please see license.txt
+
+// frappe.ui.form.on("Bulk Sales Return", {
+// 	refresh(frm) {
+
+// 	},
+// });
+
+frappe.ui.form.on("Bulk Sales Return", {
     refresh(frm) {
 
         if (frm.is_new() || frm.doc.docstatus !== 0) return;
 
-        frm.add_custom_button("Get Items from GRN", () => {
+        frm.add_custom_button("Get Items from Delivery Notes", () => {
             open_return_items_dialog(frm);
         });
 
     }
 });
-
-
-frappe.ui.form.on('Bulk Purchase Return', {
+frappe.ui.form.on('Bulk Sales Return', {
     refresh: function(frm) {
 
         if (frm.doc.docstatus !== 1) return;
 
+        // 🔥 Check if any draft Return DNs exist
         frappe.call({
-            method: 'franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.has_draft_return_prs',
+            method: 'franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.has_draft_return_dns',
             args: {
                 docname: frm.doc.name
             },
             callback: function(r) {
 
                 if (r.message) {
-
-                    frm.add_custom_button('Submit Return PRs', async function() {
+                    // ✅ Only show button if drafts exist
+                    frm.add_custom_button('Submit Return DNs', async function() {
 
                         await frappe.call({
-                            method: 'franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.submit_created_prs',
+                            method: 'franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.submit_created_dns',
                             args: {
                                 docname: frm.doc.name
                             },
                             freeze: true,
-                            freeze_message: 'Submitting Return Purchase Receipts...'
+                            freeze_message: 'Submitting Return Delivery Notes...'
                         });
 
-                        frappe.msgprint('Return Purchase Receipts Submitted');
-                        frm.reload_doc();
+                        frappe.msgprint('Return Delivery Notes Submitted');
+                        frm.reload_doc(); // 🔥 refresh after submit
                     });
                 }
             }
@@ -48,16 +56,16 @@ frappe.ui.form.on('Bulk Purchase Return', {
 function open_return_items_dialog(frm) {
 
     let dialog = new frappe.ui.Dialog({
-        title: "Return Items from GRN",
+        title: "Return Items against Delivery Note",
         size: "extra-large",
 
         fields: [
             {
-                fieldname: "supplier",
-                label: "Supplier",
+                fieldname: "customer",
+                label: "Customer",
                 fieldtype: "Link",
-                options: "Supplier",
-                default: frm.doc.supplier,
+                options: "Customer",
+                default: frm.doc.customer,
                 reqd: 1,
                 onchange() {
                     load_returnable_items(frm, dialog);
@@ -84,7 +92,7 @@ function open_return_items_dialog(frm) {
                     if (!serial) return;
             
                     frappe.call({
-                        method: "franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.get_pr_from_serial",
+                        method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_dn_from_serial",
                         args: {
                             serial_no: serial,
                             company: frm.doc.company
@@ -98,9 +106,9 @@ function open_return_items_dialog(frm) {
                                 return;
                             }
                         
-                            // ❌ Condition 1 — Serial status Delivered
-                            if (r.message.status === "Delivered") {
-                                frappe.msgprint(`Serial ${serial} is already Delivered and cannot be returned.`);
+                            // ❌ Condition 1 — Serial status Active
+                            if (r.message.status !== "Delivered") {
+                                frappe.msgprint(`Serial ${serial} is not delivered, cannot return.`);
                                 dialog.set_value("serial_no", "");
                                 dialog.fields_dict.serial_no.$input.focus();
                                 return;
@@ -126,7 +134,7 @@ function open_return_items_dialog(frm) {
                             let rows = table.get_data();
                         
                             let existing = rows.find(d =>
-                                d.purchase_receipt === r.message.purchase_receipt &&
+                                d.delivery_note === r.message.delivery_note &&
                                 d.item_code === r.message.item_code
                             );
                         
@@ -171,7 +179,7 @@ function open_return_items_dialog(frm) {
 
                 fields: [
 
-                    { fieldname: "purchase_receipt", label: "GRN", fieldtype: "Data", read_only: 1, in_list_view: 1},
+                    { fieldname: "delivery_note", label: "Delivery Note", fieldtype: "Data", read_only: 1, in_list_view: 1},
 
                     { fieldname: "item_code", label: "Item", fieldtype: "Data", read_only: 1, in_list_view: 1},
                     
@@ -255,13 +263,13 @@ function open_return_items_dialog(frm) {
         
                 if (!r.return_qty || r.return_qty <= 0) {
                     frappe.throw(
-                        `Please enter Return Qty for Item ${r.item_code} in GRN ${r.purchase_receipt}`
+                        `Please enter Return Qty for Item ${r.item_code} in Delivery Note ${r.delivery_note}`
                     );
                 }
         
                 if (r.return_qty > r.returnable_qty) {
                     frappe.throw(
-                        `Return Qty cannot exceed Returnable Qty for Item ${r.item_code} in GRN ${r.purchase_receipt}`
+                        `Return Qty cannot exceed Returnable Qty for Item ${r.item_code} in Delivery Note ${r.delivery_note}`
                     );
                 }
             }
@@ -269,7 +277,7 @@ function open_return_items_dialog(frm) {
 
             selected_rows.forEach(d => {
 
-                let key = d.purchase_receipt_item;
+                let key = d.delivery_note_item;
 
                 if (!merged_rows[key]) {
                     merged_rows[key] = {...d};
@@ -292,7 +300,7 @@ function open_return_items_dialog(frm) {
             selected_rows = Object.values(merged_rows);
 
             frappe.call({
-                method: "franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.get_pr_item_details",
+                method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_dn_item_details",
                 args: {
                     items: selected_rows
                 },
@@ -305,7 +313,7 @@ function open_return_items_dialog(frm) {
                             r.message.forEach(d => {
 
                                 let existing = frm.doc.items.find(row =>
-                                    row.purchase_receipt_item === d.name &&
+                                    row.delivery_note_item === d.name &&
                                     row.warehouse === d.warehouse
                                 );
                                 if (existing) {
@@ -359,8 +367,8 @@ function open_return_items_dialog(frm) {
 
                                     let row = frm.add_child("items");
 
-                                    row.purchase_receipt = d.purchase_receipt;
-                                    row.purchase_receipt_item = d.name;
+                                    row.delivery_note = d.delivery_note;
+                                    row.delivery_note_item = d.name;
                                     row.item_code = d.item_code;
                                     row.item_name = d.item_name;
                                     row.qty = d.qty;
@@ -398,15 +406,15 @@ function open_return_items_dialog(frm) {
 
 function load_returnable_items(frm, dialog) {
 
-    let supplier = dialog.get_value("supplier");
+    let customer = dialog.get_value("customer");
     let item_code = dialog.get_value("item_code");
 
-    if (!supplier) return;
+    if (!customer) return;
 
     frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.get_returnable_items",
+        method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_returnable_items",
         args: {
-            supplier: supplier,
+            customer: customer,
             item_code: item_code,
             company: frm.doc.company
         },
