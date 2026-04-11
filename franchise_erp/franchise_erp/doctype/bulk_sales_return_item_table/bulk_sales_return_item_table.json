@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-03-06 16:12:41.355033",
+ "creation": "2026-04-09 13:15:25.729497",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -11,14 +11,14 @@
   "qty",
   "rate",
   "conversion_factor",
-  "column_break_poce",
+  "column_break_aabp",
   "returnable_quantity",
   "uom",
   "stock_uom",
-  "purchase_receipt",
-  "purchase_receipt_item",
+  "delivery_note",
+  "delivery_note_item",
   "warehouse",
-  "section_break_wwdj",
+  "section_break_xqgo",
   "serial_nos",
   "available_serial_nos"
  ],
@@ -31,7 +31,6 @@
    "options": "Item"
   },
   {
-   "fetch_from": "item_code.item_name",
    "fieldname": "item_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -39,10 +38,9 @@
   },
   {
    "fieldname": "qty",
-   "fieldtype": "Float",
+   "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Qty",
-   "non_negative": 1
+   "label": "Qty"
   },
   {
    "fieldname": "rate",
@@ -50,6 +48,10 @@
    "in_list_view": 1,
    "label": "Rate",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_aabp",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "uom",
@@ -66,41 +68,21 @@
    "read_only": 1
   },
   {
-   "fieldname": "purchase_receipt",
+   "fieldname": "delivery_note",
    "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Purchase Receipt",
-   "options": "Purchase Receipt",
+   "label": "Delivery Note",
+   "options": "Delivery Note",
    "read_only": 1
   },
   {
-   "fieldname": "purchase_receipt_item",
+   "fieldname": "delivery_note_item",
    "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Purchase Receipt Item",
-   "options": "Purchase Receipt Item",
+   "label": "Delivery Note Item",
+   "options": "Delivery Note Item",
    "read_only": 1
   },
   {
-   "fieldname": "conversion_factor",
-   "fieldtype": "Float",
-   "label": "Conversion Factor",
-   "read_only": 1
-  },
-  {
-   "fieldname": "warehouse",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Warehouse",
-   "options": "Warehouse",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_poce",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_wwdj",
+   "fieldname": "section_break_xqgo",
    "fieldtype": "Section Break"
   },
   {
@@ -115,8 +97,21 @@
    "read_only": 1
   },
   {
-   "fieldname": "returnable_quantity",
+   "fieldname": "conversion_factor",
    "fieldtype": "Float",
+   "label": "Conversion Factor",
+   "read_only": 1
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "returnable_quantity",
+   "fieldtype": "Int",
    "label": "Returnable Quantity",
    "read_only": 1
   }
@@ -125,10 +120,10 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-10 17:56:42.886515",
+ "modified": "2026-04-10 19:39:27.417508",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
- "name": "Bulk Purchase Return Item Table",
+ "name": "Bulk Sales Return Item Table",
  "owner": "Administrator",
  "permissions": [],
  "row_format": "Dynamic",

@@ -1,24 +1,23 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "PR-.#####",
- "creation": "2026-03-06 16:09:24.355992",
+ "autoname": "SR-.#####",
+ "creation": "2026-04-09 13:08:44.531665",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "section_break_itvg",
-  "supplier",
+  "section_break_pdaj",
+  "customer",
   "posting_date",
-  "scan_item",
-  "column_break_vxbt",
+  "amended_from",
+  "column_break_dtdh",
   "company",
-  "section_break_awgd",
-  "items",
-  "amended_from"
+  "section_break_rotl",
+  "items"
  ],
  "fields": [
   {
-   "fieldname": "section_break_itvg",
+   "fieldname": "section_break_pdaj",
    "fieldtype": "Section Break"
   },
   {
@@ -26,21 +25,28 @@
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Bulk Purchase Return",
+   "options": "Bulk Sales Return",
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
   },
   {
-   "fieldname": "supplier",
+   "fieldname": "customer",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Supplier",
-   "options": "Supplier",
+   "label": "Customer",
+   "options": "Customer",
    "reqd": 1
   },
   {
-   "fieldname": "column_break_vxbt",
+   "default": "now",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dtdh",
    "fieldtype": "Column Break"
   },
   {
@@ -52,27 +58,14 @@
    "reqd": 1
   },
   {
-   "default": "now",
-   "fieldname": "posting_date",
-   "fieldtype": "Date",
-   "label": "Posting Date",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_awgd",
+   "fieldname": "section_break_rotl",
    "fieldtype": "Section Break"
   },
   {
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
-   "options": "Bulk Purchase Return Item Table"
-  },
-  {
-   "fieldname": "scan_item",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Scan Item"
+   "options": "Bulk Sales Return Item Table"
   }
  ],
  "grid_page_length": 50,
@@ -80,14 +73,14 @@
  "is_submittable": 1,
  "links": [
   {
-   "link_doctype": "Purchase Receipt",
-   "link_fieldname": "custom_bulk_purchase_return"
+   "link_doctype": "Delivery Note",
+   "link_fieldname": "custom_bulk_sales_return"
   }
  ],
- "modified": "2026-04-11 12:10:51.930992",
+ "modified": "2026-04-11 12:10:38.630655",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
- "name": "Bulk Purchase Return",
+ "name": "Bulk Sales Return",
  "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [

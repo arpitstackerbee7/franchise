@@ -93,7 +93,6 @@ class BulkPurchaseReturn(Document):
                 })
 
             return_doc.insert()
-            return_doc.submit()
 
 @frappe.whitelist()
 def get_returnable_items(supplier, company, item_code=None):
@@ -279,3 +278,40 @@ def get_pr_from_serial(serial_no, company):
         "returned_qty": pr_item.returned_qty or 0,
         "return_qty": 1
     }
+
+@frappe.whitelist()
+def submit_created_prs(docname):
+
+    prs = frappe.get_all(
+        "Purchase Receipt",
+        filters={
+            "custom_bulk_purchase_return": docname,
+            "docstatus": 0
+        },
+        pluck="name"
+    )
+
+    submitted = []
+
+    for pr in prs:
+        doc = frappe.get_doc("Purchase Receipt", pr)
+
+        doc.flags.ignore_permissions = True
+        doc.submit()
+
+        submitted.append(pr)
+
+    return submitted
+
+@frappe.whitelist()
+def has_draft_return_prs(docname):
+
+    exists = frappe.db.exists(
+        "Purchase Receipt",
+        {
+            "custom_bulk_purchase_return": docname,
+            "docstatus": 0
+        }
+    )
+
+    return bool(exists)
