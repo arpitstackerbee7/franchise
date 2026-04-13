@@ -577,11 +577,3 @@ scheduler_events = {
 #     }
 # ]
 
-
-
-# fixtures = [
-#       {"dt": "Property Setter",
-#         # "filters": [["name", "in", ["Sales Invoice-naming_series-options"]]],
-#       }
-#     ]
- 

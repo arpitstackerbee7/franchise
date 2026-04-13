@@ -453,3 +453,1541 @@ def get_item_price(item_code, price_list):
         }
 
     return None
+
+
+
+
+
+
+
+# import frappe
+# from frappe.utils.background_jobs import enqueue
+
+# def fix_gstin(doc, method=None):
+
+#     if not doc.gstin:
+#         return
+
+#     gst = doc.gstin
+#     company = doc.name
+
+#     # run AFTER all gst validations complete
+#     enqueue(
+#         _update_gstin,
+#         queue="short",
+#         company=company,
+#         gst=gst,
+#         delay=2
+#     )
+
+
+# def _update_gstin(company, gst):
+
+#     frappe.db.set_value(
+#         "Company",
+#         company,
+#         "gstin",
+#         gst,
+#         update_modified=False
+#     )
+
+#     frappe.db.commit()
+
+
+
+
+
+
+
+
+#     # custom_app/api.py
+
+# import frappe
+
+# @frappe.whitelist()
+# def scan_barcode_custom(barcode):
+    
+#     item = frappe.db.sql("""
+#         SELECT parent
+#         FROM `tabItem Barcode`
+#         WHERE barcode = %s
+#         LIMIT 1
+#     """, (barcode,), as_dict=1)
+
+#     if not item:
+#         return None
+
+#     item_code = item[0].parent
+
+#     # get available serial
+#     serial = frappe.db.sql("""
+#         SELECT name
+#         FROM `tabSerial No`
+#         WHERE item_code = %s
+#         AND status = 'Active'
+#         LIMIT 1
+#     """, (item_code,), as_dict=1)
+
+#     return {
+#         "item_code": item_code,
+#         "serial_no": serial[0].name if serial else None
+#     }
+
+
+
+
+
+# import frappe
+# import pandas as pd
+
+
+# @frappe.whitelist()
+# def upload_serial_excel(file_url, supplier):
+
+#     file_doc = frappe.get_doc("File", {"file_url": file_url})
+#     file_path = file_doc.get_full_path()
+
+#     df = pd.read_excel(file_path)
+
+#     serial_list = (
+#         df.iloc[:, 0]
+#         .dropna()
+#         .astype(str)
+#         .str.strip()
+#         .tolist()
+#     )
+
+#     final_items = []
+#     errors = []
+
+#     for serial in serial_list:
+
+#         found = False
+
+#         # -------------------------
+#         # STEP 1 → check Unused Serials table
+#         # -------------------------
+#         unused = frappe.db.get_value(
+#             "Unused Serials",
+#             {"serial_no": serial},
+#             ["serial_no", "item_code", "purchase_order"],
+#             as_dict=1
+#         )
+
+#         if unused:
+
+#             po_doc = frappe.get_doc("Purchase Order", unused.purchase_order)
+
+#             if po_doc.supplier != supplier:
+#                 errors.append(f"{serial} supplier mismatch")
+#                 continue
+
+#             for po_item in po_doc.items:
+
+#                 if po_item.item_code == unused.item_code:
+
+#                     pending = po_item.qty - po_item.received_qty
+
+#                     if pending <= 0:
+#                         errors.append(f"{serial} exceeds qty for {po_item.item_code}")
+#                         break
+
+#                     final_items.append({
+#                         "item_code": po_item.item_code,
+#                         "item_name": po_item.item_name,
+#                         "description": po_item.description,
+
+#                         "qty": 1,
+#                         "received_qty": 1,
+
+#                         "uom": po_item.uom,
+#                         "stock_uom": po_item.uom,
+#                         "conversion_factor": 1,
+
+#                         "rate": po_item.rate,
+#                         "base_rate": po_item.rate,
+#                         "amount": po_item.rate,
+#                         "base_amount": po_item.rate,
+
+#                         "purchase_order": po_doc.name,
+#                         "purchase_order_item": po_item.name,
+
+#                         "serial_no": serial,
+
+#                         "warehouse": po_item.warehouse,
+
+#                         "use_serial_batch_fields": 1
+#                     })
+
+#                     found = True
+#                     break
+
+
+#         # -------------------------
+#         # STEP 2 → if not found → check Generated Serials in PO
+#         # -------------------------
+#         if not found:
+
+#             po_list = frappe.get_all(
+#                 "Purchase Order",
+#                 filters={"supplier": supplier, "docstatus": 1},
+#                 pluck="name"
+#             )
+
+#             for po_name in po_list:
+
+#                 po_doc = frappe.get_doc("Purchase Order", po_name)
+
+#                 for po_item in po_doc.items:
+
+#                     if not po_item.custom_generated_serials:
+#                         continue
+
+#                     generated_serials = [
+#                         s.strip()
+#                         for s in po_item.custom_generated_serials.split("\n")
+#                         if s.strip()
+#                     ]
+
+#                     if serial in generated_serials:
+
+#                         pending = po_item.qty - po_item.received_qty
+
+#                         if pending <= 0:
+#                             errors.append(
+#                                 f"{serial} exceeds qty for {po_item.item_code}"
+#                             )
+#                             found = True
+#                             break
+
+#                         final_items.append({
+#                             "item_code": po_item.item_code,
+#                             "item_name": po_item.item_name,
+#                             "description": po_item.description,
+
+#                             "qty": 1,
+#                             "received_qty": 1,
+
+#                             "uom": po_item.uom,
+#                             "stock_uom": po_item.uom,
+#                             "conversion_factor": 1,
+
+#                             "rate": po_item.rate,
+#                             "base_rate": po_item.rate,
+#                             "amount": po_item.rate,
+#                             "base_amount": po_item.rate,
+
+#                             "purchase_order": po_doc.name,
+#                             "purchase_order_item": po_item.name,
+
+#                             "serial_no": serial,
+
+#                             "warehouse": po_item.warehouse,
+
+#                             "use_serial_batch_fields": 1
+#                         })
+
+#                         found = True
+#                         break
+
+#                 if found:
+#                     break
+
+
+#         # -------------------------
+#         # not found anywhere
+#         # -------------------------
+#         if not found:
+#             errors.append(f"{serial} not found")
+
+
+#     return {
+#         "items": final_items,
+#         "errors": errors
+#     }
+
+
+
+# import frappe
+# import pandas as pd
+
+
+# @frappe.whitelist()
+# def upload_serial_excel(file_url, supplier):
+
+#     file_doc = frappe.get_doc("File", {"file_url": file_url})
+#     file_path = file_doc.get_full_path()
+
+#     df = pd.read_excel(file_path)
+
+#     serial_list = (
+#         df.iloc[:, 0]
+#         .dropna()
+#         .astype(str)
+#         .str.strip()
+#         .tolist()
+#     )
+
+
+#     po_list = frappe.get_all(
+#         "Purchase Order",
+#         filters={"supplier": supplier, "docstatus": 1},
+#         pluck="name"
+#     )
+
+#     po_docs = {po: frappe.get_doc("Purchase Order", po) for po in po_list}
+
+
+#     # incoming logistic map
+#     incoming_map = {}
+
+#     for po in po_list:
+
+#         il = frappe.db.get_value(
+#             "Incoming Logistic",
+#             {"purchase_order": po},
+#             ["name", "gate_entry_no"],
+#             as_dict=1
+#         )
+
+#         if il:
+#             incoming_map[po] = il
+
+
+#     final_items = []
+#     errors = []
+
+
+#     for serial in serial_list:
+
+#         found = False
+
+
+#         for po in po_docs.values():
+
+#             for item in po.items:
+
+
+#                 # -----------------------
+#                 # unused serial check
+#                 # -----------------------
+#                 if item.custom_unused_serials:
+
+#                     unused_list = [
+#                         s.strip()
+#                         for s in item.custom_unused_serials.split("\n")
+#                         if s.strip()
+#                     ]
+
+#                     if serial in unused_list:
+
+#                         pending = item.qty - item.received_qty
+
+#                         if pending <= 0:
+
+#                             errors.append(
+#                                 f"{serial} over qty {item.item_code}"
+#                             )
+
+#                             found = True
+#                             break
+
+
+#                         il = incoming_map.get(po.name)
+
+
+#                         final_items.append({
+
+#                             "item_code": item.item_code,
+
+#                             "qty": 1,
+
+#                             "uom": item.uom,
+
+#                             "stock_uom": item.uom,
+
+#                             "rate": item.rate,
+
+#                             "purchase_order": po.name,
+
+#                             "purchase_order_item": item.name,
+
+#                             "serial_no": serial,
+
+#                             "warehouse": item.warehouse,
+
+#                             "custom_incoming_logistic":
+#                                 il.name if il else None,
+
+#                             "custom_bulk_gate_entry":
+#                                 il.gate_entry_no if il else None,
+
+#                             "use_serial_batch_fields": 1
+#                         })
+
+
+#                         # move serial unused -> used
+
+#                         unused_list.remove(serial)
+
+#                         used_list = []
+
+#                         if item.custom_used_serials:
+
+#                             used_list = [
+#                                 s.strip()
+#                                 for s in item.custom_used_serials.split("\n")
+#                                 if s.strip()
+#                             ]
+
+
+#                         used_list.append(serial)
+
+
+#                         item.custom_unused_serials = "\n".join(unused_list)
+
+#                         item.custom_used_serials = "\n".join(used_list)
+
+
+#                         found = True
+
+#                         break
+
+
+
+#                 # -----------------------
+#                 # generated serial check
+#                 # -----------------------
+#                 if item.custom_generated_serials:
+
+#                     gen_list = [
+#                         s.strip()
+#                         for s in item.custom_generated_serials.split("\n")
+#                         if s.strip()
+#                     ]
+
+
+#                     if serial in gen_list:
+
+#                         pending = item.qty - item.received_qty
+
+#                         if pending <= 0:
+
+#                             errors.append(
+#                                 f"{serial} over qty {item.item_code}"
+#                             )
+
+#                             found = True
+#                             break
+
+
+#                         il = incoming_map.get(po.name)
+
+
+#                         final_items.append({
+
+#                             "item_code": item.item_code,
+
+#                             "qty": 1,
+
+#                             "uom": item.uom,
+
+#                             "stock_uom": item.uom,
+
+#                             "rate": item.rate,
+
+#                             "purchase_order": po.name,
+
+#                             "purchase_order_item": item.name,
+
+#                             "serial_no": serial,
+
+#                             "warehouse": item.warehouse,
+
+#                             "custom_incoming_logistic":
+#                                 il.name if il else None,
+
+#                             "custom_bulk_gate_entry":
+#                                 il.gate_entry_no if il else None,
+
+#                             "use_serial_batch_fields": 1
+#                         })
+
+
+#                         found = True
+
+#                         break
+
+
+#             if found:
+
+#                 po.save(ignore_permissions=True)
+
+#                 break
+
+
+#         if not found:
+
+#             errors.append(f"{serial} not found")
+
+
+
+#     return {
+
+#         "items": final_items,
+
+#         "errors": errors
+
+#     }
+
+
+
+
+
+
+# import frappe
+# import pandas as pd
+
+
+# @frappe.whitelist()
+# def upload_serial_excel(file_url, supplier):
+
+#     # read excel
+#     file_doc = frappe.get_doc("File", {"file_url": file_url})
+#     file_path = file_doc.get_full_path()
+
+#     df = pd.read_excel(file_path)
+
+#     serial_list = (
+#         df.iloc[:, 0]
+#         .dropna()
+#         .astype(str)
+#         .str.strip()
+#         .tolist()
+#     )
+
+#     if not serial_list:
+#         return {
+#             "items": [],
+#             "errors": ["Excel file empty"]
+#         }
+
+
+#     # -----------------------------
+#     # get Purchase Orders
+#     # -----------------------------
+#     po_list = frappe.get_all(
+#         "Purchase Order",
+#         filters={
+#             "supplier": supplier,
+#             "docstatus": 1
+#         },
+#         pluck="name"
+#     )
+
+#     po_docs = {
+#         po: frappe.get_doc("Purchase Order", po)
+#         for po in po_list
+#     }
+
+
+#     # -----------------------------
+#     # incoming logistic map
+#     # -----------------------------
+#     incoming_map = {}
+
+#     for po in po_list:
+
+#         il = frappe.db.get_value(
+#             "Incoming Logistic",
+#             {"purchase_order": po},
+#             ["name", "gate_entry_no"],
+#             as_dict=1
+#         )
+
+#         if il:
+#             incoming_map[po] = il
+
+
+#     # -----------------------------
+#     # process serials
+#     # -----------------------------
+#     final_items = []
+#     errors = []
+
+#     for serial in serial_list:
+
+#         found = False
+
+
+#         for po in po_docs.values():
+
+#             for item in po.items:
+
+
+#                 # ==================================================
+#                 # 1. UNUSED SERIAL
+#                 # ==================================================
+#                 if item.custom_unused_serials:
+
+#                     unused_list = [
+#                         s.strip()
+#                         for s in item.custom_unused_serials.split("\n")
+#                         if s.strip()
+#                     ]
+
+#                     if serial in unused_list:
+
+#                         pending_qty = item.qty - item.received_qty
+
+#                         if pending_qty <= 0:
+
+#                             errors.append(
+#                                 f"{serial} over qty for {item.item_code}"
+#                             )
+
+#                             found = True
+#                             break
+
+
+#                         il = incoming_map.get(po.name)
+
+
+#                         final_items.append({
+
+#                             "item_code": item.item_code,
+#                             "item_name": item.item_name,
+#                             "description": item.description,
+
+#                             "qty": 1,
+#                             "received_qty": 1,
+
+#                             "uom": item.uom,
+#                             "stock_uom": item.uom,
+
+#                             "conversion_factor": 1,
+
+#                             "rate": item.rate,
+#                             "base_rate": item.rate,
+
+#                             "purchase_order": po.name,
+#                             "purchase_order_item": item.name,
+
+#                             "serial_no": serial,
+
+#                             "warehouse": item.warehouse,
+
+#                             "custom_incoming_logistic":
+#                                 il.name if il else None,
+
+#                             "custom_bulk_gate_entry":
+#                                 il.gate_entry_no if il else None,
+
+#                             "use_serial_batch_fields": 1
+#                         })
+
+
+#                         # move serial unused -> used
+#                         unused_list.remove(serial)
+
+#                         used_list = []
+
+#                         if item.custom_used_serials:
+
+#                             used_list = [
+#                                 s.strip()
+#                                 for s in item.custom_used_serials.split("\n")
+#                                 if s.strip()
+#                             ]
+
+
+#                         used_list.append(serial)
+
+
+#                         item.custom_unused_serials = "\n".join(unused_list)
+
+#                         item.custom_used_serials = "\n".join(used_list)
+
+
+#                         found = True
+#                         break
+
+
+
+#                 # ==================================================
+#                 # 2. GENERATED SERIAL
+#                 # ==================================================
+#                 if item.custom_generated_serials:
+
+#                     generated_list = [
+#                         s.strip()
+#                         for s in item.custom_generated_serials.split("\n")
+#                         if s.strip()
+#                     ]
+
+
+#                     if serial in generated_list:
+
+#                         pending_qty = item.qty - item.received_qty
+
+#                         if pending_qty <= 0:
+
+#                             errors.append(
+#                                 f"{serial} over qty for {item.item_code}"
+#                             )
+
+#                             found = True
+#                             break
+
+
+#                         il = incoming_map.get(po.name)
+
+
+#                         final_items.append({
+
+#                             "item_code": item.item_code,
+#                             "item_name": item.item_name,
+#                             "description": item.description,
+
+#                             "qty": 1,
+#                             "received_qty": 1,
+
+#                             "uom": item.uom,
+#                             "stock_uom": item.uom,
+
+#                             "conversion_factor": 1,
+
+#                             "rate": item.rate,
+#                             "base_rate": item.rate,
+
+#                             "purchase_order": po.name,
+#                             "purchase_order_item": item.name,
+
+#                             "serial_no": serial,
+
+#                             "warehouse": item.warehouse,
+
+#                             "custom_incoming_logistic":
+#                                 il.name if il else None,
+
+#                             "custom_bulk_gate_entry":
+#                                 il.gate_entry_no if il else None,
+
+#                             "use_serial_batch_fields": 1
+#                         })
+
+
+#                         found = True
+#                         break
+
+
+
+#             # save PO if serial moved unused -> used
+#             if found:
+
+#                 po.save(ignore_permissions=True)
+
+#                 break
+
+
+#         if not found:
+
+#             errors.append(f"{serial} not found")
+
+
+#     # -----------------------------
+#     # return data to JS
+#     # -----------------------------
+#     return {
+
+#         "items": final_items,
+
+#         "errors": errors
+
+#     }
+
+
+
+# import frappe
+# import pandas as pd
+
+
+# @frappe.whitelist()
+# def upload_serial_excel(file_url, supplier):
+
+#     frappe.errprint("========== START SERIAL UPLOAD ==========")
+
+#     # ------------------------------------------------
+#     # READ EXCEL
+#     # ------------------------------------------------
+
+#     file_doc = frappe.get_doc("File", {"file_url": file_url})
+#     file_path = file_doc.get_full_path()
+
+#     df = pd.read_excel(file_path)
+
+#     serial_list = (
+#         df.iloc[:, 0]
+#         .dropna()
+#         .astype(str)
+#         .str.strip()
+#         .tolist()
+#     )
+
+#     serial_list = list(dict.fromkeys(serial_list))
+
+#     frappe.errprint({
+#         "TOTAL SERIAL FROM EXCEL": len(serial_list),
+#         "SERIAL SAMPLE": serial_list[:10]
+#     })
+
+#     if not serial_list:
+
+#         return {
+#             "items": [],
+#             "errors": ["Excel file empty"],
+#             "gate_entry_list": []
+#         }
+
+#     # ------------------------------------------------
+#     # GET PURCHASE ORDERS
+#     # ------------------------------------------------
+
+#     po_list = frappe.get_all(
+#         "Purchase Order",
+#         filters={
+#             "supplier": supplier,
+#             "docstatus": 1
+#         },
+#         pluck="name"
+#     )
+
+#     frappe.errprint({
+#         "SUPPLIER": supplier,
+#         "PO FOUND": po_list
+#     })
+
+#     po_docs = {
+#         po: frappe.get_doc("Purchase Order", po)
+#         for po in po_list
+#     }
+
+#     # ------------------------------------------------
+#     # PROCESS SERIALS
+#     # ------------------------------------------------
+
+#     final_items = []
+#     errors = []
+#     gate_entries = set()
+
+#     for serial in serial_list:
+
+#         found = False
+
+#         frappe.errprint(" ")
+#         frappe.errprint("---- CHECK SERIAL ----")
+#         frappe.errprint(serial)
+
+#         for po in po_docs.values():
+
+#             frappe.errprint({
+#                 "CHECK PO": po.name
+#             })
+
+#             for item in po.items:
+
+#                 frappe.errprint({
+#                     "ITEM": item.item_code,
+#                     "PO ITEM ROW": item.name,
+#                     "IL LINK": item.custom_incoming_logistic
+#                 })
+
+#                 pending_qty = item.qty - item.received_qty
+
+#                 # ------------------------------------------------
+#                 # FETCH INCOMING LOGISTIC FROM PO ITEM
+#                 # ------------------------------------------------
+
+#                 il_name = item.custom_incoming_logistic
+
+#                 il_doc = None
+#                 gate_no = None
+
+#                 if il_name:
+
+#                     il_doc = frappe.db.get_value(
+
+#                         "Incoming Logistic",
+
+#                         il_name,
+
+#                         ["name", "gate_entry_no"],
+
+#                         as_dict=1
+
+#                     )
+
+#                     frappe.errprint({
+#                         "IL DOC": il_doc
+#                     })
+
+#                     if il_doc:
+
+#                         gate_no = il_doc.get("gate_entry_no")
+
+#                         frappe.errprint({
+#                             "GATE ENTRY FOUND": gate_no
+#                         })
+
+#                 else:
+
+#                     frappe.errprint({
+#                         "IL STATUS": "NOT LINKED"
+#                     })
+
+
+#                 # =====================================================
+#                 # 1️⃣ UNUSED SERIAL
+#                 # =====================================================
+
+#                 if item.custom_unused_serials:
+
+#                     unused_list = [
+
+#                         x.strip()
+
+#                         for x in item.custom_unused_serials.split("\n")
+
+#                         if x.strip()
+
+#                     ]
+
+#                     if serial in unused_list:
+
+#                         frappe.errprint({
+#                             "MATCH TYPE": "UNUSED",
+#                             "SERIAL": serial,
+#                             "ITEM": item.item_code,
+#                             "PENDING": pending_qty
+#                         })
+
+#                         if pending_qty <= 0:
+
+#                             errors.append(
+#                                 f"{serial} over qty for {item.item_code}"
+#                             )
+
+#                             found = True
+#                             break
+
+
+#                         final_items.append({
+
+#                             "item_code": item.item_code,
+
+#                             "item_name": item.item_name,
+
+#                             "description": item.description,
+
+#                             "qty": 1,
+
+#                             "received_qty": 1,
+
+#                             "uom": item.uom,
+
+#                             "stock_uom": item.uom,
+
+#                             "conversion_factor": 1,
+
+#                             "rate": item.rate,
+
+#                             "base_rate": item.rate,
+
+#                             "purchase_order": po.name,
+
+#                             "purchase_order_item": item.name,
+
+#                             "serial_no": serial,
+
+#                             "warehouse": item.warehouse,
+
+#                             "custom_incoming_logistic": il_name,
+
+#                             "custom_bulk_gate_entry": gate_no,
+
+#                             "use_serial_batch_fields": 1
+
+#                         })
+
+#                         # move serial unused → used
+
+#                         unused_list.remove(serial)
+
+#                         used_list = []
+
+#                         if item.custom_used_serials:
+
+#                             used_list = [
+
+#                                 x.strip()
+
+#                                 for x in item.custom_used_serials.split("\n")
+
+#                                 if x.strip()
+
+#                             ]
+
+#                         used_list.append(serial)
+
+#                         item.custom_unused_serials = "\n".join(unused_list)
+
+#                         item.custom_used_serials = "\n".join(used_list)
+
+#                         if gate_no:
+#                             gate_entries.add(gate_no)
+
+#                         frappe.errprint({
+#                             "SERIAL MOVED UNUSED → USED": serial
+#                         })
+
+#                         found = True
+#                         break
+
+
+#                 # =====================================================
+#                 # 2️⃣ GENERATED SERIAL
+#                 # =====================================================
+
+#                 if item.custom_generated_serials:
+
+#                     gen_list = [
+
+#                         x.strip()
+
+#                         for x in item.custom_generated_serials.split("\n")
+
+#                         if x.strip()
+
+#                     ]
+
+#                     if serial in gen_list:
+
+#                         frappe.errprint({
+#                             "MATCH TYPE": "GENERATED",
+#                             "SERIAL": serial,
+#                             "ITEM": item.item_code,
+#                             "PENDING": pending_qty
+#                         })
+
+#                         if pending_qty <= 0:
+
+#                             errors.append(
+#                                 f"{serial} over qty for {item.item_code}"
+#                             )
+
+#                             found = True
+#                             break
+
+
+#                         final_items.append({
+
+#                             "item_code": item.item_code,
+
+#                             "item_name": item.item_name,
+
+#                             "description": item.description,
+
+#                             "qty": 1,
+
+#                             "received_qty": 1,
+
+#                             "uom": item.uom,
+
+#                             "stock_uom": item.uom,
+
+#                             "conversion_factor": 1,
+
+#                             "rate": item.rate,
+
+#                             "base_rate": item.rate,
+
+#                             "purchase_order": po.name,
+
+#                             "purchase_order_item": item.name,
+
+#                             "serial_no": serial,
+
+#                             "warehouse": item.warehouse,
+
+#                             "custom_incoming_logistic": il_name,
+
+#                             "custom_bulk_gate_entry": gate_no,
+
+#                             "use_serial_batch_fields": 1
+
+#                         })
+
+#                         if gate_no:
+#                             gate_entries.add(gate_no)
+
+#                         frappe.errprint({
+#                             "SERIAL USED FROM GENERATED": serial
+#                         })
+
+#                         found = True
+#                         break
+
+
+#             if found:
+
+#                 po.save(ignore_permissions=True)
+#                 break
+
+
+#         if not found:
+
+#             errors.append(f"{serial} not found")
+
+#             frappe.errprint({
+#                 "NOT FOUND": serial
+#             })
+
+
+#     # ------------------------------------------------
+#     # FINAL DEBUG
+#     # ------------------------------------------------
+
+#     frappe.errprint(" ")
+#     frappe.errprint("===== FINAL RESULT =====")
+
+#     frappe.errprint({
+
+#         "TOTAL ITEMS": len(final_items),
+
+#         "TOTAL ERRORS": len(errors),
+
+#         "GATE ENTRY LIST": list(gate_entries)
+
+#     })
+
+#     frappe.errprint("========== END SERIAL UPLOAD ==========")
+
+
+#     return {
+
+#         "items": final_items,
+
+#         "errors": errors,
+
+#         "gate_entry_list": list(gate_entries)
+
+#     }
+
+
+
+
+
+
+
+import frappe
+import pandas as pd
+
+
+@frappe.whitelist()
+def upload_serial_excel(file_url, supplier):
+
+    frappe.errprint("===== START SERIAL UPLOAD =====")
+
+    # -----------------------------
+    # READ EXCEL
+    # -----------------------------
+
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+    file_path = file_doc.get_full_path()
+
+    df = pd.read_excel(file_path)
+
+    serial_list = (
+        df.iloc[:, 0]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .tolist()
+    )
+
+    serial_list = list(dict.fromkeys(serial_list))
+
+    frappe.errprint({
+        "TOTAL SERIAL": len(serial_list),
+        "SERIAL SAMPLE": serial_list[:5]
+    })
+
+
+    # -----------------------------
+    # GET PURCHASE ORDERS
+    # -----------------------------
+
+    po_list = frappe.get_all(
+
+        "Purchase Order",
+
+        filters={
+
+            "supplier": supplier,
+
+            "docstatus": 1
+
+        },
+
+        pluck="name"
+
+    )
+
+    frappe.errprint({
+
+        "SUPPLIER": supplier,
+
+        "PO LIST": po_list
+
+    })
+
+
+    po_docs = {
+
+        po: frappe.get_doc("Purchase Order", po)
+
+        for po in po_list
+
+    }
+
+
+    final_items = []
+    errors = []
+    gate_entries = set()
+
+
+    # ==========================================================
+    # MAIN LOOP
+    # ==========================================================
+
+    for serial in serial_list:
+
+        found = False
+
+        frappe.errprint(" ")
+        frappe.errprint("CHECK SERIAL -> " + serial)
+
+
+        for po in po_docs.values():
+
+            for item in po.items:
+
+                pending_qty = item.qty - item.received_qty
+
+
+                # ----------------------------------------
+                # FETCH INCOMING LOGISTICS
+                # ----------------------------------------
+
+                il_name = item.custom_incoming_logistic
+
+                gate_no = None
+
+                frappe.errprint({
+
+                    "PO": po.name,
+
+                    "ITEM": item.item_code,
+
+                    "IL LINK": il_name
+
+                })
+
+
+                if il_name:
+
+                    il_doc = frappe.db.get_value(
+
+                        "Incoming Logistics",
+
+                        il_name,
+
+                        ["name", "gate_entry_no"],
+
+                        as_dict=1
+
+                    )
+
+                    frappe.errprint({
+
+                        "IL DOC": il_doc
+
+                    })
+
+
+                    if il_doc:
+
+                        gate_no = il_doc.get("gate_entry_no")
+
+                        frappe.errprint({
+
+                            "GATE ENTRY NO": gate_no
+
+                        })
+
+                        if gate_no:
+                            gate_entries.add(gate_no)
+
+
+                # =====================================================
+                # UNUSED SERIAL CHECK
+                # =====================================================
+
+                if item.custom_unused_serials:
+
+                    unused_list = [
+
+                        x.strip()
+
+                        for x in item.custom_unused_serials.split("\n")
+
+                        if x.strip()
+
+                    ]
+
+                    if serial in unused_list:
+
+                        frappe.errprint({
+
+                            "MATCH TYPE": "UNUSED",
+
+                            "SERIAL": serial,
+
+                            "ITEM": item.item_code
+
+                        })
+
+
+                        if pending_qty <= 0:
+
+                            errors.append(
+
+                                f"{serial} qty exceeded for {item.item_code}"
+
+                            )
+
+                            found = True
+                            break
+
+
+                        final_items.append({
+
+                            "item_code": item.item_code,
+
+                            "item_name": item.item_name,
+
+                            "description": item.description,
+
+                            "qty": 1,
+
+                            "received_qty": 1,
+
+                            "uom": item.uom,
+
+                            "stock_uom": item.uom,
+
+                            "conversion_factor": 1,
+
+                            "rate": item.rate,
+
+                            "base_rate": item.rate,
+
+                            "purchase_order": po.name,
+
+                            "purchase_order_item": item.name,
+
+                            "serial_no": serial,
+
+                            "warehouse": item.warehouse,
+
+                            "custom_bulk_gate_entry": gate_no,
+
+                            "use_serial_batch_fields": 1
+
+                        })
+
+
+                        # move serial unused → used
+
+                        unused_list.remove(serial)
+
+                        used_list = []
+
+                        if item.custom_used_serials:
+
+                            used_list = [
+
+                                x.strip()
+
+                                for x in item.custom_used_serials.split("\n")
+
+                                if x.strip()
+
+                            ]
+
+                        used_list.append(serial)
+
+
+                        item.custom_unused_serials = "\n".join(unused_list)
+
+                        item.custom_used_serials = "\n".join(used_list)
+
+
+                        frappe.errprint({
+
+                            "SERIAL MOVED UNUSED → USED": serial
+
+                        })
+
+
+                        found = True
+                        break
+
+
+                # =====================================================
+                # GENERATED SERIAL CHECK
+                # =====================================================
+
+                if item.custom_generated_serials:
+
+                    gen_list = [
+
+                        x.strip()
+
+                        for x in item.custom_generated_serials.split("\n")
+
+                        if x.strip()
+
+                    ]
+
+                    if serial in gen_list:
+
+                        frappe.errprint({
+
+                            "MATCH TYPE": "GENERATED",
+
+                            "SERIAL": serial,
+
+                            "ITEM": item.item_code
+
+                        })
+
+
+                        if pending_qty <= 0:
+
+                            errors.append(
+
+                                f"{serial} qty exceeded for {item.item_code}"
+
+                            )
+
+                            found = True
+                            break
+
+
+                        final_items.append({
+
+                            "item_code": item.item_code,
+
+                            "item_name": item.item_name,
+
+                            "description": item.description,
+
+                            "qty": 1,
+
+                            "received_qty": 1,
+
+                            "uom": item.uom,
+
+                            "stock_uom": item.uom,
+
+                            "conversion_factor": 1,
+
+                            "rate": item.rate,
+
+                            "base_rate": item.rate,
+
+                            "purchase_order": po.name,
+
+                            "purchase_order_item": item.name,
+
+                            "serial_no": serial,
+
+                            "warehouse": item.warehouse,
+
+                            "custom_bulk_gate_entry": gate_no,
+
+                            "use_serial_batch_fields": 1
+
+                        })
+
+
+                        frappe.errprint({
+
+                            "SERIAL USED FROM GENERATED": serial
+
+                        })
+
+
+                        found = True
+                        break
+
+
+            if found:
+
+                po.save(ignore_permissions=True)
+
+                break
+
+
+        if not found:
+
+            errors.append(serial + " not found")
+
+            frappe.errprint({
+
+                "NOT FOUND": serial
+
+            })
+
+
+    # ==========================================================
+    # FINAL DEBUG
+    # ==========================================================
+
+    frappe.errprint(" ")
+    frappe.errprint("===== FINAL RESULT =====")
+
+    frappe.errprint({
+
+        "TOTAL ITEMS": len(final_items),
+
+        "TOTAL ERRORS": len(errors),
+
+        "GATE ENTRY LIST": list(gate_entries)
+
+    })
+
+
+    frappe.errprint("===== END SERIAL UPLOAD =====")
+
+
+    return {
+
+        "items": final_items,
+
+        "errors": errors,
+
+        "gate_entry_list": list(gate_entries)
+
+    }

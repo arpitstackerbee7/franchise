@@ -375,3 +375,594 @@ frappe.ui.form.on("Purchase Receipt", {
         });
     }
 });
+
+
+// frappe.ui.form.on("Purchase Receipt Item", {
+//     item_code(frm, cdt, cdn) {
+//         let row = locals[cdt][cdn];
+
+//         if (frm.doc.is_subcontracted) {
+//             frappe.model.set_value(cdt, cdn, "use_serial_batch_fields", 0);
+//             frappe.model.set_value(cdt, cdn, "serial_no", "");
+//         }
+//     }
+// });
+
+
+
+
+// frappe.ui.form.on("Purchase Receipt", {
+
+//     refresh(frm) {
+
+//         if (frm.doc.docstatus !== 0) return;
+
+//         frm.add_custom_button("Upload Serial Excel", () => {
+
+//             let dialog = new frappe.ui.Dialog({
+
+//                 title: "Upload Serial Numbers (Excel)",
+
+//                 size: "small",
+
+//                 fields: [
+
+//                     {
+//                         label: "Excel File",
+//                         fieldname: "file",
+//                         fieldtype: "Attach",
+//                         reqd: 1
+//                     },
+
+//                     {
+//                         label: "Replace Existing Items",
+//                         fieldname: "replace",
+//                         fieldtype: "Check",
+//                         default: 1
+//                     }
+
+//                 ],
+
+//                 primary_action_label: "Upload",
+
+//                 primary_action(values) {
+
+//                     if (!values.file) {
+//                         frappe.msgprint("Please upload excel file");
+//                         return;
+//                     }
+
+//                     frappe.call({
+
+//                         method: "franchise_erp.api.upload_serial_excel",
+
+//                         args: {
+//                             file_url: values.file,
+//                             supplier: frm.doc.supplier
+//                         },
+
+//                         freeze: true,
+
+//                         freeze_message: "Reading Excel & verifying serial numbers...",
+
+//                         callback(r) {
+
+//                             if (!r.message) return;
+
+//                             let data = r.message.items || [];
+//                             let errors = r.message.errors || [];
+
+//                             // ⭐ NEW LINE (Gate Entry auto fill)
+//                             if (r.message.gate_entry_list) {
+
+//                                 frm.set_value(
+//                                     "custom_bulk_gate_entry",
+//                                     r.message.gate_entry_list.join(", ")
+//                                 );
+
+//                                 console.log(
+//                                     "Gate Entry:",
+//                                     r.message.gate_entry_list
+//                                 );
+
+//                             }
+
+//                             if (values.replace) {
+
+//                                 frm.clear_table("items");
+
+//                             }
+
+//                             let item_map = {};
+
+//                             data.forEach(d => {
+
+//                                 let key =
+//                                     d.item_code +
+//                                     "_" +
+//                                     d.rate +
+//                                     "_" +
+//                                     d.purchase_order_item;
+
+//                                 if (!item_map[key]) {
+
+//                                     let row = frm.add_child("items");
+
+//                                     Object.assign(row, d);
+
+//                                     row.qty = 1;
+
+//                                     row.received_qty = 1;
+
+//                                     item_map[key] = row;
+
+//                                 }
+//                                 else {
+
+//                                     let row = item_map[key];
+
+//                                     row.qty += 1;
+
+//                                     row.received_qty += 1;
+
+//                                     if (row.serial_no)
+
+//                                         row.serial_no += "\n" + d.serial_no;
+
+//                                     else
+
+//                                         row.serial_no = d.serial_no;
+
+//                                 }
+
+//                             });
+
+//                             frm.refresh_field("items");
+
+//                             frm.refresh_field("custom_bulk_gate_entry");
+
+//                             frm.trigger("calculate_taxes_and_totals");
+
+
+//                             if (data.length) {
+
+//                                 frappe.show_alert({
+
+//                                     message:
+//                                         data.length +
+//                                         " serial processed",
+
+//                                     indicator: "green"
+
+//                                 });
+
+//                             }
+
+
+//                             if (errors.length) {
+
+//                                 frappe.msgprint({
+
+//                                     title: "Skipped Serials",
+
+//                                     indicator: "orange",
+
+//                                     message:
+//                                         "<div style='max-height:200px;overflow:auto'>" +
+//                                         errors.join("<br>") +
+//                                         "</div>"
+
+//                                 });
+
+//                             }
+
+
+//                             console.log("Items:", data);
+
+//                             console.log("Errors:", errors);
+
+
+//                             dialog.hide();
+
+//                         }
+
+//                     });
+
+//                 }
+
+//             });
+
+//             dialog.show();
+
+//         });
+
+//     }
+
+// });
+
+// frappe.ui.form.on("Purchase Receipt", {
+
+//     refresh(frm) {
+
+//         if (frm.doc.docstatus !== 0) return;
+
+//         frm.add_custom_button("Upload Serial Excel", () => {
+
+//             let dialog = new frappe.ui.Dialog({
+
+//                 title: "Upload Serial Numbers (Excel)",
+
+//                 size: "small",
+
+//                 fields: [
+
+//                     {
+//                         label: "Excel File",
+//                         fieldname: "file",
+//                         fieldtype: "Attach",
+//                         reqd: 1
+//                     },
+
+//                     {
+//                         label: "Replace Existing Items",
+//                         fieldname: "replace",
+//                         fieldtype: "Check",
+//                         default: 1
+//                     }
+
+//                 ],
+
+//                 primary_action_label: "Upload",
+
+//                 async primary_action(values) {
+
+//                     if (!values.file) {
+
+//                         frappe.msgprint("Please upload excel file");
+//                         return;
+//                     }
+
+//                     console.clear();
+//                     console.log("===== SERIAL UPLOAD START =====");
+
+//                     frappe.call({
+
+//                         method: "franchise_erp.api.upload_serial_excel",
+
+//                         args: {
+//                             file_url: values.file,
+//                             supplier: frm.doc.supplier
+//                         },
+
+//                         freeze: true,
+//                         freeze_message: "Checking serials & gate entry...",
+
+//                         callback(r) {
+
+//                             if (!r.message) return;
+
+//                             let data = r.message.items || [];
+//                             let errors = r.message.errors || [];
+//                             let gate_list = r.message.gate_entry_list || [];
+
+//                             console.log("ITEMS FROM PYTHON:", data);
+//                             console.log("GATE ENTRY LIST:", gate_list);
+
+//                             if (values.replace) {
+//                                 frm.clear_table("items");
+//                             }
+
+//                             let item_map = {};
+
+//                             data.forEach(d => {
+
+//                                 let key =
+//                                     d.item_code +
+//                                     "_" +
+//                                     d.rate +
+//                                     "_" +
+//                                     d.purchase_order_item +
+//                                     "_" +
+//                                     (d.custom_bulk_gate_entry || "");
+
+//                                 if (!item_map[key]) {
+
+//                                     let row = frm.add_child("items");
+
+//                                     Object.assign(row, d);
+
+//                                     row.qty = 1;
+//                                     row.received_qty = 1;
+
+//                                     // IMPORTANT
+//                                     row.custom_bulk_gate_entry =
+//                                         d.custom_bulk_gate_entry || "";
+
+//                                     console.log(
+//                                         "ADD ROW:",
+//                                         d.item_code,
+//                                         "GATE:",
+//                                         row.custom_bulk_gate_entry
+//                                     );
+
+//                                     item_map[key] = row;
+
+//                                 }
+//                                 else {
+
+//                                     let row = item_map[key];
+
+//                                     row.qty += 1;
+//                                     row.received_qty += 1;
+
+//                                     if (row.serial_no)
+//                                         row.serial_no += "\n" + d.serial_no;
+//                                     else
+//                                         row.serial_no = d.serial_no;
+
+//                                 }
+
+//                             });
+
+//                             frm.refresh_field("items");
+
+//                             console.log(
+//                                 "FINAL ITEMS TABLE:",
+//                                 frm.doc.items
+//                             );
+
+//                             frm.trigger("calculate_taxes_and_totals");
+
+//                             if (data.length) {
+
+//                                 frappe.show_alert({
+
+//                                     message:
+//                                         data.length +
+//                                         " serial processed",
+
+//                                     indicator: "green"
+
+//                                 });
+
+//                             }
+
+//                             if (errors.length) {
+
+//                                 frappe.msgprint({
+
+//                                     title: "Skipped Serials",
+
+//                                     indicator: "orange",
+
+//                                     message:
+//                                         "<div style='max-height:200px;overflow:auto'>" +
+//                                         errors.join("<br>") +
+//                                         "</div>"
+
+//                                 });
+
+//                             }
+
+//                             dialog.hide();
+
+//                             console.log("===== SERIAL UPLOAD END =====");
+
+//                         }
+
+//                     });
+
+//                 }
+
+//             });
+
+//             dialog.show();
+
+//         });
+
+//     }
+
+// });
+
+
+
+
+
+frappe.ui.form.on("Purchase Receipt", {
+
+    refresh(frm) {
+
+        if (frm.doc.docstatus !== 0) return;
+
+        frm.add_custom_button("Upload Serial Excel", () => {
+
+            let dialog = new frappe.ui.Dialog({
+
+                title: "Upload Serial Numbers (Excel)",
+
+                size: "small",
+
+                fields: [
+
+                    {
+                        label: "Excel File",
+                        fieldname: "file",
+                        fieldtype: "Attach",
+                        reqd: 1
+                    },
+
+                    {
+                        label: "Replace Existing Items",
+                        fieldname: "replace",
+                        fieldtype: "Check",
+                        default: 1
+                    }
+
+                ],
+
+                primary_action_label: "Upload",
+
+                primary_action(values) {
+
+                    if (!values.file) {
+
+                        frappe.msgprint("Please upload excel file");
+                        return;
+
+                    }
+
+                    frappe.call({
+
+                        method: "franchise_erp.api.upload_serial_excel",
+
+                        args: {
+
+                            file_url: values.file,
+                            supplier: frm.doc.supplier
+
+                        },
+
+                        freeze: true,
+
+                        freeze_message: "Reading Excel...",
+
+                        callback(r) {
+
+                            if (!r.message) return;
+
+                            let data = r.message.items || [];
+                            let errors = r.message.errors || [];
+
+                            console.log("DATA:", data);
+
+
+                            // ✅ DELETE DEFAULT ROW
+                            if (
+                                frm.doc.items &&
+                                frm.doc.items.length === 1 &&
+                                !frm.doc.items[0].item_code
+                            ) {
+
+                                frm.clear_table("items");
+
+                            }
+
+
+                            // optional replace
+                            if (values.replace) {
+
+                                frm.clear_table("items");
+
+                            }
+
+
+                            let item_map = {};
+
+
+                            data.forEach(d => {
+
+                                let key =
+                                    d.item_code +
+                                    "_" +
+                                    d.rate +
+                                    "_" +
+                                    d.purchase_order_item +
+                                    "_" +
+                                    (d.custom_bulk_gate_entry || "");
+
+
+                                if (!item_map[key]) {
+
+                                    let row = frm.add_child("items");
+
+                                    Object.assign(row, d);
+
+                                    row.qty = 1;
+
+                                    row.received_qty = 1;
+
+                                    // child table field
+                                    row.custom_bulk_gate_entry =
+                                        d.custom_bulk_gate_entry || "";
+
+
+                                    item_map[key] = row;
+
+                                }
+                                else {
+
+                                    let row = item_map[key];
+
+                                    row.qty += 1;
+
+                                    row.received_qty += 1;
+
+
+                                    if (row.serial_no)
+
+                                        row.serial_no += "\n" + d.serial_no;
+
+                                    else
+
+                                        row.serial_no = d.serial_no;
+
+                                }
+
+                            });
+
+
+                            frm.refresh_field("items");
+
+                            frm.trigger("calculate_taxes_and_totals");
+
+
+                            if (data.length) {
+
+                                frappe.show_alert({
+
+                                    message:
+                                        data.length +
+                                        " Serial Added",
+
+                                    indicator: "green"
+
+                                });
+
+                            }
+
+
+                            if (errors.length) {
+
+                                frappe.msgprint({
+
+                                    title: "Skipped Serials",
+
+                                    indicator: "orange",
+
+                                    message:
+                                        "<div style='max-height:200px;overflow:auto'>" +
+                                        errors.join("<br>") +
+                                        "</div>"
+
+                                });
+
+                            }
+
+
+                            dialog.hide();
+
+                        }
+
+                    });
+
+                }
+
+            });
+
+            dialog.show();
+
+        });
+
+    }
+
+});
