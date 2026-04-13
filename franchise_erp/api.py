@@ -1992,14 +1992,21 @@ def get_item_price(item_code, price_list):
 
 #     }
 
-# import frappe
-# import pandas as pd
+import frappe
+import pandas as pd
 
 
-# @frappe.whitelist()
-# def upload_serial_excel(file_url, supplier):
+@frappe.whitelist()
+def upload_serial_excel(file_url, supplier):
 
-    frappe.errprint("===== START SERIAL UPLOAD =====")
+    # -----------------------------
+    # SAFETY CHECK
+    # -----------------------------
+    if not supplier:
+        frappe.throw("Supplier required")
+
+    if not file_url:
+        frappe.throw("File missing")
 
     # -----------------------------
     # READ EXCEL
@@ -2017,7 +2024,15 @@ def get_item_price(item_code, price_list):
         .tolist()
     )
 
+    # remove duplicates
     serial_list = list(dict.fromkeys(serial_list))
+
+    if not serial_list:
+        return {"items": [], "errors": ["No serials found"], "gate_entry_list": []}
+
+    # 🔴 HARD LIMIT (IMPORTANT)
+    if len(serial_list) > 300:
+        frappe.throw("Max 300 serials allowed at once")
 
     # -----------------------------
     # GET PURCHASE ORDERS
@@ -2028,47 +2043,52 @@ def get_item_price(item_code, price_list):
         pluck="name"
     )
 
-    po_docs = {
-        po: frappe.get_doc("Purchase Order", po)
-        for po in po_list
-    }
+    if not po_list:
+        return {"items": [], "errors": ["No Purchase Orders found"], "gate_entry_list": []}
+
+    # load once (IMPORTANT)
+    po_docs = {po: frappe.get_doc("Purchase Order", po) for po in po_list}
 
     final_items = []
     errors = []
     gate_entries = set()
 
-    # ✅ TRACK MODIFIED PO
+    # track modified POs (CRITICAL FIX)
     modified_pos = set()
 
     # ==========================================================
-    # MAIN LOOP
+    # MAIN LOOP (LOGIC SAME)
     # ==========================================================
-
     for serial in serial_list:
 
         found = False
 
-        for po_name, po in po_docs.items():
+        for po in po_docs.values():
 
             for item in po.items:
 
                 pending_qty = item.qty - item.received_qty
 
                 # -----------------------------
-                # FETCH GATE ENTRY
+                # GATE ENTRY FETCH
                 # -----------------------------
                 gate_no = None
-                if item.custom_incoming_logistic:
-                    gate_no = frappe.db.get_value(
+                il_name = item.custom_incoming_logistic
+
+                if il_name:
+                    il_doc = frappe.db.get_value(
                         "Incoming Logistics",
-                        item.custom_incoming_logistic,
-                        "gate_entry_no"
+                        il_name,
+                        ["gate_entry_no"],
+                        as_dict=1
                     )
-                    if gate_no:
+
+                    if il_doc and il_doc.get("gate_entry_no"):
+                        gate_no = il_doc.get("gate_entry_no")
                         gate_entries.add(gate_no)
 
                 # =====================================================
-                # UNUSED SERIAL
+                # UNUSED SERIAL CHECK
                 # =====================================================
                 if item.custom_unused_serials:
 
@@ -2104,7 +2124,7 @@ def get_item_price(item_code, price_list):
                             "use_serial_batch_fields": 1
                         })
 
-                        # move serial
+                        # move serial unused → used
                         unused_list.remove(serial)
 
                         used_list = []
@@ -2120,14 +2140,14 @@ def get_item_price(item_code, price_list):
                         item.custom_unused_serials = "\n".join(unused_list)
                         item.custom_used_serials = "\n".join(used_list)
 
-                        # ✅ mark modified
-                        modified_pos.add(po_name)
+                        # mark PO for save
+                        modified_pos.add(po.name)
 
                         found = True
                         break
 
                 # =====================================================
-                # GENERATED SERIAL
+                # GENERATED SERIAL CHECK
                 # =====================================================
                 if item.custom_generated_serials:
 
@@ -2163,9 +2183,6 @@ def get_item_price(item_code, price_list):
                             "use_serial_batch_fields": 1
                         })
 
-                        # ✅ mark modified
-                        modified_pos.add(po_name)
-
                         found = True
                         break
 
@@ -2176,13 +2193,12 @@ def get_item_price(item_code, price_list):
             errors.append(serial + " not found")
 
     # ==========================================================
-    # ✅ SAVE ONLY ONCE (MAIN FIX)
+    # SAVE ONCE ONLY (CRITICAL)
     # ==========================================================
     for po_name in modified_pos:
         po_docs[po_name].save(ignore_permissions=True)
 
-    frappe.db.commit()
-
+    # ==========================================================
     return {
         "items": final_items,
         "errors": errors,
