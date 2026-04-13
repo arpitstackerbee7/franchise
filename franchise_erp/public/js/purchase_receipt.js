@@ -768,201 +768,201 @@ frappe.ui.form.on("Purchase Receipt", {
 
 
 
-frappe.ui.form.on("Purchase Receipt", {
+// frappe.ui.form.on("Purchase Receipt", {
 
-    refresh(frm) {
+//     refresh(frm) {
 
-        if (frm.doc.docstatus !== 0) return;
+//         if (frm.doc.docstatus !== 0) return;
 
-        frm.add_custom_button("Upload Serial Excel", () => {
+//         frm.add_custom_button("Upload Serial Excel", () => {
 
-            let dialog = new frappe.ui.Dialog({
+//             let dialog = new frappe.ui.Dialog({
 
-                title: "Upload Serial Numbers (Excel)",
+//                 title: "Upload Serial Numbers (Excel)",
 
-                size: "small",
+//                 size: "small",
 
-                fields: [
+//                 fields: [
 
-                    {
-                        label: "Excel File",
-                        fieldname: "file",
-                        fieldtype: "Attach",
-                        reqd: 1
-                    },
+//                     {
+//                         label: "Excel File",
+//                         fieldname: "file",
+//                         fieldtype: "Attach",
+//                         reqd: 1
+//                     },
 
-                    {
-                        label: "Replace Existing Items",
-                        fieldname: "replace",
-                        fieldtype: "Check",
-                        default: 1
-                    }
+//                     {
+//                         label: "Replace Existing Items",
+//                         fieldname: "replace",
+//                         fieldtype: "Check",
+//                         default: 1
+//                     }
 
-                ],
+//                 ],
 
-                primary_action_label: "Upload",
+//                 primary_action_label: "Upload",
 
-                primary_action(values) {
+//                 primary_action(values) {
 
-                    if (!values.file) {
+//                     if (!values.file) {
 
-                        frappe.msgprint("Please upload excel file");
-                        return;
+//                         frappe.msgprint("Please upload excel file");
+//                         return;
 
-                    }
+//                     }
 
-                    frappe.call({
+//                     frappe.call({
 
-                        method: "franchise_erp.api.upload_serial_excel",
+//                         method: "franchise_erp.api.upload_serial_excel",
 
-                        args: {
+//                         args: {
 
-                            file_url: values.file,
-                            supplier: frm.doc.supplier
+//                             file_url: values.file,
+//                             supplier: frm.doc.supplier
 
-                        },
+//                         },
 
-                        freeze: true,
+//                         freeze: true,
 
-                        freeze_message: "Reading Excel...",
+//                         freeze_message: "Reading Excel...",
 
-                        callback(r) {
+//                         callback(r) {
 
-                            if (!r.message) return;
+//                             if (!r.message) return;
 
-                            let data = r.message.items || [];
-                            let errors = r.message.errors || [];
+//                             let data = r.message.items || [];
+//                             let errors = r.message.errors || [];
 
-                            console.log("DATA:", data);
+//                             console.log("DATA:", data);
 
 
-                            // ✅ DELETE DEFAULT ROW
-                            if (
-                                frm.doc.items &&
-                                frm.doc.items.length === 1 &&
-                                !frm.doc.items[0].item_code
-                            ) {
+//                             // ✅ DELETE DEFAULT ROW
+//                             if (
+//                                 frm.doc.items &&
+//                                 frm.doc.items.length === 1 &&
+//                                 !frm.doc.items[0].item_code
+//                             ) {
 
-                                frm.clear_table("items");
+//                                 frm.clear_table("items");
 
-                            }
+//                             }
 
 
-                            // optional replace
-                            if (values.replace) {
+//                             // optional replace
+//                             if (values.replace) {
 
-                                frm.clear_table("items");
+//                                 frm.clear_table("items");
 
-                            }
+//                             }
 
 
-                            let item_map = {};
+//                             let item_map = {};
 
 
-                            data.forEach(d => {
+//                             data.forEach(d => {
 
-                                let key =
-                                    d.item_code +
-                                    "_" +
-                                    d.rate +
-                                    "_" +
-                                    d.purchase_order_item +
-                                    "_" +
-                                    (d.custom_bulk_gate_entry || "");
+//                                 let key =
+//                                     d.item_code +
+//                                     "_" +
+//                                     d.rate +
+//                                     "_" +
+//                                     d.purchase_order_item +
+//                                     "_" +
+//                                     (d.custom_bulk_gate_entry || "");
 
 
-                                if (!item_map[key]) {
+//                                 if (!item_map[key]) {
 
-                                    let row = frm.add_child("items");
+//                                     let row = frm.add_child("items");
 
-                                    Object.assign(row, d);
+//                                     Object.assign(row, d);
 
-                                    row.qty = 1;
+//                                     row.qty = 1;
 
-                                    row.received_qty = 1;
+//                                     row.received_qty = 1;
 
-                                    // child table field
-                                    row.custom_bulk_gate_entry =
-                                        d.custom_bulk_gate_entry || "";
+//                                     // child table field
+//                                     row.custom_bulk_gate_entry =
+//                                         d.custom_bulk_gate_entry || "";
 
 
-                                    item_map[key] = row;
+//                                     item_map[key] = row;
 
-                                }
-                                else {
+//                                 }
+//                                 else {
 
-                                    let row = item_map[key];
+//                                     let row = item_map[key];
 
-                                    row.qty += 1;
+//                                     row.qty += 1;
 
-                                    row.received_qty += 1;
+//                                     row.received_qty += 1;
 
 
-                                    if (row.serial_no)
+//                                     if (row.serial_no)
 
-                                        row.serial_no += "\n" + d.serial_no;
+//                                         row.serial_no += "\n" + d.serial_no;
 
-                                    else
+//                                     else
 
-                                        row.serial_no = d.serial_no;
+//                                         row.serial_no = d.serial_no;
 
-                                }
+//                                 }
 
-                            });
+//                             });
 
 
-                            frm.refresh_field("items");
+//                             frm.refresh_field("items");
 
-                            frm.trigger("calculate_taxes_and_totals");
+//                             frm.trigger("calculate_taxes_and_totals");
 
 
-                            if (data.length) {
+//                             if (data.length) {
 
-                                frappe.show_alert({
+//                                 frappe.show_alert({
 
-                                    message:
-                                        data.length +
-                                        " Serial Added",
+//                                     message:
+//                                         data.length +
+//                                         " Serial Added",
 
-                                    indicator: "green"
+//                                     indicator: "green"
 
-                                });
+//                                 });
 
-                            }
+//                             }
 
 
-                            if (errors.length) {
+//                             if (errors.length) {
 
-                                frappe.msgprint({
+//                                 frappe.msgprint({
 
-                                    title: "Skipped Serials",
+//                                     title: "Skipped Serials",
 
-                                    indicator: "orange",
+//                                     indicator: "orange",
 
-                                    message:
-                                        "<div style='max-height:200px;overflow:auto'>" +
-                                        errors.join("<br>") +
-                                        "</div>"
+//                                     message:
+//                                         "<div style='max-height:200px;overflow:auto'>" +
+//                                         errors.join("<br>") +
+//                                         "</div>"
 
-                                });
+//                                 });
 
-                            }
+//                             }
 
 
-                            dialog.hide();
+//                             dialog.hide();
 
-                        }
+//                         }
 
-                    });
+//                     });
 
-                }
+//                 }
 
-            });
+//             });
 
-            dialog.show();
+//             dialog.show();
 
-        });
+//         });
 
-    }
+//     }
 
-});
+// });
