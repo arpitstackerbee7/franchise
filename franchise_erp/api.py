@@ -2176,3 +2176,104 @@ def split_lines(text):
     if not text:
         return []
     return [x.strip() for x in text.split("\n") if x.strip()]
+
+
+
+
+
+
+
+
+
+
+import frappe
+from openpyxl import load_workbook
+
+
+@frappe.whitelist()
+def upload_serial_excel_sales(file_url):
+
+    serial_list = read_excel_serials(file_url)
+
+    items = []
+    errors = []
+
+    for serial in serial_list:
+
+        res = process_serial(serial)
+
+        if res.get("item"):
+            items.append(res["item"])
+
+        if res.get("error"):
+            errors.append(res["error"])
+
+    return {
+        "items": items,
+        "errors": errors
+    }
+
+
+# -----------------------------
+# READ EXCEL
+# -----------------------------
+def read_excel_serials(file_url):
+
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+    file_path = file_doc.get_full_path()
+
+    wb = load_workbook(file_path)
+    sheet = wb.active
+
+    serials = []
+
+    for row in sheet.iter_rows(min_row=1, max_col=1):
+        if row[0].value:
+            serials.append(str(row[0].value).strip())
+
+    # remove duplicates
+    return list(dict.fromkeys(serials))
+
+
+# -----------------------------
+# PROCESS SERIAL
+# -----------------------------
+def process_serial(serial):
+
+    serial_doc = frappe.db.get_value(
+        "Serial No",
+        serial,
+        ["item_code", "warehouse", "status"],
+        as_dict=1
+    )
+
+    if not serial_doc:
+        return {"error": f"{serial} not found"}
+
+    if serial_doc.status != "Active":
+        return {"error": f"{serial} is not Active"}
+
+    item = frappe.get_doc("Item", serial_doc.item_code)
+
+    return {
+        "item": build_item(item, serial, serial_doc.warehouse)
+    }
+
+
+# -----------------------------
+# BUILD ITEM
+# -----------------------------
+def build_item(item, serial, warehouse):
+
+    return {
+        "item_code": item.item_code,
+        "item_name": item.item_name,
+        "description": item.description,
+        "qty": 1,
+        "uom": item.stock_uom,
+        "stock_uom": item.stock_uom,
+        "conversion_factor": 1,
+        "serial_no": serial,
+        "warehouse": warehouse,
+        "use_serial_batch_fields": 1
+    }
