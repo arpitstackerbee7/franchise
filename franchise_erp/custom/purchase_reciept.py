@@ -601,10 +601,11 @@ def validate_gate_entry(doc, method):
 
     # Items check
     for row in doc.items:
-        if not row.custom_bulk_gate_entry:
-            frappe.throw(
-                "First create Gate Entry, then Purchase Receipt can be saved."
-            )
+        pass
+        # if not row.custom_bulk_gate_entry:
+        #     frappe.throw(
+        #         "First create Gate Entry, then Purchase Receipt can be saved."
+        #     )
 
 
 from frappe import _
