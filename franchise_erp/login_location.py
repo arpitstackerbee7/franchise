@@ -2,7 +2,6 @@ import frappe
 from math import radians, cos, sin, asin, sqrt
 
 def get_distance(lat1, lon1, lat2, lon2):
-    """Haversine formula to calculate distance in meters"""
     try:
         lat1, lon1, lat2, lon2 = map(float, [lat1, lon1, lat2, lon2])
         lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
@@ -13,6 +12,13 @@ def get_distance(lat1, lon1, lat2, lon2):
         return 6371 * c * 1000 
     except Exception:
         return 999999
+
+@frappe.whitelist()
+def should_check_location():
+    user = frappe.session.user
+    if user == "Guest": return False
+    enabled = frappe.db.get_value("Counter Location", {"user": user}, "enable_location_restriction")
+    return True if enabled else False
 
 @frappe.whitelist()
 def check_login_location(latitude, longitude):
@@ -33,11 +39,6 @@ def check_login_location(latitude, longitude):
 
     distance = get_distance(latitude, longitude, master_loc.latitude, master_loc.longitude)
     allowed_radius = float(master_loc.custom_allow_radius_for_login or 100)
-
-    frappe.log_error(
-        message=f"User: {user}\nBrowser GPS: {latitude}, {longitude}\nMaster GPS: {master_loc.latitude}, {master_loc.longitude}\nDistance: {round(distance)}m\nAllowed: {allowed_radius}m",
-        title="Location Security Check"
-    )
 
     if distance > allowed_radius:
         frappe.local.login_manager.logout()
