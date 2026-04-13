@@ -1,0 +1,76 @@
+{
+ "cards": [
+  {
+   "card": "Annual Sales"
+  },
+  {
+   "card": "Sales Orders to Deliver"
+  },
+  {
+   "card": "Sales Orders to Bill"
+  },
+  {
+   "card": "Active Customers"
+  },
+  {
+   "card": "Total Sales Qty"
+  },
+  {
+   "card": "Total Sales Amt"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Sales Order Trends",
+   "width": "Full"
+  },
+  {
+   "chart": "Top Customers",
+   "width": "Half"
+  },
+  {
+   "chart": "Sales Order Analysis",
+   "width": "Half"
+  },
+  {
+   "chart": "Item-wise Annual Sales",
+   "width": "Full"
+  },
+  {
+   "chart": "Sales Trend-1",
+   "width": "Half"
+  },
+  {
+   "chart": "Sales Progress",
+   "width": "Half"
+  },
+  {
+   "chart": "Sales by Category",
+   "width": "Half"
+  },
+  {
+   "chart": "Top Selling Items Chart",
+   "width": "Half"
+  },
+  {
+   "chart": "Least Selling Items Chart",
+   "width": "Half"
+  },
+  {
+   "chart": "Sale vs Stock",
+   "width": "Half"
+  }
+ ],
+ "creation": "2026-04-08 11:30:27.318705",
+ "dashboard_name": "Selling",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-04-09 15:56:28.728607",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Selling",
+ "owner": "Administrator"
+}
