@@ -1589,12 +1589,12 @@ def get_item_price(item_code, price_list):
 
 
 
-# import frappe
-# import pandas as pd
+import frappe
+import pandas as pd
 
 
-# @frappe.whitelist()
-# def upload_serial_excel(file_url, supplier):
+@frappe.whitelist()
+def upload_serial_excel(file_url, supplier):
 
     frappe.errprint("===== START SERIAL UPLOAD =====")
 
