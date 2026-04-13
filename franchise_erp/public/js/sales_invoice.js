@@ -67,6 +67,10 @@ frappe.ui.form.on("Sales Invoice", {
 
         make_total_qty_bold(frm);
     },
+    on_submit(frm) {
+        // ✅ ensure button appears immediately after submit
+        toggle_outgoing_logistics_button(frm);
+    },
     items_add(frm) {
         check_delivery_note(frm);
     },
@@ -98,9 +102,9 @@ frappe.ui.form.on("Sales Invoice", {
         calculate_due_date(frm);
     },
 
-    is_return(frm) {
-        if (frm.doc.is_return) make_items_negative(frm);
-    },
+    // is_return(frm) {
+    //     if (frm.doc.is_return) make_items_negative(frm);
+    // },
 
     validate(frm) {
         handle_sis_calculation(frm);
@@ -141,15 +145,15 @@ frappe.ui.form.on("Sales Invoice Item", {
         apply_discount_hide(frm, cdt, cdn);
     },
 
-    qty(frm, cdt, cdn) {
+    // qty(frm, cdt, cdn) {
 
-        if (!frm.doc.is_return) return;
+    //     if (!frm.doc.is_return) return;
 
-        let row = locals[cdt][cdn];
-        if (row.qty > 0) {
-            frappe.model.set_value(cdt, cdn, "qty", -Math.abs(row.qty));
-        }
-    },
+    //     let row = locals[cdt][cdn];
+    //     if (row.qty > 0) {
+    //         frappe.model.set_value(cdt, cdn, "qty", -Math.abs(row.qty));
+    //     }
+    // },
     delivery_note(frm, cdt, cdn) {
         check_delivery_note(frm);
     },
@@ -294,18 +298,18 @@ function set_custom_due_date(frm) {
    RETURN NEGATIVE
 ===================================================== */
 
-function make_items_negative(frm) {
+// function make_items_negative(frm) {
 
-    (frm.doc.items || []).forEach(row => {
+//     (frm.doc.items || []).forEach(row => {
 
-        if (row.serial_no) {
-            let count = row.serial_no.split("\n").filter(s => s.trim()).length;
-            frappe.model.set_value(row.doctype, row.name, "qty", -Math.abs(count));
-        } else if (row.qty > 0) {
-            frappe.model.set_value(row.doctype, row.name, "qty", -Math.abs(row.qty));
-        }
-    });
-}
+//         if (row.serial_no) {
+//             let count = row.serial_no.split("\n").filter(s => s.trim()).length;
+//             frappe.model.set_value(row.doctype, row.name, "qty", -Math.abs(count));
+//         } else if (row.qty > 0) {
+//             frappe.model.set_value(row.doctype, row.name, "qty", -Math.abs(row.qty));
+//         }
+//     });
+// }
 
 /* =====================================================
    BUTTONS (UNCHANGED – SAFE)
@@ -533,52 +537,103 @@ function generate_fixed_excel(frm, item_map) {
     link.click();
     document.body.removeChild(link);
 }
-function add_outgoing_logistics_button(frm) {
+// function add_outgoing_logistics_button(frm) {
 
-    if (frm.__outgoing_btn_added) return;
-    frm.__outgoing_btn_added = true;
+//     // if (frm.__outgoing_btn_added) return;
+//     if (frm.custom_buttons && frm.custom_buttons["Outgoing Logistics"]) return;
+//     frm.__outgoing_btn_added = true;
 
-    frappe.db.get_value("Customer", frm.doc.customer,
+//     frappe.db.get_value("Customer", frm.doc.customer,
+//         "custom_outgoing_logistics_applicable"
+//     ).then(r => {
+
+//         if (!r.message?.custom_outgoing_logistics_applicable) return;
+
+//         frm.add_custom_button("Outgoing Logistics", async () => {
+
+//             let address_name =
+//                 frm.doc.shipping_address_name ||
+//                 frm.doc.customer_address;
+
+//             if (!address_name) {
+//                 frappe.msgprint("Address missing");
+//                 return;
+//             }
+
+//             let addr = await frappe.db.get_value("Address",
+//                 address_name,
+//                 ["city", "custom_citytown"]
+//             );
+
+//             let city = addr.message?.custom_citytown || addr.message?.city || "";
+
+//             frappe.new_doc("Outgoing Logistics", {}, doc => {
+
+//                 doc.consignee = frm.doc.customer;
+//                 doc.owner_site = frm.doc.company;
+//                 doc.transporter = frm.doc.transporter;
+//                 doc.stock_point = frm.doc.set_warehouse;
+//                 doc.type = "Sales Invoice";
+//                 doc.station_to = city;
+
+//                 let row = frappe.model.add_child(doc, "references");
+//                 row.source_doctype = "Sales Invoice";
+//                 row.source_name = frm.doc.name;
+//             });
+
+//         }, "Create");
+
+//     });
+// }
+async function add_outgoing_logistics_button(frm) {
+
+    if (frm.doc.docstatus !== 1 || !frm.doc.customer) return;
+
+    // prevent duplicate button
+    if (frm.custom_buttons && frm.custom_buttons["Outgoing Logistics"]) return;
+
+    let r = await frappe.db.get_value(
+        "Customer",
+        frm.doc.customer,
         "custom_outgoing_logistics_applicable"
-    ).then(r => {
+    );
 
-        if (!r.message?.custom_outgoing_logistics_applicable) return;
+    if (!r.message?.custom_outgoing_logistics_applicable) return;
 
-        frm.add_custom_button("Outgoing Logistics", async () => {
+    frm.add_custom_button("Outgoing Logistics", async () => {
 
-            let address_name =
-                frm.doc.shipping_address_name ||
-                frm.doc.customer_address;
+        let address_name =
+            frm.doc.shipping_address_name ||
+            frm.doc.customer_address;
 
-            if (!address_name) {
-                frappe.msgprint("Address missing");
-                return;
-            }
+        if (!address_name) {
+            frappe.msgprint("Address missing");
+            return;
+        }
 
-            let addr = await frappe.db.get_value("Address",
-                address_name,
-                ["city", "custom_citytown"]
-            );
+        let addr = await frappe.db.get_value(
+            "Address",
+            address_name,
+            ["city", "custom_citytown"]
+        );
 
-            let city = addr.message?.custom_citytown || addr.message?.city || "";
+        let city = addr.message?.custom_citytown || addr.message?.city || "";
 
-            frappe.new_doc("Outgoing Logistics", {}, doc => {
+        frappe.new_doc("Outgoing Logistics", {}, doc => {
 
-                doc.consignee = frm.doc.customer;
-                doc.owner_site = frm.doc.company;
-                doc.transporter = frm.doc.transporter;
-                doc.stock_point = frm.doc.set_warehouse;
-                doc.type = "Sales Invoice";
-                doc.station_to = city;
+            doc.consignee = frm.doc.customer;
+            doc.owner_site = frm.doc.company;
+            doc.transporter = frm.doc.transporter;
+            doc.stock_point = frm.doc.set_warehouse;
+            doc.type = "Sales Invoice";
+            doc.station_to = city;
 
-                let row = frappe.model.add_child(doc, "references");
-                row.source_doctype = "Sales Invoice";
-                row.source_name = frm.doc.name;
-            });
+            let row = frappe.model.add_child(doc, "references");
+            row.source_doctype = "Sales Invoice";
+            row.source_name = frm.doc.name;
+        });
 
-        }, "Create");
-
-    });
+    }, "Create");
 }
 let DISCOUNT_CACHE = {};
 

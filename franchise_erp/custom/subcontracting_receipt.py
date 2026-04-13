@@ -291,4 +291,3 @@ def get_available_gate_entries(doctype, txt, searchfield, start, page_len, filte
 
 
 
-
