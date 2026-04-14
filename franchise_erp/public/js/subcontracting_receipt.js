@@ -44,28 +44,23 @@ frappe.ui.form.on("Subcontracting Receipt", {
         // Remove pencil icon
         $(".page-title .editable-title").css("pointer-events", "none");
     },
-     onload(frm) {
 
-        if (frm.is_new()) {
-
+        onload(frm) {
+        // !frm.doc.amended_from add karne se Amend karne par qty 0 nahi hogi
+        if (frm.is_new() && !frm.doc.amended_from) {
             frappe.after_ajax(() => {
-
                 if (frm.doc.items) {
-
                     frm.doc.items.forEach(function(row) {
                         row.received_qty = 0;
                         row.qty = 0;
                     });
-
                     frm.refresh_field("items");
                 }
-
             });
-
+            
         }
     },
 });
-
 
 
 
