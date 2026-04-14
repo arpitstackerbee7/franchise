@@ -217,6 +217,48 @@ def assign_fifo_serials(doc, method):
             }
         )
 
+def restore_serials_on_cancel(doc, method):
+    """
+    Jab Subcontracting Receipt cancel hogi, toh usme use huye serials 
+    wapas PO Item ke list mein free ho jayenge.
+    """
+    for row in doc.items:
+        # Check karein ki PO link hai aur serial numbers hain
+        if row.purchase_order_item and row.serial_no:
+            
+            # Purchase Order Item se purana data fetch karein
+            po_data = frappe.db.get_value(
+                "Purchase Order Item",
+                row.purchase_order_item,
+                ["custom_generated_serials", "custom_used_serials"],
+                as_dict=True
+            )
+
+            if not po_data:
+                continue
+
+            # Serials ko sets mein convert karein logic easy karne ke liye
+            generated = set(s.strip() for s in (po_data.custom_generated_serials or "").split("\n") if s.strip())
+            used = set(s.strip() for s in (po_data.custom_used_serials or "").split("\n") if s.strip())
+            
+            # Current document (jo cancel ho raha hai) ke serials
+            current_serials = set(s.strip() for s in row.serial_no.split("\n") if s.strip())
+
+            # Used list se ye serials hata dein
+            updated_used = used - current_serials
+            
+            # Jo used nahi hain wo sab Unused hain
+            updated_unused = generated - updated_used
+
+            # Database update karein
+            frappe.db.set_value(
+                "Purchase Order Item",
+                row.purchase_order_item,
+                {
+                    "custom_used_serials": "\n".join(sorted(list(updated_used))),
+                    "custom_unused_serials": "\n".join(sorted(list(updated_unused)))
+                }
+            )
 
 
 import frappe
