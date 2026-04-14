@@ -13,10 +13,17 @@ def get_distance(lat1, lon1, lat2, lon2):
     except Exception:
         return 999999
 
+
 @frappe.whitelist()
 def should_check_location():
+    is_global_enabled = frappe.db.get_single_value("TZU Setting", "enable_geo_location")
+    
+    if not is_global_enabled:
+        return False  # Agar Setting off hai to aage check hi nahi karega
+
     user = frappe.session.user
     if user == "Guest": return False
+    
     enabled = frappe.db.get_value("Counter Location", {"user": user}, "enable_location_restriction")
     return True if enabled else False
 
@@ -53,3 +60,5 @@ def check_login_location(latitude, longitude):
     frappe.db.set_value("Counter Location", user_setup.name, "last_login_location", f"{latitude}, {longitude}", update_modified=False)
     frappe.db.commit()
     return {"status": "success"}
+
+    

@@ -22,7 +22,8 @@
   "box_barcode_series_length",
   "item_restricted_roles",
   "update_items_allowed_roles",
-  "all_counters_name_show_on_supplier"
+  "all_counters_name_show_on_supplier",
+  "enable_geo_location"
  ],
  "fields": [
   {
@@ -134,13 +135,19 @@
    "fieldtype": "Table MultiSelect",
    "label": "All Counters Name Show On Supplier",
    "options": "Restricted Role Detail"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_geo_location",
+   "fieldtype": "Check",
+   "label": "Enable Geo Location"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-09 17:57:32.465080",
+ "modified": "2026-04-13 17:24:19.445507",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
