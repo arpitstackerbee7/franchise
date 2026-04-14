@@ -17,6 +17,7 @@ def get_columns():
         "Silhouette:Data:120", 
         "Department:Data:120",
         "Warehouse:Link/Warehouse:150",
+        "Brand:Data:120",
         "Item Name:Data:150",   
         "Standard Rate:Currency:100",
         "WSP:Currency:100",
@@ -60,6 +61,8 @@ def get_data(filters):
             AND pr_w.docstatus = 1
             ORDER BY pr_w.posting_date DESC
             LIMIT 1) AS "Warehouse:Link/Warehouse:150",
+
+            item.brand AS "Brand:Data:120",
 
             item.item_name AS "Item Name:Data:150",
     
