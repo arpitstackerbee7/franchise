@@ -28,7 +28,6 @@ app_license = "mit"
 
 on_login = "franchise_erp.auth.check_session_limit"
 
-
 on_session_creation = [
      
     "franchise_erp.custom.session_company.set_session_company_from_user",

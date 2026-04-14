@@ -16,6 +16,7 @@ def get_columns():
         "Division:Data:120",
         "Silhouette:Data:120", 
         "Department:Data:120",
+        "Warehouse:Link/Warehouse:150",
         "Item Name:Data:150",   
         "Standard Rate:Currency:100",
         "WSP:Currency:100",
@@ -48,6 +49,17 @@ def get_data(filters):
             ig_div.item_group_name AS "Division:Data:120",
             ig_sil.item_group_name AS "Silhouette:Data:120",
             ig_dept.item_group_name AS "Department:Data:120",
+            
+            /* Warehouse from the latest Purchase Receipt for this item+supplier+company */
+            (SELECT pri_w.warehouse 
+            FROM `tabPurchase Receipt` pr_w
+            INNER JOIN `tabPurchase Receipt Item` pri_w ON pr_w.name = pri_w.parent
+            WHERE pri_w.item_code = item.name
+            AND pr_w.supplier = pr.supplier
+            AND pr_w.company = pr.company
+            AND pr_w.docstatus = 1
+            ORDER BY pr_w.posting_date DESC
+            LIMIT 1) AS "Warehouse:Link/Warehouse:150",
 
             item.item_name AS "Item Name:Data:150",
     
