@@ -2186,103 +2186,6 @@ def split_lines(text):
 
 
 
-# import frappe
-# from openpyxl import load_workbook
-
-
-# @frappe.whitelist()
-# def upload_serial_excel_sales(file_url):
-
-#     serial_list = read_excel_serials(file_url)
-
-#     items = []
-#     errors = []
-
-#     for serial in serial_list:
-
-#         res = process_serial(serial)
-
-#         if res.get("item"):
-#             items.append(res["item"])
-
-#         if res.get("error"):
-#             errors.append(res["error"])
-
-#     return {
-#         "items": items,
-#         "errors": errors
-#     }
-
-
-# # -----------------------------
-# # READ EXCEL
-# # -----------------------------
-# def read_excel_serials(file_url):
-
-#     file_doc = frappe.get_doc("File", {"file_url": file_url})
-#     file_path = file_doc.get_full_path()
-
-#     wb = load_workbook(file_path)
-#     sheet = wb.active
-
-#     serials = []
-
-#     for row in sheet.iter_rows(min_row=1, max_col=1):
-#         if row[0].value:
-#             serials.append(str(row[0].value).strip())
-
-#     # remove duplicates
-#     return list(dict.fromkeys(serials))
-
-
-# # -----------------------------
-# # PROCESS SERIAL
-# # -----------------------------
-# def process_serial(serial):
-
-#     serial_doc = frappe.db.get_value(
-#         "Serial No",
-#         serial,
-#         ["item_code", "warehouse", "status"],
-#         as_dict=1
-#     )
-
-#     if not serial_doc:
-#         return {"error": f"{serial} not found"}
-
-#     if serial_doc.status != "Active":
-#         return {"error": f"{serial} is not Active"}
-
-#     item = frappe.get_doc("Item", serial_doc.item_code)
-
-#     return {
-#         "item": build_item(item, serial, serial_doc.warehouse)
-#     }
-
-
-# # -----------------------------
-# # BUILD ITEM
-# # -----------------------------
-# def build_item(item, serial, warehouse):
-
-#     return {
-#         "item_code": item.item_code,
-#         "item_name": item.item_name,
-#         "description": item.description,
-#         "qty": 1,
-#         "uom": item.stock_uom,
-#         "stock_uom": item.stock_uom,
-#         "conversion_factor": 1,
-#         "serial_no": serial,
-#         "warehouse": warehouse,
-#         "use_serial_batch_fields": 1
-#     }
-
-
-
-
-
-
 import frappe
 from openpyxl import load_workbook
 
@@ -2290,36 +2193,20 @@ from openpyxl import load_workbook
 @frappe.whitelist()
 def upload_serial_excel_sales(file_url):
 
-    rows = read_excel_rows(file_url)
+    serial_list = read_excel_serials(file_url)
 
     items = []
     errors = []
 
-    for row in rows:
+    for serial in serial_list:
 
-        # -----------------------------
-        # SERIAL ITEM
-        # -----------------------------
-        if row.get("serial"):
-            res = process_serial(row.get("serial"))
+        res = process_serial(serial)
 
-            if res.get("item"):
-                items.append(res["item"])
+        if res.get("item"):
+            items.append(res["item"])
 
-            if res.get("error"):
-                errors.append(res["error"])
-
-        # -----------------------------
-        # NON SERIAL ITEM
-        # -----------------------------
-        elif row.get("item_code"):
-            res = process_non_serial(row)
-
-            if res.get("item"):
-                items.append(res["item"])
-
-            if res.get("error"):
-                errors.append(res["error"])
+        if res.get("error"):
+            errors.append(res["error"])
 
     return {
         "items": items,
@@ -2330,7 +2217,7 @@ def upload_serial_excel_sales(file_url):
 # -----------------------------
 # READ EXCEL
 # -----------------------------
-def read_excel_rows(file_url):
+def read_excel_serials(file_url):
 
     file_doc = frappe.get_doc("File", {"file_url": file_url})
     file_path = file_doc.get_full_path()
@@ -2338,38 +2225,14 @@ def read_excel_rows(file_url):
     wb = load_workbook(file_path)
     sheet = wb.active
 
-    rows = []
+    serials = []
 
-    for row in sheet.iter_rows(min_row=1, max_col=3):
+    for row in sheet.iter_rows(min_row=1, max_col=1):
+        if row[0].value:
+            serials.append(str(row[0].value).strip())
 
-        col1 = row[0].value
-        col2 = row[1].value
-        col3 = row[2].value
-
-        if not col1:
-            continue
-
-        value = str(col1).strip()
-
-        is_serial = frappe.db.exists("Serial No", value)
-
-        if is_serial:
-            rows.append({
-                "serial": value,
-                "item_code": None,
-                "qty": 1,
-                "warehouse": None
-            })
-
-        else:
-            rows.append({
-                "serial": None,
-                "item_code": value,
-                "qty": float(col2) if col2 else 1,
-                "warehouse": col3
-            })
-
-    return rows
+    # remove duplicates
+    return list(dict.fromkeys(serials))
 
 
 # -----------------------------
@@ -2393,45 +2256,182 @@ def process_serial(serial):
     item = frappe.get_doc("Item", serial_doc.item_code)
 
     return {
-        "item": {
-            "item_code": item.item_code,
-            "item_name": item.item_name,
-            "description": item.description,
-            "qty": 1,
-            "uom": item.stock_uom,
-            "stock_uom": item.stock_uom,
-            "conversion_factor": 1,
-            "serial_no": serial,
-            "warehouse": serial_doc.warehouse,
-            "use_serial_batch_fields": 1
-        }
+        "item": build_item(item, serial, serial_doc.warehouse)
     }
 
 
 # -----------------------------
-# PROCESS NON SERIAL
+# BUILD ITEM
 # -----------------------------
-def process_non_serial(row):
-
-    item_code = row.get("item_code")
-    qty = row.get("qty") or 1
-    warehouse = row.get("warehouse")
-
-    if not frappe.db.exists("Item", item_code):
-        return {"error": f"{item_code} not found"}
-
-    item = frappe.get_doc("Item", item_code)
+def build_item(item, serial, warehouse):
 
     return {
-        "item": {
-            "item_code": item.item_code,
-            "item_name": item.item_name,
-            "description": item.description,
-            "qty": qty,
-            "uom": item.stock_uom,
-            "stock_uom": item.stock_uom,
-            "conversion_factor": 1,
-            "warehouse": warehouse,
-            "use_serial_batch_fields": 0
-        }
+        "item_code": item.item_code,
+        "item_name": item.item_name,
+        "description": item.description,
+        "qty": 1,
+        "uom": item.stock_uom,
+        "stock_uom": item.stock_uom,
+        "conversion_factor": 1,
+        "serial_no": serial,
+        "warehouse": warehouse,
+        "use_serial_batch_fields": 1
     }
+
+
+
+
+
+
+# import frappe
+# from openpyxl import load_workbook
+
+
+# @frappe.whitelist()
+# def upload_serial_excel_sales(file_url):
+
+#     rows = read_excel_rows(file_url)
+
+#     items = []
+#     errors = []
+
+#     for row in rows:
+
+#         # -----------------------------
+#         # SERIAL ITEM
+#         # -----------------------------
+#         if row.get("serial"):
+#             res = process_serial(row.get("serial"))
+
+#             if res.get("item"):
+#                 items.append(res["item"])
+
+#             if res.get("error"):
+#                 errors.append(res["error"])
+
+#         # -----------------------------
+#         # NON SERIAL ITEM
+#         # -----------------------------
+#         elif row.get("item_code"):
+#             res = process_non_serial(row)
+
+#             if res.get("item"):
+#                 items.append(res["item"])
+
+#             if res.get("error"):
+#                 errors.append(res["error"])
+
+#     return {
+#         "items": items,
+#         "errors": errors
+#     }
+
+
+# # -----------------------------
+# # READ EXCEL
+# # -----------------------------
+# def read_excel_rows(file_url):
+
+#     file_doc = frappe.get_doc("File", {"file_url": file_url})
+#     file_path = file_doc.get_full_path()
+
+#     wb = load_workbook(file_path)
+#     sheet = wb.active
+
+#     rows = []
+
+#     for row in sheet.iter_rows(min_row=1, max_col=3):
+
+#         col1 = row[0].value
+#         col2 = row[1].value
+#         col3 = row[2].value
+
+#         if not col1:
+#             continue
+
+#         value = str(col1).strip()
+
+#         is_serial = frappe.db.exists("Serial No", value)
+
+#         if is_serial:
+#             rows.append({
+#                 "serial": value,
+#                 "item_code": None,
+#                 "qty": 1,
+#                 "warehouse": None
+#             })
+
+#         else:
+#             rows.append({
+#                 "serial": None,
+#                 "item_code": value,
+#                 "qty": float(col2) if col2 else 1,
+#                 "warehouse": col3
+#             })
+
+#     return rows
+
+
+# # -----------------------------
+# # PROCESS SERIAL
+# # -----------------------------
+# def process_serial(serial):
+
+#     serial_doc = frappe.db.get_value(
+#         "Serial No",
+#         serial,
+#         ["item_code", "warehouse", "status"],
+#         as_dict=1
+#     )
+
+#     if not serial_doc:
+#         return {"error": f"{serial} not found"}
+
+#     if serial_doc.status != "Active":
+#         return {"error": f"{serial} is not Active"}
+
+#     item = frappe.get_doc("Item", serial_doc.item_code)
+
+#     return {
+#         "item": {
+#             "item_code": item.item_code,
+#             "item_name": item.item_name,
+#             "description": item.description,
+#             "qty": 1,
+#             "uom": item.stock_uom,
+#             "stock_uom": item.stock_uom,
+#             "conversion_factor": 1,
+#             "serial_no": serial,
+#             "warehouse": serial_doc.warehouse,
+#             "use_serial_batch_fields": 1
+#         }
+#     }
+
+
+# # -----------------------------
+# # PROCESS NON SERIAL
+# # -----------------------------
+# def process_non_serial(row):
+
+#     item_code = row.get("item_code")
+#     qty = row.get("qty") or 1
+#     warehouse = row.get("warehouse")
+
+#     if not frappe.db.exists("Item", item_code):
+#         return {"error": f"{item_code} not found"}
+
+#     item = frappe.get_doc("Item", item_code)
+
+#     return {
+#         "item": {
+#             "item_code": item.item_code,
+#             "item_name": item.item_name,
+#             "description": item.description,
+#             "qty": qty,
+#             "uom": item.stock_uom,
+#             "stock_uom": item.stock_uom,
+#             "conversion_factor": 1,
+#             "warehouse": warehouse,
+#             "use_serial_batch_fields": 0
+#         }
+#     }
