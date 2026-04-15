@@ -358,11 +358,17 @@ function make_items_negative_pi(frm) {
 frappe.ui.form.on('Purchase Invoice', {
 
     refresh: function(frm) {
-        frm.add_custom_button("Gate Entry", function() {
+
+        // ✅ remove duplicate button
+        frm.remove_custom_button("Gate Entry", __("Get Items From"));
+
+        // ✅ add button in correct group
+        frm.add_custom_button(__("Gate Entry"), function() {
             frm.events.open_gate_entry_dialog(frm);
-        }, "Get Items From");
+        }, __("Get Items From"));
     },
 
+    // 🔥 OPEN DIALOG
     open_gate_entry_dialog: function(frm) {
 
         if (!frm.doc.supplier) {
@@ -377,21 +383,26 @@ frappe.ui.form.on('Purchase Invoice', {
             },
             callback: function(r) {
 
-                if (!r.message.length) {
+                if (!r.message || !r.message.length) {
                     frappe.msgprint("No Gate Entry available");
                     return;
                 }
 
-                let original_data = r.message;
+                // ✅ Add serial number
+                let original_data = r.message.map((d, i) => {
+                    d.idx = i + 1;
+                    return d;
+                });
 
                 let dialog = new frappe.ui.Dialog({
                     title: "Select Gate Entry",
                     size: "large",
                     fields: [
 
+                        // 🔍 SEARCH
                         {
                             fieldname: "search_gate_entry",
-                            fieldtype: "Data",   // 🔥 change Link → Data
+                            fieldtype: "Data",
                             label: "Search Gate Entry",
                             placeholder: "Type Gate Entry ID...",
                             change: function() {
@@ -406,26 +417,48 @@ frappe.ui.form.on('Purchase Invoice', {
                                     );
                                 }
 
+                                // ✅ Re-index serial number
+                                filtered = filtered.map((d, i) => {
+                                    d.idx = i + 1;
+                                    return d;
+                                });
+
                                 dialog.fields_dict.gate_entry_table.df.data = filtered;
                                 dialog.fields_dict.gate_entry_table.grid.refresh();
                             }
                         },
 
+                        // 📋 TABLE
                         {
                             fieldname: "gate_entry_table",
                             fieldtype: "Table",
                             label: "Gate Entries",
                             cannot_add_rows: true,
+                            cannot_delete_rows: true,
                             data: original_data,
                             fields: [
+
+                                // 🔢 Serial No (small)
+                                {
+                                    fieldname: "idx",
+                                    fieldtype: "Int",
+                                    label: "#",
+                                    in_list_view: 1,
+                                    read_only: 1,
+                                    columns: 1
+                                },
+
+                                // 🔥 Gate Entry (wide)
                                 {
                                     fieldname: "name",
                                     fieldtype: "Link",
                                     options: "Gate Entry",
                                     label: "Gate Entry",
                                     in_list_view: 1,
-                                    read_only: 1
+                                    read_only: 1,
+                                    columns: 3
                                 },
+
                                 {
                                     fieldname: "consignor",
                                     fieldtype: "Link",
@@ -446,6 +479,7 @@ frappe.ui.form.on('Purchase Invoice', {
                         }
                     ],
 
+                    // ✅ ACTION BUTTON
                     primary_action_label: "Get Items",
                     primary_action: function() {
 
@@ -463,6 +497,29 @@ frappe.ui.form.on('Purchase Invoice', {
                 });
 
                 dialog.show();
+
+                // 🔥 REMOVE ADD BUTTONS + STYLE FIX
+                setTimeout(() => {
+
+                    let grid = dialog.fields_dict.gate_entry_table.grid;
+
+                    // ❌ remove buttons
+                    grid.wrapper.find('.grid-add-row').hide();
+                    grid.wrapper.find('.grid-add-multiple-rows').hide();
+                    grid.wrapper.find('.grid-upload').hide();
+
+                    // 🎯 column width fix
+                    grid.wrapper.find('[data-fieldname="idx"]').css({
+                        "width": "50px",
+                        "max-width": "50px"
+                    });
+
+                    grid.wrapper.find('[data-fieldname="name"]').css({
+                        "width": "250px",
+                        "min-width": "250px"
+                    });
+
+                }, 200);
             }
         });
     },
@@ -470,58 +527,41 @@ frappe.ui.form.on('Purchase Invoice', {
     // 🔥 PROCESS ITEMS
     process_gate_entries: function(frm, selected_rows) {
 
-        let incoming_ids = selected_rows.map(d => d.incoming_logistics);
+        // ✅ Validate single transporter
+        let transporters = [...new Set(selected_rows.map(d => d.transporter))];
 
-        frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Incoming Logistics",
-                filters: {
-                    name: ["in", incoming_ids]
-                },
-                fields: ["name", "transporter", "total_amount"]
-            },
-            callback: function(r2) {
+        if (transporters.length > 1) {
+            frappe.throw("Multiple Transporters found!");
+        }
 
-                if (!r2.message.length) return;
+        // ✅ Set Supplier
+        frm.set_value("supplier", transporters[0]);
 
-                let transporters = [...new Set(r2.message.map(d => d.transporter))];
+        // ✅ Clear old items
+        frm.clear_table("items");
 
-                if (transporters.length > 1) {
-                    frappe.throw("Multiple Transporters found!");
-                }
+        selected_rows.forEach(ge => {
 
-                // ✅ Set Supplier
-                frm.set_value("supplier", transporters[0]);
-
-                frm.clear_table("items");
-
-                selected_rows.forEach(ge => {
-
-                    if (!ge.transport_service_item) {
-                        frappe.throw(`Missing Service Item in ${ge.name}`);
-                    }
-
-                    let logistics = r2.message.find(l => l.name === ge.incoming_logistics);
-
-                    let row = frm.add_child("items");
-
-                    row.item_code = ge.transport_service_item;
-                    row.item_name = ge.transport_service_item;
-                    row.uom = "Nos";
-                    row.qty = 1;
-                    row.rate = logistics ? logistics.total_amount : 0;
-
-                    // optional reference
-                    row.custom_gate_entry = ge.name;
-
-                });
-
-                frm.refresh_field("items");
-
-                frappe.msgprint("Items added successfully");
+            if (!ge.transport_service_item) {
+                frappe.throw(`Missing Service Item in ${ge.name}`);
             }
+
+            let row = frm.add_child("items");
+
+            row.item_code = ge.transport_service_item;
+            row.item_name = ge.transport_service_item;
+            row.uom = "Nos";
+            row.qty = 1;
+
+            // ✅ Direct rate from backend
+            row.rate = ge.total_amount || 0;
+
+            row.custom_gate_entry = ge.name;
         });
+
+        frm.refresh_field("items");
+
+        frappe.msgprint("Items added successfully");
     }
 
 });

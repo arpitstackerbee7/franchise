@@ -583,44 +583,45 @@ def validate(self):
     if not self.references or len(self.references) == 0:
         frappe.throw("At least one Reference is required before saving.")
 
-
 @frappe.whitelist()
 def get_gate_entries_match_from_pi(supplier):
 
-    # 🔥 Step 1: Incoming Logistics (to_pay = Yes)
+    # 🔥 Step 1: Incoming Logistics filter (MAIN FIX HERE)
     incoming = frappe.get_all(
         "Incoming Logistics",
-        filters={"to_pay": "Yes"},
-        fields=["name", "transporter"]
+        filters={
+            "to_pay": "Yes",
+            "transporter": supplier,
+            "gate_entry_no": ["!=", ""]   # ✅ FIX APPLIED HERE
+        },
+        fields=["name", "transporter", "total_amount"]
     )
 
     if not incoming:
         return []
 
-    logistics_map = {d.name: d.transporter for d in incoming}
+    logistics_map = {d.name: d for d in incoming}
     valid_logistics = list(logistics_map.keys())
 
-    # 🔥 Step 2: Get USED Gate Entries (IMPORTANT FIX)
+    # 🔥 Step 2: Already used Gate Entries
     used_gate_entries = frappe.db.sql("""
         SELECT DISTINCT pii.custom_gate_entry
         FROM `tabPurchase Invoice Item` pii
         INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
         WHERE pi.docstatus = 1
-        # AND pi.supplier = %s
+        AND pi.supplier = %s
         AND pii.custom_gate_entry IS NOT NULL
         AND pii.custom_gate_entry != ''
     """, (supplier,), as_dict=1)
 
     used_list = [d.custom_gate_entry for d in used_gate_entries]
 
-    # 🔥 Step 3: Gate Entry filter (FINAL FIX)
+    # 🔥 Step 3: Gate Entry filter
     filters = {
-        "consignor": supplier,
         "docstatus": 1,
         "incoming_logistics": ["in", valid_logistics]
     }
 
-    # ❗ Only apply NOT IN if list has data
     if used_list:
         filters["name"] = ["not in", used_list]
 
@@ -635,8 +636,10 @@ def get_gate_entries_match_from_pi(supplier):
         ]
     )
 
-    # 🔥 Add transporter
+    # 🔥 Attach transporter + total_amount
     for d in gate_entries:
-        d["transporter"] = logistics_map.get(d["incoming_logistics"], "")
+        logistics = logistics_map.get(d["incoming_logistics"])
+        d["transporter"] = logistics.transporter if logistics else ""
+        d["total_amount"] = logistics.total_amount if logistics else 0
 
     return gate_entries
