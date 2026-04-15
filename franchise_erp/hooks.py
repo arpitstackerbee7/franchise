@@ -108,7 +108,7 @@ doc_events = {
             # "franchise_erp.custom.item_master.update_item_code_on_change",
             ],
         # "on_update" : "franchise_erp.custom.item_master.existing_item_price_update" #existing validation
-        "validate": ["franchise_erp.custom.item_master.validate_and_merge_prices"],
+        # "validate": ["franchise_erp.custom.item_master.validate_and_merge_prices"],
         "on_update" : [
             "franchise_erp.custom.item_master.existing_item_price_update",
         ],
