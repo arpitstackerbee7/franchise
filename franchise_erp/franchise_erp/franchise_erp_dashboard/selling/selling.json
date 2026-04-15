@@ -37,7 +37,7 @@
    "width": "Full"
   },
   {
-   "chart": "Sales Trend-1",
+   "chart": "Sales Trend",
    "width": "Half"
   },
   {
@@ -68,7 +68,7 @@
  "idx": 0,
  "is_default": 0,
  "is_standard": 1,
- "modified": "2026-04-09 15:56:28.728607",
+ "modified": "2026-04-15 16:44:55.310971",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Selling",
