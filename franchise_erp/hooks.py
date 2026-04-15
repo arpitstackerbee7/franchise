@@ -231,6 +231,7 @@ doctype_js = {
     "Supplier Group": "public/js/supplier_group.js",
     "Item Group": "public/js/item_group.js",
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
+    "Employee": "public/js/employee.js"
 
 }
 
