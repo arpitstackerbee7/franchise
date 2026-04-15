@@ -8,7 +8,7 @@ frappe.query_reports["Sales Trend"] = {
             fieldtype: "Link",
             options: "Fiscal Year",
             default: frappe.defaults.get_user_default("fiscal_year"),
-            reqd: 1
+            reqd: 0
         }
     ]
 };
