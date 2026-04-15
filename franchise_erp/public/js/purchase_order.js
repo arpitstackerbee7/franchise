@@ -329,7 +329,8 @@ frappe.ui.form.on("Purchase Order", {
 								fieldname: "rate",
 								label: "Rate",
 								fieldtype: "Currency",
-								in_list_view: 1
+								in_list_view: 1,
+                                default: 0
 							}
 						]
 					}
@@ -337,20 +338,26 @@ frappe.ui.form.on("Purchase Order", {
 				primary_action_label: "Update",
 				primary_action(values) {
 
-					frappe.call({
-						method: "franchise_erp.custom.purchase_order.update_po_cost_and_sco",
-						args: {
-							docname: frm.doc.name,
-							items: values.items
-						},
-						callback: function() {
-							frappe.msgprint("✅ Cost Updated Successfully");
-							dialog.hide();
-							frm.reload_doc();
-						}
-					});
+                    // ✅ FIX: convert rate to number (important for 0)
+                    (values.items || []).forEach(row => {
+                        row.rate = (row.rate === "" || row.rate === null || row.rate === undefined)
+                            ? 0
+                            : flt(row.rate);
+                    });
 
-				}
+                    frappe.call({
+                        method: "franchise_erp.custom.purchase_order.update_po_cost_and_sco",
+                        args: {
+                            docname: frm.doc.name,
+                            items: values.items
+                        },
+                        callback: function() {
+                            frappe.msgprint("✅ Cost Updated Successfully");
+                            dialog.hide();
+                            frm.reload_doc();
+                        }
+                    });
+                }
 			});
 
 			dialog.fields_dict.items.df.data = data;

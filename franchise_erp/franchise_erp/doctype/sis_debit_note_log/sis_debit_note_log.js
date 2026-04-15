@@ -276,10 +276,28 @@ function show_invoice_dialog(frm) {
     // -----------------------
     // TOTAL CALCULATION
     // -----------------------
+    let total_qty = 0;
+    let total_mrp = 0;
+    let total_total = 0;
+    let total_discount = 0;
+    let total_realized = 0;
+    let total_taxable = 0;
+    let total_margin_val = 0;
+    let total_inv_base = 0;
+
     let total_collectable = 0;
     let total_cd_dn = 0;
 
     current_filtered_data.forEach(r => {
+        total_qty += flt(r.qty);
+        total_mrp += flt(r.price_list_rate);
+        total_total += flt(r.price_list_rate * r.qty);
+        total_discount += flt(r.discount_percentage);
+        total_realized += flt(r.net_amount);
+        total_taxable += flt(r.net_sale_value);
+        total_margin_val += flt(r.margin_amount);
+        total_inv_base += flt(r.inv_base_value);
+
         total_collectable += flt(r.invoice_value);
         total_cd_dn += flt(r.debit_note);
     });
@@ -339,7 +357,19 @@ function show_invoice_dialog(frm) {
         // ✅ TOTAL ROW (INSIDE TABLE)
         html += `
         <tr style="font-weight:bold; background:#f5f5f5;">
-            <td colspan="17" style="text-align:right;">Total</td>
+            <td colspan="5" style="text-align:right;">Total</td>
+            <td>${total_qty.toFixed(2)}</td>
+            <td>${total_mrp.toFixed(2)}</td>
+            <td>${total_total.toFixed(2)}</td>
+            <td>${total_discount.toFixed(2)}</td>
+            <td>${total_realized.toFixed(2)}</td>
+            <td></td>
+            <td></td>
+            <td>${total_taxable.toFixed(2)}</td>
+            <td></td>
+            <td>${total_margin_val.toFixed(2)}</td>
+            <td>${total_inv_base.toFixed(2)}</td>
+            <td></td>
             <td>${total_collectable.toFixed(2)}</td>
             <td>${total_cd_dn.toFixed(2)}</td>
         </tr>`;
@@ -372,12 +402,27 @@ function show_invoice_dialog(frm) {
         frappe.msgprint("No data to print");
         return;
     }
+    let total_qty = 0;
+    let total_mrp = 0;
+    let total_total = 0;
+    let total_discount = 0;
+    let total_realized = 0;
+    let total_taxable = 0;
+    let total_margin_val = 0;
+    let total_inv_base = 0;
 
     let total_collectable = 0;
     let total_cd_dn = 0;
 
     let rows = current_filtered_data.map((r, i) => {
-
+        total_qty += flt(r.qty);
+        total_mrp += flt(r.price_list_rate);
+        total_total += flt(r.price_list_rate * r.qty);
+        total_discount += flt(r.discount_percentage);
+        total_realized += flt(r.net_amount);
+        total_taxable += flt(r.net_sale_value);
+        total_margin_val += flt(r.margin_amount);
+        total_inv_base += flt(r.inv_base_value);
         total_collectable += flt(r.invoice_value);
         total_cd_dn += flt(r.debit_note);
 
@@ -429,7 +474,19 @@ function show_invoice_dialog(frm) {
             <tbody>
                 ${rows}
                 <tr style="font-weight:bold;">
-                    <td colspan="17" style="text-align:right;">Total</td>
+                    <td colspan="5" style="text-align:right;">Total</td>
+                    <td>${total_qty.toFixed(2)}</td>
+                    <td>${total_mrp.toFixed(2)}</td>
+                    <td>${total_total.toFixed(2)}</td>
+                    <td>${total_discount.toFixed(2)}</td>
+                    <td>${total_realized.toFixed(2)}</td>
+                    <td></td>
+                    <td></td>
+                    <td>${total_taxable.toFixed(2)}</td>
+                    <td></td>
+                    <td>${total_margin_val.toFixed(2)}</td>
+                    <td>${total_inv_base.toFixed(2)}</td>
+                    <td></td>
                     <td>${total_collectable.toFixed(2)}</td>
                     <td>${total_cd_dn.toFixed(2)}</td>
                 </tr>
@@ -453,12 +510,29 @@ function show_invoice_dialog(frm) {
 
     let csv = "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN\n";
 
+    let total_qty = 0;
+    let total_mrp = 0;
+    let total_total = 0;
+    let total_discount = 0;
+    let total_realized = 0;
+    let total_taxable = 0;
+    let total_margin_val = 0;
+    let total_inv_base = 0;
+
     let total_collectable = 0;
     let total_cd_dn = 0;
 
     current_filtered_data.forEach(r => {
         let row_total = (r.price_list_rate * r.qty);
 
+        total_qty += flt(r.qty);
+        total_mrp += flt(r.price_list_rate);
+        total_total += flt(row_total);
+        total_discount += flt(r.discount_percentage);
+        total_realized += flt(r.net_amount);
+        total_taxable += flt(r.net_sale_value);
+        total_margin_val += flt(r.margin_amount);
+        total_inv_base += flt(r.inv_base_value);
         total_collectable += flt(r.invoice_value);
         total_cd_dn += flt(r.debit_note);
 
@@ -489,8 +563,18 @@ function show_invoice_dialog(frm) {
 
     // ✅ TOTAL ROW
     csv += [
-        "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
-        "Total",
+        "", "", "", "",
+        total_qty.toFixed(2),
+        total_mrp.toFixed(2),
+        total_total.toFixed(2),
+        total_discount.toFixed(2),
+        total_realized.toFixed(2),
+        "", "",
+        total_taxable.toFixed(2),
+        "",
+        total_margin_val.toFixed(2),
+        total_inv_base.toFixed(2),
+        "",
         total_collectable.toFixed(2),
         total_cd_dn.toFixed(2)
     ].join(",") + "\n";
