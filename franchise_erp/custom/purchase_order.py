@@ -613,60 +613,90 @@ def get_items_from_gate_entry(gate_entry_name):
 
 #service cost updated
 import frappe
+from frappe.utils import flt
 
 @frappe.whitelist()
 def update_po_cost_and_sco(docname, items):
-	items = frappe.parse_json(items)
+    items = frappe.parse_json(items)
 
-	# -------------------------
-	# LOAD PO
-	# -------------------------
-	doc = frappe.get_doc("Purchase Order", docname)
+    doc = frappe.get_doc("Purchase Order", docname)
 
-	# 🔥 BYPASS VALIDATION
-	doc.flags.ignore_validate = True
-	doc.flags.ignore_validate_update_after_submit = True
+    # ✅ IMPORTANT FLAGS
+    doc.flags.ignore_validate = True
+    doc.flags.ignore_validate_update_after_submit = True
+    doc.flags.ignore_pricing_rule = True
+    doc.flags.ignore_validate_rate = True
+    doc.flags.ignore_price_list = True
 
-	# -------------------------
-	# UPDATE ITEMS
-	# -------------------------
-	for row in doc.items:
-		for item in items:
-			if row.name == item.get("docname"):
-				row.rate = item.get("rate")
+    item_map = {d.get("docname"): d for d in items}
 
-	# -------------------------
-	# 🔥 MAIN MAGIC (ERP जैसा)
-	# -------------------------
-	doc.run_method("calculate_taxes_and_totals")
+    # -------------------------
+    # UPDATE ITEMS
+    # -------------------------
+    for row in doc.items:
+        if row.name in item_map:
+            rate_val = item_map[row.name].get("rate")
 
-	# payment schedule भी update
-	doc.set_payment_schedule()
+            if rate_val is not None:
+                rate_val = flt(rate_val)
 
-	# save WITHOUT restriction
-	doc.save(ignore_permissions=True)
+                row.rate = rate_val
+                row.price_list_rate = rate_val
 
-	# -------------------------
-	# UPDATE SUBCONTRACTING ORDER
-	# -------------------------
-	sco_list = frappe.get_all(
-		"Subcontracting Order",
-		filters={"purchase_order": docname},
-		fields=["name"]
-	)
+                row.amount = flt(row.qty) * rate_val
+                row.base_amount = row.amount
+                row.net_amount = row.amount
+                row.base_net_amount = row.amount
 
-	for sco in sco_list:
-		sco_doc = frappe.get_doc("Subcontracting Order", sco.name)
+    # -------------------------
+    # CALCULATE
+    # -------------------------
+    doc.run_method("calculate_taxes_and_totals")
 
-		sco_doc.flags.ignore_validate_update_after_submit = True
+    # -------------------------
+    # 🔥 FORCE APPLY AGAIN (MAIN FIX)
+    # -------------------------
+    for row in doc.items:
+        if row.name in item_map:
+            rate_val = item_map[row.name].get("rate")
 
-		for row in sco_doc.items:
-			for item in items:
+            if rate_val is not None:
+                rate_val = flt(rate_val)
 
-				# 🔥 PERFECT MATCH
-				if row.purchase_order_item == item.get("docname"):
-					row.service_cost_per_qty = item.get("rate")
+                row.rate = rate_val
+                row.price_list_rate = rate_val
 
-		sco_doc.save(ignore_permissions=True)
+                row.amount = flt(row.qty) * rate_val
+                row.base_amount = row.amount
+                row.net_amount = row.amount
+                row.base_net_amount = row.amount
 
-	return "Done"
+    doc.set_payment_schedule()
+
+    doc.save(ignore_permissions=True)
+
+    # -------------------------
+    # UPDATE SCO
+    # -------------------------
+    sco_list = frappe.get_all(
+        "Subcontracting Order",
+        filters={"purchase_order": docname},
+        fields=["name"]
+    )
+
+    for sco in sco_list:
+        sco_doc = frappe.get_doc("Subcontracting Order", sco.name)
+
+        sco_doc.flags.ignore_validate = True
+        sco_doc.flags.ignore_validate_update_after_submit = True
+
+        for row in sco_doc.items:
+            if row.purchase_order_item in item_map:
+                rate_val = item_map[row.purchase_order_item].get("rate")
+
+                if rate_val is not None:
+                    row.service_cost_per_qty = flt(rate_val)
+
+        sco_doc.save(ignore_permissions=True)
+
+    return "✅ Cost Updated Successfully"

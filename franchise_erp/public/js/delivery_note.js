@@ -1,6 +1,7 @@
 frappe.ui.form.on("Delivery Note", {
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
+        set_sales_person(frm);
     }
 });
 
@@ -20,6 +21,7 @@ frappe.ui.form.on('Delivery Note', {
                 );
             }
         });
+        set_sales_person(frm);
     },
 
     onload: function(frm) {
@@ -122,3 +124,36 @@ frappe.ui.form.on("Delivery Note Item", {
         }
     }
 });
+
+
+
+async function set_sales_person(frm) {
+    if (!frm.doc.company) return;
+
+    try {
+        let user = frappe.session.user;
+
+        console.log("Logged in user:", user);
+        console.log("Company:", frm.doc.company);
+
+        let res = await frappe.db.get_list("Sales Person", {
+            filters: {
+                custom_user: user,
+                custom_company: frm.doc.company
+            },
+            fields: ["name"],
+            limit: 1
+        });
+
+        if (res && res.length > 0) {
+            frm.set_value("custom_sales_person", res[0].name);
+            console.log("Sales Person Found:", res[0].name);
+        } else {
+            frm.set_value("custom_sales_person", "");
+            console.log("No Sales Person Found");
+        }
+
+    } catch (err) {
+        console.error("Error fetching Sales Person:", err);
+    }
+}
