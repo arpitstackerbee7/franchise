@@ -470,28 +470,28 @@ frappe.ui.form.on("Outgoing Logistics", {
 
         // Remove pencil icon
         $(".page-title .editable-title").css("pointer-events", "none");
-        if (frm.doc.name) {
+        // if (frm.doc.name) {
 
-            frappe.call({
-                method: "franchise_erp.api.generate_custom_barcode",
-                args: {
-                    data: frm.doc.name
-                },
-                callback: function(r) {
+        //     frappe.call({
+        //         method: "franchise_erp.api.generate_custom_barcode",
+        //         args: {
+        //             data: frm.doc.name
+        //         },
+        //         callback: function(r) {
 
-                    if (r.message) {
+        //             if (r.message) {
 
-                        let html = `
-                            <div style="text-align:center;">
-                                <img src="${r.message}" style="width:250px;" />
-                            </div>
-                        `;
+        //                 let html = `
+        //                     <div style="text-align:center;">
+        //                         <img src="${r.message}" style="width:250px;" />
+        //                     </div>
+        //                 `;
 
-                        frm.fields_dict.barcode_html.$wrapper.html(html);
-                    }
-                }
-            });
-        }
+        //                 frm.fields_dict.barcode_html.$wrapper.html(html);
+        //             }
+        //         }
+        //     });
+        // }
     }
 });
 

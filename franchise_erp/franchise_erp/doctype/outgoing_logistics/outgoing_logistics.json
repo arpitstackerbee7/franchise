@@ -23,9 +23,6 @@
   "remarks",
   "column_break_sgwy",
   "references",
-  "barcode_value",
-  "barcode_html",
-  "is_gate_out",
   "transport_information_section",
   "quantity",
   "station_from",
@@ -297,7 +294,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Remark"
+   "label": "Remarks"
   },
   {
    "fieldname": "consignee_supplier",
@@ -337,31 +334,13 @@
    "label": "Transporter",
    "mandatory_depends_on": "eval:doc.type == \"Transfer Out\"",
    "options": "Supplier"
-  },
-  {
-   "fieldname": "barcode_html",
-   "fieldtype": "HTML",
-   "label": "Barcode"
-  },
-  {
-   "fieldname": "barcode_value",
-   "fieldtype": "Data",
-   "label": "Barcode Value",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "is_gate_out",
-   "fieldtype": "Check",
-   "label": "Is Gate out",
-   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-16 14:47:49.637650",
+ "modified": "2026-04-16 18:34:54.097854",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
