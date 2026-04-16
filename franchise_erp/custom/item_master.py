@@ -816,7 +816,8 @@ def smart_bulk_upload(item_code, file_url):
 def validate_and_merge_prices(doc, method=None):
     table_field = "custom_item_prices"
     child_dt = "Item Price Row"
-
+    
+    is_new = doc.is_new()
     
     db_rates = {}
     db_rows_for_rescue = []
@@ -848,17 +849,17 @@ def validate_and_merge_prices(doc, method=None):
 
         
         # Only check if the row carries an item_code that contradicts the parent
-        if row.item_code and str(row.item_code).strip() != str(doc.name).strip():
-            # Rescue: restore DB rows so the table doesn't go blank
-            if db_rows_for_rescue:
-                doc.set(table_field, db_rows_for_rescue)
-            frappe.throw(
-                _(
-                    f"Item Code mismatch on Price List '{p_list}': "
-                    f"row has '{row.item_code}' but this item is '{doc.name}'. "
-                    "Upload rejected and original data has been restored."
+        if not is_new:
+            if row.item_code and str(row.item_code).strip() != str(doc.name).strip():
+                if db_rows_for_rescue:
+                    doc.set(table_field, db_rows_for_rescue)
+                frappe.throw(
+                    _(
+                        f"Item Code mismatch on Price List '{p_list}': "
+                        f"row has '{row.item_code}' but this item is '{doc.name}'. "
+                        "Upload rejected and original data has been restored."
+                    )
                 )
-            )
 
         
         # If we've already seen this price list in the current save, drop this row
