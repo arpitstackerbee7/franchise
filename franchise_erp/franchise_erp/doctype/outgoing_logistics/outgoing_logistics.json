@@ -294,7 +294,7 @@
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
-   "label": "Remarks"
+   "label": "Remark"
   },
   {
    "fieldname": "consignee_supplier",
@@ -340,7 +340,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-01 07:04:45.345489",
+ "modified": "2026-04-16 14:47:49.637650",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
