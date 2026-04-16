@@ -1,6 +1,6 @@
 import frappe
 from frappe.model.document import Document
-
+from erpnext.controllers.sales_and_purchase_return import make_return_doc
 class BulkSalesReturn(Document):
 
     def validate(self):
@@ -64,25 +64,28 @@ class BulkSalesReturn(Document):
 
         for dn, items in delivery_notes.items():
 
-            return_doc = frappe.new_doc("Delivery Note")
-            return_doc.is_return = 1
-            return_doc.return_against = dn
-            return_doc.customer = self.customer
-            return_doc.company = self.company
-            return_doc.custom_bulk_sales_return= self.name
+            # 🔥 Create return DN using ERPNext method
+            return_doc = make_return_doc("Delivery Note", dn)
+
+            return_doc.custom_bulk_sales_return = self.name
+
+            # Clear auto items and re-add based on your selection
+            return_doc.items = []
+
             for row in items:
                 serials = row.serial_nos.strip() if row.serial_nos else ""
 
                 return_doc.append("items", {
                     "item_code": row.item_code,
-                    "qty": -row.qty,
+                    "qty": -abs(row.qty),
                     "warehouse": row.warehouse,
                     "rate": row.rate,
                     "serial_no": serials,
                     "dn_detail": row.delivery_note_item,
                     "use_serial_batch_fields": 1 if serials else 0
                 })
-            return_doc.insert()
+
+            return_doc.insert(ignore_permissions=True)
 
 @frappe.whitelist()
 def submit_created_dns(docname):

@@ -2,7 +2,7 @@ import frappe
 from frappe.model.naming import make_autoname
 import re
 from datetime import datetime
-
+from frappe.utils import nowdate
 
 #for 2 get 1 free item
 def set_promo_group_id(doc, method=None):
@@ -197,3 +197,62 @@ def get_delivery_note_by_serial(serial):
 
     return [d[0] for d in invoices]
 
+
+def create_credit_note_from_dn(doc, method):
+    """Create Sales Invoice (Credit Note) from Delivery Note Return"""
+
+    if not doc.is_return:
+        return
+
+    if not doc.items:
+        return
+
+    # 🔹 Create Sales Invoice
+    si = frappe.new_doc("Sales Invoice")
+
+    # 🔹 Header fields
+    si.is_return = 1
+    si.company = doc.company
+    si.customer = doc.customer
+    si.update_billed_amount_in_delivery_note = 1
+    si.posting_date = doc.posting_date
+    si.posting_time = doc.posting_time
+    si.currency = doc.currency
+    si.conversion_rate = doc.conversion_rate
+    si.update_stock = 0
+
+    # 🔥 Add items
+    for dn_item in doc.items:
+
+        if not dn_item.qty:
+            continue
+
+        si.append("items", {
+            "item_code": dn_item.item_code,
+            "item_name": dn_item.item_name,
+            "description": dn_item.description,
+            "uom": dn_item.uom,
+            "stock_uom": dn_item.stock_uom,
+
+            # 🔥 Negative qty
+            "qty": -abs(dn_item.qty),
+            "stock_qty": -abs(dn_item.qty),
+
+            "rate": dn_item.rate,
+            "base_rate": dn_item.base_rate,
+
+            # 🔗 Links
+            "delivery_note": doc.name,
+            "dn_detail": dn_item.name,
+            "sales_order": dn_item.against_sales_order,
+
+            "warehouse": dn_item.warehouse,
+
+            # Amount
+            "amount": -abs(dn_item.amount),
+            "base_amount": -abs(dn_item.base_amount),
+        })
+
+    si.insert(ignore_permissions=True)
+
+    frappe.msgprint(f"✅ Credit Note Created: {si.name}")
