@@ -1447,6 +1447,3 @@ class CustomSalesInvoice(SalesInvoice):
                 item.qty = -abs(item.qty or 0)
                 if item.stock_qty:
                     item.stock_qty = -abs(item.stock_qty)
-
-        # 🔥 फिर original validation चलाओ
-        # super().validate()
