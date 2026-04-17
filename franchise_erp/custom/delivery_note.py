@@ -252,7 +252,7 @@ def create_credit_note_from_dn(doc, method):
             "amount": -abs(dn_item.amount),
             "base_amount": -abs(dn_item.base_amount),
         })
-
+    si.set_missing_values()
     si.insert(ignore_permissions=True)
 
     frappe.msgprint(f"✅ Credit Note Created: {si.name}")
