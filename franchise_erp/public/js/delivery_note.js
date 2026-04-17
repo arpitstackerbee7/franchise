@@ -176,7 +176,7 @@ frappe.ui.form.on("Delivery Note", {
                 // optional (safe)
                 frm.refresh();
 
-            }, 800); // thoda delay zaroori hai
+            },200); // thoda delay zaroori hai
         }
     }
 });

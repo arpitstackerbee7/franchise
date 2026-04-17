@@ -66,6 +66,7 @@ function open_return_items_dialog(frm) {
                 fieldtype: "Link",
                 options: "Customer",
                 default: frm.doc.customer,
+                read_only:1,
                 reqd: 1,
                 onchange() {
                     load_returnable_items(frm, dialog);

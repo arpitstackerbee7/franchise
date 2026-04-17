@@ -58,6 +58,7 @@ function open_return_items_dialog(frm) {
                 fieldtype: "Link",
                 options: "Supplier",
                 default: frm.doc.supplier,
+                read_only:1,
                 reqd: 1,
                 onchange() {
                     load_returnable_items(frm, dialog);
