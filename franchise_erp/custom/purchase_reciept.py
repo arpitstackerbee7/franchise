@@ -1,5 +1,6 @@
 
 import frappe
+from frappe.utils import nowdate
 
 def lock_serials_on_grn_submit(doc, method):
     for item in doc.items:
@@ -702,3 +703,70 @@ def clear_si_grn_flags(doc, method):
             "custom_is_received_grn": 0
         }
     )
+
+def create_debit_note_from_pr(doc, method):
+    """Create Purchase Invoice (Debit Note) directly from Purchase Receipt Return"""
+
+    if not doc.is_return:
+        return
+
+    if not doc.custom_bulk_purchase_return:
+         return
+    
+    if not doc.items:
+        return
+
+    # 🔹 Create Purchase Invoice
+    pi = frappe.new_doc("Purchase Invoice")
+
+    # 🔹 Set header fields
+    pi.is_return = 1
+    pi.company = doc.company
+    pi.supplier = doc.supplier
+    pi.update_billed_amount_in_purchase_receipt = 1
+    pi.posting_date = doc.posting_date
+    pi.posting_time = doc.posting_time
+    pi.currency = doc.currency
+    pi.conversion_rate = doc.conversion_rate
+
+    pi.bill_no= "RRR"
+    pi.bill_date = nowdate()
+
+    # 🔥 Add items from Purchase Receipt
+    for pr_item in doc.items:
+
+        if not pr_item.qty:
+            continue
+
+        pi.append("items", {
+            "item_code": pr_item.item_code,
+            "item_name": pr_item.item_name,
+            "description": pr_item.description,
+            "uom": pr_item.uom,
+            "stock_uom": pr_item.stock_uom,
+
+            # 🔥 Negative qty for return
+            "qty": -abs(pr_item.qty),
+            "received_qty": -abs(pr_item.qty),
+            
+
+            "rate": pr_item.rate,
+            "base_rate": pr_item.base_rate,
+
+            # 🔗 Important links
+            "purchase_receipt": doc.name,
+            "pr_detail": pr_item.name,
+            "purchase_order": pr_item.purchase_order,
+
+            # Stock fields
+            "warehouse": pr_item.warehouse,
+
+            # Amounts
+            "amount": -abs(pr_item.amount),
+            "base_amount": -abs(pr_item.base_amount),
+        })
+
+    # 🔹 Insert (you can submit if needed)
+    pi.insert(ignore_permissions=True)
+
+    frappe.msgprint(f"✅ Debit Note Created: {pi.name}")

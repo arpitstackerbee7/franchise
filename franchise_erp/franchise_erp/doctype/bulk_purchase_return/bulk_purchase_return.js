@@ -58,6 +58,7 @@ function open_return_items_dialog(frm) {
                 fieldtype: "Link",
                 options: "Supplier",
                 default: frm.doc.supplier,
+                read_only:1,
                 reqd: 1,
                 onchange() {
                     load_returnable_items(frm, dialog);
@@ -124,35 +125,42 @@ function open_return_items_dialog(frm) {
                         
                             let table = dialog.fields_dict.items_table.grid;
                             let rows = table.get_data();
-                        
-                            let existing = rows.find(d =>
+
+                            let index = rows.findIndex(d =>
                                 d.purchase_receipt === r.message.purchase_receipt &&
                                 d.item_code === r.message.item_code
                             );
-                        
-                            if (existing) {
-                        
-                                // Prevent duplicate serial inside dialog
+
+                            if (index !== -1) {
+
+                                let existing = rows[index];
+
+                                // Prevent duplicate serial
                                 if (existing.serial_nos && existing.serial_nos.split("\n").includes(serial)) {
                                     frappe.msgprint(`Serial ${serial} already scanned`);
                                 } else {
-                        
+
                                     existing.return_qty = (existing.return_qty || 0) + 1;
-                        
+
                                     existing.serial_nos =
                                         existing.serial_nos
                                             ? existing.serial_nos + "\n" + serial
                                             : serial;
+
+                                    // 🔥 MOVE UPDATED ROW TO TOP
+                                    rows.splice(index, 1);   // remove from current position
+                                    rows.unshift(existing);  // add to top
                                 }
-                        
+
                             } else {
-                        
+
                                 r.message.return_qty = 1;
                                 r.message.serial_nos = serial;
-                        
-                                rows.push(r.message);
+
+                                // 🔥 ADD NEW ROW TO TOP
+                                rows.unshift(r.message);
                             }
-                        
+
                             table.refresh();
                         
                             dialog.set_value("serial_no", "");

@@ -158,3 +158,25 @@ frappe.ui.form.on("Delivery Note Item", {
 //         console.error(err);
 //     }
 // }
+
+frappe.ui.form.on("Delivery Note", {
+
+    onload_post_render(frm) {
+
+        // sirf return DN ke liye
+        if (frm.doc.is_return && frm.doc.custom_bulk_sales_return) {
+
+            // 🔥 wait for ERPNext auto calculations
+            setTimeout(() => {
+
+                // remove dirty state
+                frm.dirty = false;
+                frm.doc.__unsaved = 0;
+
+                // optional (safe)
+                frm.refresh();
+
+            },200); // thoda delay zaroori hai
+        }
+    }
+});

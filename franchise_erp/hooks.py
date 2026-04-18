@@ -89,7 +89,8 @@ doc_events = {
         "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_from_po_on_submit",
         "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
                       "franchise_erp.custom.purchase_reciept.on_submit",
-                       "franchise_erp.custom.purchase_reciept.fix_pr_totals"
+                       "franchise_erp.custom.purchase_reciept.fix_pr_totals",
+                       "franchise_erp.custom.purchase_reciept.create_debit_note_from_pr"
                       ],
 
         "on_cancel": ["franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel",
@@ -136,13 +137,13 @@ doc_events = {
         ],
          "validate": "franchise_erp.custom.customer.validate_customer_counter_rules",
     },
-    "Item Price": {
-        "validate": "franchise_erp.custom.item_price.validate_item_price"
-    },
     "Sales Order":{
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "before_validate": "franchise_erp.custom.sales_order.apply_sales_term"
+    },    "Item Price": {
+        "validate": "franchise_erp.custom.item_price.validate_item_price"
     },
+
     "Delivery Note": {
 
         "before_save": [
@@ -153,7 +154,8 @@ doc_events = {
         # "before_naming": "franchise_erp.custom.delivery_note.set_delivery_note_name",        
         "before_insert": "franchise_erp.custom.delivery_note.set_dn_naming_series",
         "validate": ["franchise_erp.custom.delivery_note.disable_eway_notification",
-        "franchise_erp.custom.delivery_note.apply_sales_person_rules"]
+        "franchise_erp.custom.delivery_note.apply_sales_person_rules"],
+        "on_submit": "franchise_erp.custom.delivery_note.create_credit_note_from_dn",
         
         # "after_save": [
         #     # "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
