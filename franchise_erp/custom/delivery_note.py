@@ -203,7 +203,8 @@ def create_credit_note_from_dn(doc, method):
 
     if not doc.is_return:
         return
-
+    if not doc.custom_bulk_sales_return:
+        return
     if not doc.items:
         return
 

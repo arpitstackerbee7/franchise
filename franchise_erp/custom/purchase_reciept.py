@@ -710,6 +710,9 @@ def create_debit_note_from_pr(doc, method):
     if not doc.is_return:
         return
 
+    if not doc.custom_bulk_purchase_return:
+         return
+    
     if not doc.items:
         return
 
