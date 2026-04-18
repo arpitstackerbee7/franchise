@@ -170,6 +170,23 @@ function open_return_items_dialog(frm) {
                             }
 
                             table.refresh();
+
+                            frappe.after_ajax(() => {
+                                setTimeout(() => {
+                                    let grid = dialog.fields_dict.items_table.grid;
+                            
+                                    if (grid.grid_rows.length) {
+                                        let row = grid.grid_rows[0];
+                            
+                                        let checkbox = row.wrapper.find('.grid-row-check');
+                            
+                                        // ✅ Only click if NOT already checked
+                                        if (!checkbox.prop("checked")) {
+                                            checkbox.click();
+                                        }
+                                    }
+                                }, 200);
+                            });
                         
                             dialog.set_value("serial_no", "");
                             dialog.fields_dict.serial_no.$input.focus();
