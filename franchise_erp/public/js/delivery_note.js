@@ -1,7 +1,7 @@
 frappe.ui.form.on("Delivery Note", {
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
-        set_sales_person(frm);
+        // set_sales_person(frm);
     }
 });
 
@@ -21,18 +21,18 @@ frappe.ui.form.on('Delivery Note', {
                 );
             }
         });
-        if (frm.doc.docstatus === 0) {
-            set_sales_person(frm);
-        }
+        // if (frm.doc.docstatus === 0) {
+        //     set_sales_person(frm);
+        // }
     },
 
     onload: function(frm) {
         if (frm.doc.company && !frm.doc.set_warehouse) {
             frm.trigger('company');
         }
-        if (frm.is_new()) {
-            set_sales_person(frm);
-        }
+        // if (frm.is_new()) {
+        //     set_sales_person(frm);
+        // }
     }
 });
 
@@ -130,34 +130,34 @@ frappe.ui.form.on("Delivery Note Item", {
     }
 });
 
-async function set_sales_person(frm) {
-    if (!frm.doc.company) return;
+// async function set_sales_person(frm) {
+//     if (!frm.doc.company) return;
 
-    // ✅ STOP if submitted
-    if (frm.doc.docstatus !== 0) return;
+//     // ✅ STOP if submitted
+//     if (frm.doc.docstatus !== 0) return;
 
-    try {
-        let user = frappe.session.user;
+//     try {
+//         let user = frappe.session.user;
 
-        let res = await frappe.db.get_list("Sales Person", {
-            filters: {
-                custom_user: user,
-                custom_company: frm.doc.company
-            },
-            fields: ["name"],
-            limit: 1
-        });
+//         let res = await frappe.db.get_list("Sales Person", {
+//             filters: {
+//                 custom_user: user,
+//                 custom_company: frm.doc.company
+//             },
+//             fields: ["name"],
+//             limit: 1
+//         });
 
-        if (res && res.length > 0) {
-            frm.set_value("custom_sales_person", res[0].name);
-        } else {
-            frm.set_value("custom_sales_person", "");
-        }
+//         if (res && res.length > 0) {
+//             frm.set_value("custom_sales_person", res[0].name);
+//         } else {
+//             frm.set_value("custom_sales_person", "");
+//         }
 
-    } catch (err) {
-        console.error(err);
-    }
-}
+//     } catch (err) {
+//         console.error(err);
+//     }
+// }
 
 frappe.ui.form.on("Delivery Note", {
 

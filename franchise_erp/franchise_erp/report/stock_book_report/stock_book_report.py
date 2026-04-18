@@ -23,6 +23,8 @@ def get_columns():
         "WSP:Currency:100",
         "MRP:Currency:100",
         "RSP:Currency:100",
+        "STD Rate:Currency:100",
+        "Standard Selling:Currency:100",
         "UOM:Data:80",
         "Closing Stock Quantity:Float:120",
         "Last Stock Inward Date:Date:140"
@@ -66,10 +68,12 @@ def get_data(filters):
 
             item.item_name AS "Item Name:Data:150",
     
-            IFNULL((SELECT rate FROM `tabItem Price Row` WHERE parent = item.name AND price_list = 'STD' LIMIT 1), 0) AS "Standard Rate:Currency:100",
-            IFNULL((SELECT rate FROM `tabItem Price Row` WHERE parent = item.name AND price_list = 'WSP' LIMIT 1), 0) AS "WSP:Currency:100",
-            IFNULL((SELECT rate FROM `tabItem Price Row` WHERE parent = item.name AND price_list = 'MRP' LIMIT 1), 0) AS "MRP:Currency:100",
-            IFNULL((SELECT rate FROM `tabItem Price Row` WHERE parent = item.name AND price_list = 'RSP' LIMIT 1), 0) AS "RSP:Currency:100",
+            IFNULL((SELECT price_list_rate FROM `tabItem Price` WHERE item_code = item.name AND price_list = 'Standard Buying' LIMIT 1), 0) AS "Standard Rate:Currency:100",
+            IFNULL((SELECT price_list_rate FROM `tabItem Price` WHERE item_code = item.name AND price_list = 'WSP' LIMIT 1), 0) AS "WSP:Currency:100",
+            IFNULL((SELECT price_list_rate FROM `tabItem Price` WHERE item_code = item.name AND price_list = 'MRP' LIMIT 1), 0) AS "MRP:Currency:100",
+            IFNULL((SELECT price_list_rate FROM `tabItem Price` WHERE item_code = item.name AND price_list = 'RSP' LIMIT 1), 0) AS "RSP:Currency:100",
+            IFNULL((SELECT price_list_rate FROM `tabItem Price` WHERE item_code = item.name AND price_list = 'STD' LIMIT 1), 0) AS "STD Rate:Currency:100",
+            IFNULL((SELECT price_list_rate FROM `tabItem Price` WHERE item_code = item.name AND price_list = 'Standard Selling' LIMIT 1), 0) AS "Standard Selling:Currency:100",
             item.stock_uom AS "UOM:Data:80",
             
             (SELECT SUM(actual_qty) 
