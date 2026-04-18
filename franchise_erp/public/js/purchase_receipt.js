@@ -170,6 +170,52 @@ function handle_barcode(frm, item_code, step) {
 // ===================================
 // 🚀 HANDLE SERIAL
 // ===================================
+// function handle_serial(frm, serial, step) {
+
+//     let po_items = (frm.doc.items || [])
+//         .filter(d => d.purchase_order_item)
+//         .map(d => d.purchase_order_item);
+
+//     if (!po_items.length) {
+//         frappe.throw("No Purchase Order linked");
+//     }
+
+//     frappe.call({
+//         method: "franchise_erp.custom.purchase_reciept.validate_po_serial",
+//         args: {
+//             scanned_serial: serial,
+//             po_items,
+//             is_return: frm.doc.is_return ? 1 : 0
+//         },
+//         freeze: false,
+
+//         callback: function(r) {
+
+//             if (!r.message) return;
+
+//             let row = frm.doc.items.find(
+//                 d => d.purchase_order_item === r.message.purchase_order_item
+//             );
+
+//             if (!row) {
+//                 frappe.throw("Row not found");
+//             }
+
+//             if (!row.serial_no) row.serial_no = "";
+
+//             row.serial_no += (row.serial_no ? "\n" : "") + serial;
+
+//             row.qty = flt(row.qty || 0) + step;
+//             row.received_qty = row.qty;
+
+//             serial_cache.add(serial);
+
+//             update_total_qty_fast(frm, step);
+
+//             frm.fields_dict.items.grid.refresh_row(row.name);
+//         }
+//     });
+// }
 function handle_serial(frm, serial, step) {
 
     let po_items = (frm.doc.items || [])
@@ -201,12 +247,19 @@ function handle_serial(frm, serial, step) {
                 frappe.throw("Row not found");
             }
 
+            // init serial field
             if (!row.serial_no) row.serial_no = "";
 
+            // append serial
             row.serial_no += (row.serial_no ? "\n" : "") + serial;
 
+            // qty update
             row.qty = flt(row.qty || 0) + step;
             row.received_qty = row.qty;
+
+            // fix qty mapping
+            row.accepted_qty = row.received_qty;
+            row.rejected_qty = 0;
 
             serial_cache.add(serial);
 
@@ -216,7 +269,6 @@ function handle_serial(frm, serial, step) {
         }
     });
 }
-
 // ===================================
 // 🚀 MAIN FORM
 // ===================================
