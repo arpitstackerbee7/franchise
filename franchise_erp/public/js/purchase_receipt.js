@@ -184,7 +184,8 @@ function handle_serial(frm, serial, step) {
         method: "franchise_erp.custom.purchase_reciept.validate_po_serial",
         args: {
             scanned_serial: serial,
-            po_items
+            po_items,
+            is_return: frm.doc.is_return ? 1 : 0
         },
         freeze: false,
 
@@ -215,7 +216,6 @@ function handle_serial(frm, serial, step) {
         }
     });
 }
-
 
 // ===================================
 // 🚀 MAIN FORM
