@@ -149,13 +149,57 @@ def on_submit(doc, method):
         gate_entry.save(ignore_permissions=True)
 
 
+# @frappe.whitelist()
+# def validate_po_serial(scanned_serial, po_items):
+#     """
+#     Validate scanned serial:
+#     1. Must exist in custom_generated_serials
+#     2. Must NOT exist in custom_used_serials
+#     """
+
+#     if isinstance(po_items, str):
+#         po_items = frappe.parse_json(po_items)
+
+#     for poi in po_items:
+#         values = frappe.db.get_value(
+#             "Purchase Order Item",
+#             poi,
+#             ["custom_generated_serials", "custom_used_serials"],
+#             as_dict=True
+#         )
+
+#         if not values or not values.custom_generated_serials:
+#             continue
+
+#         generated_serials = [
+#             s.strip() for s in values.custom_generated_serials.split("\n")
+#             if s.strip()
+#         ]
+
+#         used_serials = [
+#             s.strip() for s in (values.custom_used_serials or "").split("\n")
+#             if s.strip()
+#         ]
+
+#         # ❌ Already used serial validation
+#         if scanned_serial in used_serials:
+#             frappe.throw(
+#                 f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> is already used"
+#             )
+
+#         # ✅ Valid serial
+#         if scanned_serial in generated_serials:
+#             return {
+#                 "purchase_order_item": poi
+#             }
+
+#     # ❌ Serial not found in PO
+#     frappe.throw(
+#         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
+#     )
+
 @frappe.whitelist()
-def validate_po_serial(scanned_serial, po_items):
-    """
-    Validate scanned serial:
-    1. Must exist in custom_generated_serials
-    2. Must NOT exist in custom_used_serials
-    """
+def validate_po_serial(scanned_serial, po_items, is_return=0):
 
     if isinstance(po_items, str):
         po_items = frappe.parse_json(po_items)
@@ -181,10 +225,16 @@ def validate_po_serial(scanned_serial, po_items):
             if s.strip()
         ]
 
-        # ❌ Already used serial validation
-        if scanned_serial in used_serials:
+        # ❌ Normal case (NOT return)
+        if not is_return and scanned_serial in used_serials:
             frappe.throw(
                 f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> is already used"
+            )
+
+        # ✅ Return case: must exist in used_serials
+        if is_return and scanned_serial not in used_serials:
+            frappe.throw(
+                f"Serial No <b>{scanned_serial}</b> was not used earlier, cannot return"
             )
 
         # ✅ Valid serial
@@ -193,7 +243,6 @@ def validate_po_serial(scanned_serial, po_items):
                 "purchase_order_item": poi
             }
 
-    # ❌ Serial not found in PO
     frappe.throw(
         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
     )
