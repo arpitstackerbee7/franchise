@@ -198,11 +198,28 @@ def on_submit(doc, method):
 #         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
 #     )
 
+import frappe
+
 @frappe.whitelist()
 def validate_po_serial(scanned_serial, po_items, is_return=0):
+    """
+    Validate Serial for Purchase Receipt & Return
+
+    Normal PR:
+        - Serial must be in generated list
+        - Must NOT be already used
+
+    Return PR:
+        - Serial must exist
+        - Allow already used serial
+    """
 
     if isinstance(po_items, str):
         po_items = frappe.parse_json(po_items)
+
+    # ✅ Check Serial exists (ERPNext standard)
+    if not frappe.db.exists("Serial No", scanned_serial):
+        frappe.throw(f"Invalid Serial No <b>{scanned_serial}</b>")
 
     for poi in po_items:
         values = frappe.db.get_value(
@@ -225,24 +242,41 @@ def validate_po_serial(scanned_serial, po_items, is_return=0):
             if s.strip()
         ]
 
-        # ❌ Normal case (NOT return)
-        if not is_return and scanned_serial in used_serials:
-            frappe.throw(
-                f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> is already used"
-            )
+        # ==========================
+        # 🔴 NORMAL PURCHASE
+        # ==========================
+        if not int(is_return):
 
-        # ✅ Return case: must exist in used_serials
-        if is_return and scanned_serial not in used_serials:
-            frappe.throw(
-                f"Serial No <b>{scanned_serial}</b> was not used earlier, cannot return"
-            )
+            # ❌ Duplicate
+            if scanned_serial in used_serials:
+                frappe.throw(
+                    f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> is already used"
+                )
 
-        # ✅ Valid serial
-        if scanned_serial in generated_serials:
+            # ❌ Not in generated list
+            if scanned_serial not in generated_serials:
+                continue
+
+            # ✅ Valid
             return {
                 "purchase_order_item": poi
             }
 
+        # ==========================
+        # 🔵 RETURN PURCHASE
+        # ==========================
+        else:
+            # ✔ Allow if serial was used OR exists in system
+            if scanned_serial in used_serials or frappe.db.exists("Serial No", scanned_serial):
+                return {
+                    "purchase_order_item": poi
+                }
+
+            frappe.throw(
+                f"Serial No <b>{scanned_serial}</b> cannot be returned"
+            )
+
+    # ❌ Not found in PO
     frappe.throw(
         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
     )
