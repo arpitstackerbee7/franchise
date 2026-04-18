@@ -90,7 +90,7 @@ doc_events = {
         "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
                       "franchise_erp.custom.purchase_reciept.on_submit",
                        "franchise_erp.custom.purchase_reciept.fix_pr_totals",
-                       "franchise_erp.custom.purchase_reciept.create_debit_note_from_pr"
+                    #    "franchise_erp.custom.purchase_reciept.create_debit_note_from_pr"
                       ],
 
         "on_cancel": ["franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel",
