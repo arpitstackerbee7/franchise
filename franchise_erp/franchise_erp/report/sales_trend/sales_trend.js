@@ -1,5 +1,8 @@
 // Copyright (c) 2026, Franchise Erp and contributors
 // For license information, please see license.txt
+
+// Copyright (c) 2026, Franchise Erp and contributors
+// For license information, please see license.txt
 frappe.query_reports["Sales Trend"] = {
     filters: [
         {
@@ -8,7 +11,7 @@ frappe.query_reports["Sales Trend"] = {
             fieldtype: "Link",
             options: "Fiscal Year",
             default: frappe.defaults.get_user_default("fiscal_year"),
-            reqd: 1
+            reqd: 0
         }
     ]
 };
