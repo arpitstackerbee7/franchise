@@ -54,7 +54,7 @@ class BulkSalesReturn(Document):
                     frappe.throw(
                         f"Row {row.idx}: Qty must match number of Serial Numbers for item {row.item_code}"
                     )
-
+    #fixed gst
     def on_submit(self):
 
         delivery_notes = {}
