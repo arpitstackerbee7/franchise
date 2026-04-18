@@ -248,7 +248,7 @@ def create_credit_note_from_dn(doc, method):
             "sales_order": dn_item.against_sales_order,
 
             "warehouse": dn_item.warehouse,
-
+            "item_tax_template": dn_item.item_tax_template,
             # Amount
             "amount": -abs(dn_item.amount),
             "base_amount": -abs(dn_item.base_amount),

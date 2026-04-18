@@ -91,7 +91,7 @@ class BulkPurchaseReturn(Document):
                     "purchase_order_item": pr_item.purchase_order_item or "",
                     "purchase_receipt_item": row.purchase_receipt_item
                 })
-
+            return_doc.calculate_taxes_and_totals()
             return_doc.insert()
 
 @frappe.whitelist()

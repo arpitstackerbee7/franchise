@@ -758,6 +758,7 @@ def create_debit_note_from_pr(doc, method):
             "pr_detail": pr_item.name,
             "purchase_order": pr_item.purchase_order,
 
+            "item_tax_template": pr_item.item_tax_template,
             # Stock fields
             "warehouse": pr_item.warehouse,
 
@@ -767,6 +768,7 @@ def create_debit_note_from_pr(doc, method):
         })
 
     # 🔹 Insert (you can submit if needed)
+    pi.set_missing_values()
     pi.insert(ignore_permissions=True)
 
     frappe.msgprint(f"✅ Debit Note Created: {pi.name}")

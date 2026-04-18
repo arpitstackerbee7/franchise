@@ -84,7 +84,7 @@ class BulkSalesReturn(Document):
                     "dn_detail": row.delivery_note_item,
                     "use_serial_batch_fields": 1 if serials else 0
                 })
-
+            return_doc.calculate_taxes_and_totals()
             return_doc.insert(ignore_permissions=True)
 
 @frappe.whitelist()
