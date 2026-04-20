@@ -205,8 +205,8 @@ def validate_po_serial(scanned_serial, po_items, is_return=0):
         po_items = frappe.parse_json(po_items)
 
     # Validate Serial exists
-    if not frappe.db.exists("Serial No", scanned_serial):
-        frappe.throw(f"Invalid Serial No <b>{scanned_serial}</b>")
+    # if not frappe.db.exists("Serial No", scanned_serial):
+    #     frappe.throw(f"Invalid Serial No <b>{scanned_serial}</b>")
 
     for poi in po_items:
 
