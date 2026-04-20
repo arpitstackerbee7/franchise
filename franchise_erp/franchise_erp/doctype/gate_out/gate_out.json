@@ -1,0 +1,56 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-16 14:05:29.452245",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "scan_barcode",
+  "section_break_yfdk",
+  "gate_out_box_barcode"
+ ],
+ "fields": [
+  {
+   "fieldname": "scan_barcode",
+   "fieldtype": "Data",
+   "label": "Scan Logistics Barcode"
+  },
+  {
+   "fieldname": "section_break_yfdk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "gate_out_box_barcode",
+   "fieldtype": "Table",
+   "label": "Gate Out Box Barcode",
+   "options": "Gate Out Box Barcode"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-20 12:10:33.441487",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Gate Out",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

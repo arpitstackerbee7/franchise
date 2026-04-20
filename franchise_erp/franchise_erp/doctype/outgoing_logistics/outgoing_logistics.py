@@ -107,9 +107,9 @@ class OutgoingLogistics(Document):
             # ---------------------------
             # Generate Barcode
             # ---------------------------
-            # if self.name:
-            #     barcode_value = self.name
-            #     self.db_set("barcode_value", barcode_value)
+            if self.name:
+                barcode_value = self.name
+                self.db_set("barcode_value", barcode_value)
         # ✅ WhatsApp PDF send call
         send_sales_invoice_pdf_from_outgoing_logistics(self)
     # -----------------------------
