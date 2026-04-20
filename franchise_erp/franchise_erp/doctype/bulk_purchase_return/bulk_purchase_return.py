@@ -2,12 +2,14 @@
 # For license information, please see license.txt
 import frappe
 from frappe.model.document import Document
-
+from erpnext.controllers.sales_and_purchase_return import make_return_doc
+from erpnext.stock.utils import get_stock_balance
 class BulkPurchaseReturn(Document):
 
     def validate(self):
         self.validate_supplier()
         self.validate_qty()
+        self.validate_non_serialized_stock()
 
     def validate_supplier(self):
         for row in self.items:
@@ -57,42 +59,103 @@ class BulkPurchaseReturn(Document):
                         f"Row {row.idx}: Qty must match number of Serial Numbers for item {row.item_code}"
                     )
 
-    def on_submit(self):
-
-        receipts = {}
+    def validate_non_serialized_stock(self):
 
         for row in self.items:
+
+            # 🔹 Skip serialized items
+            has_serial_no = frappe.db.get_value("Item", row.item_code, "has_serial_no")
+            if has_serial_no:
+                continue
+
+            # 🔹 Get current stock
+            available_stock = get_stock_balance(
+                row.item_code,
+                row.warehouse
+            )
+
+            # 🔹 Compare with return qty
+            if available_stock < row.qty:
+                frappe.throw(
+                    f"Row {row.idx}: Not enough stock for Item {row.item_code} "
+                    f"in Warehouse {row.warehouse}. Available: {available_stock}, Required: {row.qty}"
+                )
+
+
+    def on_submit(self):
+
+        self.db_set("status", "Queued")
+        # 🚀 Enqueue background job
+        frappe.enqueue(
+            method="franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.process_bulk_purchase_return",
+            docname=self.name,
+            queue="long",
+            timeout=600,
+            job_name=f"Bulk Purchase Return {self.name}"
+        )
+
+        # 💬 User message
+        frappe.msgprint(
+            "Return documents are being created in the background."
+        )
+
+def process_bulk_purchase_return(docname):
+
+    doc = frappe.get_doc("Bulk Purchase Return", docname)
+
+    try: 
+
+        receipts = {}
+        doc.db_set("status", "In Progress")
+
+        for row in doc.items:
             receipts.setdefault(row.purchase_receipt, []).append(row)
+
+        # ✅ Prefetch
+        pr_item_names = list(set([row.purchase_receipt_item for row in doc.items]))
+
+        pr_items = frappe.get_all(
+            "Purchase Receipt Item",
+            filters={"name": ["in", pr_item_names]},
+            fields=["name", "purchase_order", "purchase_order_item"]
+        )
+
+        pr_item_map = {d.name: d for d in pr_items}
 
         for pr, items in receipts.items():
 
-            return_doc = frappe.new_doc("Purchase Receipt")
-            return_doc.is_return = 1
-            return_doc.return_against = pr
-            return_doc.supplier = self.supplier
-            return_doc.company = self.company
-            return_doc.custom_bulk_purchase_return= self.name
+            return_doc = make_return_doc("Purchase Receipt", pr)
+            return_doc.custom_bulk_purchase_return = doc.name
+            return_doc.items = []
+
             for row in items:
 
-                pr_item = frappe.get_doc("Purchase Receipt Item", row.purchase_receipt_item)
+                pr_item = pr_item_map.get(row.purchase_receipt_item)
 
                 serials = row.serial_nos.strip() if row.serial_nos else ""
 
                 return_doc.append("items", {
                     "item_code": row.item_code,
-                    "qty": -row.qty,
-                    "returned_qty": row.qty,
+                    "qty": -abs(row.qty),
                     "warehouse": row.warehouse,
                     "rate": row.rate,
                     "serial_no": serials,
-
-                    # Safe PO assignment
-                    "purchase_order": pr_item.purchase_order or "",
-                    "purchase_order_item": pr_item.purchase_order_item or "",
+                    "purchase_order": pr_item.purchase_order if pr_item else "",
+                    "purchase_order_item": pr_item.purchase_order_item if pr_item else "",
                     "purchase_receipt_item": row.purchase_receipt_item
                 })
+
+            return_doc.set_missing_values()
             return_doc.calculate_taxes_and_totals()
-            return_doc.insert()
+            return_doc.insert(ignore_permissions=True)
+
+        doc.db_set("status", "Completed")
+
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Bulk Purchase Return Failed")
+
+        doc.db_set("status", "Failed")
+
 
 @frappe.whitelist()
 def get_returnable_items(supplier, company, item_code=None):
@@ -282,26 +345,47 @@ def get_pr_from_serial(serial_no, company):
 @frappe.whitelist()
 def submit_created_prs(docname):
 
-    prs = frappe.get_all(
-        "Purchase Receipt",
-        filters={
-            "custom_bulk_purchase_return": docname,
-            "docstatus": 0
-        },
-        pluck="name"
+    doc = frappe.get_doc("Bulk Purchase Return", docname)
+    doc.db_set("submit_status", "Queued")
+
+    frappe.enqueue(
+        method="franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.process_submit_prs",
+        docname=docname,
+        queue="long",
+        timeout=600,
+        job_name=f"Submit PRs for {docname}"
     )
 
-    submitted = []
+    return "Queued"
 
-    for pr in prs:
-        doc = frappe.get_doc("Purchase Receipt", pr)
+def process_submit_prs(docname):
 
-        doc.flags.ignore_permissions = True
-        doc.submit()
+    doc = frappe.get_doc("Bulk Purchase Return", docname)
 
-        submitted.append(pr)
+    try:
+        doc.db_set("submit_status", "In Progress")
 
-    return submitted
+        prs = frappe.get_all(
+            "Purchase Receipt",
+            filters={
+                "custom_bulk_purchase_return": docname,
+                "docstatus": 0
+            },
+            pluck="name"
+        )
+
+        for pr in prs:
+            pr_doc = frappe.get_doc("Purchase Receipt", pr)
+            pr_doc.flags.ignore_permissions = True
+            pr_doc.submit()
+
+        doc.db_set("submit_status", "Completed")
+
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Submit PRs Failed")
+
+        doc.db_set("submit_status", "Failed")
+
 
 @frappe.whitelist()
 def has_draft_return_prs(docname):

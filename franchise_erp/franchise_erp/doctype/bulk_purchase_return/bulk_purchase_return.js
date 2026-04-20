@@ -33,10 +33,11 @@ frappe.ui.form.on('Bulk Purchase Return', {
                                 docname: frm.doc.name
                             },
                             freeze: true,
-                            freeze_message: 'Submitting Return Purchase Receipts...'
+                            freeze_message: 'Submitting in background...'
                         });
-
-                        frappe.msgprint('Return Purchase Receipts Submitted');
+                    
+                        frappe.msgprint("Submission started in background.");
+                    
                         frm.reload_doc();
                     });
                 }
