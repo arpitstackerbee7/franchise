@@ -82,6 +82,15 @@ frappe.ui.form.on('Gate Out', {
                 frm.set_value("scan_barcode", "");
             }
         });
+    },
+    before_save(frm) {
+
+        let ids = (frm.doc.gate_out_box_barcode || [])
+            .map(d => d.box_barcode)
+            .filter(Boolean);
+
+        // sabko comma se store karo
+        frm.set_value("outgoing_logistics_ids", ids.join(","));
     }
 });
 

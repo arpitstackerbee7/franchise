@@ -6,6 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "scan_barcode",
+  "column_break_jkib",
+  "outgoing_logistics_ids",
   "section_break_yfdk",
   "gate_out_box_barcode"
  ],
@@ -24,12 +26,24 @@
    "fieldtype": "Table",
    "label": "Gate Out Box Barcode",
    "options": "Gate Out Box Barcode"
+  },
+  {
+   "fieldname": "column_break_jkib",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "outgoing_logistics_ids",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Outgoing Logistics IDs",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-20 12:10:33.441487",
+ "modified": "2026-04-20 16:24:00.643706",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Out",
