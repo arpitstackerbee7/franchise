@@ -261,6 +261,7 @@ def validate_po_serial(scanned_serial, po_items, is_return=0):
         f"Serial No <b>{scanned_serial}</b> does not belong to this Purchase Order"
     )
 
+
 def validate_item(doc, method=None):
     # 🔹 Check if ANY row has PO
     po_present = any(row.purchase_order for row in doc.items)
