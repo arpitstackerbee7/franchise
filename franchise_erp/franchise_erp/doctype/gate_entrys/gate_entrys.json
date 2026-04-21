@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "format:GE-{#####}",
  "creation": "2026-04-21 08:53:51.656192",
  "default_view": "List",
  "doctype": "DocType",
@@ -67,13 +68,13 @@
   {
    "fieldname": "supplier",
    "fieldtype": "Link",
-   "label": "Supplier",
+   "label": "Vendor Name",
    "options": "Supplier"
   },
   {
    "fieldname": "document_no",
    "fieldtype": "Data",
-   "label": "Document No/LR No"
+   "label": "Builty No"
   },
   {
    "fieldname": "door_no",
@@ -90,7 +91,7 @@
    "fieldname": "no_of_parcels",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Number of parcels/boxes",
+   "label": "Number of Parcels/Boxes",
    "reqd": 1
   },
   {
@@ -103,10 +104,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-21 10:09:02.714544",
+ "modified": "2026-04-21 11:30:58.572384",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entrys",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
