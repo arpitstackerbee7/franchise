@@ -1,7 +1,6 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "Prompt",
  "creation": "2026-04-21 08:53:51.656192",
  "default_view": "List",
  "doctype": "DocType",
@@ -104,11 +103,10 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-21 10:04:31.307382",
+ "modified": "2026-04-21 10:09:02.714544",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entrys",
- "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
