@@ -9,14 +9,13 @@
  "field_order": [
   "general_section",
   "transporter",
-  "invoice_no",
-  "no_of_parcels",
+  "invoice_value",
   "column_break_kknq",
   "supplier",
-  "invoice_value",
+  "door_no",
   "column_break_cred",
   "document_no",
-  "door_no",
+  "no_of_parcels",
   "section_break_rsit",
   "amended_from"
  ],
@@ -83,11 +82,6 @@
    "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
   },
   {
-   "fieldname": "invoice_no",
-   "fieldtype": "Data",
-   "label": "Invoice No"
-  },
-  {
    "fieldname": "no_of_parcels",
    "fieldtype": "Int",
    "in_list_view": 1,
@@ -104,7 +98,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-21 11:30:58.572384",
+ "modified": "2026-04-21 15:00:30.738490",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entrys",
