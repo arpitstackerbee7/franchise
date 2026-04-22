@@ -952,5 +952,15 @@ def remove_item_price_from_custom_table(doc, method=None):
 
     if child_row:
         frappe.db.delete("Item Price Row", {"name": child_row})
+        remaining_rows = frappe.db.get_all(
+            "Item Price Row",
+            filters={"parent": item_code, "parentfield": "custom_item_prices"},
+            fields=["name"],
+            order_by="idx asc"
+        )
+
+        for i, row in enumerate(remaining_rows, start=1):
+            frappe.db.set_value("Item Price Row", row.name, "idx", i, update_modified=False)
+
         frappe.db.commit()
 
