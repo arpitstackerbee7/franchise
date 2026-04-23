@@ -148,6 +148,9 @@ def process_bulk_sales_return(docname):
                 kept.append(ret_item)
 
             return_doc.items = kept
+            return_doc.set_missing_values()
+            return_doc.calculate_taxes_and_totals()
+
             return_doc.insert(ignore_permissions=True)
 
         # 🔹 SALES INVOICE RETURN
@@ -181,6 +184,9 @@ def process_bulk_sales_return(docname):
                 kept.append(ret_item)
 
             si_return.items = kept
+            si_return.set_missing_values()
+            si_return.calculate_taxes_and_totals()
+
             si_return.insert(ignore_permissions=True)
 
         doc.db_set("status", "Completed")
