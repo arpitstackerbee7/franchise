@@ -12,6 +12,8 @@
   "amended_from",
   "column_break_dtdh",
   "company",
+  "status",
+  "submit_status",
   "section_break_rotl",
   "items"
  ],
@@ -58,8 +60,23 @@
    "reqd": 1
   },
   {
+  "fieldname": "status",
+  "fieldtype": "Select",
+  "label": "Return Creation Status",
+  "options": "\nQueued\nIn Progress\nCompleted\nFailed",
+ "read_only": 1
+},
+ {
+  "fieldname": "submit_status",
+  "fieldtype": "Select",
+  "label": "Return Submission Status",
+  "options": "Not Started\nQueued\nIn Progress\nCompleted\nFailed",
+  "default": "Not Started",
+  "read_only": 1
+ },
+  {
    "fieldname": "section_break_rotl",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break" 
   },
   {
    "fieldname": "items",
@@ -74,6 +91,10 @@
  "links": [
   {
    "link_doctype": "Delivery Note",
+   "link_fieldname": "custom_bulk_sales_return"
+  },
+  {
+   "link_doctype": "Sales Invoice",
    "link_fieldname": "custom_bulk_sales_return"
   }
  ],

@@ -17,6 +17,8 @@
   "stock_uom",
   "delivery_note",
   "delivery_note_item",
+  "sales_invoice",
+  "sales_invoice_item",
   "warehouse",
   "section_break_xqgo",
   "serial_nos",
@@ -80,6 +82,19 @@
    "label": "Delivery Note Item",
    "options": "Delivery Note Item",
    "read_only": 1
+  },
+ {
+  "fieldname": "sales_invoice",
+  "fieldtype": "Link",
+  "label": "Sales Invoice",
+  "options": "Sales Invoice",
+  "read_only": 1
+  },
+  {
+  "fieldname": "sales_invoice_item",
+  "fieldtype": "Data",
+  "label": "Sales Invoice Item",
+  "read_only": 1
   },
   {
    "fieldname": "section_break_xqgo",
