@@ -349,8 +349,8 @@ frappe.ui.form.on("Item", {
                                     frm.refresh_field("custom_item_prices");
                                     frappe.msgprint(r.message.message);
                                 } else {
-                                    frm.reload_doc();
                                     frappe.msgprint(r.message || "Upload complete");
+                                    frm.reload_doc(); 
                                 }
                             }
                         });

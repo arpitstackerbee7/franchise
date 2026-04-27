@@ -771,11 +771,21 @@ def smart_bulk_upload(doc, file_url):
         #  allow exact match OR pattern like ITEM.###
         
         if f_code:
-            if not doc.is_new():
-                if f_code != doc.name:
-                    frappe.throw(
-                        _(f"Row {i}: Item Code '{f_code}' does not match '{doc.name}'")
-                    )
+            pattern_code = "ITEM-.YYYY.-.####"
+
+        # 🟡 Unsaved Item
+        if doc.is_new():
+            if f_code != pattern_code:
+                frappe.throw(
+                    _(f"Row {i}: Only '{pattern_code}' allowed for new item")
+            )
+
+        # 🟢 Saved Item
+        else:
+            if f_code != doc.name and f_code != pattern_code:
+                frappe.throw(
+                    _(f"Row {i}: Item Code must be '{doc.name}' or '{pattern_code}'")
+            )
 
         try:
             f_rate = float(f_rate_raw)
@@ -810,6 +820,36 @@ def smart_bulk_upload(doc, file_url):
             "message": "Data added. Please save the Item.",
             "data": doc.get("custom_item_prices")
         }
+        else:
+            db_doc = frappe.get_doc("Item", doc.name)
+
+            existing_map = {
+            d.price_list: d
+            for d in (db_doc.get("custom_item_prices") or [])
+            }
+
+            for i, row in enumerate(data_rows, start=1):
+                if len(row) < 3:
+                    continue
+
+                f_list = str(row[idx_list]).strip()
+                f_rate_raw = str(row[idx_rate]).strip()
+
+                try:
+                    f_rate = float(f_rate_raw)
+                except:
+                    continue
+
+                if f_list in existing_map:
+                    existing_map[f_list].rate = f_rate
+                else:
+                    db_doc.append("custom_item_prices", {
+                    "item_code": doc.name,
+                    "price_list": f_list,
+                    "rate": f_rate,
+        })
+
+        db_doc.save(ignore_permissions=True)
 
     parts = []
     if added:
