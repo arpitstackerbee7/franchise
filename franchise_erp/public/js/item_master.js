@@ -330,7 +330,7 @@ function apply_item_restrictions(frm) {
 frappe.ui.form.on("Item", {
     refresh(frm) {
 
-        if (!frm.is_new()) {
+        
 
             // Upload button
             frm.fields_dict['custom_item_prices'].grid.add_custom_button(__('Upload'), function () {
@@ -340,12 +340,18 @@ frappe.ui.form.on("Item", {
                         frappe.call({
                             method: "franchise_erp.custom.item_master.smart_bulk_upload",
                             args: {
-                                item_code: frm.doc.name,
+                                doc: JSON.stringify(frm.doc),
                                 file_url: file.file_url
                             },
                             callback: function (r) {
-                                frm.reload_doc();
-                                frappe.msgprint(r.message || "Upload complete");
+                                if (r.message && r.message.data) {
+                                    frm.set_value("custom_item_prices", r.message.data);
+                                    frm.refresh_field("custom_item_prices");
+                                    frappe.msgprint(r.message.message);
+                                } else {
+                                    frm.reload_doc();
+                                    frappe.msgprint(r.message || "Upload complete");
+                                }
                             }
                         });
                     }
@@ -393,6 +399,6 @@ frappe.ui.form.on("Item", {
                 let download_btn = grid_footer.find('.btn-custom:contains("Download")');
                 grid_footer.append(download_btn);
             }, 300);
-        }
+        
     }
 });
