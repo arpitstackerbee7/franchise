@@ -751,7 +751,7 @@ def smart_bulk_upload(item_code, file_url):
         f_list = str(row[idx_list]).strip()
         f_rate_raw = str(row[idx_rate]).strip()
 
-        if not f_code and not f_list:
+        if not f_code:
             continue
 
         junk_phrases = {
@@ -765,11 +765,19 @@ def smart_bulk_upload(item_code, file_url):
         if " " in f_code and len(f_code) > 20:
             continue
 
-        if f_code and f_code != item_code:
-            frappe.throw(
-                _(f"Row {i}: Item Code '{f_code}' does not match '{item_code}'. "
-                  "Upload blocked.")
-            )
+        #  allow exact match OR pattern like ITEM.###
+        
+        if f_code:
+            base_item = item_code.split(".")[0]
+            csv_base = f_code.split(".")[0]
+
+            is_exact = f_code == item_code
+            is_pattern = "." in f_code and csv_base == base_item
+
+            if not (is_exact or is_pattern):
+                frappe.throw(
+                    _(f"Row {i}: Item Code '{f_code}' does not match '{item_code}'. Upload blocked.")
+                ) 
 
         try:
             f_rate = float(f_rate_raw)
@@ -844,19 +852,6 @@ def validate_and_merge_prices(doc, method=None):
 
         p_list_key = p_list.upper()
 
-        
-        
-        if not is_new:
-            if row.item_code and str(row.item_code).strip() != str(doc.name).strip():
-                if db_rows_for_rescue:
-                    doc.set(table_field, db_rows_for_rescue)
-                frappe.throw(
-                    _(
-                        f"Item Code mismatch on Price List '{p_list}': "
-                        f"row has '{row.item_code}' but this item is '{doc.name}'. "
-                        "Upload rejected and original data has been restored."
-                    )
-                )
 
         row.item_code = doc.name
         
@@ -870,10 +865,38 @@ def validate_and_merge_prices(doc, method=None):
         
 
     doc.set(table_field, cleaned_rows)
-       
+
     if not is_new:
         current_price_lists = {str(r.price_list).strip().upper() for r in cleaned_rows if r.price_list}
 
+        for row in cleaned_rows:
+            if not row.price_list:
+                continue
+
+            existing_ip = frappe.db.get_value(
+                "Item Price",
+                {
+                    "item_code": doc.name,
+                    "price_list": row.price_list
+                },
+                "name"
+            )
+
+            if existing_ip:
+                frappe.db.set_value(
+                    "Item Price",
+                    existing_ip,
+                    "price_list_rate",
+                    row.rate,
+                    update_modified=False
+                )
+            else:
+                frappe.get_doc({
+                    "doctype": "Item Price",
+                    "item_code": doc.name,
+                    "price_list": row.price_list,
+                    "price_list_rate": row.rate
+                }).insert(ignore_permissions=True)
         existing_item_prices = frappe.db.get_all(
             "Item Price",
             filters={"item_code": doc.name},
@@ -883,6 +906,7 @@ def validate_and_merge_prices(doc, method=None):
         for ip in existing_item_prices:
             if str(ip.price_list).strip().upper() not in current_price_lists:
                 frappe.delete_doc("Item Price", ip.name, ignore_permissions=True)
+       
 
 def sync_item_price_to_custom_table(doc, method=None):
     
@@ -963,4 +987,3 @@ def remove_item_price_from_custom_table(doc, method=None):
             frappe.db.set_value("Item Price Row", row.name, "idx", i, update_modified=False)
 
         frappe.db.commit()
-
