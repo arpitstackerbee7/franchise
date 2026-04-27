@@ -695,9 +695,12 @@ def existing_item_price_update(doc, method):
 
  #by jaya 
 @frappe.whitelist()
-def smart_bulk_upload(item_code, file_url):
+def smart_bulk_upload(doc, file_url):
+    import json
     import csv, io, os
     from urllib.parse import unquote
+
+    doc = frappe.get_doc(json.loads(doc))
 
     file_url = unquote(file_url)
     file_path = get_file_path(file_url)
@@ -730,7 +733,7 @@ def smart_bulk_upload(item_code, file_url):
         data_rows = all_rows
         idx_code, idx_list, idx_rate = 0, 1, 2
 
-    doc = frappe.get_doc("Item", item_code)
+    
 
     existing_pl = {
         str(d.price_list).strip().upper()
@@ -768,16 +771,11 @@ def smart_bulk_upload(item_code, file_url):
         #  allow exact match OR pattern like ITEM.###
         
         if f_code:
-            base_item = item_code.split(".")[0]
-            csv_base = f_code.split(".")[0]
-
-            is_exact = f_code == item_code
-            is_pattern = "." in f_code and csv_base == base_item
-
-            if not (is_exact or is_pattern):
-                frappe.throw(
-                    _(f"Row {i}: Item Code '{f_code}' does not match '{item_code}'. Upload blocked.")
-                ) 
+            if not doc.is_new():
+                if f_code != doc.name:
+                    frappe.throw(
+                        _(f"Row {i}: Item Code '{f_code}' does not match '{doc.name}'")
+                    )
 
         try:
             f_rate = float(f_rate_raw)
@@ -799,15 +797,19 @@ def smart_bulk_upload(item_code, file_url):
             continue  
 
         doc.append("custom_item_prices", {
-            "item_code": item_code,
+            "item_code": "ITEM-.YYYY.-.####" if doc.is_new() else doc.name,
             "price_list": f_list,
             "rate": f_rate,
         })
         existing_pl.add(f_list.upper())
         added += 1
 
-    if added > 0 or updated > 0:  # ✅ now updated is actually incremented
-        doc.save(ignore_permissions=True)
+    if added > 0 or updated > 0: 
+        if doc.is_new():
+            return {
+            "message": "Data added. Please save the Item.",
+            "data": doc.get("custom_item_prices")
+        }
 
     parts = []
     if added:
@@ -987,3 +989,11 @@ def remove_item_price_from_custom_table(doc, method=None):
             frappe.db.set_value("Item Price Row", row.name, "idx", i, update_modified=False)
 
         frappe.db.commit()
+
+def update_child_item_codes(doc, method=None):
+    for row in doc.get("custom_item_prices") or []:
+        if not row.item_code or "####" in row.item_code:
+            row.item_code = doc.name
+
+    # Save only if changes made
+    doc.save(ignore_permissions=True)
