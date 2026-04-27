@@ -132,6 +132,9 @@ function open_sales_invoice_dialog(frm) {
                     let serial = dialog.get_value("serial_no");
                     if (!serial) return;
 
+                    console.log("Scanned:", serial);
+                    dialog.set_value("serial_no", "");
+
                     frappe.call({
                         method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_si_from_serial",
                         args: {
@@ -441,6 +444,68 @@ function open_sales_invoice_dialog(frm) {
     });
 
     dialog.show();
+
+    setTimeout(() => {
+
+    let field = dialog.fields_dict.serial_no;
+    let input = field.$input;
+    let wrapper = field.$wrapper;
+
+    wrapper.css({
+        position: "relative",
+        overflow: "hidden"
+    });
+
+    input.css({
+        height: "35px",
+        "border-radius": "8px",
+        "padding-right": "40px"
+    });
+
+    wrapper.find(".scan-btn").remove();
+
+    let btn = $(`
+    <button class="scan-btn btn btn-default" style="
+        position:absolute;
+        right:8px;
+        top:55%;
+        transform:translateY(-50%);
+        height:28px;
+        width:28px;
+        padding:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:6px;
+        z-index:5;
+    ">
+        <i class="fa fa-camera"></i>
+    </button>
+    `);
+
+    wrapper.append(btn);
+
+    input.focus();
+    input.attr("autocomplete", "off");
+
+    input.on("keydown", function(e){
+        if(e.key === "Enter"){
+            e.preventDefault();
+            input.trigger("change");
+        }
+    });
+
+    // 🔥 CAMERA CLICK
+    btn.on("click", function () {
+
+    openScanner(function(code) {
+        dialog.set_value("serial_no", code);
+        input.trigger("change");
+    });
+
+});
+
+    }, 300);
 
     load_sales_invoice_items(frm, dialog);
 }
@@ -816,6 +881,68 @@ function open_return_items_dialog(frm) {
 
     dialog.show();
 
+    setTimeout(() => {
+
+    let field = dialog.fields_dict.serial_no;
+    let input = field.$input;
+    let wrapper = field.$wrapper;
+
+    wrapper.css({
+        position: "relative",
+        overflow: "hidden"
+    });
+
+    input.css({
+        height: "35px",
+        "border-radius": "8px",
+        "padding-right": "40px"
+    });
+
+    wrapper.find(".scan-btn").remove();
+
+    let btn = $(`
+    <button class="scan-btn btn btn-default" style="
+        position:absolute;
+        right:8px;
+        top:55%;
+        transform:translateY(-50%);
+        height:28px;
+        width:28px;
+        padding:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:6px;
+        z-index:5;
+    ">
+        <i class="fa fa-camera"></i>
+    </button>
+    `);
+
+    wrapper.append(btn);
+
+    input.focus();
+    input.attr("autocomplete", "off");
+
+    input.on("keydown", function(e){
+        if(e.key === "Enter"){
+            e.preventDefault();
+            input.trigger("change");
+        }
+    });
+
+    // 🔥 CAMERA CLICK
+        btn.on("click", function () {
+
+    openScanner(function(code) {
+        dialog.set_value("serial_no", code);
+        input.trigger("change");
+    });
+
+});
+
+}, 300);
+
     load_returnable_items(frm,dialog);
 }
 
@@ -865,4 +992,156 @@ function load_returnable_items(frm, dialog) {
 
         }
     });
+}
+
+function openScanner(callback) {
+
+    let scanner_dialog = new frappe.ui.Dialog({
+        title: "Scan Barcode",
+        size: "large",
+        fields: [
+            { fieldtype: "HTML", fieldname: "scanner" }
+        ]
+    });
+
+    scanner_dialog.show();
+
+    setTimeout(() => {
+
+        let target = scanner_dialog.fields_dict.scanner.$wrapper.get(0);
+
+        // 🔥 FIX SIZE
+        target.style.height = "400px";
+        target.style.width = "100%";
+        target.style.position = "relative";
+        target.style.overflow = "hidden";
+
+        // 🔥 DARK MASK
+        let mask = document.createElement("div");
+        mask.style.position = "absolute";
+        mask.style.top = "0";
+        mask.style.left = "0";
+        mask.style.width = "100%";
+        mask.style.height = "100%";
+        mask.style.background = "rgba(0,0,0,0.6)";
+        mask.style.zIndex = "1";
+
+        // 🔥 SCAN BOX
+        let box = document.createElement("div");
+        box.style.position = "absolute";
+        box.style.width = "260px";
+        box.style.height = "260px";
+        box.style.top = "50%";
+        box.style.left = "50%";
+        box.style.transform = "translate(-50%, -50%)";
+        box.style.border = "3px solid #fff";
+        box.style.borderRadius = "12px";
+        box.style.zIndex = "2";
+
+        // 🔥 CUT EFFECT
+        box.style.boxShadow = "0 0 0 9999px rgba(0,0,0,0.6)";
+
+        // 🔥 SCAN LINE
+        let line = document.createElement("div");
+        line.style.position = "absolute";
+        line.style.width = "100%";
+        line.style.height = "2px";
+        line.style.background = "red";
+        line.style.top = "0";
+        line.style.animation = "scanMove 2s linear infinite";
+        box.appendChild(line);
+
+        // animation
+        let style = document.createElement("style");
+        style.innerHTML = `
+        @keyframes scanMove {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }`;
+        document.head.appendChild(style);
+
+        target.appendChild(mask);
+        target.appendChild(box);
+
+        frappe.require("https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js", () => {
+
+            let isScanned = false;
+
+            Quagga.init({
+                inputStream: {
+                    type: "LiveStream",
+                    target: target,
+                    constraints: {
+                        facingMode: "environment"
+                    },
+                    area: {
+                        top: "25%",
+                        right: "25%",
+                        left: "25%",
+                        bottom: "25%"
+                    }
+                },
+                locator: {
+                    patchSize: "medium",
+                    halfSample: true
+                },
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader",
+                        "ean_8_reader"
+                    ]
+                },
+                locate: true
+            }, function (err) {
+
+                if (err) {
+                    frappe.msgprint("Camera init failed");
+                    return;
+                }
+
+                Quagga.start();
+
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, 200);
+            });
+
+            Quagga.offDetected();
+
+            Quagga.onDetected(function (result) {
+
+                if (isScanned) return;
+                isScanned = true;
+
+                let code = result.codeResult.code;
+
+                if (callback) callback(code);
+
+                setTimeout(() => {
+                    stopScanner();
+                    scanner_dialog.hide();
+                }, 200);
+            });
+
+            function stopScanner() {
+                try {
+                    if (Quagga) {
+                        Quagga.stop();
+
+                        let stream = Quagga.CameraAccess?.getActiveStream();
+                        if (stream) {
+                            stream.getTracks().forEach(track => track.stop());
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            scanner_dialog.$wrapper.on("hidden.bs.modal", function () {
+                stopScanner();
+            });
+
+        });
+
+    }, 300);
 }
