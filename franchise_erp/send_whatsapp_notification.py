@@ -122,6 +122,14 @@ import requests
 
 def send_sales_invoice_pdf_from_outgoing_logistics(doc, method=None):
 
+    # -----------------------------
+    # CHECK TZU SETTING
+    # -----------------------------
+    enabled = frappe.db.get_single_value("TZU Setting", "enable_whatsapp_notification")
+
+    if not enabled:
+        return  #Stop execution if unchecked
+    
     for row in doc.references:
 
         if row.source_doctype != "Sales Invoice":
