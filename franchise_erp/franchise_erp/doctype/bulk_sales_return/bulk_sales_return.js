@@ -126,14 +126,12 @@ function open_sales_invoice_dialog(frm) {
                 fieldname: "serial_no",
                 label: "Scan Serial",
                 fieldtype: "Data",
+                options:"Barcode",
 
                 onchange() {
 
                     let serial = dialog.get_value("serial_no");
                     if (!serial) return;
-
-                    console.log("Scanned:", serial);
-                    dialog.set_value("serial_no", "");
 
                     frappe.call({
                         method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_si_from_serial",
@@ -499,8 +497,8 @@ function open_sales_invoice_dialog(frm) {
     btn.on("click", function () {
 
     openScanner(function(code) {
-        dialog.set_value("serial_no", code);
-        input.trigger("change");
+        handleSerialScan(dialog, frm, serial);
+        
     });
 
 });
@@ -541,10 +539,11 @@ function open_return_items_dialog(frm) {
             {
                 fieldname: "serial_no",
                 label: "Scan Serial",
-                fieldtype: "Data",
-            
+                fieldtype:"Data",
+                options: "Barcode",
+
                 onchange() {
-            
+
                     let serial = dialog.get_value("serial_no");
                     if (!serial) return;
             
@@ -1068,11 +1067,20 @@ function openScanner(callback) {
             let isScanned = false;
 
             Quagga.init({
+
+                debug: {
+                    drawBoundingBox: true,
+                    showFrequency: true,
+                    drawScanline: true,
+                    showPattern: true
+                },
                 inputStream: {
                     type: "LiveStream",
                     target: target,
                     constraints: {
-                        facingMode: "environment"
+                        facingMode: "environment",
+                         width: { ideal: 1280 },
+                         height: { ideal: 720 }
                     },
                     area: {
                         top: "25%",
@@ -1082,14 +1090,17 @@ function openScanner(callback) {
                     }
                 },
                 locator: {
-                    patchSize: "medium",
-                    halfSample: true
+                    patchSize: "large",
+                    halfSample: false
                 },
                 decoder: {
-                    readers: [
+                   readers: [
                         "code_128_reader",
                         "ean_reader",
-                        "ean_8_reader"
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "upc_reader",
+                        "upc_e_reader"
                     ]
                 },
                 locate: true
@@ -1109,12 +1120,20 @@ function openScanner(callback) {
 
             Quagga.offDetected();
 
+            console.log("DETECTED RAW:");
+
             Quagga.onDetected(function (result) {
+
+            console.log("DETECTED RAW:", result);
 
                 if (isScanned) return;
                 isScanned = true;
 
                 let code = result.codeResult.code;
+
+                console.log("FINAL CODE:", code);
+
+                frappe.msgprint("Scanned: " + code);
 
                 if (callback) callback(code);
 
@@ -1144,4 +1163,25 @@ function openScanner(callback) {
         });
 
     }, 300);
+}
+
+function handleSerialScan(dialog, frm, serial) {
+
+    if (!serial) return;
+
+    console.log("Scanned:", serial);
+
+    dialog.set_value("serial_no", "");
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_si_from_serial",
+        args: {
+            serial_no: serial,
+            company: frm.doc.company,
+            customer: dialog.get_value("customer")
+        },
+        callback: function(r) {
+            // 👉 same pura logic yaha shift kar do (jo tumne onchange me likha hai)
+        }
+    });
 }
