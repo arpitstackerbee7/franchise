@@ -315,17 +315,17 @@ frappe.ui.form.on("Gate Entry", {
 
 
 // // set current date and disabled futur date
-frappe.ui.form.on("Gate Entry", {
+// frappe.ui.form.on("Gate Entry", {
 
-    document_date(frm) {
-        validate_not_future(frm, "document_date");
-    },
+//     document_date(frm) {
+//         validate_not_future(frm, "document_date");
+//     },
 
-    lr_entry_date(frm) {
-        validate_not_future(frm, "lr_entry_date");
-    }
+//     lr_entry_date(frm) {
+//         validate_not_future(frm, "lr_entry_date");
+//     }
 
-});
+// });
 
 // Manual typing validation
 function validate_not_future(frm, fieldname) {

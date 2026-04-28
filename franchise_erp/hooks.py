@@ -211,6 +211,9 @@ doc_events = {
     "Supplier": {
         "after_insert": "franchise_erp.custom.supplier.create_supplier_warehouse",
         "on_update": "franchise_erp.custom.supplier.create_supplier_warehouse"
+    },
+    "Shipment": {
+        "validate": "franchise_erp.custom.shipment.fix_address_issue"
     }
 }
    
@@ -241,7 +244,8 @@ doctype_js = {
     "Supplier Group": "public/js/supplier_group.js",
     "Item Group": "public/js/item_group.js",
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
-    "Employee": "public/js/employee.js"
+    "Employee": "public/js/employee.js",
+    "Shipment": "public/js/shipment.js"
 
 }
 
@@ -284,7 +288,7 @@ app_include_js = [
     "/assets/franchise_erp/js/customer_quick_entry.js",
     "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     "/assets/franchise_erp/js/uploader_patch.js",
-    "/assets/franchise_erp/js/barcode_scanner_override.js"
+    "/assets/franchise_erp/js/barcode_scanner_override.js",
     
 ]
 
