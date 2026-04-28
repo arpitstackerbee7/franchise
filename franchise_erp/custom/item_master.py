@@ -694,346 +694,346 @@ def existing_item_price_update(doc, method):
     frappe.clear_cache()
 
  #by jaya 
-@frappe.whitelist()
-def smart_bulk_upload(doc, file_url):
-    import json
-    import csv, io, os
-    from urllib.parse import unquote
+# @frappe.whitelist()
+# def smart_bulk_upload(doc, file_url):
+#     import json
+#     import csv, io, os
+#     from urllib.parse import unquote
 
-    doc = frappe.get_doc(json.loads(doc))
+#     doc = frappe.get_doc(json.loads(doc))
 
-    file_url = unquote(file_url)
-    file_path = get_file_path(file_url)
+#     file_url = unquote(file_url)
+#     file_path = get_file_path(file_url)
 
-    if not os.path.exists(file_path):
-        frappe.throw(f"File not found at: {file_path}. Please re-upload.")
+#     if not os.path.exists(file_path):
+#         frappe.throw(f"File not found at: {file_path}. Please re-upload.")
 
-    with open(file_path, "r", encoding="utf-8-sig") as f:
-        content = f.read()
+#     with open(file_path, "r", encoding="utf-8-sig") as f:
+#         content = f.read()
 
-    reader = csv.reader(io.StringIO(content))
-    all_rows = list(reader)
+#     reader = csv.reader(io.StringIO(content))
+#     all_rows = list(reader)
 
-    required = {"item code", "price list", "rate"}
-    header_row_idx = None
+#     required = {"item code", "price list", "rate"}
+#     header_row_idx = None
 
-    for idx, row in enumerate(all_rows):
-        cleaned = {str(c).strip().lower() for c in row}
-        if required.issubset(cleaned):
-            header_row_idx = idx
-            break
+#     for idx, row in enumerate(all_rows):
+#         cleaned = {str(c).strip().lower() for c in row}
+#         if required.issubset(cleaned):
+#             header_row_idx = idx
+#             break
 
-    if header_row_idx is not None:
-        headers = [str(h).strip().lower() for h in all_rows[header_row_idx]]
-        data_rows = all_rows[header_row_idx + 1:]
-        idx_code = headers.index("item code")
-        idx_list = headers.index("price list")
-        idx_rate = headers.index("rate")
-    else:
-        data_rows = all_rows
-        idx_code, idx_list, idx_rate = 0, 1, 2
+#     if header_row_idx is not None:
+#         headers = [str(h).strip().lower() for h in all_rows[header_row_idx]]
+#         data_rows = all_rows[header_row_idx + 1:]
+#         idx_code = headers.index("item code")
+#         idx_list = headers.index("price list")
+#         idx_rate = headers.index("rate")
+#     else:
+#         data_rows = all_rows
+#         idx_code, idx_list, idx_rate = 0, 1, 2
 
     
 
-    existing_pl = {
-        str(d.price_list).strip().upper()
-        for d in (doc.get("custom_item_prices") or [])
-        if d.price_list
-    }
+#     existing_pl = {
+#         str(d.price_list).strip().upper()
+#         for d in (doc.get("custom_item_prices") or [])
+#         if d.price_list
+#     }
 
-    added = 0
-    updated = 0  
-    skipped = 0
-    errors = []
+#     added = 0
+#     updated = 0  
+#     skipped = 0
+#     errors = []
 
-    for i, row in enumerate(data_rows, start=1):
-        if len(row) < 3:
-            continue
+#     for i, row in enumerate(data_rows, start=1):
+#         if len(row) < 3:
+#             continue
 
-        f_code = str(row[idx_code]).strip()
-        f_list = str(row[idx_list]).strip()
-        f_rate_raw = str(row[idx_rate]).strip()
+#         f_code = str(row[idx_code]).strip()
+#         f_list = str(row[idx_list]).strip()
+#         f_rate_raw = str(row[idx_rate]).strip()
 
-        if not f_code:
-            continue
+#         if not f_code:
+#             continue
 
-        junk_phrases = {
-            "price list", "price_list", "------", "do not edit",
-            "the csv format is case sensitive", "do not edit headers",
-            "item code", "item_code"
-        }
-        if f_code.lower() in junk_phrases or f_list.lower() in junk_phrases:
-            continue
+#         junk_phrases = {
+#             "price list", "price_list", "------", "do not edit",
+#             "the csv format is case sensitive", "do not edit headers",
+#             "item code", "item_code"
+#         }
+#         if f_code.lower() in junk_phrases or f_list.lower() in junk_phrases:
+#             continue
 
-        if " " in f_code and len(f_code) > 20:
-            continue
+#         if " " in f_code and len(f_code) > 20:
+#             continue
 
-        #  allow exact match OR pattern like ITEM.###
+#         #  allow exact match OR pattern like ITEM.###
         
-        if f_code:
-            pattern_code = "ITEM-.YYYY.-.####"
+#         if f_code:
+#             pattern_code = "ITEM-.YYYY.-.####"
 
-        # 🟡 Unsaved Item
-        if doc.is_new():
-            if f_code != pattern_code:
-                frappe.throw(
-                    _(f"Row {i}: Only '{pattern_code}' allowed for new item")
-            )
+#         # 🟡 Unsaved Item
+#         if doc.is_new():
+#             if f_code != pattern_code:
+#                 frappe.throw(
+#                     _(f"Row {i}: Only '{pattern_code}' allowed for new item")
+#             )
 
-        # 🟢 Saved Item
-        else:
-            if f_code != doc.name and f_code != pattern_code:
-                frappe.throw(
-                    _(f"Row {i}: Item Code must be '{doc.name}' or '{pattern_code}'")
-            )
+#         # 🟢 Saved Item
+#         else:
+#             if f_code != doc.name and f_code != pattern_code:
+#                 frappe.throw(
+#                     _(f"Row {i}: Item Code must be '{doc.name}' or '{pattern_code}'")
+#             )
 
-        try:
-            f_rate = float(f_rate_raw)
-            if f_rate <= 0:
-                raise ValueError("Rate must be greater than 0")
-        except (ValueError, TypeError):
-            errors.append(
-                f"Row {i}: '{f_list}' has invalid or empty rate '{f_rate_raw}' — skipped."
-            )
-            skipped += 1
-            continue
+#         try:
+#             f_rate = float(f_rate_raw)
+#             if f_rate <= 0:
+#                 raise ValueError("Rate must be greater than 0")
+#         except (ValueError, TypeError):
+#             errors.append(
+#                 f"Row {i}: '{f_list}' has invalid or empty rate '{f_rate_raw}' — skipped."
+#             )
+#             skipped += 1
+#             continue
 
-        if f_list.upper() in existing_pl:
-            for price_row in doc.get("custom_item_prices") or []:
-                if str(price_row.price_list).strip().upper() == f_list.upper():
-                    price_row.rate = f_rate
-                    updated += 1  
-                    break
-            continue  
+#         if f_list.upper() in existing_pl:
+#             for price_row in doc.get("custom_item_prices") or []:
+#                 if str(price_row.price_list).strip().upper() == f_list.upper():
+#                     price_row.rate = f_rate
+#                     updated += 1  
+#                     break
+#             continue  
 
-        doc.append("custom_item_prices", {
-            "item_code": "ITEM-.YYYY.-.####" if doc.is_new() else doc.name,
-            "price_list": f_list,
-            "rate": f_rate,
-        })
-        existing_pl.add(f_list.upper())
-        added += 1
+#         doc.append("custom_item_prices", {
+#             "item_code": "ITEM-.YYYY.-.####" if doc.is_new() else doc.name,
+#             "price_list": f_list,
+#             "rate": f_rate,
+#         })
+#         existing_pl.add(f_list.upper())
+#         added += 1
 
-    if added > 0 or updated > 0: 
-        if doc.is_new():
-            return {
-            "message": "Data added. Please save the Item.",
-            "data": doc.get("custom_item_prices")
-        }
-        else:
-            db_doc = frappe.get_doc("Item", doc.name)
+#     if added > 0 or updated > 0: 
+#         if doc.is_new():
+#             return {
+#             "message": "Data added. Please save the Item.",
+#             "data": doc.get("custom_item_prices")
+#         }
+#         else:
+#             db_doc = frappe.get_doc("Item", doc.name)
 
-            existing_map = {
-            d.price_list: d
-            for d in (db_doc.get("custom_item_prices") or [])
-            }
+#             existing_map = {
+#             d.price_list: d
+#             for d in (db_doc.get("custom_item_prices") or [])
+#             }
 
-            for i, row in enumerate(data_rows, start=1):
-                if len(row) < 3:
-                    continue
+#             for i, row in enumerate(data_rows, start=1):
+#                 if len(row) < 3:
+#                     continue
 
-                f_list = str(row[idx_list]).strip()
-                f_rate_raw = str(row[idx_rate]).strip()
+#                 f_list = str(row[idx_list]).strip()
+#                 f_rate_raw = str(row[idx_rate]).strip()
 
-                try:
-                    f_rate = float(f_rate_raw)
-                except:
-                    continue
+#                 try:
+#                     f_rate = float(f_rate_raw)
+#                 except:
+#                     continue
 
-                if f_list in existing_map:
-                    existing_map[f_list].rate = f_rate
-                else:
-                    db_doc.append("custom_item_prices", {
-                    "item_code": doc.name,
-                    "price_list": f_list,
-                    "rate": f_rate,
-        })
+#                 if f_list in existing_map:
+#                     existing_map[f_list].rate = f_rate
+#                 else:
+#                     db_doc.append("custom_item_prices", {
+#                     "item_code": doc.name,
+#                     "price_list": f_list,
+#                     "rate": f_rate,
+#         })
 
-        db_doc.save(ignore_permissions=True)
+#         db_doc.save(ignore_permissions=True)
 
-    parts = []
-    if added:
-        parts.append(f"{added} new row(s) added.")
-    if updated:
-        parts.append(f"{updated} row(s) updated.")  # ✅ now shows in message
-    if skipped:
-        parts.append(f"{skipped} row(s) skipped (invalid rate).")
-    if errors:
-        parts.append("Errors: " + " | ".join(errors))
+#     parts = []
+#     if added:
+#         parts.append(f"{added} new row(s) added.")
+#     if updated:
+#         parts.append(f"{updated} row(s) updated.")  # ✅ now shows in message
+#     if skipped:
+#         parts.append(f"{skipped} row(s) skipped (invalid rate).")
+#     if errors:
+#         parts.append("Errors: " + " | ".join(errors))
 
-    return " ".join(parts) if parts else "No changes were made."
+#     return " ".join(parts) if parts else "No changes were made."
 
 
-def validate_and_merge_prices(doc, method=None):
-    table_field = "custom_item_prices"
-    child_dt = "Item Price Row"
+# def validate_and_merge_prices(doc, method=None):
+#     table_field = "custom_item_prices"
+#     child_dt = "Item Price Row"
     
-    is_new = doc.is_new()
+#     is_new = doc.is_new()
     
     
-    db_rows_for_rescue = []
+#     db_rows_for_rescue = []
 
-    if not doc.is_new():
-        db_rows_for_rescue = frappe.db.get_all(
-            child_dt,
-            filters={"parent": doc.name, "parentfield": table_field},
-            fields=["name", "price_list", "rate", "item_code"],
-            order_by="idx asc",
-        )
+#     if not doc.is_new():
+#         db_rows_for_rescue = frappe.db.get_all(
+#             child_dt,
+#             filters={"parent": doc.name, "parentfield": table_field},
+#             fields=["name", "price_list", "rate", "item_code"],
+#             order_by="idx asc",
+#         )
         
 
-    seen_pl = {}     
-    cleaned_rows = []
+#     seen_pl = {}     
+#     cleaned_rows = []
 
-    for row in doc.get(table_field) or []:
-        p_list = str(row.price_list or "").strip()
-
-        
-        if not p_list:
-            continue
-
-        p_list_key = p_list.upper()
-
-
-        row.item_code = doc.name
-        
-        if p_list_key in seen_pl:
-            existing_idx = seen_pl[p_list_key]
-            cleaned_rows[existing_idx].rate = row.rate
-        else:
-            seen_pl[p_list_key] = len(cleaned_rows)
-            cleaned_rows.append(row)
+#     for row in doc.get(table_field) or []:
+#         p_list = str(row.price_list or "").strip()
 
         
+#         if not p_list:
+#             continue
 
-    doc.set(table_field, cleaned_rows)
+#         p_list_key = p_list.upper()
 
-    if not is_new:
-        current_price_lists = {str(r.price_list).strip().upper() for r in cleaned_rows if r.price_list}
 
-        for row in cleaned_rows:
-            if not row.price_list:
-                continue
+#         row.item_code = doc.name
+        
+#         if p_list_key in seen_pl:
+#             existing_idx = seen_pl[p_list_key]
+#             cleaned_rows[existing_idx].rate = row.rate
+#         else:
+#             seen_pl[p_list_key] = len(cleaned_rows)
+#             cleaned_rows.append(row)
 
-            existing_ip = frappe.db.get_value(
-                "Item Price",
-                {
-                    "item_code": doc.name,
-                    "price_list": row.price_list
-                },
-                "name"
-            )
+        
 
-            if existing_ip:
-                frappe.db.set_value(
-                    "Item Price",
-                    existing_ip,
-                    "price_list_rate",
-                    row.rate,
-                    update_modified=False
-                )
-            else:
-                frappe.get_doc({
-                    "doctype": "Item Price",
-                    "item_code": doc.name,
-                    "price_list": row.price_list,
-                    "price_list_rate": row.rate
-                }).insert(ignore_permissions=True)
-        existing_item_prices = frappe.db.get_all(
-            "Item Price",
-            filters={"item_code": doc.name},
-            fields=["name", "price_list"],
-        )
+#     doc.set(table_field, cleaned_rows)
 
-        for ip in existing_item_prices:
-            if str(ip.price_list).strip().upper() not in current_price_lists:
-                frappe.delete_doc("Item Price", ip.name, ignore_permissions=True)
+#     if not is_new:
+#         current_price_lists = {str(r.price_list).strip().upper() for r in cleaned_rows if r.price_list}
+
+#         for row in cleaned_rows:
+#             if not row.price_list:
+#                 continue
+
+#             existing_ip = frappe.db.get_value(
+#                 "Item Price",
+#                 {
+#                     "item_code": doc.name,
+#                     "price_list": row.price_list
+#                 },
+#                 "name"
+#             )
+
+#             if existing_ip:
+#                 frappe.db.set_value(
+#                     "Item Price",
+#                     existing_ip,
+#                     "price_list_rate",
+#                     row.rate,
+#                     update_modified=False
+#                 )
+#             else:
+#                 frappe.get_doc({
+#                     "doctype": "Item Price",
+#                     "item_code": doc.name,
+#                     "price_list": row.price_list,
+#                     "price_list_rate": row.rate
+#                 }).insert(ignore_permissions=True)
+#         existing_item_prices = frappe.db.get_all(
+#             "Item Price",
+#             filters={"item_code": doc.name},
+#             fields=["name", "price_list"],
+#         )
+
+#         for ip in existing_item_prices:
+#             if str(ip.price_list).strip().upper() not in current_price_lists:
+#                 frappe.delete_doc("Item Price", ip.name, ignore_permissions=True)
        
 
-def sync_item_price_to_custom_table(doc, method=None):
+# def sync_item_price_to_custom_table(doc, method=None):
     
-    item_code = doc.item_code
-    price_list = doc.price_list
-    new_rate = doc.price_list_rate
+#     item_code = doc.item_code
+#     price_list = doc.price_list
+#     new_rate = doc.price_list_rate
 
-    if not item_code or not price_list:
-        return
+#     if not item_code or not price_list:
+#         return
 
-    if not frappe.db.exists("Item", item_code):
-        return
+#     if not frappe.db.exists("Item", item_code):
+#         return
 
     
-    child_row = frappe.db.get_value(
-        "Item Price Row",
-        {
-            "parent": item_code,
-            "parentfield": "custom_item_prices",
-            "price_list": price_list
-        },
-        "name"
-    )
+#     child_row = frappe.db.get_value(
+#         "Item Price Row",
+#         {
+#             "parent": item_code,
+#             "parentfield": "custom_item_prices",
+#             "price_list": price_list
+#         },
+#         "name"
+#     )
 
-    if child_row:
+#     if child_row:
         
-        frappe.db.set_value(
-            "Item Price Row",
-            child_row,
-            "rate",
-            new_rate,
-            update_modified=False
-        )
-        frappe.db.commit()
-    else:
+#         frappe.db.set_value(
+#             "Item Price Row",
+#             child_row,
+#             "rate",
+#             new_rate,
+#             update_modified=False
+#         )
+#         frappe.db.commit()
+#     else:
         
-        item_doc = frappe.get_doc("Item", item_code)
-        item_doc.append("custom_item_prices", {
-            "item_code": item_code,
-            "price_list": price_list,
-            "rate": new_rate,
-        })
-        item_doc.save(ignore_permissions=True)
+#         item_doc = frappe.get_doc("Item", item_code)
+#         item_doc.append("custom_item_prices", {
+#             "item_code": item_code,
+#             "price_list": price_list,
+#             "rate": new_rate,
+#         })
+#         item_doc.save(ignore_permissions=True)
 
     
 
-def remove_item_price_from_custom_table(doc, method=None):
+# def remove_item_price_from_custom_table(doc, method=None):
     
-    item_code = doc.item_code
-    price_list = doc.price_list
+#     item_code = doc.item_code
+#     price_list = doc.price_list
 
-    if not item_code or not price_list:
-        return
+#     if not item_code or not price_list:
+#         return
 
-    if not frappe.db.exists("Item", item_code):
-        return
+#     if not frappe.db.exists("Item", item_code):
+#         return
 
-    child_row = frappe.db.get_value(
-        "Item Price Row",
-        {
-            "parent": item_code,
-            "parentfield": "custom_item_prices",
-            "price_list": price_list
-        },
-        "name"
-    )
+#     child_row = frappe.db.get_value(
+#         "Item Price Row",
+#         {
+#             "parent": item_code,
+#             "parentfield": "custom_item_prices",
+#             "price_list": price_list
+#         },
+#         "name"
+#     )
 
-    if child_row:
-        frappe.db.delete("Item Price Row", {"name": child_row})
-        remaining_rows = frappe.db.get_all(
-            "Item Price Row",
-            filters={"parent": item_code, "parentfield": "custom_item_prices"},
-            fields=["name"],
-            order_by="idx asc"
-        )
+#     if child_row:
+#         frappe.db.delete("Item Price Row", {"name": child_row})
+#         remaining_rows = frappe.db.get_all(
+#             "Item Price Row",
+#             filters={"parent": item_code, "parentfield": "custom_item_prices"},
+#             fields=["name"],
+#             order_by="idx asc"
+#         )
 
-        for i, row in enumerate(remaining_rows, start=1):
-            frappe.db.set_value("Item Price Row", row.name, "idx", i, update_modified=False)
+#         for i, row in enumerate(remaining_rows, start=1):
+#             frappe.db.set_value("Item Price Row", row.name, "idx", i, update_modified=False)
 
-        frappe.db.commit()
+#         frappe.db.commit()
 
-def update_child_item_codes(doc, method=None):
-    for row in doc.get("custom_item_prices") or []:
-        if not row.item_code or "####" in row.item_code:
-            row.item_code = doc.name
+# def update_child_item_codes(doc, method=None):
+#     for row in doc.get("custom_item_prices") or []:
+#         if not row.item_code or "####" in row.item_code:
+#             row.item_code = doc.name
 
-    # Save only if changes made
-    doc.save(ignore_permissions=True)
+#     # Save only if changes made
+#     doc.save(ignore_permissions=True)
