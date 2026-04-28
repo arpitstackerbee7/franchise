@@ -327,78 +327,78 @@ function apply_item_restrictions(frm) {
 // }
 
 //by jaya
-// frappe.ui.form.on("Item", {
-//     refresh(frm) {
+frappe.ui.form.on("Item", {
+    refresh(frm) {
 
         
 
-//             // Upload button
-//             frm.fields_dict['custom_item_prices'].grid.add_custom_button(__('Upload'), function () {
-//                 new frappe.ui.FileUploader({
-//                     allow_multiple: false,
-//                     on_success: (file) => {
-//                         frappe.call({
-//                             method: "franchise_erp.custom.item_master.smart_bulk_upload",
-//                             args: {
-//                                 doc: JSON.stringify(frm.doc),
-//                                 file_url: file.file_url
-//                             },
-//                             callback: function (r) {
-//                                 if (r.message && r.message.data) {
-//                                     frm.set_value("custom_item_prices", r.message.data);
-//                                     frm.refresh_field("custom_item_prices");
-//                                     frappe.msgprint(r.message.message);
-//                                 } else {
-//                                     frappe.msgprint(r.message || "Upload complete");
-//                                     frm.reload_doc(); 
-//                                 }
-//                             }
-//                         });
-//                     }
-//                 });
-//             });
+            // Upload button
+            frm.fields_dict['custom_item_prices'].grid.add_custom_button(__('Upload'), function () {
+                new frappe.ui.FileUploader({
+                    allow_multiple: false,
+                    on_success: (file) => {
+                        frappe.call({
+                            method: "franchise_erp.custom.item_master.smart_bulk_upload",
+                            args: {
+                                doc: JSON.stringify(frm.doc),
+                                file_url: file.file_url
+                            },
+                            callback: function (r) {
+                                if (r.message && r.message.data) {
+                                    frm.set_value("custom_item_prices", r.message.data);
+                                    frm.refresh_field("custom_item_prices");
+                                    frappe.msgprint(r.message.message);
+                                } else {
+                                    frappe.msgprint(r.message || "Upload complete");
+                                    frm.reload_doc(); 
+                                }
+                            }
+                        });
+                    }
+                });
+            });
 
-//             // Download button
-//             frm.fields_dict['custom_item_prices'].grid.add_custom_button(__('Download'), function () {
-//                 let rows = frm.doc.custom_item_prices || [];
+            // Download button
+            frm.fields_dict['custom_item_prices'].grid.add_custom_button(__('Download'), function () {
+                let rows = frm.doc.custom_item_prices || [];
 
-//                 if (rows.length === 0) {
-//                     frappe.msgprint("No data to download.");
-//                     return;
-//                 }
+                if (rows.length === 0) {
+                    frappe.msgprint("No data to download.");
+                    return;
+                }
 
-//                 let csv = "Item Code,Price List,Rate\n";
-//                 rows.forEach(row => {
-//                     csv += `${row.item_code || ""},${row.price_list || ""},${row.rate || ""}\n`;
-//                 });
+                let csv = "Item Code,Price List,Rate\n";
+                rows.forEach(row => {
+                    csv += `${row.item_code || ""},${row.price_list || ""},${row.rate || ""}\n`;
+                });
 
-//                 let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-//                 let url = URL.createObjectURL(blob);
-//                 let a = document.createElement("a");
-//                 a.href = url;
-//                 a.download = `Item_Prices_${frm.doc.name}.csv`;
-//                 a.click();
-//                 URL.revokeObjectURL(url);
-//             });
+                let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                let url = URL.createObjectURL(blob);
+                let a = document.createElement("a");
+                a.href = url;
+                a.download = `Item_Prices_${frm.doc.name}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
 
-//             // Optional UI fix
-//             setTimeout(() => {
-//                 let grid_wrapper = frm.fields_dict['custom_item_prices'].grid.wrapper;
-//                 let grid_footer = grid_wrapper.find('.grid-footer');
+            // Optional UI fix
+            setTimeout(() => {
+                let grid_wrapper = frm.fields_dict['custom_item_prices'].grid.wrapper;
+                let grid_footer = grid_wrapper.find('.grid-footer');
 
-//                 grid_footer.css({
-//                     'display': 'flex',
-//                     'justify-content': 'space-between',
-//                     'align-items': 'center'
-//                 });
+                grid_footer.css({
+                    'display': 'flex',
+                    'justify-content': 'space-between',
+                    'align-items': 'center'
+                });
 
-//                 let upload_btn = grid_footer.find('.btn-custom:contains("Upload")');
-//                 upload_btn.css('margin-left', 'auto');
-//                 grid_footer.append(upload_btn);
+                let upload_btn = grid_footer.find('.btn-custom:contains("Upload")');
+                upload_btn.css('margin-left', 'auto');
+                grid_footer.append(upload_btn);
 
-//                 let download_btn = grid_footer.find('.btn-custom:contains("Download")');
-//                 grid_footer.append(download_btn);
-//             }, 300);
+                let download_btn = grid_footer.find('.btn-custom:contains("Download")');
+                grid_footer.append(download_btn);
+            }, 300);
         
-//     }
-// });
+    }
+});

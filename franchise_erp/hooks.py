@@ -113,8 +113,8 @@ doc_events = {
             # "franchise_erp.custom.item_master.update_item_code_on_change",
             ],
         # "on_update" : "franchise_erp.custom.item_master.existing_item_price_update" #existing validation
-        #"validate": ["franchise_erp.custom.item_master.validate_and_merge_prices"],
-        #"after_insert": "franchise_erp.custom.item_master.update_child_item_codes",
+        "validate": ["franchise_erp.custom.item_master.validate_and_merge_prices"],
+        "after_insert": "franchise_erp.custom.item_master.update_child_item_codes",
         "on_update" : [
             "franchise_erp.custom.item_master.existing_item_price_update",
         ],
@@ -147,9 +147,9 @@ doc_events = {
         "before_validate": "franchise_erp.custom.sales_order.apply_sales_term"
     },    "Item Price": {
         "validate": "franchise_erp.custom.item_price.validate_item_price",
-        #"on_update": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",
-        #"after_insert": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",
-        #"on_trash": "franchise_erp.custom.item_master.remove_item_price_from_custom_table"
+        "on_update": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",
+        "after_insert": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",
+        "on_trash": "franchise_erp.custom.item_master.remove_item_price_from_custom_table"
     },
 
     "Delivery Note": {
