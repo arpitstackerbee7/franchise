@@ -5,7 +5,7 @@ import frappe
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from franchise_erp.utils.fy_naming import company_fy_autoname
-
+from frappe.utils import now
 class GateEntry(Document):
 
     def autoname(self):
@@ -40,25 +40,52 @@ class GateEntry(Document):
     #     il_doc.status = "Issued"
     #     il_doc.gate_entry_no = None
     #     il_doc.save(ignore_permissions=True)
+    def before_submit(self):   # 🔥 CHANGE HERE
 
-    def on_submit(self):
-        self.status = "Submitted"
-        self.db_update()
+            if not self.no_of_parcels:
+                return
 
-        if not self.incoming_logistics:
-            frappe.throw("Incoming Logistics is required")
+            self.set("gate_entry_box_barcode", [])
 
-        # --- PURANA LOGIC (Header update) ---
-        il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
-        il_doc.gate_entry_no = self.name
-        il_doc.status = "Received" 
-        il_doc.save(ignore_permissions=True)
+            parts = self.name.split("-")
 
-        # --- NAYA LOGIC (Boxes status update only on Submit) ---
-        for item in self.gate_entry_box_barcode:
-            frappe.db.set_value("Gate Entry Box Barcode", 
-                {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
-                "status", "Received")
+            try:
+                last = "%03d" % int(parts[-1])
+            except:
+                last = parts[-1]
+
+            base_name = parts[0] + "-" + last
+
+            for i in range(1, int(self.no_of_parcels) + 1):
+
+                serial = "%02d" % i
+                final_barcode = f"{base_name}-{serial}"
+
+                self.append("gate_entry_box_barcode", {
+                    "box_barcode": final_barcode,
+                    "total_barcode_qty": self.no_of_parcels,
+                    "status": "Received",
+                    "scan_date_time": now()
+                })
+    
+    # def on_submit(self):
+    #     self.status = "Submitted"
+    #     self.db_update()
+
+    #     if not self.incoming_logistics:
+    #         frappe.throw("Incoming Logistics is required")
+
+    #     # --- PURANA LOGIC (Header update) ---
+    #     il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
+    #     il_doc.gate_entry_no = self.name
+    #     il_doc.status = "Received" 
+    #     il_doc.save(ignore_permissions=True)
+
+    #     # --- NAYA LOGIC (Boxes status update only on Submit) ---
+    #     for item in self.gate_entry_box_barcode:
+    #         frappe.db.set_value("Gate Entry Box Barcode", 
+    #             {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
+    #             "status", "Received")
 
     def on_cancel(self):
         self.status = "Cancelled"

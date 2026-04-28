@@ -4,11 +4,37 @@
 # import frappe
 from frappe.model.document import Document
 
-
+from frappe.utils import now
 class GateEntrys(Document):
-	pass
+	# pass
 
+	def before_submit(self):   # 🔥 CHANGE HERE
 
+		if not self.no_of_parcels:
+			return
+
+		self.set("gate_entry_box_barcode", [])
+
+		parts = self.name.split("-")
+
+		try:
+			last = "%03d" % int(parts[-1])
+		except:
+			last = parts[-1]
+
+		base_name = parts[0] + "-" + last
+
+		for i in range(1, int(self.no_of_parcels) + 1):
+
+			serial = "%02d" % i
+			final_barcode = f"{base_name}-{serial}"
+
+			self.append("gate_entry_box_barcode", {
+				"box_barcode": final_barcode,
+				"total_barcode_qty": self.no_of_parcels,
+				"status": "Received",
+				"scan_date_time": now()
+			})
 # import frappe
 # from frappe.model.naming import make_autoname
 # from datetime import datetime
