@@ -109,66 +109,12 @@ class IncomingLogistics(Document):
                     WHERE parent = %s
                 """, (self.name, row.source_name))
 
-    # =====================================================
-    # NEW LOGIC: GATE ENTRY UPDATE
-    # =====================================================
-        if self.select_gate_entry:
-
-            if not frappe.db.exists("Gate Entry", self.select_gate_entry):
-                frappe.throw(f"Gate Entry not found: {self.select_gate_entry}")
-
-           # 🔹 TZU Settings se value lo
-            settings = frappe.get_single("TZU Setting")
-
-            transport_item = settings.transport_service_item
-
-            # 🔹 Parent update
-            frappe.db.set_value("Gate Entry", self.select_gate_entry, {
-                "owner_site": self.owner_site,                
-                "type": self.type,
-                "gate_entry": 'Yes',
-                "date": self.date,
-                "consignor": self.consignor,
-                "site": self.site,
-                "document_no": self.lr_document_no,
-                "consignor_customer": self.consignor_customer,
-                "incoming_logistics": self.name,
-                "transport_service_item": transport_item,
-                "document_date": self.lr_date,
-                "status": self.status,
-                "lr_entry_date":self.lr_date,
-                "lr_quantity":self.lr_quantity,
-                "declaration_amount":self.total_amount,
-                "quantity_as_per_invoice":self.received_qty,
-                "remarks":self.remarks
-                
-            })
-            
-            # 🔹 Child delete
-            frappe.db.sql("""
-                DELETE FROM `tabOutgoing Logistics Reference`
-                WHERE parent = %s
-            """, (self.select_gate_entry,))
-
-            # 🔹 Child insert
-            for row in self.references:
-                frappe.get_doc({
-                    "doctype": "Outgoing Logistics Reference",
-                    "parent": self.select_gate_entry,
-                    "parenttype": "Gate Entry",
-                    "parentfield": "references",
-                    "source_doctype": row.source_doctype,
-                    "source_name": row.source_name
-                }).insert(ignore_permissions=True)
-            #FINAL STEP → clear field
-            self.db_set("select_gate_entry", None)
+            # =====================================================
+            # NEW LOGIC: GATE ENTRY UPDATE
+            # =====================================================
         
-    def before_submit(self):
+            
 
-        if self.select_gate_entry:
-
-            # 🔹 value store kar lo permanent field me
-            self.gate_entry_no = self.select_gate_entry
     # def validate(self):
 
     #     self.validate_unique_lr_per_transporter()
@@ -209,88 +155,88 @@ class IncomingLogistics(Document):
     #         )
 
 
-    # def before_submit(self):
-    #     self.create_gate_entry_box_barcodes()
+    def before_submit(self):
+        self.create_gate_entry_box_barcodes()
 
-    # def create_gate_entry_box_barcodes(self):
-    #     qty = int(self.lr_quantity or 0)
-    #     if qty <= 0:
-    #         return
+    def create_gate_entry_box_barcodes(self):
+        qty = int(self.lr_quantity or 0)
+        if qty <= 0:
+            return
 
-    #     # 🔒 Prevent duplicate creation
-    #     existing = frappe.db.count(
-    #         "Gate Entry Box Barcode",
-    #         {"incoming_logistics_no": self.name}
-    #     )
-    #     if existing > 0:
-    #         return
+        # 🔒 Prevent duplicate creation
+        existing = frappe.db.count(
+            "Gate Entry Box Barcode",
+            {"incoming_logistics_no": self.name}
+        )
+        if existing > 0:
+            return
 
-    #     # 🔹 Get prefix from TZU Setting (IG)
-    #     prefix = frappe.db.get_single_value(
-    #         "TZU Setting",
-    #         "box_barcode_series"
-    #     )
+        # 🔹 Get prefix from TZU Setting (IG)
+        prefix = frappe.db.get_single_value(
+            "TZU Setting",
+            "box_barcode_series"
+        )
 
-    #     if not prefix:
-    #         frappe.throw("Box Barcode Series not configured in TZU Setting")
+        if not prefix:
+            frappe.throw("Box Barcode Series not configured in TZU Setting")
 
-    #     # 🔹 Extract numeric part from Incoming Logistics name
-    #     # TPL-IL-00125-2025-2026 → 00125
-    #     # try:
-    #     #     series_no = self.name.split("/")[2]
-    #     # except Exception:
-    #     #     frappe.throw("Invalid Incoming Logistics Naming Series")
-    #     import re
+        # 🔹 Extract numeric part from Incoming Logistics name
+        # TPL-IL-00125-2025-2026 → 00125
+        # try:
+        #     series_no = self.name.split("/")[2]
+        # except Exception:
+        #     frappe.throw("Invalid Incoming Logistics Naming Series")
+        import re
 
-    #     try:
-    #         name = self.name
+        try:
+            name = self.name
 
-    #         # ===============================
-    #         # 🔥 CASE 1 → New FY format
-    #         # IL/26-27/00005
-    #         # ===============================
-    #         if "/" in name:
-    #             parts = name.split("/")
-    #             series_no = parts[-1]          # 00005
-    #             barcode_prefix = f"{parts[0]}" # IL
+            # ===============================
+            # 🔥 CASE 1 → New FY format
+            # IL/26-27/00005
+            # ===============================
+            if "/" in name:
+                parts = name.split("/")
+                series_no = parts[-1]          # 00005
+                barcode_prefix = f"{parts[0]}" # IL
 
-    #         # ===============================
-    #         # 🔥 CASE 2 → Old format
-    #         # TPL-IL-00088-2025-2026
-    #         # ===============================
-    #         else:
-    #             parts = name.split("-")
+            # ===============================
+            # 🔥 CASE 2 → Old format
+            # TPL-IL-00088-2025-2026
+            # ===============================
+            else:
+                parts = name.split("-")
 
-    #             # TPL-IL-00088-2025-2026
-    #             # index: 0   1   2
-    #             series_no = parts[2]           # 00088
-    #             barcode_prefix = parts[1]      # IL
+                # TPL-IL-00088-2025-2026
+                # index: 0   1   2
+                series_no = parts[2]           # 00088
+                barcode_prefix = parts[1]      # IL
 
-    #     except Exception:
-    #         frappe.throw("Invalid Incoming Logistics Naming Series")
+        except Exception:
+            frappe.throw("Invalid Incoming Logistics Naming Series")
 
-    #     # padding = max(2, len(str(qty)))
+        # padding = max(2, len(str(qty)))
 
-    #     # for i in range(qty):
-    #     #     box_no = str(i + 1).zfill(padding)
+        # for i in range(qty):
+        #     box_no = str(i + 1).zfill(padding)
 
-    #     #     self.append("gate_entry_box_barcode", {
-    #     #         "incoming_logistics_no": self.name,
-    #     #         "box_barcode": f"{prefix}-{series_no}-{box_no}",
-    #     #         "total_barcode_qty": qty,
-    #     #         "status": "Pending"
-    #     #     })
-    #     padding = max(2, len(str(qty)))
+        #     self.append("gate_entry_box_barcode", {
+        #         "incoming_logistics_no": self.name,
+        #         "box_barcode": f"{prefix}-{series_no}-{box_no}",
+        #         "total_barcode_qty": qty,
+        #         "status": "Pending"
+        #     })
+        padding = max(2, len(str(qty)))
 
-    #     for i in range(qty):
-    #         box_no = str(i + 1).zfill(padding)
+        for i in range(qty):
+            box_no = str(i + 1).zfill(padding)
 
-    #         self.append("gate_entry_box_barcode", {
-    #             "incoming_logistics_no": self.name,
-    #             "box_barcode": f"{prefix}-{series_no}-{box_no}",
-    #             "total_barcode_qty": qty,
-    #             "status": "Pending"
-    #         })
+            self.append("gate_entry_box_barcode", {
+                "incoming_logistics_no": self.name,
+                "box_barcode": f"{prefix}-{series_no}-{box_no}",
+                "total_barcode_qty": qty,
+                "status": "Pending"
+            })
 
 
     def validate_unique_lr_per_transporter(self):
@@ -357,18 +303,3 @@ def get_used_source_ids(source_doctype):
         pluck="source_name"
     )
     return list(set(used_ids))
-
-
-def before_cancel(self):
-
-    if self.select_gate_entry:
-
-        # 🔹 link remove karo (main fix)
-        self.db_set("select_gate_entry", None)
-
-    if self.gate_entry_no:
-
-        # 🔹 optional: Gate Entry se bhi unlink kar do
-        frappe.db.set_value("Gate Entry", self.gate_entry_no, {
-            "incoming_logistics": None,
-        })
