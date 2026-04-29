@@ -65,7 +65,7 @@ doc_events = {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate":[
             # "franchise_erp.custom.promotional_scheme.apply_promotions",
-                    "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+                    # "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
                     "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return",
                     ],
 
@@ -74,7 +74,10 @@ doc_events = {
         "franchise_erp.custom.sales_invoice.validate_item_from_so",
         "franchise_erp.custom.sales_invoice.validate_sales_invoice",
         ],
-        "before_validate": ["franchise_erp.custom.sales_invoice.apply_sales_term"],
+        "before_validate": [
+            "franchise_erp.custom.sales_invoice.apply_sales_term"
+            "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+            ],
     },
     "Purchase Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
