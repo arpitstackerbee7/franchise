@@ -75,7 +75,7 @@ doc_events = {
         "franchise_erp.custom.sales_invoice.validate_sales_invoice",
         ],
         "before_validate": [
-            "franchise_erp.custom.sales_invoice.apply_sales_term"
+            "franchise_erp.custom.sales_invoice.apply_sales_term",
             "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
             ],
     },
