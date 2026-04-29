@@ -957,11 +957,13 @@ def validate_overdue_invoice(doc, method):
     # TOTAL OUTSTANDING (ALL)
     # ===============================
     outstanding = frappe.db.sql("""
-        SELECT SUM(outstanding_amount)
-        FROM `tabSales Invoice`
-        WHERE customer = %s
-        AND docstatus = 1
-    """, doc.customer)[0][0] or 0
+        SELECT SUM(debit - credit)
+        FROM `tabGL Entry`
+        WHERE party_type = 'Customer'
+        AND party = %s
+        AND company = %s
+        AND is_cancelled = 0
+    """, (doc.customer, doc.company))[0][0] or 0
 
     # ===============================
     # CREDIT DAYS CHECK (OVERDUE ONLY)
