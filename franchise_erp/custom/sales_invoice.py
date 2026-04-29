@@ -667,6 +667,7 @@ from frappe.utils import getdate, today, flt
 
 def validate_overdue_invoice(doc, method):
 
+    doc.flags.ignore_credit_limit = True
     # Skip return
     if doc.is_return:
         return
@@ -698,7 +699,13 @@ def validate_overdue_invoice(doc, method):
         AND party = %s
         AND company = %s
         AND is_cancelled = 0
-    """, (doc.customer, doc.company))[0][0] or 0
+        AND posting_date <= %s
+        AND account IN (
+            SELECT name FROM `tabAccount`
+            WHERE account_type = 'Receivable'
+            AND company = %s
+        )
+    """, (doc.customer, doc.company, doc.posting_date, doc.company))[0][0] or 0
 
 
     invoices = frappe.db.sql("""
