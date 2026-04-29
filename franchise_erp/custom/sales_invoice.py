@@ -827,6 +827,9 @@ import frappe
 from frappe.utils import getdate, today, flt
 
 def validate_overdue_invoice(doc, method):
+    
+    if doc.is_return:
+        return
     if not doc.customer or doc.docstatus != 0:
         return
 
