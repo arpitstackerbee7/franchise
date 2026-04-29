@@ -42,6 +42,8 @@
   "column_break_dmpn",
   "lr_quantity",
   "pending_amount",
+  "section_break_fizu",
+  "scan_barcode",
   "section_break_ejse",
   "gate_entry_box_barcode",
   "others_section",
@@ -59,13 +61,11 @@
    "label": "General"
   },
   {
-   "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
    "fieldname": "owner_site",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Owner Site",
    "options": "Company",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -77,10 +77,10 @@
   },
   {
    "allow_on_submit": 1,
+   "default": "Yes",
    "fieldname": "gate_entry",
    "fieldtype": "Data",
-   "label": "Gate Entry No",
-   "read_only": 1
+   "label": "Gate Entry No"
   },
   {
    "fieldname": "column_break_kknq",
@@ -92,7 +92,8 @@
    "fieldtype": "Link",
    "label": "Type",
    "options": "Incoming Logistics Type",
-   "read_only": 1
+   "read_only": 1,
+   "reqd": 1
   },
   {
    "allow_on_submit": 1,
@@ -128,7 +129,7 @@
    "fieldname": "lr_quantity",
    "fieldtype": "Data",
    "label": "LR Quantity",
-   "read_only": 1
+   "reqd": 1
   },
   {
    "fieldname": "column_break_dmpn",
@@ -136,11 +137,9 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
    "fieldname": "declaration_amount",
    "fieldtype": "Float",
-   "label": "Declaration Amount",
-   "read_only": 1
+   "label": "Declaration Amount"
   },
   {
    "fieldname": "others_section",
@@ -151,22 +150,20 @@
    "allow_on_submit": 1,
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks",
-   "read_only": 1
+   "label": "Remarks"
   },
   {
    "allow_on_submit": 1,
    "fieldname": "document_no",
    "fieldtype": "Data",
-   "label": "Document No",
-   "read_only": 1
+   "label": "Document No"
   },
   {
    "allow_on_submit": 1,
+   "default": "Now",
    "fieldname": "document_date",
    "fieldtype": "Date",
-   "label": "Document Date",
-   "read_only": 1
+   "label": "Document Date"
   },
   {
    "fieldname": "lr_entry_no",
@@ -176,10 +173,11 @@
   },
   {
    "allow_on_submit": 1,
+   "default": "Now",
    "fieldname": "lr_entry_date",
    "fieldtype": "Date",
    "label": "LR Entry Date",
-   "read_only": 1
+   "reqd": 1
   },
   {
    "fieldname": "pending_qty",
@@ -212,8 +210,7 @@
    "fieldtype": "Link",
    "label": "Incoming Logistics",
    "link_filters": "[[\"Incoming Logistics\",\"gate_entry_no\",\"like\",null]]",
-   "options": "Incoming Logistics",
-   "read_only": 1
+   "options": "Incoming Logistics"
   },
   {
    "fieldname": "section_break_ejse",
@@ -247,21 +244,17 @@
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
    "fieldname": "transport_service_item",
    "fieldtype": "Link",
    "label": "Transport Service Item",
    "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
-   "options": "Item",
-   "read_only": 1
+   "options": "Item"
   },
   {
    "allow_on_submit": 1,
-   "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
    "fieldname": "quantity_as_per_invoice",
    "fieldtype": "Float",
-   "label": "Quantity as per Invoice",
-   "read_only": 1
+   "label": "Quantity as per Invoice"
   },
   {
    "fieldname": "purchase_ids",
@@ -289,16 +282,15 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Naming Series",
-   "options": "TPL-GE-.#####.-.FY.",
-   "read_only": 1
+   "options": "TPL-GE-.#####.-.FY."
   },
   {
    "fieldname": "for_guard_section",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "For Guard"
   },
   {
@@ -306,8 +298,7 @@
    "fieldtype": "Link",
    "label": "Transporter",
    "link_filters": "[[\"Supplier\",\"is_transporter\",\"=\",1]]",
-   "options": "Supplier",
-   "reqd": 1
+   "options": "Supplier"
   },
   {
    "fieldname": "invoice_value",
@@ -338,8 +329,7 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Number of Parcels/Boxes",
-   "reqd": 1
+   "label": "Number of Parcels/Boxes"
   },
   {
    "fieldname": "door_no",
@@ -348,6 +338,16 @@
    "in_standard_filter": 1,
    "label": "Door Name/Brand/Floor",
    "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+  },
+  {
+   "fieldname": "section_break_fizu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "scan_barcode",
+   "fieldtype": "Data",
+   "label": "Scan Barcode",
+   "options": "Barcode"
   }
  ],
  "grid_page_length": 50,
@@ -359,7 +359,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-04-28 14:28:24.960393",
+ "modified": "2026-04-29 11:22:39.092641",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

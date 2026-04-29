@@ -17,7 +17,6 @@
   "invoice_date",
   "gate_entry",
   "gate_entry_no",
-  "select_gate_entry",
   "column_break_kknq",
   "type",
   "consignor",
@@ -183,7 +182,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Received\nIssued\nPaid",
+   "options": "Issued\nReceived\nPaid",
    "read_only": 1
   },
   {
@@ -198,7 +197,6 @@
    "label": "Maintain Bale wise Qty"
   },
   {
-   "fetch_from": "select_gate_entry.no_of_parcels",
    "fieldname": "lr_quantity",
    "fieldtype": "Data",
    "label": "LR Quantity",
@@ -341,7 +339,6 @@
   {
    "fieldname": "gate_entry_box_barcode",
    "fieldtype": "Table",
-   "hidden": 1,
    "label": "Gate Entry Box Barcode",
    "options": "Gate Entry Box Barcode"
   },
@@ -398,14 +395,6 @@
    "label": "References",
    "options": "Outgoing Logistics Reference",
    "read_only": 1
-  },
-  {
-   "allow_on_submit": 1,
-   "depends_on": "eval:!doc.gate_entry_no || doc.gate_entry_no.trim()==\"\"",
-   "fieldname": "select_gate_entry",
-   "fieldtype": "Link",
-   "label": "Select Gate Entry",
-   "options": "Gate Entry"
   }
  ],
  "grid_page_length": 50,
@@ -417,7 +406,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-04-28 16:23:40.092349",
+ "modified": "2026-04-29 11:24:25.812844",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
