@@ -66,6 +66,16 @@ frappe.ui.form.on("Sales Invoice", {
         });
 
         make_total_qty_bold(frm);
+        
+         // 🔥 force correct filters in dialog
+        frm.set_query("delivery_note", function() {
+            return {
+                filters: {
+                    customer: frm.doc.customer || "",
+                    company: frm.doc.company || ""
+                }
+            };
+        });
     },
     on_submit(frm) {
         // ✅ ensure button appears immediately after submit
