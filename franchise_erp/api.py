@@ -2435,3 +2435,17 @@ def build_item(item, serial, warehouse):
 #             "use_serial_batch_fields": 0
 #         }
 #     }
+
+import frappe
+
+@frappe.whitelist()
+def get_used_delivery_notes():
+
+    # 🔥 ignore permissions (IMPORTANT)
+    data = frappe.db.sql("""
+        SELECT DISTINCT delivery_note
+        FROM `tabSales Invoice Item`
+        WHERE delivery_note IS NOT NULL
+    """, as_dict=True)
+
+    return data

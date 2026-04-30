@@ -65,17 +65,57 @@ frappe.ui.form.on("Sales Invoice", {
             }
         });
 
-        make_total_qty_bold(frm);
-        
-         // 🔥 force correct filters in dialog
-        frm.set_query("delivery_note", function() {
-            return {
-                filters: {
-                    customer: frm.doc.customer || "",
-                    company: frm.doc.company || ""
+        $(document).on('shown.bs.modal', function (e) {
+
+            let dialog = e.target;
+
+            // ✅ ensure correct dialog (Delivery Note)
+            if (!dialog.querySelector('.modal-title')?.innerText.includes("Delivery Note")) {
+                return;
+            }
+
+            let customer_input = dialog.querySelector('[data-fieldname="customer"] input');
+            if (!customer_input) return;
+
+            // 🧹 clear filters
+            let clear_btn = dialog.querySelector(".btn.clear-filters");
+            if (clear_btn) clear_btn.click();
+
+            // 🎯 set customer
+            if (frm.doc.customer) {
+                setTimeout(() => {
+                    customer_input.value = frm.doc.customer;
+                    customer_input.dispatchEvent(new Event("input"));
+                    customer_input.dispatchEvent(new Event("change"));
+                }, 100);
+            }
+
+            // 🔥 REMOVE already invoiced DN
+            setTimeout(() => {
+
+               frappe.call({
+                method: "franchise_erp.api.get_used_delivery_notes",
+                callback: function (r) {
+
+                    let used_dns = (r.message || []).map(d => d.delivery_note);
+
+                    let rows = dialog.querySelectorAll(".list-item-container");
+
+                    rows.forEach(row => {
+                        let dn_name = row.getAttribute("data-item-name");
+
+                        if (used_dns.includes(dn_name)) {
+                            row.remove();
+                        }
+                    });
+
                 }
-            };
+            });
+
+            }, 600); // थोड़ा extra wait (data load delay)
+
         });
+        make_total_qty_bold(frm);
     },
     on_submit(frm) {
         // ✅ ensure button appears immediately after submit
