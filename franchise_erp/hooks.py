@@ -76,8 +76,10 @@ doc_events = {
         ],
         "before_validate": [
             "franchise_erp.custom.sales_invoice.apply_sales_term",
-            "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+            # "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+            
             ],
+        "before_submit": "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
     },
     "Purchase Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
@@ -270,13 +272,11 @@ override_doctype_class = {
 # patches = [
 #     "franchise_erp.patches.add_user_custom_fields"
 # ]
-
 # hooks.py
 # after_migrate = [
 #     "franchise_erp.event.add_user_custom_fields.create_custom_fields",
 #     # "franchise_erp.config.workspace.create_sidebar_items"
 # ]
-
 # after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
 
 # app_include_js = "public/js/back_date_disabled.js"
