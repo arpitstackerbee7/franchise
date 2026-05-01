@@ -1,0 +1,51 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2025-11-18 23:42:05.176760",
+  "name": "Review",
+  "workflow_action_name": "Review"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-01 14:39:42.440800",
+  "name": "Purchase approves",
+  "workflow_action_name": "Purchase approves"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-01 14:36:44.934010",
+  "name": "Merchant checks",
+  "workflow_action_name": "Merchant checks"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-01 14:37:07.721851",
+  "name": "Pending approval",
+  "workflow_action_name": "Pending approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2025-11-18 23:42:05.169804",
+  "name": "Approve",
+  "workflow_action_name": "Approve"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2025-11-18 23:42:05.173585",
+  "name": "Reject",
+  "workflow_action_name": "Reject"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-01 14:36:01.836750",
+  "name": "Pending Review",
+  "workflow_action_name": "Pending Review"
+ }
+]
