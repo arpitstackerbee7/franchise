@@ -85,6 +85,13 @@ function open_return_items_dialog(frm) {
             
                     let serial = dialog.get_value("serial_no");
                     if (!serial) return;
+
+                    if (dialog.last_scanned === serial) {
+                        dialog.set_value("serial_no", "");
+                       return;
+                    }
+
+                    dialog.last_scanned = serial;
             
                     frappe.call({
                         method: "franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.get_pr_from_serial",
@@ -420,6 +427,14 @@ function open_return_items_dialog(frm) {
         });
 
     dialog.show();
+
+    dialog.$wrapper.on("keydown", function(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
 
     load_returnable_items(frm,dialog);
 }
