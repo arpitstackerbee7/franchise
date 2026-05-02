@@ -443,6 +443,14 @@ function open_sales_invoice_dialog(frm) {
 
     dialog.show();
 
+    dialog.$wrapper.on("keydown", function(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+
     load_sales_invoice_items(frm, dialog);
 }
 function open_return_items_dialog(frm) {
@@ -817,6 +825,14 @@ function open_return_items_dialog(frm) {
         });
 
     dialog.show();
+
+    dialog.$wrapper.on("keydown", function(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
 
     load_returnable_items(frm,dialog);
 }
