@@ -91,28 +91,28 @@ frappe.ui.form.on("Sales Invoice", {
             }
 
             // 🔥 REMOVE already invoiced DN
-            setTimeout(() => {
+           setTimeout(() => {
 
-               frappe.call({
-                method: "franchise_erp.api.get_used_delivery_notes",
-                callback: function (r) {
+                frappe.call({
+                    method: "franchise_erp.api.get_used_delivery_notes",
+                    callback: function (r) {
 
-                    let used_dns = (r.message || []).map(d => d.delivery_note);
+                        let used_dns = (r.message || []).map(d => d.delivery_note);
 
-                    let rows = dialog.querySelectorAll(".list-item-container");
+                        let rows = dialog.querySelectorAll(".list-item-container");
 
-                    rows.forEach(row => {
-                        let dn_name = row.getAttribute("data-item-name");
+                        rows.forEach(row => {
+                            let dn_name = row.getAttribute("data-item-name");
 
-                        if (used_dns.includes(dn_name)) {
-                            row.remove();
-                        }
-                    });
+                            if (used_dns.includes(dn_name)) {
+                                row.style.display = "none";   // बेहतर than remove
+                            }
+                        });
 
-                }
-            });
+                    }
+                });
 
-            }, 600); // थोड़ा extra wait (data load delay)
+            }, 1000);
 
         });
         make_total_qty_bold(frm);
