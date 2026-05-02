@@ -27,6 +27,13 @@ frappe.query_reports["Commission Report"] = {
             fieldtype: "Link",
             options: "Customer",
         },
+		// CHANGE 20 — Added Agent filter
+        {
+            fieldname: "agent",
+            label: __("Agent"),
+            fieldtype: "Link",
+            options: "Supplier",
+        },
     ],
 
     formatter: function (value, row, column, data, default_formatter) {

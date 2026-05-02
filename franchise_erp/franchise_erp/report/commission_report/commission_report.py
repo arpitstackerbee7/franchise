@@ -3,6 +3,19 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+# CHANGE 1 — Added Decimal imports for proper rounding (same as SIS Debit Note Log)
+from decimal import Decimal, ROUND_HALF_UP
+
+
+# CHANGE 2 — Added R2() rounding function (same as SIS Debit Note Log)
+def R2(val):
+    try:
+        val = Decimal(str(val))
+    except:
+        val = Decimal("0")
+    return float(val.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+
 
 def execute(filters=None):
     columns = get_columns()
@@ -30,6 +43,13 @@ def get_columns():
             "fieldname": "customer",
             "fieldtype": "Link",
             "options": "Customer",
+            "width": 150,
+        },
+        # CHANGE 3 — Added Agent column
+        {
+            "label": _("Agent"),
+            "fieldname": "agent",
+            "fieldtype": "Data",
             "width": 150,
         },
         {
@@ -113,7 +133,8 @@ def get_data(filters):
             dn.customer                 AS customer,
             dni.item_code               AS item_code,
             dni.qty                     AS qty,
-            dni.rate                    AS mrp,
+            dni.price_list_rate         AS price_list_rate,
+            dni.discount_percentage     AS discount_percentage,
             dni.base_net_amount         AS item_net_amount,
             dn.net_total                AS dn_net_total,
             dn.grand_total              AS dn_grand_total,
@@ -141,6 +162,13 @@ def get_data(filters):
     # Collect unique customers and fetch commission rate from Customer master
     customer_names = list({row.customer for row in dn_items if row.customer})
     customer_map   = get_customer_commission_map(customer_names)
+    
+    # CHANGE 6 — Added SIS margin map to fetch fresh_margin and discounted_margin
+    sis_margin_map = get_sis_margin_map(customer_names)
+
+    # CHANGE 7 — Added output GST min net rate from SIS Configuration
+    output_gst_min_net_rate = get_output_gst_min_net_rate(filters.get("company"))
+
 
     data   = []
     totals = {
@@ -160,6 +188,31 @@ def get_data(filters):
         dn_net_total   = flt(row.dn_net_total)
         dn_grand_total = flt(row.dn_grand_total)
         item_net       = flt(row.item_net_amount)
+        
+        # CHANGE 8 — qty and price_list_rate extracted separately
+        qty             = flt(row.qty)
+        price_list_rate = flt(row.price_list_rate)
+        discount_pct    = flt(row.discount_percentage)
+        
+        # CHANGE 9 — MRP = price_list_rate * qty (was dni.rate before)
+        mrp = R2(price_list_rate * qty)
+        
+        net_amount = Decimal(str(item_net))   # base_net_amount
+        net_sale_value = net_amount
+        
+        sis_margin    = sis_margin_map.get(row.customer, {})
+        fresh_margin  = Decimal(str(sis_margin.get("fresh_margin", 28)))
+        disc_margin   = Decimal(str(sis_margin.get("discounted_margin", 23)))
+         
+        margin_pct    = disc_margin if discount_pct > 0 else fresh_margin
+        margin_amount = (net_amount * margin_pct) / Decimal("100")
+        
+        inv_base_value = float(
+            (net_sale_value - margin_amount).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+        )
+
 
         # Proportional GST for this line item
         total_dn_gst = flt(gst_map.get(dn_name, 0))
@@ -168,17 +221,30 @@ def get_data(filters):
         else:
             item_gst = 0.0
 
-        inv_base_value       = item_net
+        
         input_gst_value      = item_gst
-        collectable_amount   = round(inv_base_value + input_gst_value, 2)
-        receipts             = flt(receipt_map.get(dn_name, dn_grand_total))
+        collectable_amount   = R2(inv_base_value + input_gst_value)
+        if dn_name in receipt_map:
+            total_receipts = flt(receipt_map.get(dn_name))
+            if dn_net_total:
+                receipts = R2((item_net / dn_net_total) * total_receipts)
+            else:
+                receipts = total_receipts
+        else:
+            # No payment found — use collectable amount as receipts
+            receipts = collectable_amount
         gst_amount           = item_gst
-        receipts_without_gst = round(receipts - gst_amount, 2)
+        receipts_without_gst = R2(receipts - gst_amount)
 
         # Fetch commission_rate from Customer master
         # custom_commission_rate is a percent value e.g. 2.0 means 2%
         customer_info   = customer_map.get(row.customer, {})
+
+        
+        # CHANGE 11 — Added agent from customer_map
+        agent           = customer_info.get("custom_agent") or ""
         commission_rate = flt(customer_info.get("custom_commission_rate", 0))
+
 
         # Commission amount = (commission_rate / 100) * receipts_without_gst
         if commission_rate:
@@ -192,9 +258,10 @@ def get_data(filters):
             "sis_counter_sale":      row.sis_counter_sale,
             "date":                  row.date,
             "customer":              row.customer,
+            "agent":                 agent,
             "item_code":             row.item_code,
-            "qty":                   flt(row.qty),
-            "mrp":                   flt(row.mrp),
+            "qty":                   qty,
+            "mrp":                   mrp,
             "inv_base_value":        inv_base_value,
             "input_gst_value":       input_gst_value,
             "collectable_amount":    collectable_amount,
@@ -215,17 +282,18 @@ def get_data(filters):
         "sis_counter_sale":      "",
         "date":                  None,
         "customer":              "",
+        "agent":                 "",
         "item_code":             "TOTAL",
-        "qty":                   round(totals["qty"], 2),
-        "mrp":                   round(totals["mrp"], 2),
-        "inv_base_value":        round(totals["inv_base_value"], 2),
-        "input_gst_value":       round(totals["input_gst_value"], 2),
-        "collectable_amount":    round(totals["collectable_amount"], 2),
-        "receipts":              round(totals["receipts"], 2),
-        "gst_amount":            round(totals["gst_amount"], 2),
-        "receipts_without_gst":  round(totals["receipts_without_gst"], 2),
+        "qty":                   R2(totals["qty"]),
+        "mrp":                   R2(totals["mrp"]),
+        "inv_base_value":        R2(totals["inv_base_value"]),
+        "input_gst_value":       R2(totals["input_gst_value"]),
+        "collectable_amount":    R2(totals["collectable_amount"]),
+        "receipts":              R2(totals["receipts"]),
+        "gst_amount":            R2(totals["gst_amount"]),
+        "receipts_without_gst":  R2(totals["receipts_without_gst"]),
         "commission_rate":       None,
-        "commission_amount":     round(totals["commission_amount"], 2),
+        "commission_amount":     R2(totals["commission_amount"]),
     })
 
     return data
@@ -252,6 +320,7 @@ def get_customer_commission_map(customer_names):
         """
         SELECT
             name,
+            custom_agent,
             custom_commission_rate
         FROM
             `tabCustomer`
@@ -262,6 +331,39 @@ def get_customer_commission_map(customer_names):
         as_dict=True,
     )
     return {r.name: r for r in rows}
+
+# CHANGE 17 — New function: fetches fresh_margin and discounted_margin
+# from SIS Configuration for each customer
+def get_sis_margin_map(customer_names):
+    if not customer_names:
+        return {}
+
+    rows = frappe.db.sql(
+        """
+        SELECT
+            company,
+            fresh_margin,
+            discounted_margin
+        FROM `tabSIS Configuration`
+        WHERE company IN %(customer_names)s
+        """,
+        {"customer_names": tuple(customer_names)},
+        as_dict=True,
+    )
+    return {r.company: r for r in rows}
+
+# CHANGE 18 — New function: fetches output_gst_min_net_rate
+# from SIS Configuration to decide 5% or 18% GST
+def get_output_gst_min_net_rate(company):
+    if not company:
+        return 2500
+
+    val = frappe.db.get_value(
+        "SIS Configuration",
+        {"company": company},
+        "output_gst_min_net_rate"
+    )
+    return flt(val) if val else 2500
 
 
 def get_gst_map(filters):
@@ -344,4 +446,8 @@ def get_conditions(filters):
         conditions.append("dn.customer = %(customer)s")
     if filters.get("company"):
         conditions.append("dn.company = %(company)s")
+    if filters.get("agent"):
+        conditions.append(
+            "dn.customer IN (SELECT name FROM `tabCustomer` WHERE custom_agent = %(agent)s)"
+        )
     return "AND " + " AND ".join(conditions) if conditions else ""
