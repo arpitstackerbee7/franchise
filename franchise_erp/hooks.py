@@ -49,7 +49,6 @@ doc_events = {
        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
        "validate": [
                     "franchise_erp.custom.purchase_invoice.set_buffer_due_date",
-                    
                     ],
     },
     "Journal Entry": {
@@ -244,7 +243,8 @@ doctype_js = {
 
 # franchise_erp/hooks.py
 override_doctype_class = {
-    "Sales Invoice": "franchise_erp.custom.sales_invoice.CustomSalesInvoice"
+    "Sales Invoice": "franchise_erp.custom.sales_invoice.CustomSalesInvoice",
+    "Purchase Invoice": "franchise_erp.custom.purchase_invoice.CustomPurchaseInvoice"
 }
 # override_whitelisted_methods = {
 #     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"

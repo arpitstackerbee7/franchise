@@ -6,6 +6,38 @@ from frappe.utils import today
 
 
 from frappe.utils import  getdate
+from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
+
+class CustomPurchaseInvoice(PurchaseInvoice):
+
+    def set_expense_account(self, for_validate=False):
+
+        # use correct field name
+        if self.custom_is_credit_note:
+            account = frappe.db.get_single_value(
+                "TZU Setting",
+                "is_credit_note_account"
+            )
+
+            if not account:
+                frappe.throw("Please set 'Is Credit Note Account' in TZU Setting first.")
+
+            for item in self.items:
+                item.expense_account = account
+
+        else:
+            super().set_expense_account(for_validate)
+    def autoname(self):
+        if self.custom_is_credit_note:
+            from franchise_erp.utils.fy_naming import get_fy_short, get_next_number, get_doc_date
+            date = get_doc_date(self)
+            fy = get_fy_short(date)
+            if fy:
+                series = f"PDC/{fy}/"
+                number = get_next_number("Purchase Invoice", series)
+                self.name = f"{series}{number}"
+            return
+        super().autoname()
 
 def set_buffer_due_date(doc, method):
     if not doc.supplier or not doc.due_date:

@@ -298,3 +298,48 @@ frappe.ui.form.on('Subcontracting Receipt', {
         };
     }
 });
+// By Jaya
+function set_batch_flag(frm) {
+    let promises = (frm.doc.items || []).map(row => {
+        if (!row.item_code) return Promise.resolve();
+        return frappe.db.get_value("Item", row.item_code, "has_batch_no")
+            .then(r => {
+                return frappe.model.set_value(
+                    row.doctype,
+                    row.name,
+                    "is_batch_item",
+                    r.message && r.message.has_batch_no ? 1 : 0
+                );
+            });
+    });
+
+    Promise.all(promises).then(() => {
+        frm.refresh_field("items");
+    });
+}
+
+frappe.ui.form.on("Subcontracting Receipt", {
+    refresh(frm) {
+        set_batch_flag(frm);
+    },
+    onload(frm) {
+        set_batch_flag(frm);
+    }
+});
+
+frappe.ui.form.on("Subcontracting Receipt Item", {
+    item_code(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (!row.item_code) return;
+        frappe.db.get_value("Item", row.item_code, "has_batch_no")
+            .then(r => {
+                frappe.model.set_value(
+                    cdt,
+                    cdn,
+                    "is_batch_item",
+                    r.message && r.message.has_batch_no ? 1 : 0
+                );
+                frm.refresh_field("items");
+            });
+    }
+});
