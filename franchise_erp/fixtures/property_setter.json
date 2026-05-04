@@ -8078,5 +8078,21 @@
   "property_type": "Small Text",
   "row_name": null,
   "value": "SI/.FY./\nSINV-.YY.-\nSRET/.YY./\nSRET-.YY.-\n\nACC-SINV-.YYYY.-\nACC-SINV-RET-.YYYY.-"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Subcontracting Receipt Item",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "qty",
+  "is_system_generated": 0,
+  "modified": "2026-05-04 13:10:28.598806",
+  "module": null,
+  "name": "Subcontracting Receipt Item-qty-read_only_depends_on",
+  "property": "read_only_depends_on",
+  "property_type": "Data",
+  "row_name": null,
+  "value": "eval:doc.is_batch_item!=1"
  }
 ]
