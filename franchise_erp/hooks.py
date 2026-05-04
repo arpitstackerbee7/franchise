@@ -611,5 +611,13 @@ fixtures = [
             ["dt", "in", ["Purchase Invoice", "Subcontracting Receipt Item"]],
             ["fieldname", "in", ["custom_is_credit_note", "custom_is_batch_item"]]
         ]
+    },
+    {
+    "dt": "Property Setter",
+    "filters": [
+        ["doc_type", "=", "Subcontracting Receipt Item"],
+        ["field_name", "=", "qty"],
+        ["property", "=", "read_only_depends_on"]
+    ]
     }
 ]
