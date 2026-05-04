@@ -826,101 +826,206 @@ def create_standard_buying_item_price(item_code, source_price_list):
 import frappe
 from frappe.utils import getdate, today, flt
 
+# def validate_overdue_invoice(doc, method):
+#     if doc.is_return:
+#         return
+#     if not doc.customer or doc.docstatus != 0:
+#         return
+
+#     today_date = getdate(today())
+
+#     # =========================================================
+#     # CUSTOMER SETTINGS
+#     # =========================================================
+#     credit_days = frappe.db.get_value(
+#         "Customer",
+#         doc.customer,
+#         "custom_credit_days"
+#     ) or 0
+
+#     credit_limit = frappe.db.get_value(
+#         "Customer Credit Limit",
+#         {
+#             "parent": doc.customer,
+#             "company": doc.company
+#         },
+#         "credit_limit"
+#     ) or 0
+
+#     # =========================================================
+#     # FETCH OVERDUE SALES INVOICES
+#     # =========================================================
+#     invoices = frappe.db.sql("""
+#         SELECT
+#             name,
+#             due_date,
+#             grand_total,
+#             paid_amount
+#         FROM `tabSales Invoice`
+#         WHERE customer = %s
+#           AND docstatus = 1
+#           AND status = 'Overdue'
+#     """, doc.customer, as_dict=True)
+
+#     total_overdue_outstanding = 0
+#     credit_days_failed = False
+#     max_overdue_days = 0
+
+#     for inv in invoices:
+#         outstanding = flt(inv.grand_total) - flt(inv.paid_amount)
+
+#         if outstanding <= 0:
+#             continue
+
+#         total_overdue_outstanding += outstanding
+
+#         if credit_days and inv.due_date:
+#             overdue_days = (today_date - getdate(inv.due_date)).days
+#             max_overdue_days = max(max_overdue_days, overdue_days)
+
+#             if overdue_days > credit_days:
+#                 credit_days_failed = True
+
+#     # =========================================================
+#     # CREDIT LIMIT CHECK
+#     # =========================================================
+#     credit_limit_failed = False
+#     total_after_new_invoice = total_overdue_outstanding + flt(doc.grand_total)
+
+#     if credit_limit > 0 and total_after_new_invoice > flt(credit_limit):
+#         credit_limit_failed = True
+
+#     # =========================================================
+#     # BUILD ERROR MESSAGE
+#     # =========================================================
+#     messages = []
+
+#     if credit_days_failed:
+#         messages.append(
+#             f"Credit Days Exceeded: Maximum allowed is {credit_days} days, "
+#             f"but customer has overdue of {max_overdue_days} days."
+#         )
+
+#     if credit_limit_failed:
+#         messages.append(
+#             f"Credit Limit Exceeded: Credit Limit is ₹{flt(credit_limit):,.2f}, "
+#             f"but total outstanding including this invoice will be "
+#             f"₹{total_after_new_invoice:,.2f}."
+#         )
+
+#     # =========================================================
+#     # FINAL THROW
+#     # =========================================================
+#     if messages:
+#         frappe.throw(
+#             title="Credit Validation Failed",
+#             msg="<br>".join(messages)
+#         )
 def validate_overdue_invoice(doc, method):
-    if not doc.customer or doc.docstatus != 0:
+
+    # 🔥 Disable ERPNext default validation (IMPORTANT)
+    doc.ignore_credit_limit = True
+    doc.flags.ignore_credit_limit = True
+    doc.flags.ignore_credit_limit_check = True
+
+    # Skip conditions
+    if doc.is_return or not doc.customer:
         return
 
     today_date = getdate(today())
 
-    # =========================================================
+    # ===============================
     # CUSTOMER SETTINGS
-    # =========================================================
+    # ===============================
     credit_days = frappe.db.get_value(
-        "Customer",
-        doc.customer,
-        "custom_credit_days"
+        "Customer", doc.customer, "custom_credit_days"
     ) or 0
 
     credit_limit = frappe.db.get_value(
         "Customer Credit Limit",
-        {
-            "parent": doc.customer,
-            "company": doc.company
-        },
+        {"parent": doc.customer, "company": doc.company},
         "credit_limit"
     ) or 0
 
-    # =========================================================
-    # FETCH OVERDUE SALES INVOICES
-    # =========================================================
+    # ===============================
+    # OUTSTANDING (GL BASED - CORRECT)
+    # ===============================
+    outstanding = frappe.db.sql("""
+        SELECT COALESCE(SUM(debit - credit), 0)
+        FROM `tabGL Entry`
+        WHERE party_type = 'Customer'
+        AND party = %s
+        AND company = %s
+        AND is_cancelled = 0
+        AND posting_date <= %s
+        AND account IN (
+            SELECT name FROM `tabAccount`
+            WHERE account_type = 'Receivable'
+            AND company = %s
+        )
+    """, (doc.customer, doc.company, doc.posting_date, doc.company))[0][0]
+
+    # ===============================
+    # CREDIT DAYS CHECK
+    # ===============================
     invoices = frappe.db.sql("""
-        SELECT
-            name,
-            due_date,
-            grand_total,
-            paid_amount
+        SELECT due_date
         FROM `tabSales Invoice`
         WHERE customer = %s
-          AND docstatus = 1
-          AND status = 'Overdue'
+        AND docstatus = 1
+        AND outstanding_amount > 0
     """, doc.customer, as_dict=True)
 
-    total_overdue_outstanding = 0
     credit_days_failed = False
     max_overdue_days = 0
 
     for inv in invoices:
-        outstanding = flt(inv.grand_total) - flt(inv.paid_amount)
-
-        if outstanding <= 0:
-            continue
-
-        total_overdue_outstanding += outstanding
-
-        if credit_days and inv.due_date:
+        if inv.due_date:
             overdue_days = (today_date - getdate(inv.due_date)).days
-            max_overdue_days = max(max_overdue_days, overdue_days)
 
-            if overdue_days > credit_days:
-                credit_days_failed = True
+            if overdue_days > 0:
+                max_overdue_days = max(max_overdue_days, overdue_days)
 
-    # =========================================================
-    # CREDIT LIMIT CHECK
-    # =========================================================
+                if credit_days and overdue_days > credit_days:
+                    credit_days_failed = True
+
+    # ===============================
+    # CREDIT LIMIT CHECK (FINAL LOGIC)
+    # ===============================
+    total_exposure = flt(outstanding) + flt(doc.grand_total)
+
     credit_limit_failed = False
-    total_after_new_invoice = total_overdue_outstanding + flt(doc.grand_total)
-
-    if credit_limit > 0 and total_after_new_invoice > flt(credit_limit):
+    if credit_limit > 0 and total_exposure > flt(credit_limit):
         credit_limit_failed = True
 
-    # =========================================================
-    # BUILD ERROR MESSAGE
-    # =========================================================
+    # ===============================
+    # ERROR MESSAGE
+    # ===============================
     messages = []
 
     if credit_days_failed:
         messages.append(
-            f"Credit Days Exceeded: Maximum allowed is {credit_days} days, "
-            f"but customer has overdue of {max_overdue_days} days."
+            f"Credit Days Exceeded: Allowed {credit_days} days, "
+            f"Max overdue {max_overdue_days} days"
         )
 
     if credit_limit_failed:
+        remaining_credit = flt(credit_limit) - flt(outstanding)
+
         messages.append(
-            f"Credit Limit Exceeded: Credit Limit is ₹{flt(credit_limit):,.2f}, "
-            f"but total outstanding including this invoice will be "
-            f"₹{total_after_new_invoice:,.2f}."
+            f"Credit Limit Exceeded:<br>"
+            f"Credit Limit: ₹{flt(credit_limit):,.2f}<br>"
+            f"Outstanding: ₹{flt(outstanding):,.2f}<br>"
+            f"Remaining Credit: ₹{remaining_credit:,.2f}<br>"
+            f"Invoice Amount: ₹{flt(doc.grand_total):,.2f}<br>"
+            f"Total Exposure After Invoice: ₹{total_exposure:,.2f}"
         )
 
-    # =========================================================
-    # FINAL THROW
-    # =========================================================
     if messages:
         frappe.throw(
             title="Credit Validation Failed",
             msg="<br>".join(messages)
         )
-
-
 
 
 #discount and freight both showing in Sales Taxes and Charge

@@ -1,0 +1,363 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GE-{#####}",
+ "creation": "2026-04-21 08:53:51.656192",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "general_section",
+  "transporter",
+  "invoice_value",
+  "column_break_kknq",
+  "supplier",
+  "door_no",
+  "column_break_cred",
+  "document_nos",
+  "no_of_parcels",
+  "general_details_section",
+  "owner_site",
+  "date",
+  "document_no",
+  "transport_service_item",
+  "column_break_jhdi",
+  "type",
+  "consignor",
+  "consignor_customer",
+  "document_date",
+  "column_break_kbdp",
+  "gate_entry",
+  "site",
+  "incoming_logistics",
+  "status",
+  "lr_information_section",
+  "declaration_amount",
+  "quantity_as_per_invoice",
+  "column_break_ycfi",
+  "lr_entry_date",
+  "column_break_anij",
+  "lr_quantity",
+  "section_break_httn",
+  "gate_entry_box_barcode",
+  "others_section",
+  "remarks",
+  "section_break_dowy",
+  "received_details",
+  "section_break_bjwp",
+  "references",
+  "section_break_rsit",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_section",
+   "fieldtype": "Section Break",
+   "label": "For Guard"
+  },
+  {
+   "fieldname": "column_break_kknq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_cred",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_rsit",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Gate Entrys",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Gate Entrys",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "link_filters": "[[\"Supplier\",\"is_transporter\",\"=\",1]]",
+   "options": "Supplier",
+   "reqd": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Vendor Name",
+   "options": "Supplier"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "document_no",
+   "fieldtype": "Data",
+   "label": "Document No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "door_no",
+   "fieldtype": "Select",
+   "label": "Door Name/Brand/Floor",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+  },
+  {
+   "fieldname": "no_of_parcels",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Number of Parcels/Boxes",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice_value",
+   "fieldtype": "Currency",
+   "label": "Invoice Value"
+  },
+  {
+   "fieldname": "general_details_section",
+   "fieldtype": "Section Break",
+   "label": "General Details"
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "evail:doc.gate_entry==\"Yes\"",
+   "fieldname": "owner_site",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Owner Site",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_jhdi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Link",
+   "label": "Type",
+   "options": "Incoming Logistics Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_kbdp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "gate_entry",
+   "fieldtype": "Data",
+   "label": "Gate Entry No",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "incoming_logistics",
+   "fieldtype": "Link",
+   "label": "Incoming Logistics",
+   "link_filters": "[[\"Incoming Logistics\",\"gate_entry_no\",\"like\",null]]",
+   "options": "Incoming Logistics",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "consignor",
+   "fieldtype": "Link",
+   "label": "Consignor",
+   "options": "Supplier",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "site",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Site",
+   "options": "Address",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "document_nos",
+   "fieldtype": "Data",
+   "label": "Builty No"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "consignor_customer",
+   "fieldtype": "Link",
+   "label": "Consignor",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "transport_service_item",
+   "fieldtype": "Link",
+   "label": "Transport Service Item",
+   "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nDraft\nSubmitted\nCancelled",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "document_date",
+   "fieldtype": "Data",
+   "label": "Document Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lr_information_section",
+   "fieldtype": "Section Break",
+   "label": "LR Information"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "lr_entry_date",
+   "fieldtype": "Data",
+   "label": "LR Entry Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ycfi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "lr_quantity",
+   "fieldtype": "Data",
+   "label": "LR Quantity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_anij",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
+   "fieldname": "declaration_amount",
+   "fieldtype": "Float",
+   "label": "Declaration Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_httn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "gate_entry_box_barcode",
+   "fieldtype": "Table",
+   "label": "Gate Entry Box Barcode",
+   "options": "Gate Entry Box Barcode",
+   "read_only": 1
+  },
+  {
+   "fieldname": "others_section",
+   "fieldtype": "Section Break",
+   "label": "Others"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_dowy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
+   "fieldname": "received_details",
+   "fieldtype": "Table",
+   "label": "Received Details",
+   "options": "Gate Entry Table"
+  },
+  {
+   "fieldname": "section_break_bjwp",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "references",
+   "fieldtype": "Table",
+   "label": "References",
+   "options": "Outgoing Logistics Reference",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
+   "fieldname": "quantity_as_per_invoice",
+   "fieldtype": "Float",
+   "label": "Quantity as per Invoice",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-04-27 18:05:54.187695",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Gate Entrys",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1,
+ "track_views": 1
+}

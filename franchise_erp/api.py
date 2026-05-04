@@ -2435,3 +2435,41 @@ def build_item(item, serial, warehouse):
 #             "use_serial_batch_fields": 0
 #         }
 #     }
+
+# import frappe
+
+# @frappe.whitelist()
+# def get_used_delivery_notes():
+
+#     # 🔥 ignore permissions (IMPORTANT)
+#     data = frappe.db.sql("""
+#         SELECT DISTINCT delivery_note
+#         FROM `tabSales Invoice Item`
+#         WHERE delivery_note IS NOT NULL
+#     """, as_dict=True)
+
+#     return data
+
+@frappe.whitelist()
+def get_used_delivery_notes():
+
+    # DN used in Sales Invoice
+    used_dn = frappe.db.sql("""
+        SELECT DISTINCT delivery_note
+        FROM `tabSales Invoice Item`
+        WHERE delivery_note IS NOT NULL
+    """, as_dict=1)
+
+    # 🔥 DN used via serial number
+    serial_used_dn = frappe.db.sql("""
+        SELECT DISTINCT dni.parent AS delivery_note
+        FROM `tabDelivery Note Item` dni
+        JOIN `tabSales Invoice Item` sii
+            ON sii.serial_no LIKE CONCAT('%', dni.serial_no, '%')
+    """, as_dict=1)
+
+    # merge दोनों
+    all_dn = {d["delivery_note"] for d in used_dn if d["delivery_note"]}
+    all_dn.update({d["delivery_note"] for d in serial_used_dn})
+
+    return [{"delivery_note": dn} for dn in all_dn]

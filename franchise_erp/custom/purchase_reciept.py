@@ -149,18 +149,67 @@ def on_submit(doc, method):
         gate_entry.save(ignore_permissions=True)
 
 
+# @frappe.whitelist()
+# def validate_po_serial(scanned_serial, po_items):
+#     """
+#     Validate scanned serial:
+#     1. Must exist in custom_generated_serials
+#     2. Must NOT exist in custom_used_serials
+#     """
+
+#     if isinstance(po_items, str):
+#         po_items = frappe.parse_json(po_items)
+
+#     for poi in po_items:
+#         values = frappe.db.get_value(
+#             "Purchase Order Item",
+#             poi,
+#             ["custom_generated_serials", "custom_used_serials"],
+#             as_dict=True
+#         )
+
+#         if not values or not values.custom_generated_serials:
+#             continue
+
+#         generated_serials = [
+#             s.strip() for s in values.custom_generated_serials.split("\n")
+#             if s.strip()
+#         ]
+
+#         used_serials = [
+#             s.strip() for s in (values.custom_used_serials or "").split("\n")
+#             if s.strip()
+#         ]
+
+#         # ❌ Already used serial validation
+#         if scanned_serial in used_serials:
+#             frappe.throw(
+#                 f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> is already used"
+#             )
+
+#         # ✅ Valid serial
+#         if scanned_serial in generated_serials:
+#             return {
+#                 "purchase_order_item": poi
+#             }
+
+#     # ❌ Serial not found in PO
+#     frappe.throw(
+#         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
+#     )
+
 @frappe.whitelist()
-def validate_po_serial(scanned_serial, po_items):
-    """
-    Validate scanned serial:
-    1. Must exist in custom_generated_serials
-    2. Must NOT exist in custom_used_serials
-    """
+def validate_po_serial(scanned_serial, po_items, is_return=0):
 
     if isinstance(po_items, str):
         po_items = frappe.parse_json(po_items)
 
+    # Validate Serial exists
+    # if not frappe.db.exists("Serial No", scanned_serial):
+    #     frappe.throw(f"Invalid Serial No <b>{scanned_serial}</b>")
+
     for poi in po_items:
+
         values = frappe.db.get_value(
             "Purchase Order Item",
             poi,
@@ -181,22 +230,37 @@ def validate_po_serial(scanned_serial, po_items):
             if s.strip()
         ]
 
-        # ❌ Already used serial validation
-        if scanned_serial in used_serials:
-            frappe.throw(
-                f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> is already used"
-            )
+        # ==========================
+        # 🔴 NORMAL PURCHASE
+        # ==========================
+        if not int(is_return):
 
-        # ✅ Valid serial
-        if scanned_serial in generated_serials:
-            return {
-                "purchase_order_item": poi
-            }
+            if scanned_serial in used_serials:
+                frappe.throw(
+                    f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> already used"
+                )
 
-    # ❌ Serial not found in PO
+            if scanned_serial in generated_serials:
+                return {
+                    "purchase_order_item": poi
+                }
+
+        # ==========================
+        # 🔵 RETURN PURCHASE (FIXED)
+        # ==========================
+        else:
+
+            # ❗ STRICT CHECK ONLY IN GENERATED LIST
+            if scanned_serial in generated_serials:
+                return {
+                    "purchase_order_item": poi
+                }
+
+    # ❌ Not found anywhere
     frappe.throw(
-        f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
+        f"Serial No <b>{scanned_serial}</b> does not belong to this Purchase Order"
     )
+
 
 def validate_item(doc, method=None):
     # 🔹 Check if ANY row has PO
@@ -704,69 +768,71 @@ def clear_si_grn_flags(doc, method):
         }
     )
 
-def create_debit_note_from_pr(doc, method):
-    """Create Purchase Invoice (Debit Note) directly from Purchase Receipt Return"""
+# def create_debit_note_from_pr(doc, method):
+#     """Create Purchase Invoice (Debit Note) directly from Purchase Receipt Return"""
 
-    if not doc.is_return:
-        return
+#     if not doc.is_return:
+#         return
 
-    if not doc.custom_bulk_purchase_return:
-         return
+#     if not doc.custom_bulk_purchase_return:
+#          return
     
-    if not doc.items:
-        return
+#     if not doc.items:
+#         return
 
-    # 🔹 Create Purchase Invoice
-    pi = frappe.new_doc("Purchase Invoice")
+#     # 🔹 Create Purchase Invoice
+#     pi = frappe.new_doc("Purchase Invoice")
 
-    # 🔹 Set header fields
-    pi.is_return = 1
-    pi.company = doc.company
-    pi.supplier = doc.supplier
-    pi.update_billed_amount_in_purchase_receipt = 1
-    pi.posting_date = doc.posting_date
-    pi.posting_time = doc.posting_time
-    pi.currency = doc.currency
-    pi.conversion_rate = doc.conversion_rate
+#     # 🔹 Set header fields
+#     pi.is_return = 1
+#     pi.company = doc.company
+#     pi.supplier = doc.supplier
+#     pi.update_billed_amount_in_purchase_receipt = 1
+#     pi.posting_date = doc.posting_date
+#     pi.posting_time = doc.posting_time
+#     pi.currency = doc.currency
+#     pi.conversion_rate = doc.conversion_rate
 
-    pi.bill_no= "RRR"
-    pi.bill_date = nowdate()
+#     pi.bill_no= "RRR"
+#     pi.bill_date = nowdate()
 
-    # 🔥 Add items from Purchase Receipt
-    for pr_item in doc.items:
+#     # 🔥 Add items from Purchase Receipt
+#     for pr_item in doc.items:
 
-        if not pr_item.qty:
-            continue
+#         if not pr_item.qty:
+#             continue
 
-        pi.append("items", {
-            "item_code": pr_item.item_code,
-            "item_name": pr_item.item_name,
-            "description": pr_item.description,
-            "uom": pr_item.uom,
-            "stock_uom": pr_item.stock_uom,
+#         pi.append("items", {
+#             "item_code": pr_item.item_code,
+#             "item_name": pr_item.item_name,
+#             "description": pr_item.description,
+#             "uom": pr_item.uom,
+#             "stock_uom": pr_item.stock_uom,
 
-            # 🔥 Negative qty for return
-            "qty": -abs(pr_item.qty),
-            "received_qty": -abs(pr_item.qty),
+#             # 🔥 Negative qty for return
+#             "qty": -abs(pr_item.qty),
+#             "received_qty": -abs(pr_item.qty),
             
 
-            "rate": pr_item.rate,
-            "base_rate": pr_item.base_rate,
+#             "rate": pr_item.rate,
+#             "base_rate": pr_item.base_rate,
 
-            # 🔗 Important links
-            "purchase_receipt": doc.name,
-            "pr_detail": pr_item.name,
-            "purchase_order": pr_item.purchase_order,
+#             # 🔗 Important links
+#             "purchase_receipt": doc.name,
+#             "pr_detail": pr_item.name,
+#             "purchase_order": pr_item.purchase_order,
 
-            # Stock fields
-            "warehouse": pr_item.warehouse,
+#             "item_tax_template": pr_item.item_tax_template,
+#             # Stock fields
+#             "warehouse": pr_item.warehouse,
 
-            # Amounts
-            "amount": -abs(pr_item.amount),
-            "base_amount": -abs(pr_item.base_amount),
-        })
+#             # Amounts
+#             "amount": -abs(pr_item.amount),
+#             "base_amount": -abs(pr_item.base_amount),
+#         })
 
-    # 🔹 Insert (you can submit if needed)
-    pi.insert(ignore_permissions=True)
+#     # 🔹 Insert (you can submit if needed)
+#     pi.set_missing_values()
+#     pi.insert(ignore_permissions=True)
 
-    frappe.msgprint(f"✅ Debit Note Created: {pi.name}")
+#     frappe.msgprint(f"✅ Debit Note Created: {pi.name}")

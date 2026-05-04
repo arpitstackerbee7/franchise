@@ -587,16 +587,27 @@ def validate(self):
 def get_gate_entries_match_from_pi(supplier):
 
     # 🔥 Step 1: Incoming Logistics filter (MAIN FIX HERE)
+    # incoming = frappe.get_all(
+    #     "Incoming Logistics",
+    #     filters={
+    #         "to_pay": "Yes",
+    #         "transporter": supplier,
+    #         "gate_entry_no": ["!=", ""]   # ✅ FIX APPLIED HERE
+    #     },
+    #     fields=["name", "transporter", "total_amount"]
+    # )
     incoming = frappe.get_all(
         "Incoming Logistics",
-        filters={
-            "to_pay": "Yes",
-            "transporter": supplier,
-            "gate_entry_no": ["!=", ""]   # ✅ FIX APPLIED HERE
-        },
-        fields=["name", "transporter", "total_amount"]
+        filters=[
+            ["Incoming Logistics", "to_pay", "=", "Yes"],
+            ["Incoming Logistics", "gate_entry_no", "!=", ""]
+        ],
+        or_filters=[
+            ["Incoming Logistics", "transporter", "=", supplier],
+            ["Incoming Logistics", "c_transporter", "=", supplier]
+        ],
+        fields=["name", "transporter", "c_transporter", "total_amount"]
     )
-
     if not incoming:
         return []
 
@@ -632,14 +643,26 @@ def get_gate_entries_match_from_pi(supplier):
             "name",
             "incoming_logistics",
             "transport_service_item",
-            "consignor"
+            "consignor",
+            "consignor_customer"
         ]
     )
 
     # 🔥 Attach transporter + total_amount
     for d in gate_entries:
         logistics = logistics_map.get(d["incoming_logistics"])
-        d["transporter"] = logistics.transporter if logistics else ""
+
+        consignor = d.get("consignor")
+        consignor_customer = d.get("consignor_customer")
+
+        if consignor not in (None, "", 0, "0"):
+            d["consignor"] = consignor
+        elif consignor_customer not in (None, "", 0, "0"):
+            d["consignor"] = consignor_customer
+        else:
+            d["consignor"] = None  # better fallback
+
+        d["transporter"] = logistics.transporter or logistics.c_transporter
         d["total_amount"] = logistics.total_amount if logistics else 0
 
     return gate_entries

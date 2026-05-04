@@ -49,7 +49,12 @@ doc_events = {
        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
        "validate": [
                     "franchise_erp.custom.purchase_invoice.set_buffer_due_date",
+                    # "franchise_erp.custom.purchase_invoice.sync_merged_discounts"
+                    
                     ],
+        "before_save": [  
+            "franchise_erp.custom.purchase_invoice.sync_merged_discounts"
+        ]
     },
     "Journal Entry": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
@@ -60,7 +65,7 @@ doc_events = {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate":[
             # "franchise_erp.custom.promotional_scheme.apply_promotions",
-                    "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+                    # "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
                     "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return",
                     ],
 
@@ -69,7 +74,12 @@ doc_events = {
         "franchise_erp.custom.sales_invoice.validate_item_from_so",
         "franchise_erp.custom.sales_invoice.validate_sales_invoice",
         ],
-        "before_validate": ["franchise_erp.custom.sales_invoice.apply_sales_term"],
+        "before_validate": [
+            "franchise_erp.custom.sales_invoice.apply_sales_term",
+            # "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+            
+            ],
+        "before_submit": "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
     },
     "Purchase Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
@@ -89,7 +99,7 @@ doc_events = {
         "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
                       "franchise_erp.custom.purchase_reciept.on_submit",
                        "franchise_erp.custom.purchase_reciept.fix_pr_totals",
-                       "franchise_erp.custom.purchase_reciept.create_debit_note_from_pr"
+                    #    "franchise_erp.custom.purchase_reciept.create_debit_note_from_pr"
                       ],
 
         "on_cancel": ["franchise_erp.custom.purchase_reciept.restore_serials_on_grn_cancel",
@@ -206,6 +216,9 @@ doc_events = {
     "Supplier": {
         "after_insert": "franchise_erp.custom.supplier.create_supplier_warehouse",
         "on_update": "franchise_erp.custom.supplier.create_supplier_warehouse"
+    },
+    "Shipment": {
+        "validate": "franchise_erp.custom.shipment.fix_address_issue"
     }
 }
    
@@ -236,7 +249,8 @@ doctype_js = {
     "Supplier Group": "public/js/supplier_group.js",
     "Item Group": "public/js/item_group.js",
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
-    "Employee": "public/js/employee.js"
+    "Employee": "public/js/employee.js",
+    # "Shipment": "public/js/shipment.js"
 
 }
 
@@ -259,13 +273,11 @@ override_doctype_class = {
 # patches = [
 #     "franchise_erp.patches.add_user_custom_fields"
 # ]
-
 # hooks.py
 # after_migrate = [
 #     "franchise_erp.event.add_user_custom_fields.create_custom_fields",
 #     # "franchise_erp.config.workspace.create_sidebar_items"
 # ]
-
 # after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
 
 # app_include_js = "public/js/back_date_disabled.js"
@@ -280,7 +292,7 @@ app_include_js = [
     "/assets/franchise_erp/js/customer_quick_entry.js",
     "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     "/assets/franchise_erp/js/uploader_patch.js",
-    "/assets/franchise_erp/js/barcode_scanner_override.js"
+    "/assets/franchise_erp/js/barcode_scanner_override.js",
     
 ]
 

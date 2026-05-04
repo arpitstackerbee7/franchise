@@ -33,10 +33,11 @@ frappe.ui.form.on('Bulk Purchase Return', {
                                 docname: frm.doc.name
                             },
                             freeze: true,
-                            freeze_message: 'Submitting Return Purchase Receipts...'
+                            freeze_message: 'Submitting in background...'
                         });
-
-                        frappe.msgprint('Return Purchase Receipts Submitted');
+                    
+                        frappe.msgprint("Submission started in background.");
+                    
                         frm.reload_doc();
                     });
                 }
@@ -78,11 +79,19 @@ function open_return_items_dialog(frm) {
                 fieldname: "serial_no",
                 label: "Scan Serial",
                 fieldtype: "Data",
+                options:"Barcode",
             
                 onchange() {
             
                     let serial = dialog.get_value("serial_no");
                     if (!serial) return;
+
+                    if (dialog.last_scanned === serial) {
+                        dialog.set_value("serial_no", "");
+                       return;
+                    }
+
+                    dialog.last_scanned = serial;
             
                     frappe.call({
                         method: "franchise_erp.franchise_erp.doctype.bulk_purchase_return.bulk_purchase_return.get_pr_from_serial",
@@ -162,7 +171,26 @@ function open_return_items_dialog(frm) {
                             }
 
                             table.refresh();
-                        
+                            
+                            // 🔥 Auto-select the scanned row
+                            // 🔥 FORCE checkbox selection (reliable for dialog grids)
+                            // 🔥 Wait until grid is actually rendered
+                            frappe.after_ajax(() => {
+                                setTimeout(() => {
+                                    let grid = dialog.fields_dict.items_table.grid;
+                            
+                                    if (grid.grid_rows.length) {
+                                        let row = grid.grid_rows[0];
+                            
+                                        let checkbox = row.wrapper.find('.grid-row-check');
+                            
+                                        // ✅ Only click if NOT already checked
+                                        if (!checkbox.prop("checked")) {
+                                            checkbox.click();
+                                        }
+                                    }
+                                }, 200);
+                            });
                             dialog.set_value("serial_no", "");
                             dialog.fields_dict.serial_no.$input.focus();
                         }
@@ -399,6 +427,14 @@ function open_return_items_dialog(frm) {
         });
 
     dialog.show();
+
+    dialog.$wrapper.on("keydown", function(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
 
     load_returnable_items(frm,dialog);
 }

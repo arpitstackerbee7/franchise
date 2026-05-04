@@ -149,6 +149,14 @@ frappe.ui.form.on("Incoming Logistics", {
             frm.set_value("invoice_date", today);
             frm.set_value("date", today);
         }
+        // frm.set_query("select_gate_entry", function() {
+        //     return {
+        //         filters: {
+        //             "incoming_logistics": ["in", ["", null]],  // only empty
+        //             "docstatus": 1   // optional: only submitted Gate Entry
+        //         }
+        //     };
+        // });
     //     if (!frm.doc.to_pay) frm.set_value('to_pay', 'Yes');
     //     frm.trigger('toggle_pay_fields');
     //     toggle_site_field(frm);

@@ -565,3 +565,61 @@ frappe.ui.form.on('Purchase Invoice', {
     }
 
 });
+
+// added by mayuri
+frappe.ui.form.on("Purchase Invoice", {
+    async validate(frm) {
+        console.clear();
+        console.log("====== MULTI GRN DYNAMIC CHECK ======");
+
+        let pr_list = [...new Set(
+            (frm.doc.items || [])
+                .map(d => d.purchase_receipt)
+                .filter(Boolean)
+        )];
+
+        if (!pr_list.length) return;
+
+        const company_data = await frappe.db.get_value("Company", frm.doc.company, ["round_off_account", "round_off_cost_center"]);
+        const dynamic_account = company_data && company_data.message ? company_data.message.round_off_account : null;
+        const dynamic_cost_center = company_data && company_data.message ? company_data.message.round_off_cost_center : null;
+
+        if (!dynamic_account) {
+            frappe.msgprint({
+                title: __('Setup Required'),
+                indicator: 'orange',
+                message: __('Please set <b>Round Off Account</b> in Company Master for {0}', [frm.doc.company])
+            });
+            return;
+        }
+
+        let expected_grand = 0;
+        for (let pr_name of pr_list) {
+            let pr = await frappe.db.get_doc("Purchase Receipt", pr_name);
+            expected_grand += flt(pr.grand_total, 2);
+        }
+
+        await frm.script_manager.trigger("calculate_taxes_and_totals");
+        let pi_grand = flt(frm.doc.grand_total, 2);
+        let diff = flt(expected_grand - pi_grand, 2);
+
+        console.log("Expected Total:", expected_grand);
+        console.log("Difference Found:", diff);
+
+        let existing_row = (frm.doc.taxes || []).find(t => t.description === "GRN Adjustment");
+
+        if (!existing_row) {
+            let row = frm.add_child("taxes");
+            row.charge_type = "Actual";
+            row.account_head = dynamic_account; 
+            row.description = "GRN Adjustment";
+            row.tax_amount = 0; 
+            row.cost_center = dynamic_cost_center || frm.doc.cost_center;
+            
+            frm.refresh_field("taxes");
+            frappe.show_alert(__("Adjustment row added with 0 amount. Please update manually."), 5);
+        }
+
+        console.log("====== MATCH DONE ======");
+    }
+});

@@ -12,6 +12,8 @@
   "scan_item",
   "column_break_vxbt",
   "company",
+  "status",
+  "submit_status",
   "section_break_awgd",
   "items",
   "amended_from"
@@ -73,6 +75,21 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Scan Item"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Return Creation Status",
+   "options": "\nQueued\nIn Progress\nCompleted\nFailed",
+   "read_only": 1
+  },
+  {
+   "default": "Not Started",
+   "fieldname": "submit_status",
+   "fieldtype": "Select",
+   "label": "Return Submission Status",
+   "options": "Not Started\nQueued\nIn Progress\nCompleted\nFailed",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -84,7 +101,7 @@
    "link_fieldname": "custom_bulk_purchase_return"
   }
  ],
- "modified": "2026-04-11 12:10:51.930992",
+ "modified": "2026-04-20 17:25:03.816090",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Bulk Purchase Return",

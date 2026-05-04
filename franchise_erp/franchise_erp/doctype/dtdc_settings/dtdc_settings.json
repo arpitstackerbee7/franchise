@@ -1,0 +1,154 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-04-23 16:31:15.826328",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "api_key",
+  "username",
+  "service_type_id",
+  "consignment_type",
+  "commodity_id",
+  "tracking_token",
+  "column_break_zqrd",
+  "customer_code",
+  "password",
+  "load_type",
+  "dimension_unit",
+  "weight_unit",
+  "section_break_cxiy",
+  "company_name",
+  "company_pincode",
+  "company_state",
+  "company_city",
+  "column_break_eihm",
+  "company_phone",
+  "company_address"
+ ],
+ "fields": [
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Data",
+   "label": "API Key"
+  },
+  {
+   "fieldname": "column_break_zqrd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_code",
+   "fieldtype": "Data",
+   "label": "Customer Code"
+  },
+  {
+   "fieldname": "username",
+   "fieldtype": "Data",
+   "label": "Username"
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Password"
+  },
+  {
+   "fieldname": "section_break_cxiy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "company_name",
+   "fieldtype": "Data",
+   "label": "Company Name"
+  },
+  {
+   "fieldname": "company_state",
+   "fieldtype": "Data",
+   "label": "Company State"
+  },
+  {
+   "fieldname": "column_break_eihm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company_address",
+   "fieldtype": "Small Text",
+   "label": "Company Address"
+  },
+  {
+   "fieldname": "company_pincode",
+   "fieldtype": "Data",
+   "label": "Company Pincode"
+  },
+  {
+   "fieldname": "company_phone",
+   "fieldtype": "Data",
+   "label": "Company Phone"
+  },
+  {
+   "fieldname": "company_city",
+   "fieldtype": "Data",
+   "label": "Company City"
+  },
+  {
+   "fieldname": "service_type_id",
+   "fieldtype": "Data",
+   "label": "Service Type Id"
+  },
+  {
+   "fieldname": "consignment_type",
+   "fieldtype": "Data",
+   "label": "Consignment Type"
+  },
+  {
+   "fieldname": "load_type",
+   "fieldtype": "Data",
+   "label": "Load Type"
+  },
+  {
+   "fieldname": "dimension_unit",
+   "fieldtype": "Data",
+   "label": "Dimension Unit"
+  },
+  {
+   "fieldname": "commodity_id",
+   "fieldtype": "Data",
+   "label": "Commodity Id"
+  },
+  {
+   "fieldname": "weight_unit",
+   "fieldtype": "Data",
+   "label": "Weight Unit"
+  },
+  {
+   "fieldname": "tracking_token",
+   "fieldtype": "Data",
+   "label": "Tracking Token"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-04-25 14:51:20.269347",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "DTDC Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

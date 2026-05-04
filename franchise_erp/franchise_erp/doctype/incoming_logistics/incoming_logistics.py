@@ -109,6 +109,12 @@ class IncomingLogistics(Document):
                     WHERE parent = %s
                 """, (self.name, row.source_name))
 
+            # =====================================================
+            # NEW LOGIC: GATE ENTRY UPDATE
+            # =====================================================
+        
+            
+
     # def validate(self):
 
     #     self.validate_unique_lr_per_transporter()

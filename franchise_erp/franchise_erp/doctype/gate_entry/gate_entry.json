@@ -7,6 +7,15 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "for_guard_section",
+  "transporter",
+  "invoice_value",
+  "column_break_nprm",
+  "supplier",
+  "door_no",
+  "column_break_pqmw",
+  "document_nos",
+  "no_of_parcels",
   "general_section",
   "owner_site",
   "date",
@@ -33,7 +42,7 @@
   "column_break_dmpn",
   "lr_quantity",
   "pending_amount",
-  "section_break_nzss",
+  "section_break_fizu",
   "scan_barcode",
   "section_break_ejse",
   "gate_entry_box_barcode",
@@ -57,28 +66,28 @@
    "in_list_view": 1,
    "label": "Owner Site",
    "options": "Company",
-   "read_only": 1,
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "Date",
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "default": "Yes",
    "fieldname": "gate_entry",
    "fieldtype": "Data",
-   "label": "Gate Entry No",
-   "read_only": 1,
-   "reqd": 1
+   "label": "Gate Entry No"
   },
   {
    "fieldname": "column_break_kknq",
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "type",
    "fieldtype": "Link",
    "label": "Type",
@@ -87,6 +96,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "consignor",
    "fieldtype": "Link",
    "label": "Consignor",
@@ -100,6 +110,7 @@
   {
    "fieldname": "site",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Site",
    "options": "Address",
    "read_only": 1
@@ -114,6 +125,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "lr_quantity",
    "fieldtype": "Data",
    "label": "LR Quantity",
@@ -124,6 +136,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "declaration_amount",
    "fieldtype": "Float",
    "label": "Declaration Amount"
@@ -134,16 +147,19 @@
    "label": "Others"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "document_no",
    "fieldtype": "Data",
    "label": "Document No"
   },
   {
+   "allow_on_submit": 1,
    "default": "Now",
    "fieldname": "document_date",
    "fieldtype": "Date",
@@ -156,6 +172,7 @@
    "label": "LR Entry No."
   },
   {
+   "allow_on_submit": 1,
    "default": "Now",
    "fieldname": "lr_entry_date",
    "fieldtype": "Date",
@@ -181,12 +198,14 @@
   },
   {
    "allow_on_submit": 1,
+   "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
    "fieldname": "received_details",
    "fieldtype": "Table",
    "label": "Received Details",
    "options": "Gate Entry Table"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "incoming_logistics",
    "fieldtype": "Link",
    "label": "Incoming Logistics",
@@ -198,16 +217,7 @@
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "section_break_nzss",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "scan_barcode",
-   "fieldtype": "Data",
-   "label": "Scan Barcode",
-   "options": "Barcode"
-  },
-  {
+   "allow_on_submit": 1,
    "fieldname": "gate_entry_box_barcode",
    "fieldtype": "Table",
    "label": "Gate Entry Box Barcode",
@@ -238,10 +248,10 @@
    "fieldtype": "Link",
    "label": "Transport Service Item",
    "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
-   "options": "Item",
-   "read_only": 1
+   "options": "Item"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "quantity_as_per_invoice",
    "fieldtype": "Float",
    "label": "Quantity as per Invoice"
@@ -254,6 +264,7 @@
    "options": "Purchase Items Details"
   },
   {
+   "allow_on_submit": 1,
    "default": "0",
    "fieldname": "references",
    "fieldtype": "Table",
@@ -262,6 +273,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "consignor_customer",
    "fieldtype": "Link",
    "label": "Consignor",
@@ -274,6 +286,68 @@
    "fieldtype": "Select",
    "label": "Naming Series",
    "options": "TPL-GE-.#####.-.FY."
+  },
+  {
+   "fieldname": "for_guard_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "For Guard"
+  },
+  {
+   "fieldname": "transporter",
+   "fieldtype": "Link",
+   "label": "Transporter",
+   "link_filters": "[[\"Supplier\",\"is_transporter\",\"=\",1]]",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "invoice_value",
+   "fieldtype": "Currency",
+   "label": "Invoice Value"
+  },
+  {
+   "fieldname": "column_break_nprm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Vendor Name",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "column_break_pqmw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "document_nos",
+   "fieldtype": "Data",
+   "label": "Builty No"
+  },
+  {
+   "fieldname": "no_of_parcels",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Number of Parcels/Boxes"
+  },
+  {
+   "fieldname": "door_no",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Door Name/Brand/Floor",
+   "options": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+  },
+  {
+   "fieldname": "section_break_fizu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "scan_barcode",
+   "fieldtype": "Data",
+   "label": "Scan Barcode",
+   "options": "Barcode"
   }
  ],
  "grid_page_length": 50,
@@ -285,7 +359,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-04-04 13:02:23.973654",
+ "modified": "2026-04-29 11:22:39.092641",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

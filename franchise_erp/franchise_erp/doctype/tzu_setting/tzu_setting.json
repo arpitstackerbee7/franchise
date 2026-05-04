@@ -23,7 +23,8 @@
   "item_restricted_roles",
   "update_items_allowed_roles",
   "all_counters_name_show_on_supplier",
-  "enable_geo_location"
+  "enable_geo_location",
+  "enable_whatsapp_notification"
  ],
  "fields": [
   {
@@ -147,13 +148,17 @@
     "fieldtype": "Link",
     "label": "Is Credit Note Account",
     "options": "Account"
+   "default": "1",
+   "fieldname": "enable_whatsapp_notification",
+   "fieldtype": "Check",
+   "label": "Enable Whatsapp Notification"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-13 17:24:19.445507",
+ "modified": "2026-04-27 18:07:15.113423",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
