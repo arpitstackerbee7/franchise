@@ -992,10 +992,13 @@ def validate_overdue_invoice(doc, method):
     # ===============================
     # CREDIT LIMIT CHECK (FINAL LOGIC)
     # ===============================
-    total_exposure = flt(outstanding) + flt(doc.grand_total)
+    # total_exposure = flt(outstanding) + flt(doc.grand_total)
+    invoice_amount = round(flt(doc.grand_total))
+    total_exposure = round(flt(outstanding)) + invoice_amount
 
     credit_limit_failed = False
-    if credit_limit > 0 and total_exposure > flt(credit_limit):
+    # if credit_limit > 0 and total_exposure > flt(credit_limit):
+    if credit_limit > 0 and total_exposure > round(flt(credit_limit)):
         credit_limit_failed = True
 
     # ===============================
