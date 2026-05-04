@@ -144,14 +144,16 @@
    "label": "Enable Geo Location"
   },
   {
-    "fieldname": "is_credit_note_account",
-    "fieldtype": "Link",
-    "label": "Is Credit Note Account",
-    "options": "Account"
    "default": "1",
    "fieldname": "enable_whatsapp_notification",
    "fieldtype": "Check",
    "label": "Enable Whatsapp Notification"
+  },
+  {
+    "fieldname": "is_credit_note_account",
+    "fieldtype": "Link",
+    "label": "Is Credit Note Account",
+    "options": "Account"
   }
  ],
  "grid_page_length": 50,
