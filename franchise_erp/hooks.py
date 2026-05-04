@@ -604,3 +604,12 @@ scheduler_events = {
 #     {"dt": "Role"}
 
 #  ]
+fixtures = [
+    {
+        "dt": "Custom Field",
+        "filters": [
+            ["dt", "in", ["Purchase Invoice", "Subcontracting Receipt Item"]],
+            ["fieldname", "in", ["custom_is_credit_note", "custom_is_batch_item"]]
+        ]
+    }
+]
