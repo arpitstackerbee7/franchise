@@ -225,7 +225,8 @@ function open_purchase_order_mapper(frm) {
                 filters: [
                     ["docstatus", "=", 1],
                     ["supplier", "=", frm.doc.consignor],
-                    ["company", "=", frm.doc.owner_site]
+                    ["company", "=", frm.doc.owner_site],
+                    ["status", "!=", "Closed"]
                 ]
             };
         },
