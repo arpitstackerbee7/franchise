@@ -992,8 +992,8 @@ def validate_overdue_invoice(doc, method):
     # ===============================
     # CREDIT LIMIT CHECK (FINAL LOGIC)
     # ===============================
-    # total_exposure = flt(outstanding) + flt(doc.grand_total)
-    invoice_amount = round(flt(doc.grand_total))
+    # total_exposure = flt(outstanding) + flt(doc.rounded_total)
+    invoice_amount = round(flt(doc.rounded_total))
     total_exposure = round(flt(outstanding)) + invoice_amount
 
     credit_limit_failed = False
@@ -1020,7 +1020,7 @@ def validate_overdue_invoice(doc, method):
             f"Credit Limit: ₹{flt(credit_limit):,.2f}<br>"
             f"Outstanding: ₹{flt(outstanding):,.2f}<br>"
             f"Remaining Credit: ₹{remaining_credit:,.2f}<br>"
-            f"Invoice Amount: ₹{flt(doc.grand_total):,.2f}<br>"
+            f"Invoice Amount: ₹{flt(doc.rounded_total):,.2f}<br>"
             f"Total Exposure After Invoice: ₹{total_exposure:,.2f}"
         )
 
