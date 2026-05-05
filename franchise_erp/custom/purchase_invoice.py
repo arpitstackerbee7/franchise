@@ -29,15 +29,15 @@ class CustomPurchaseInvoice(PurchaseInvoice):
             super().set_expense_account(for_validate)
     def autoname(self):
         if self.custom_is_credit_note:
-            from franchise_erp.utils.fy_naming import get_fy_short, get_next_number, get_doc_date
+            from frappe.model.naming import make_autoname
+            from franchise_erp.utils.fy_naming import get_fy_short, get_doc_date
+
             date = get_doc_date(self)
             fy = get_fy_short(date)
+
             if fy:
-                series = f"PDC/{fy}/"
-                number = get_next_number("Purchase Invoice", series)
-                self.name = f"{series}{number}"
-            return
-        super().autoname()
+                self.name = make_autoname(f"PDC/{fy}/.####")
+    # else → do nothing, Frappe will auto-handle naming_series
 
 def set_buffer_due_date(doc, method):
     if not doc.supplier or not doc.due_date:
