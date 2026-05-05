@@ -8093,6 +8093,6 @@
   "property": "read_only_depends_on",
   "property_type": "Data",
   "row_name": null,
-  "value": "eval:doc.is_batch_item!=1"
+  "value": "eval:doc.is_batch_item==0"
  }
 ]
