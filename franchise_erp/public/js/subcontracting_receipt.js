@@ -298,48 +298,39 @@ frappe.ui.form.on('Subcontracting Receipt', {
         };
     }
 });
-// By Jaya
-function set_batch_flag(frm) {
-    let promises = (frm.doc.items || []).map(row => {
-        if (!row.item_code) return Promise.resolve();
-        return frappe.db.get_value("Item", row.item_code, "has_batch_no")
-            .then(r => {
-                return frappe.model.set_value(
-                    row.doctype,
-                    row.name,
-                    "is_batch_item",
-                    r.message && r.message.has_batch_no ? 1 : 0
-                );
-            });
-    });
+//By Jaya
+frappe.ui.form.on("Subcontracting Receipt Item", {
+    async item_code(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (!row.item_code) return;
 
-    Promise.all(promises).then(() => {
-        frm.refresh_field("items");
-    });
-}
+        // Fetch batch flag from Item
+        let r = await frappe.db.get_value("Item", row.item_code, "has_batch_no");
+        let is_batch = r.message && r.message.has_batch_no ? 1 : 0;
+
+        // Set custom field
+        frappe.model.set_value(cdt, cdn, "is_batch_item", is_batch);
+
+        // Apply editable / read-only logic
+        toggle_qty_editable(frm, cdt, cdn, is_batch);
+    }
+});
 
 frappe.ui.form.on("Subcontracting Receipt", {
     refresh(frm) {
-        set_batch_flag(frm);
-    },
-    onload(frm) {
-        set_batch_flag(frm);
+        // Apply logic on load/refresh for all rows
+        (frm.doc.items || []).forEach(row => {
+            toggle_qty_editable(frm, row.doctype, row.name, row.is_batch_item);
+        });
     }
 });
 
-frappe.ui.form.on("Subcontracting Receipt Item", {
-    item_code(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
-        if (!row.item_code) return;
-        frappe.db.get_value("Item", row.item_code, "has_batch_no")
-            .then(r => {
-                frappe.model.set_value(
-                    cdt,
-                    cdn,
-                    "is_batch_item",
-                    r.message && r.message.has_batch_no ? 1 : 0
-                );
-                frm.refresh_field("items");
-            });
-    }
-});
+// 🔹 Common function
+function toggle_qty_editable(frm, cdt, cdn, is_batch) {
+    // Grid-level control (important)
+    frm.fields_dict["items"].grid.update_docfield_property(
+        "qty",
+        "read_only",
+        is_batch ? 0 : 1
+    );
+}
