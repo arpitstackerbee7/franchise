@@ -2,6 +2,7 @@ frappe.ui.form.on("Delivery Note", {
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
         // set_sales_person(frm);
+        add_export_button(frm);
     }
 });
 
@@ -180,3 +181,141 @@ frappe.ui.form.on("Delivery Note", {
         }
     }
 });
+
+function add_export_button(frm) {
+
+    if (frm.__export_button_added) return;
+    frm.__export_button_added = true;
+
+    frm.add_custom_button("Export Packing Excel", async () => {
+
+        if (!frm.doc.items?.length) {
+            frappe.msgprint("No items found to export.");
+            return;
+        }
+
+        let item_codes = [
+            ...new Set(frm.doc.items.map(i => i.item_code).filter(Boolean))
+        ];
+
+        try {
+            frappe.dom.freeze("Preparing Excel...");
+
+            let items = await get_items_in_chunks(item_codes);
+
+            let item_map = {};
+            (items || []).forEach(d => item_map[d.name] = d);
+
+            generate_fixed_excel(frm, item_map);
+
+        } catch (e) {
+            console.error(e);
+            frappe.msgprint("Excel generation failed");
+        } finally {
+            frappe.dom.unfreeze();
+        }
+
+    }, "Actions");
+}
+async function get_items_in_chunks(item_codes) {
+
+    let all_items = [];
+    let chunk_size = 100; // 🔥 increased (faster)
+
+    for (let i = 0; i < item_codes.length; i += chunk_size) {
+
+        let chunk = item_codes.slice(i, i + chunk_size);
+
+        let res = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+                doctype: "Item",
+                filters: { name: ["in", chunk] },
+                fields: [
+                    "name",
+                    "custom_group_collection",
+                    "custom_top_fabrics",
+                    "custom_colour_name",
+                    "custom_size",
+                    "custom_barcode_code"
+                ],
+                limit_page_length: chunk.length
+            }
+        });
+
+        all_items.push(...(res.message || []));
+    }
+
+    return all_items;
+}
+function generate_fixed_excel(frm, item_map) {
+
+    let totalQty = 0;
+    let totalAmt = 0;
+
+    let rows = [];
+
+    for (let item of (frm.doc.items || [])) {
+
+        let m = item_map[item.item_code] || {};
+
+        let qty = flt(item.qty);
+        let amt = flt(item.amount);
+
+        totalQty += qty;
+        totalAmt += amt;
+
+        rows.push(`
+            <tr>
+                <td>${frm.doc.name || ''}</td>
+                <td>${frm.doc.posting_date || ''}</td>
+                <td>${item.serial_no?.split('\n')[0] || ''}</td>
+                <td>${item.gst_hsn_code || ''}</td>
+                <td>${m.custom_barcode_code || ''}</td>
+                <td>${m.custom_group_collection || ''}</td>
+                <td>${m.custom_top_fabrics || ''}</td>
+                <td>${m.custom_colour_name || ''}</td>
+                <td>${m.custom_size || ''}</td>
+                <td align="center">${qty}</td>
+                <td align="right">${flt(item.price_list_rate)}</td>
+                <td align="right">${amt.toFixed(2)}</td>
+            </tr>
+        `);
+    }
+
+    let html = `
+        <table border="1">
+            <tr>
+                <th colspan="12" style="background:yellow;">
+                    ${(frm.doc.customer_name || '').toUpperCase()} - PACKING SLIP
+                </th>
+            </tr>
+
+            <tr>
+                <th>Invoice</th><th>Date</th><th>Serial</th><th>HSN</th>
+                <th>Style</th><th>Dept</th><th>Fabric</th>
+                <th>Color</th><th>Size</th><th>Qty</th>
+                <th>MRP</th><th>Amount</th>
+            </tr>
+
+            ${rows.join("")}
+
+            <tr>
+                <td colspan="9" align="right"><b>Total</b></td>
+                <td>${totalQty}</td>
+                <td></td>
+                <td>${totalAmt.toFixed(2)}</td>
+            </tr>
+        </table>
+    `;
+
+    let blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${frm.doc.name}_Packing.xls`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
