@@ -2,6 +2,7 @@ frappe.ui.form.on("Delivery Note", {
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
         // set_sales_person(frm);
+        frm.__export_button_added = false;
         add_export_button(frm);
     }
 });
