@@ -135,22 +135,24 @@ def execute(filters=None):
 
 def get_columns():
     return [
-        {"label": "Item", "fieldname": "item_name", "fieldtype": "Data", "width": 200},
+        #{"label": "Image", "fieldname": "image", "fieldtype": "HTML", "width": 120},
+        {"label": "Item", "fieldname": "item_name", "fieldtype": "link", "width": 200},
         {"label": "Month", "fieldname": "month", "fieldtype": "Data", "width": 100},
         {"label": "Sales Qty", "fieldname": "sales_qty", "fieldtype": "Float", "width": 120},
         {"label": "Stock Qty", "fieldname": "stock_qty", "fieldtype": "Float", "width": 120},
         {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 120},
     ]
 
-
+from frappe.utils import get_url
 def get_data(filters):
     conditions = ""
 
     if filters.get("month"):
         conditions += " AND MONTH(si.posting_date) = %(month)s"
-
+    
     data = frappe.db.sql(f"""
         SELECT 
+            i.image AS image,
             sii.item_name AS item_name,
             MONTH(si.posting_date) AS month,
             SUM(sii.qty) AS sales_qty,
@@ -175,12 +177,30 @@ def get_data(filters):
 
         FROM `tabSales Invoice Item` sii
         JOIN `tabSales Invoice` si ON sii.parent = si.name
+        
+        LEFT JOIN `tabItem` i
+            ON i.item_code = sii.item_code
 
         WHERE si.docstatus = 1 {conditions}
 
         GROUP BY sii.item_code, MONTH(si.posting_date)
     """, filters, as_dict=1)
 
+
+    for row in data:
+        if row.get("image"):
+            img_url = row["image"]
+            
+            if not img_url.startswith("/"):
+                    img_url = "/" + img_url
+                
+            row["image_url"] = img_url  
+        else:
+            row["image_url"] = ""       
+
+        row["image"] = ""               
+
+                
     return data
 
 
