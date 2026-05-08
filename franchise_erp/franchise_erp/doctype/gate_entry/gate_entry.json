@@ -340,8 +340,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Door",
-   "options": "Incoming Logistics Users",
+   "label": "Doer",
+   "options": "User",
    "reqd": 1
   }
  ],
@@ -354,7 +354,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-05-07 12:20:25.761612",
+ "modified": "2026-05-08 12:04:51.316345",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
