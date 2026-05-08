@@ -140,7 +140,7 @@ class IncomingLogistics(Document):
             "status": self.status,
             "lr_entry_date": self.lr_date,
             "lr_quantity": self.lr_quantity,
-            "declaration_amount": self.total_amount,
+            "declaration_amount": self.total_amount or 0,
             "quantity_as_per_invoice": self.received_qty,
             "remarks": self.remarks
         })
