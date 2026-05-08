@@ -32,6 +32,9 @@
   "lr_date",
   "naming_series",
   "sales_inovice_no",
+  "section_break_qxyx",
+  "scan_box_barcode",
+  "gate_entry_box_barcode",
   "transport_information_section",
   "maintain_bale_wise_qty",
   "section_break_rlzu",
@@ -57,9 +60,6 @@
   "column_break_uyae",
   "actual_weight",
   "others",
-  "section_break_qxyx",
-  "scan_box_barcode",
-  "gate_entry_box_barcode",
   "others_section",
   "remarks",
   "purchase_ids",
@@ -427,7 +427,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-05-05 10:35:42.956604",
+ "modified": "2026-05-08 14:40:37.139647",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
