@@ -17,6 +17,7 @@
   "invoice_date",
   "gate_entry",
   "gate_entry_no",
+  "select_gate_entry",
   "column_break_kknq",
   "type",
   "consignor",
@@ -56,9 +57,11 @@
   "column_break_uyae",
   "actual_weight",
   "others",
+  "section_break_qxyx",
+  "scan_box_barcode",
+  "gate_entry_box_barcode",
   "others_section",
   "remarks",
-  "gate_entry_box_barcode",
   "purchase_ids",
   "references"
  ],
@@ -182,7 +185,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Issued\nReceived\nPaid",
+   "options": "Received\nIssued\nPaid",
    "read_only": 1
   },
   {
@@ -197,6 +200,7 @@
    "label": "Maintain Bale wise Qty"
   },
   {
+   "fetch_from": "select_gate_entry.no_of_parcels",
    "fieldname": "lr_quantity",
    "fieldtype": "Data",
    "label": "LR Quantity",
@@ -395,6 +399,23 @@
    "label": "References",
    "options": "Outgoing Logistics Reference",
    "read_only": 1
+  },
+  {
+   "fieldname": "select_gate_entry",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Select Gate Entry",
+   "options": "Gate Entry"
+  },
+  {
+   "fieldname": "section_break_qxyx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "scan_box_barcode",
+   "fieldtype": "Data",
+   "label": "Scan Box Barcode",
+   "options": "Barcode"
   }
  ],
  "grid_page_length": 50,
@@ -406,7 +427,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-04-29 11:24:25.812844",
+ "modified": "2026-05-05 10:35:42.956604",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",

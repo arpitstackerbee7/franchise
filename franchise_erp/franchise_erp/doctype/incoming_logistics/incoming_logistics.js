@@ -168,7 +168,55 @@ frappe.ui.form.on("Incoming Logistics", {
     //     ];
     //     const hide = frm.doc.to_pay === 'No';
     //     hide_fields.forEach(field => frm.set_df_property(field, 'hidden', hide));
+    },
+    scan_box_barcode: function(frm) {
+
+        let barcode = frm.doc.scan_box_barcode;
+        if (!barcode) return;
+
+        // ❌ Duplicate check
+        let exists = frm.doc.gate_entry_box_barcode.some(row => row.box_barcode === barcode);
+
+        if (exists) {
+            frappe.msgprint("❌ Barcode already scanned");
+            frm.set_value("scan_box_barcode", "");
+            return;
+        }
+
+        // 🔥 Get first row gate entry (LOCK)
+        let first_gate_entry = null;
+
+        if (frm.doc.gate_entry_box_barcode.length > 0) {
+            first_gate_entry = frm.doc.gate_entry_box_barcode[0].gate_entry;
+        }
+
+        frappe.call({
+            method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.process_barcode",
+            args: {
+                scan_barcode: barcode,
+                existing_gate_entry: first_gate_entry
+            },
+            callback: function(r) {
+                if (r.message) {
+
+                    let data = r.message;
+
+                    let row = frm.add_child("gate_entry_box_barcode");
+
+                    row.box_barcode = data.box_barcode;
+                    row.status = data.status;
+                    row.gate_entry = data.gate_entry;
+                    row.scan_date_time = data.scan_date_time;
+
+                    frm.refresh_field("gate_entry_box_barcode");
+
+                    // clear scan field
+                    frm.set_value("scan_box_barcode", "");
+                }
+            }
+        });
     }
+
 });
 
 // ===================================================
