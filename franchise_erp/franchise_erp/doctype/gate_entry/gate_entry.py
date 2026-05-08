@@ -694,3 +694,28 @@ def get_gate_entries_match_from_pi(supplier):
         d["total_amount"] = logistics.total_amount if logistics else 0
 
     return gate_entries
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_incoming_logistics_users(doctype, txt, searchfield, start, page_len, filters):
+
+    users = frappe.get_all(
+        "Incoming Logistics Users",
+        fields=["user"],
+        filters={
+            "parenttype": "TZU Setting"
+        }
+    )
+
+    user_list = [d.user for d in users]
+
+    return frappe.db.sql("""
+        SELECT name
+        FROM tabUser
+        WHERE name IN %(users)s
+        AND name LIKE %(txt)s
+    """, {
+        "users": tuple(user_list) if user_list else ("",),
+        "txt": f"%{txt}%"
+    })
