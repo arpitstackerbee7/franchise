@@ -68,16 +68,17 @@
   },
   {
    "fieldname": "gate_entry",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Gate Entry",
-   "options": "Gate Entry"
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-28 15:56:28.968089",
+ "modified": "2026-05-04 17:07:32.318376",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry Box Barcode",

@@ -15,6 +15,7 @@
   "sis_debit_note_supplier",
   "sis_debit_note_creditors",
   "whatsapp_no",
+  "incoming_logistics_users",
   "column_break_dltx",
   "item_name",
   "batch_uom",
@@ -24,7 +25,8 @@
   "update_items_allowed_roles",
   "all_counters_name_show_on_supplier",
   "enable_geo_location",
-  "enable_whatsapp_notification"
+  "enable_whatsapp_notification",
+  "is_credit_note_account"
  ],
  "fields": [
   {
@@ -150,17 +152,23 @@
    "label": "Enable Whatsapp Notification"
   },
   {
-    "fieldname": "is_credit_note_account",
-    "fieldtype": "Link",
-    "label": "Is Credit Note Account",
-    "options": "Account"
+   "fieldname": "is_credit_note_account",
+   "fieldtype": "Link",
+   "label": "Is Credit Note Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "incoming_logistics_users",
+   "fieldtype": "Table",
+   "label": "Incoming Logistics Users",
+   "options": "Incoming Logistics Users"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-27 18:07:15.113423",
+ "modified": "2026-05-07 12:19:00.025085",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
