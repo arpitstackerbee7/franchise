@@ -254,7 +254,14 @@ import frappe
 
 
 def on_submit_stock_entry(doc, method):
-
+    # ==================================================
+    # ✅ SKIP FOR STOCK TAKING MATERIAL ISSUE
+    # ==================================================
+    if (
+        doc.stock_entry_type == "Material Issue"
+        and doc.custom_stock_taking
+    ):
+        return
     # ------------------------------------
     # 1️⃣ MATERIAL ISSUE (ANY COMPANY)
     # ------------------------------------
