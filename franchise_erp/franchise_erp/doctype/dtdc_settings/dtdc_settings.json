@@ -48,7 +48,7 @@
   },
   {
    "fieldname": "password",
-   "fieldtype": "Password",
+   "fieldtype": "Data",
    "label": "Password"
   },
   {
@@ -129,7 +129,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-25 14:51:20.269347",
+ "modified": "2026-05-08 15:02:30.743383",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "DTDC Settings",
