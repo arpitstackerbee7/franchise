@@ -2,7 +2,7 @@ frappe.ui.form.on('Stock Entry', {
 
     refresh(frm) {
         toggle_fetch_button(frm);
-         update_total_quantity(frm);
+         calculate_total_qty(frm);
     },
 
     stock_entry_type(frm) {
@@ -15,6 +15,11 @@ frappe.ui.form.on('Stock Entry', {
 
     company(frm) {
         toggle_intercompany_flag(frm);
+    },
+
+    items_remove(frm) {
+
+        calculate_total_qty(frm);
     }
 
 });
@@ -288,6 +293,7 @@ frappe.ui.form.on('Stock Entry', {
                 query: "franchise_erp.custom.stock_entry.get_available_gate_entries_for_transfer_in_stock"
             };
         });
+        calculate_total_qty(frm);
     }
 });
 
@@ -295,14 +301,13 @@ frappe.ui.form.on('Stock Entry', {
 frappe.ui.form.on("Stock Entry Detail", {
 
     qty(frm, cdt, cdn) {
-        update_total_quantity(frm);
+        calculate_total_qty(frm);
     },
-
-    items_remove(frm) {
-        update_total_quantity(frm);
-    }
 });
-function update_total_quantity(frm) {
+// =====================================
+// ✅ TOTAL QTY
+// =====================================
+function calculate_total_qty(frm) {
 
     let total = 0;
 
@@ -311,5 +316,14 @@ function update_total_quantity(frm) {
         total += flt(row.qty || 0);
     });
 
-    frm.set_value("custom_total_quantity", total);
+    // ✅ ONLY UPDATE IF DIFFERENT
+    if (flt(frm.doc.custom_total_quantity) !== flt(total)) {
+
+        frm.doc.custom_total_quantity = total;
+
+        frm.refresh_field("custom_total_quantity");
+
+        // ✅ RESET DIRTY STATE
+        frm.doc.__unsaved = 0;
+    }
 }
