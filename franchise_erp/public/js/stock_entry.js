@@ -2,6 +2,7 @@ frappe.ui.form.on('Stock Entry', {
 
     refresh(frm) {
         toggle_fetch_button(frm);
+         update_total_quantity(frm);
     },
 
     stock_entry_type(frm) {
@@ -289,3 +290,26 @@ frappe.ui.form.on('Stock Entry', {
         });
     }
 });
+
+
+frappe.ui.form.on("Stock Entry Detail", {
+
+    qty(frm, cdt, cdn) {
+        update_total_quantity(frm);
+    },
+
+    items_remove(frm) {
+        update_total_quantity(frm);
+    }
+});
+function update_total_quantity(frm) {
+
+    let total = 0;
+
+    (frm.doc.items || []).forEach(row => {
+
+        total += flt(row.qty || 0);
+    });
+
+    frm.set_value("custom_total_quantity", total);
+}
