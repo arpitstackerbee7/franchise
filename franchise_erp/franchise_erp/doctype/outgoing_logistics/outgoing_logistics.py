@@ -248,10 +248,61 @@ def on_cancel(self):
         frappe.db.commit()
 
 
+import frappe
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_send_to_subcontractor_entries(
+    doctype,
+    txt,
+    searchfield,
+    start,
+    page_len,
+    filters
+):
 
+    company = filters.get("company")
+    supplier = filters.get("supplier")
 
+    return frappe.db.sql("""
 
+        SELECT
+            se.name,
+            se.company,
+            se.supplier,
+            se.subcontracting_order,
+            se.posting_date
 
+        FROM `tabStock Entry` se
+
+        WHERE
+            se.docstatus = 1
+
+            AND se.stock_entry_type = 'Send to Subcontractor'
+
+            AND se.company = %(company)s
+
+            AND se.supplier = %(supplier)s
+
+            AND (
+                se.custom_outgoing_logistics_reference IS NULL
+                OR se.custom_outgoing_logistics_reference = ''
+            )
+
+            AND se.name LIKE %(txt)s
+
+        ORDER BY se.creation DESC
+
+        LIMIT %(start)s, %(page_len)s
+
+    """, {
+
+        "company": company,
+        "supplier": supplier,
+        "txt": f"%{txt}%",
+        "start": start,
+        "page_len": page_len
+
+    }, as_dict=1)
 
 
 

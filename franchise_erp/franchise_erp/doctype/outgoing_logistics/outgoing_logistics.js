@@ -105,58 +105,127 @@ function open_sales_invoice_mapper(frm) {
 // function open_job_order_mapper(frm) { 
 //     new frappe.ui.form.MultiSelectDialog({ doctype: "Subcontracting Order", target: frm, setters: { company: frm.doc.owner_site }, get_query() { let filters = [ ["Subcontracting Order", "docstatus", "=", 1], ["Subcontracting Order", "custom_outgoing_logistics_reference", "is", "not set"], ["Subcontracting Order", "company", "=", frm.doc.owner_site] ]; if (frm.doc.consignee) { filters.push(["Job Order", "customer", "=", frm.doc.consignee]); } if (frm.doc.supplier) { filters.push(["Job Order", "supplier", "=", frm.doc.supplier]); } return { filters }; }, action(selections) { add_rows(frm, selections); this.dialog.hide(); } }); }
 
+// function open_job_order_mapper(frm) {
+//     new frappe.ui.form.MultiSelectDialog({
+//         doctype: "Subcontracting Order",
+//         target: frm,
+
+//         setters: {
+//             company: frm.doc.owner_site
+//         },
+
+//         get_query() {
+//             let filters = [
+//                 ["Subcontracting Order", "docstatus", "=", 1],
+//                 ["Subcontracting Order", "custom_outgoing_logistics_reference", "is", "not set"],
+//                 ["Subcontracting Order", "company", "=", frm.doc.owner_site]
+//             ];
+
+//             if (frm.doc.consignee) {
+//                 filters.push([
+//                     "Subcontracting Order",
+//                     "customer",
+//                     "=",
+//                     frm.doc.consignee
+//                 ]);
+//             }
+
+//             if (frm.doc.supplier) {
+//                 filters.push([
+//                     "Subcontracting Order",
+//                     "supplier",
+//                     "=",
+//                     frm.doc.supplier
+//                 ]);
+//             }
+
+//             return { filters };
+//         },
+
+//         action(selections) {
+//             add_rows(frm, selections);
+//              if (selections && selections.length) {
+//                 frappe.call({
+//                     method: "franchise_erp.custom.subcontracting_order.get_subcontracting_order_city",
+//                      args: {
+//                         subcontracting_order: selections[0]
+//                     },
+//                     callback: function (r) {
+//                         console.log("City:", r.message);
+//                         if (r.message) {
+//                             frm.set_value("station_to", r.message);
+//                         }
+//                     }
+//                 });
+//             }
+//             this.dialog.hide();
+//         }
+//     });
+// }
 function open_job_order_mapper(frm) {
+
     new frappe.ui.form.MultiSelectDialog({
-        doctype: "Subcontracting Order",
+
+        doctype: "Stock Entry",
+
         target: frm,
 
+        // ✅ setter should be array/object format
         setters: {
-            company: frm.doc.owner_site
+            company: frm.doc.owner_site || ""
         },
 
         get_query() {
-            let filters = [
-                ["Subcontracting Order", "docstatus", "=", 1],
-                ["Subcontracting Order", "custom_outgoing_logistics_reference", "is", "not set"],
-                ["Subcontracting Order", "company", "=", frm.doc.owner_site]
-            ];
 
-            if (frm.doc.consignee) {
-                filters.push([
-                    "Subcontracting Order",
-                    "customer",
-                    "=",
-                    frm.doc.consignee
-                ]);
-            }
+            console.log("Company:", frm.doc.owner_site);
+            console.log("Supplier:", frm.doc.consignee_supplier);
 
-            if (frm.doc.supplier) {
-                filters.push([
-                    "Subcontracting Order",
-                    "supplier",
-                    "=",
-                    frm.doc.supplier
-                ]);
-            }
+            return {
 
-            return { filters };
+                query: "franchise_erp.franchise_erp.doctype.outgoing_logistics.outgoing_logistics.get_send_to_subcontractor_entries",
+
+                filters: {
+                    company: frm.doc.owner_site || "",
+                    supplier: frm.doc.consignee_supplier || ""
+                }
+            };
         },
 
         action(selections) {
+
             add_rows(frm, selections);
              if (selections && selections.length) {
-                frappe.call({
-                    method: "franchise_erp.custom.subcontracting_order.get_subcontracting_order_city",
-                     args: {
-                        subcontracting_order: selections[0]
-                    },
-                    callback: function (r) {
-                        console.log("City:", r.message);
-                        if (r.message) {
-                            frm.set_value("station_to", r.message);
+
+                frappe.db.get_value(
+                    "Stock Entry",
+                    selections[0],
+                    "subcontracting_order",
+                    function(r) {
+
+                        if (r && r.subcontracting_order) {
+
+                            frappe.call({
+
+                                method: "franchise_erp.custom.subcontracting_order.get_subcontracting_order_city",
+
+                                args: {
+                                    subcontracting_order: r.subcontracting_order
+                                },
+
+                                callback: function(res) {
+
+                                    if (res.message) {
+
+                                        frm.set_value("station_to", res.message);
+
+                                    }
+                                }
+                            });
+
                         }
+
                     }
-                });
+                );
             }
             this.dialog.hide();
         }
@@ -259,7 +328,7 @@ function open_stock_entry_mapper(frm) {
 
 const TYPE_DOCTYPE_MAP = {
     "Sales Invoice": "Sales Invoice",
-    "Job Order": "Subcontracting Order",
+    "Job Order": "Stock Entry",
     "Purchase Return": "Purchase Invoice",
     "Transfer Out": "Stock Entry"
 };
@@ -582,6 +651,7 @@ function set_outgoing_type(frm) {
         "Sales Invoice": "Sales Invoice",
         "Job Order": "Job Order",
         "Job Work Order": "Job Order",
+        "Stock Entry": "Job Order",
         "Purchase Return": "Purchase Return",
         "Stock Entry": "Transfer Out"
     };

@@ -251,7 +251,7 @@ doctype_js = {
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
     "Employee": "public/js/employee.js",
     "Shipment": "public/js/shipment.js",
-    # "Serial No": "public/js/serial_no.js"
+    "Serial No": "public/js/serial_no.js"
 
 }
 
