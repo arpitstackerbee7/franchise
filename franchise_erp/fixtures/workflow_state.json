@@ -70,5 +70,41 @@
   "name": "Merchant checks",
   "style": "Success",
   "workflow_state_name": "Merchant checks"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-11 17:24:58.199485",
+  "name": "Pending Checker Approval",
+  "style": "",
+  "workflow_state_name": "Pending Checker Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-11 17:26:48.024221",
+  "name": "Pending Final Approval",
+  "style": "",
+  "workflow_state_name": "Pending Final Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-05-11 17:44:35.947339",
+  "name": "Cancelled",
+  "style": "",
+  "workflow_state_name": "Cancelled"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-03-27 17:16:25.738171",
+  "name": "Send to Checker",
+  "style": "",
+  "workflow_state_name": "Send to Checker"
  }
 ]
