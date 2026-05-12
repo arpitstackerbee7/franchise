@@ -248,7 +248,6 @@ def on_cancel(self):
         frappe.db.commit()
 
 
-import frappe
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_send_to_subcontractor_entries(
@@ -262,6 +261,8 @@ def get_send_to_subcontractor_entries(
 
     company = filters.get("company")
     supplier = filters.get("supplier")
+
+    txt = txt or ""
 
     return frappe.db.sql("""
 
@@ -288,7 +289,10 @@ def get_send_to_subcontractor_entries(
                 OR se.custom_outgoing_logistics_reference = ''
             )
 
-            AND se.name LIKE %(txt)s
+            AND (
+                %(txt)s = ''
+                OR se.name LIKE %(txt)s
+            )
 
         ORDER BY se.creation DESC
 
@@ -303,9 +307,3 @@ def get_send_to_subcontractor_entries(
         "page_len": page_len
 
     }, as_dict=1)
-
-
-
-
-
-
