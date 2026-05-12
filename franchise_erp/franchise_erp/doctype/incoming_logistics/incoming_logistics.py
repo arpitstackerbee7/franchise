@@ -26,6 +26,29 @@ class IncomingLogistics(Document):
     def validate(self):
         self.validate_unique_lr_per_transporter()
         self.validate_unique_invoice_per_consignor()
+                # Only on new document
+        if not self.is_new():
+            return
+
+        # Admin bypass
+        if frappe.session.user == "Administrator":
+            return
+
+        settings = frappe.get_single("TZU Setting")
+
+        allowed_users = [
+            row.user
+            for row in settings.incoming_logistics_users
+            if row.user
+        ]
+
+        current_user = frappe.session.user
+
+        if current_user not in allowed_users:
+
+            frappe.throw((
+                "You are not authorized to create Incoming Logistics."
+            ))
 
 
     # def on_submit(self):
