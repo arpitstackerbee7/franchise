@@ -2,6 +2,13 @@
  {
   "docstatus": 0,
   "doctype": "Workflow Action Master",
+  "modified": "2026-03-27 17:20:07.600066",
+  "name": "Send to Checker",
+  "workflow_action_name": "Send to Checker"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
   "modified": "2025-11-18 23:42:05.176760",
   "name": "Review",
   "workflow_action_name": "Review"
@@ -47,5 +54,26 @@
   "modified": "2026-05-01 14:36:01.836750",
   "name": "Pending Review",
   "workflow_action_name": "Pending Review"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-11 17:24:46.279948",
+  "name": "Send for Checking",
+  "workflow_action_name": "Send for Checking"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-11 17:26:33.260714",
+  "name": "Verify",
+  "workflow_action_name": "Verify"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow Action Master",
+  "modified": "2026-05-11 17:45:05.893336",
+  "name": "Cancel",
+  "workflow_action_name": "Cancel"
  }
 ]
