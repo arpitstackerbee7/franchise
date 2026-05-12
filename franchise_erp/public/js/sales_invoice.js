@@ -161,15 +161,29 @@ frappe.ui.form.on("Sales Invoice", {
         check_delivery_note(frm);
         // check_duplicate_serials(frm);
     },
-
     scan_barcode(frm) {
+
         if (!frm.doc.scan_barcode) return;
+
+        let barcode = (frm.doc.scan_barcode || "").trim();
+        let now = Date.now();
+
+        if (
+            window.__last_barcode === barcode &&
+            (now - window.__last_barcode_time) < 500
+        ) {
+            frm.set_value("scan_barcode", "");
+            return;
+        }
+
+        window.__last_barcode = barcode;
+        window.__last_barcode_time = now;
 
         frm.__barcode_scanning = true;
 
         setTimeout(() => {
             frm.__barcode_scanning = false;
-        }, 400);
+        }, 500);
     }
 });
 
@@ -210,6 +224,38 @@ frappe.ui.form.on("Sales Invoice Item", {
 
     dn_detail(frm, cdt, cdn) {
         check_delivery_note(frm);
+    },
+
+    serial_no(frm, cdt, cdn) {
+
+        let row = locals[cdt][cdn];
+
+        if (!row.serial_no) return;
+
+        // 🔥 REMOVE DUPLICATES
+        let serials = row.serial_no
+            .split("\n")
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        // unique
+        serials = [...new Set(serials)];
+
+        // update
+        frappe.model.set_value(
+            cdt,
+            cdn,
+            "serial_no",
+            serials.join("\n")
+        );
+
+        // qty sync
+        frappe.model.set_value(
+            cdt,
+            cdn,
+            "qty",
+            serials.length
+        );
     }
 });
 
