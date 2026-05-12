@@ -267,11 +267,8 @@ def get_send_to_subcontractor_entries(
     return frappe.db.sql("""
 
         SELECT
-            se.name,
-            se.company,
-            se.supplier,
-            se.subcontracting_order,
-            se.posting_date
+            se.name as name,
+            se.company as company
 
         FROM `tabStock Entry` se
 
@@ -289,10 +286,7 @@ def get_send_to_subcontractor_entries(
                 OR se.custom_outgoing_logistics_reference = ''
             )
 
-            AND (
-                %(txt)s = ''
-                OR se.name LIKE %(txt)s
-            )
+            AND se.name LIKE %(txt)s
 
         ORDER BY se.creation DESC
 

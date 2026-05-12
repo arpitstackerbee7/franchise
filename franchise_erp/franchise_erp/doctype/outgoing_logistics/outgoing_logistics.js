@@ -170,15 +170,11 @@ function open_job_order_mapper(frm) {
 
         target: frm,
 
-        // ✅ setter should be array/object format
         setters: {
             company: frm.doc.owner_site || ""
         },
 
         get_query() {
-
-            console.log("Company:", frm.doc.owner_site);
-            console.log("Supplier:", frm.doc.consignee_supplier);
 
             return {
 
@@ -191,10 +187,13 @@ function open_job_order_mapper(frm) {
             };
         },
 
+        primary_action_label: "Get Items",
+
         action(selections) {
 
             add_rows(frm, selections);
-             if (selections && selections.length) {
+
+            if (selections && selections.length) {
 
                 frappe.db.get_value(
                     "Stock Entry",
@@ -215,18 +214,15 @@ function open_job_order_mapper(frm) {
                                 callback: function(res) {
 
                                     if (res.message) {
-
                                         frm.set_value("station_to", res.message);
-
                                     }
                                 }
                             });
-
                         }
-
                     }
                 );
             }
+
             this.dialog.hide();
         }
     });
