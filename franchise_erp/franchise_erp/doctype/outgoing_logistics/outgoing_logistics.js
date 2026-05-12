@@ -227,30 +227,15 @@ function open_job_order_mapper(frm) {
         }
     });
 
-    // =====================================
-    // FORCE INITIAL SEARCH
-    // =====================================
+    // ✅ FORCE INITIAL LOAD
 
     setTimeout(() => {
 
-        let input = d.dialog.$wrapper.find('input[data-fieldname="search_term"]');
-
-        if (input.length) {
-
-            input.val("a");
-
-            input.trigger("input");
-
-            setTimeout(() => {
-
-                input.val("");
-
-                input.trigger("input");
-
-            }, 300);
+        if (d.get_results) {
+            d.get_results();
         }
 
-    }, 500);
+    }, 800);
 }
 function open_purchase_return_mapper(frm) {
 
