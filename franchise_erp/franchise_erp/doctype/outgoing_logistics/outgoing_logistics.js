@@ -164,7 +164,7 @@ function open_sales_invoice_mapper(frm) {
 // }
 function open_job_order_mapper(frm) {
 
-    new frappe.ui.form.MultiSelectDialog({
+    let d = new frappe.ui.form.MultiSelectDialog({
 
         doctype: "Stock Entry",
 
@@ -223,9 +223,34 @@ function open_job_order_mapper(frm) {
                 );
             }
 
-            this.dialog.hide();
+            d.dialog.hide();
         }
     });
+
+    // =====================================
+    // FORCE INITIAL SEARCH
+    // =====================================
+
+    setTimeout(() => {
+
+        let input = d.dialog.$wrapper.find('input[data-fieldname="search_term"]');
+
+        if (input.length) {
+
+            input.val("a");
+
+            input.trigger("input");
+
+            setTimeout(() => {
+
+                input.val("");
+
+                input.trigger("input");
+
+            }, 300);
+        }
+
+    }, 500);
 }
 function open_purchase_return_mapper(frm) {
 
