@@ -134,10 +134,28 @@ def process_bulk_purchase_return(docname):
 
                 serials = row.serial_nos.strip() if row.serial_nos else ""
 
+                original_wh = frappe.db.get_value(
+                    "Purchase Receipt Item",
+                    row.purchase_receipt_item,
+                    "warehouse"
+                )
+
+                warehouse_company = frappe.db.get_value(
+                    "Warehouse",
+                    original_wh,
+                    "company"
+                )
+                
+                if warehouse_company != return_doc.company:
+                    frappe.throw(
+                        f"Warehouse {original_wh} belongs to {warehouse_company}, "
+                        f"but document company is {return_doc.company}"
+                    )
+
                 return_doc.append("items", {
                     "item_code": row.item_code,
                     "qty": -abs(row.qty),
-                    "warehouse": row.warehouse,
+                    "warehouse": original_wh,
                     "rate": row.rate,
                     "serial_no": serials,
                     "purchase_order": pr_item.purchase_order if pr_item else "",
@@ -252,7 +270,7 @@ def get_pr_item_details(items):
             for serial in scanned_serials:
 
                 serial_doc = frappe.get_doc("Serial No", serial)
-                wh = serial_doc.warehouse or pr_item.warehouse
+                wh =  pr_item.warehouse
 
                 warehouse_map.setdefault(wh, []).append(serial)
 
