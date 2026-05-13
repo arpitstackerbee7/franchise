@@ -2,7 +2,7 @@ import frappe
 from frappe.model.naming import make_autoname
 import re
 from datetime import datetime
-from frappe.utils import nowdate
+from frappe.utils import nowdate, flt, getdate, today
 
 #for 2 get 1 free item
 def set_promo_group_id(doc, method=None):
@@ -257,3 +257,313 @@ def create_credit_note_from_dn(doc, method):
     si.insert(ignore_permissions=True)
 
     frappe.msgprint(f"✅ Credit Note Created: {si.name}")
+
+
+
+
+
+# def validate_internal_customer_credit(doc, method):
+
+#     # Skip conditions
+#     if doc.is_return or not doc.customer:
+#         return
+
+#     # ===============================
+#     # ONLY INTERNAL CUSTOMER
+#     # ===============================
+#     is_internal_customer = frappe.db.get_value(
+#         "Customer",
+#         doc.customer,
+#         "is_internal_customer"
+#     )
+
+#     if not is_internal_customer:
+#         return
+
+#     today_date = getdate(today())
+
+#     # ===============================
+#     # CUSTOMER SETTINGS
+#     # ===============================
+#     credit_days = frappe.db.get_value(
+#         "Customer",
+#         doc.customer,
+#         "custom_credit_days"
+#     ) or 0
+
+#     credit_limit = frappe.db.get_value(
+#         "Customer Credit Limit",
+#         {
+#             "parent": doc.customer,
+#             "company": doc.company
+#         },
+#         "credit_limit"
+#     ) or 0
+
+#     # ===============================
+#     # OUTSTANDING (GL BASED)
+#     # ===============================
+#     outstanding = frappe.db.sql("""
+#         SELECT COALESCE(SUM(debit - credit), 0)
+#         FROM `tabGL Entry`
+#         WHERE party_type = 'Customer'
+#         AND party = %s
+#         AND company = %s
+#         AND is_cancelled = 0
+#         AND posting_date <= %s
+#         AND account IN (
+#             SELECT name
+#             FROM `tabAccount`
+#             WHERE account_type = 'Receivable'
+#             AND company = %s
+#         )
+#     """, (
+#         doc.customer,
+#         doc.company,
+#         doc.posting_date,
+#         doc.company
+#     ))[0][0]
+
+#     # ===============================
+#     # CREDIT DAYS CHECK
+#     # ===============================
+#     invoices = frappe.db.sql("""
+#         SELECT due_date
+#         FROM `tabSales Invoice`
+#         WHERE customer = %s
+#         AND docstatus = 1
+#         AND outstanding_amount > 0
+#     """, doc.customer, as_dict=True)
+
+#     credit_days_failed = False
+#     max_overdue_days = 0
+
+#     for inv in invoices:
+
+#         if inv.due_date:
+
+#             overdue_days = (
+#                 today_date - getdate(inv.due_date)
+#             ).days
+
+#             if overdue_days > 0:
+
+#                 max_overdue_days = max(
+#                     max_overdue_days,
+#                     overdue_days
+#                 )
+
+#                 if (
+#                     credit_days
+#                     and overdue_days > credit_days
+#                 ):
+#                     credit_days_failed = True
+
+#     # ===============================
+#     # DELIVERY NOTE VALUE
+#     # ===============================
+#     delivery_amount = round(flt(doc.rounded_total or doc.grand_total))
+
+#     total_exposure = (
+#         round(flt(outstanding))
+#         + delivery_amount
+#     )
+
+#     credit_limit_failed = False
+
+#     if (
+#         credit_limit > 0
+#         and total_exposure > round(flt(credit_limit))
+#     ):
+#         credit_limit_failed = True
+
+#     # ===============================
+#     # ERROR MESSAGE
+#     # ===============================
+#     messages = []
+
+#     if credit_days_failed:
+
+#         messages.append(
+#             f"Credit Days Exceeded: "
+#             f"Allowed {credit_days} days, "
+#             f"Max overdue {max_overdue_days} days"
+#         )
+
+#     if credit_limit_failed:
+
+#         remaining_credit = (
+#             flt(credit_limit)
+#             - flt(outstanding)
+#         )
+
+#         messages.append(
+#             f"Credit Limit Exceeded:<br>"
+#             f"Credit Limit: ₹{flt(credit_limit):,.2f}<br>"
+#             f"Outstanding: ₹{flt(outstanding):,.2f}<br>"
+#             f"Remaining Credit: ₹{remaining_credit:,.2f}<br>"
+#             f"Delivery Amount: ₹{delivery_amount:,.2f}<br>"
+#             f"Total Exposure After Delivery: ₹{total_exposure:,.2f}"
+#         )
+
+#     if messages:
+
+#         frappe.throw(
+#             title="Credit Validation Failed",
+#             msg="<br>".join(messages)
+#         )
+
+def validate_internal_customer_credit(doc, method):
+
+    # Skip conditions
+    if doc.is_return or not doc.customer:
+        return
+
+    # ===============================
+    # ONLY INTERNAL CUSTOMER
+    # ===============================
+    is_internal_customer = frappe.db.get_value(
+        "Customer",
+        doc.customer,
+        "is_internal_customer"
+    )
+
+    if not is_internal_customer:
+        return
+
+    today_date = getdate(today())
+
+    # ===============================
+    # CUSTOMER SETTINGS
+    # ===============================
+    credit_days = frappe.db.get_value(
+        "Customer",
+        doc.customer,
+        "custom_credit_days"
+    ) or 0
+
+    credit_limit = frappe.db.get_value(
+        "Customer Credit Limit",
+        {
+            "parent": doc.customer,
+            "company": doc.company
+        },
+        "credit_limit"
+    ) or 0
+
+    # ===============================
+    # OUTSTANDING (GL BASED)
+    # ===============================
+    outstanding = frappe.db.sql("""
+        SELECT COALESCE(SUM(debit - credit), 0)
+        FROM `tabGL Entry`
+        WHERE party_type = 'Customer'
+        AND party = %s
+        AND company = %s
+        AND is_cancelled = 0
+        AND posting_date <= %s
+        AND account IN (
+            SELECT name
+            FROM `tabAccount`
+            WHERE account_type = 'Receivable'
+            AND company = %s
+        )
+    """, (
+        doc.customer,
+        doc.company,
+        doc.posting_date,
+        doc.company
+    ))[0][0]
+
+    # ===============================
+    # OVERDUE SALES INVOICES
+    # ===============================
+    invoices = frappe.db.sql("""
+        SELECT posting_date
+        FROM `tabSales Invoice`
+        WHERE customer = %s
+        AND company = %s
+        AND docstatus = 1
+        AND outstanding_amount > 0
+    """, (
+        doc.customer,
+        doc.company
+    ), as_dict=True)
+
+    credit_days_failed = False
+    max_overdue_days = 0
+
+    for inv in invoices:
+
+        overdue_days = (
+            today_date - getdate(inv.posting_date)
+        ).days
+
+        if overdue_days > 0:
+
+            max_overdue_days = max(
+                max_overdue_days,
+                overdue_days
+            )
+
+            if (
+                credit_days
+                and overdue_days > credit_days
+            ):
+                credit_days_failed = True
+
+    # ===============================
+    # DELIVERY NOTE VALUE
+    # ===============================
+    delivery_amount = round(
+        flt(doc.rounded_total or doc.grand_total)
+    )
+
+    total_exposure = (
+        round(flt(outstanding))
+        + delivery_amount
+    )
+
+    credit_limit_failed = False
+
+    if (
+        credit_limit > 0
+        and total_exposure > round(flt(credit_limit))
+    ):
+        credit_limit_failed = True
+
+    # ===============================
+    # ERROR MESSAGE
+    # ===============================
+    messages = []
+
+    if credit_days_failed:
+
+        messages.append(
+            f"Credit Days Exceeded: "
+            f"Allowed {credit_days} days, "
+            f"Max overdue {max_overdue_days} days"
+        )
+
+    if credit_limit_failed:
+
+        remaining_credit = (
+            flt(credit_limit)
+            - flt(outstanding)
+        )
+
+        messages.append(
+            f"Credit Limit Exceeded:<br>"
+            f"Credit Limit: ₹{flt(credit_limit):,.2f}<br>"
+            f"Outstanding: ₹{flt(outstanding):,.2f}<br>"
+            f"Remaining Credit: ₹{remaining_credit:,.2f}<br>"
+            f"Delivery Note Amount: ₹{delivery_amount:,.2f}<br>"
+            f"Total Exposure After Delivery: ₹{total_exposure:,.2f}"
+        )
+
+    if messages:
+
+        frappe.throw(
+            title="Credit Validation Failed",
+            msg="<br>".join(messages)
+        )

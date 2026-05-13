@@ -167,7 +167,9 @@ doc_events = {
         # "before_naming": "franchise_erp.custom.delivery_note.set_delivery_note_name",        
         "before_insert": "franchise_erp.custom.delivery_note.set_dn_naming_series",
         "validate": ["franchise_erp.custom.delivery_note.disable_eway_notification",
-        "franchise_erp.custom.delivery_note.apply_sales_person_rules"],
+        "franchise_erp.custom.delivery_note.apply_sales_person_rules",
+        "franchise_erp.custom.delivery_note.validate_internal_customer_credit"
+        ],
         "on_submit": "franchise_erp.custom.delivery_note.create_credit_note_from_dn",
         
         # "after_save": [
