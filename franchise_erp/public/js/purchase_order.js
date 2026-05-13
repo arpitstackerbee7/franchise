@@ -369,3 +369,55 @@ frappe.ui.form.on("Purchase Order", {
 
 	}
 });
+
+frappe.ui.form.on("Purchase Order", {
+    refresh(frm) {
+
+        $(document).off("click.reject_workflow");
+
+        $(document).on("click.reject_workflow", ".dropdown-item", function (e) {
+
+            let action = $(this).text().trim();
+
+            if (
+                ["Pending Checker Approval", "Pending Final Approval"].includes(frm.doc.workflow_state) &&
+                action === "Reject"
+            ) {
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                let d = new frappe.ui.Dialog({
+                    title: "Reject Remark",
+                    size: "small",
+                    fields: [
+                        {
+                            label: "Remark",
+                            fieldname: "remark",
+                            fieldtype: "Small Text",
+                            reqd: 1
+                        }
+                    ],
+
+                    primary_action_label: "Submit",
+
+                    primary_action(values) {
+
+                        frm.set_value("custom_remark", values.remark);
+
+                        d.hide();
+
+                        frm.save();
+                    }
+
+                });
+
+                d.show();
+
+                return false;
+            }
+
+        });
+
+    }
+});
