@@ -372,8 +372,7 @@ def get_gst_map(filters):
         conditions.append("dn.posting_date >= %(from_date)s")
     if filters.get("to_date"):
         conditions.append("dn.posting_date <= %(to_date)s")
-    if filters.get("company"):
-        conditions.append("dn.company = %(company)s")
+
 
     where_clause = "AND " + " AND ".join(conditions) if conditions else ""
 
@@ -409,9 +408,7 @@ def get_receipt_map(filters):
         conditions.append("pe.posting_date >= %(from_date)s")
     if filters.get("to_date"):
         conditions.append("pe.posting_date <= %(to_date)s")
-    if filters.get("company"):
-        conditions.append("pe.company = %(company)s")
-
+    
     where_clause = "AND " + " AND ".join(conditions) if conditions else ""
 
     rows = frappe.db.sql(
@@ -444,8 +441,6 @@ def get_conditions(filters):
         conditions.append("dn.posting_date <= %(to_date)s")
     if filters.get("customer"):
         conditions.append("dn.customer = %(customer)s")
-    if filters.get("company"):
-        conditions.append("dn.company = %(company)s")
     if filters.get("agent"):
         conditions.append(
             "dn.customer IN (SELECT name FROM `tabCustomer` WHERE custom_agent = %(agent)s)"

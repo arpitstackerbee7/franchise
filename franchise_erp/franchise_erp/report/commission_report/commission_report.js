@@ -15,13 +15,6 @@ frappe.query_reports["Commission Report"] = {
             reqd: 1,
         },
         {
-            fieldname: "company",
-            label: __("Company"),
-            fieldtype: "Link",
-            options: "Company",
-            default: frappe.defaults.get_user_default("Company"),
-        },
-        {
             fieldname: "customer",
             label: __("Customer"),
             fieldtype: "Link",
