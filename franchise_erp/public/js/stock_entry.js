@@ -285,7 +285,7 @@ function toggle_intercompany_flag(frm) {
 
 frappe.ui.form.on('Stock Entry', {
     onload: function(frm) {
-
+        
         if (frm.doc.stock_entry_type !== "Material Receipt") return;
 
         frm.set_query("custom_gate_entrys", function() {
@@ -293,49 +293,32 @@ frappe.ui.form.on('Stock Entry', {
                 query: "franchise_erp.custom.stock_entry.get_available_gate_entries_for_transfer_in_stock"
             };
         });
-        calculate_total_qty(frm);
 
-        // Only for Subcontracting Entry
         if (
             frm.doc.stock_entry_type === "Send to Subcontractor"
             && !frm.doc.bill_from_address
+            && frm.doc.company
         ) {
 
-            // Pick first source warehouse from items
-            let warehouse = "";
+            frappe.call({
+                method: "frappe.contacts.doctype.address.address.get_default_address",
+                args: {
+                    doctype: "Company",
+                    name: frm.doc.company
+                },
+                callback: function(res) {
 
-            if (frm.doc.items && frm.doc.items.length) {
-                warehouse = frm.doc.items[0].s_warehouse;
-            }
-
-            if (warehouse) {
-
-                frappe.db.get_value(
-                    "Warehouse",
-                    warehouse,
-                    "company"
-                ).then(r => {
-
-                    if (r.message.company) {
-
-                        // Fetch company GST address
-                        frappe.call({
-                            method: "frappe.contacts.doctype.address.address.get_default_address",
-                            args: {
-                                doctype: "Company",
-                                name: r.message.company
-                            },
-                            callback: function(res) {
-
-                                if (res.message) {
-                                    frm.set_value("bill_from_address", res.message);
-                                }
-                            }
-                        });
+                    if (res.message) {
+                        frm.set_value(
+                            "bill_from_address",
+                            res.message
+                        );
                     }
-                });
-            }
+                }
+            });
         }
+        
+        calculate_total_qty(frm);
     }
 });
 
