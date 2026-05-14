@@ -283,17 +283,58 @@ function toggle_intercompany_flag(frm) {
 //     }
 // });
 
+// frappe.ui.form.on('Stock Entry', {
+//     onload: function(frm) {
+        
+//         if (frm.doc.stock_entry_type !== "Material Receipt") return;
+
+//         frm.set_query("custom_gate_entrys", function() {
+//             return {
+//                 query: "franchise_erp.custom.stock_entry.get_available_gate_entries_for_transfer_in_stock"
+//             };
+//         });
+
+//         if (
+//             frm.doc.stock_entry_type === "Send to Subcontractor"
+//             && !frm.doc.bill_from_address
+//             && frm.doc.company
+//         ) {
+
+//             frappe.call({
+//                 method: "frappe.contacts.doctype.address.address.get_default_address",
+//                 args: {
+//                     doctype: "Company",
+//                     name: frm.doc.company
+//                 },
+//                 callback: function(res) {
+
+//                     if (res.message) {
+//                         frm.set_value(
+//                             "bill_from_address",
+//                             res.message
+//                         );
+//                     }
+//                 }
+//             });
+//         }
+        
+//         calculate_total_qty(frm);
+//     }
+// });
 frappe.ui.form.on('Stock Entry', {
     onload: function(frm) {
-        
-        if (frm.doc.stock_entry_type !== "Material Receipt") return;
 
-        frm.set_query("custom_gate_entrys", function() {
-            return {
-                query: "franchise_erp.custom.stock_entry.get_available_gate_entries_for_transfer_in_stock"
-            };
-        });
+        // Material Receipt specific logic
+        if (frm.doc.stock_entry_type === "Material Receipt") {
 
+            frm.set_query("custom_gate_entrys", function() {
+                return {
+                    query: "franchise_erp.custom.stock_entry.get_available_gate_entries_for_transfer_in_stock"
+                };
+            });
+        }
+
+        // Send to Subcontractor logic
         if (
             frm.doc.stock_entry_type === "Send to Subcontractor"
             && !frm.doc.bill_from_address
@@ -307,7 +348,6 @@ frappe.ui.form.on('Stock Entry', {
                     name: frm.doc.company
                 },
                 callback: function(res) {
-
                     if (res.message) {
                         frm.set_value(
                             "bill_from_address",
@@ -317,11 +357,10 @@ frappe.ui.form.on('Stock Entry', {
                 }
             });
         }
-        
+
         calculate_total_qty(frm);
     }
 });
-
 
 frappe.ui.form.on("Stock Entry Detail", {
 
