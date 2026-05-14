@@ -1,11 +1,69 @@
+// frappe.ui.form.on("Bulk Update HSN SAC and Tax Categories", {
+
+//     refresh(frm) {
+
+//         frm.add_custom_button("Update GST HSN Code", function () {
+
+//             // Validate HSN Code selected
+         
+//             frappe.prompt(
+//                 [
+//                     {
+//                         label: "Company",
+//                         fieldname: "company",
+//                         fieldtype: "Link",
+//                         options: "Company",
+//                         reqd: 1,
+//                         get_query: function () {
+//                             return {
+//                                 filters: {
+//                                     is_group: 0
+//                                 }
+//                             };
+//                         }
+//                     }
+//                 ],
+
+//                 function(values) {
+
+//                    frappe.call({
+//     method: "franchise_erp.custom.company_tax_sync.update_gst_hsn_code_taxes",
+//     args: {
+//         docname: frm.doc.name,
+//         company: values.company
+//     },
+//     freeze: true,
+//     freeze_message: "Updating GST HSN Code Taxes...",
+//     callback: function(r) {
+//         if (r.message) {
+//             frappe.msgprint({
+//                 title: "Success",
+//                 message: r.message,
+//                 indicator: "green"
+//             });
+//         }
+//     }
+// });
+
+//                 },
+
+//                 "Select Company"
+//             );
+
+//         });
+
+//     }
+
+// });
+
+
 frappe.ui.form.on("Bulk Update HSN SAC and Tax Categories", {
 
     refresh(frm) {
 
+        // Existing Button
         frm.add_custom_button("Update GST HSN Code", function () {
 
-            // Validate HSN Code selected
-         
             frappe.prompt(
                 [
                     {
@@ -26,28 +84,59 @@ frappe.ui.form.on("Bulk Update HSN SAC and Tax Categories", {
 
                 function(values) {
 
-                   frappe.call({
-    method: "franchise_erp.custom.company_tax_sync.update_gst_hsn_code_taxes",
-    args: {
-        docname: frm.doc.name,
-        company: values.company
-    },
-    freeze: true,
-    freeze_message: "Updating GST HSN Code Taxes...",
-    callback: function(r) {
-        if (r.message) {
-            frappe.msgprint({
-                title: "Success",
-                message: r.message,
-                indicator: "green"
-            });
-        }
-    }
-});
+                    frappe.call({
+                        method: "franchise_erp.custom.company_tax_sync.update_gst_hsn_code_taxes",
+                        args: {
+                            docname: frm.doc.name,
+                            company: values.company
+                        },
+                        freeze: true,
+                        freeze_message: "Updating GST HSN Code Taxes...",
+                        callback: function(r) {
+                            if (r.message) {
+                                frappe.msgprint({
+                                    title: "Success",
+                                    message: r.message,
+                                    indicator: "green"
+                                });
+                            }
+                        }
+                    });
 
                 },
 
                 "Select Company"
+            );
+
+        });
+
+
+        // NEW BULK BUTTON
+        frm.add_custom_button("Bulk Update All Companies", function () {
+
+            frappe.confirm(
+                "Are you sure you want to update GST HSN Code Taxes for ALL non-group companies?",
+                function () {
+
+                    frappe.call({
+                        method: "franchise_erp.custom.company_tax_sync.bulk_update_gst_hsn_code_taxes",
+                        args: {
+                            docname: frm.doc.name
+                        },
+                        freeze: true,
+                        freeze_message: "Updating GST HSN Code Taxes for all companies...",
+                        callback: function(r) {
+                            if (r.message) {
+                                frappe.msgprint({
+                                    title: "Success",
+                                    message: r.message,
+                                    indicator: "green"
+                                });
+                            }
+                        }
+                    });
+
+                }
             );
 
         });
