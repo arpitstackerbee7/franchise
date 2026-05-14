@@ -294,6 +294,48 @@ frappe.ui.form.on('Stock Entry', {
             };
         });
         calculate_total_qty(frm);
+
+        // Only for Subcontracting Entry
+        if (
+            frm.doc.stock_entry_type === "Send to Subcontractor"
+            && !frm.doc.bill_from_address
+        ) {
+
+            // Pick first source warehouse from items
+            let warehouse = "";
+
+            if (frm.doc.items && frm.doc.items.length) {
+                warehouse = frm.doc.items[0].s_warehouse;
+            }
+
+            if (warehouse) {
+
+                frappe.db.get_value(
+                    "Warehouse",
+                    warehouse,
+                    "company"
+                ).then(r => {
+
+                    if (r.message.company) {
+
+                        // Fetch company GST address
+                        frappe.call({
+                            method: "frappe.contacts.doctype.address.address.get_default_address",
+                            args: {
+                                doctype: "Company",
+                                name: r.message.company
+                            },
+                            callback: function(res) {
+
+                                if (res.message) {
+                                    frm.set_value("bill_from_address", res.message);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        }
     }
 });
 
