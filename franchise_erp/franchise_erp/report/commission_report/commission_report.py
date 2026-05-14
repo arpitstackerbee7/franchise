@@ -138,7 +138,8 @@ def get_data(filters):
             dni.base_net_amount         AS item_net_amount,
             dn.net_total                AS dn_net_total,
             dn.grand_total              AS dn_grand_total,
-            dn.name                     AS dn_name
+            dn.name                     AS dn_name,
+            dn.company                  AS dn_company
         FROM
             `tabDelivery Note Item` dni
         INNER JOIN
@@ -162,7 +163,10 @@ def get_data(filters):
     # Collect unique customers and fetch commission rate from Customer master
     customer_names = list({row.customer for row in dn_items if row.customer})
     customer_map   = get_customer_commission_map(customer_names)
-    
+
+    dn_companies = list({row.dn_company for row in dn_items if row.dn_company})
+    company_agent_map = get_company_agent_map(dn_companies)
+
     # CHANGE 6 — Added SIS margin map to fetch fresh_margin and discounted_margin
     sis_margin_map = get_sis_margin_map(customer_names)
 
@@ -242,8 +246,11 @@ def get_data(filters):
 
         
         # CHANGE 11 — Added agent from customer_map
-        agent           = customer_info.get("custom_agent") or ""
-        commission_rate = flt(customer_info.get("custom_commission_rate", 0))
+        # USE company-level agent and commission instead:
+        comp_info       = company_agent_map.get(row.dn_company, {})
+        agent           = comp_info.get("custom_agent") or ""
+        commission_rate = flt(comp_info.get("custom_commission_rate", 0))
+
 
 
         # Commission amount = (commission_rate / 100) * receipts_without_gst
@@ -441,8 +448,35 @@ def get_conditions(filters):
         conditions.append("dn.posting_date <= %(to_date)s")
     if filters.get("customer"):
         conditions.append("dn.customer = %(customer)s")
+    if filters.get("company"):                          
+        conditions.append("dn.company = %(company)s")
     if filters.get("agent"):
         conditions.append(
-            "dn.customer IN (SELECT name FROM `tabCustomer` WHERE custom_agent = %(agent)s)"
-        )
+        "dn.company IN (SELECT name FROM `tabCompany` WHERE name IN "
+        "(SELECT REPLACE(name, '-', '') FROM `tabCustomer` WHERE custom_agent = %(agent)s))"
+    )
+    conditions.append(
+    "dn.company != 'TZU Lifestyle Private Limited'"
+    )
     return "AND " + " AND ".join(conditions) if conditions else ""
+
+def get_company_agent_map(company_names):
+    """
+    For each company name, find the matching Customer record
+    using a LIKE match (handles case/dash differences).
+    Returns { company_name: {custom_agent, custom_commission_rate} }
+    """
+    if not company_names:
+        return {}
+
+    result = {}
+    for company in company_names:
+        rows = frappe.db.sql("""
+            SELECT name, custom_agent, custom_commission_rate
+            FROM `tabCustomer`
+            WHERE REPLACE(LOWER(name), '-', '') LIKE %(like)s
+            LIMIT 1
+        """, {"like": "%" + company.lower().replace("-", "") + "%"}, as_dict=True)
+        if rows:
+            result[company] = rows[0]
+    return result
