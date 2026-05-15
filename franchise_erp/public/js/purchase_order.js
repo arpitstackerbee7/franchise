@@ -373,23 +373,31 @@ frappe.ui.form.on("Purchase Order", {
 frappe.ui.form.on("Purchase Order", {
     refresh(frm) {
 
-        $(document).off("click.reject_workflow");
+        $(document).off("click.workflow_remark");
 
-        $(document).on("click.reject_workflow", ".dropdown-item", function (e) {
+        $(document).on("click.workflow_remark", ".dropdown-item", function (e) {
 
             let action = $(this).text().trim();
 
-            if (
-                ["Pending Checker Approval", "Pending Final Approval"].includes(frm.doc.workflow_state) &&
-                action === "Reject"
-            ) {
+            let checker_reject =
+                frm.doc.workflow_state === "Pending Checker Approval" &&
+                action === "Reject";
+
+            let final_modify =
+                frm.doc.workflow_state === "Pending Final Approval" &&
+                action === "Modify";
+
+            if (checker_reject || final_modify) {
 
                 e.preventDefault();
                 e.stopPropagation();
 
+                let original_button = this;
+
                 let d = new frappe.ui.Dialog({
-                    title: "Reject Remark",
+                    title: "Enter Remark",
                     size: "small",
+
                     fields: [
                         {
                             label: "Remark",
@@ -398,7 +406,6 @@ frappe.ui.form.on("Purchase Order", {
                             reqd: 1
                         }
                     ],
-
                     primary_action_label: "Submit",
 
                     primary_action(values) {
@@ -407,9 +414,13 @@ frappe.ui.form.on("Purchase Order", {
 
                         d.hide();
 
-                        frm.save();
-                    }
+                        frm.save().then(() => {
 
+                            $(original_button).get(0).click();
+
+                        });
+
+                    }
                 });
 
                 d.show();
