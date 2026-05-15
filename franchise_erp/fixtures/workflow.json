@@ -435,7 +435,7 @@
   "doctype": "Workflow",
   "document_type": "Purchase Order",
   "is_active": 1,
-  "modified": "2026-05-13 12:42:40.783760",
+  "modified": "2026-05-15 11:43:17.891670",
   "name": "Purchase Order Workflow New",
   "override_status": 0,
   "send_email_alert": 0,
@@ -591,7 +591,7 @@
     "workflow_builder_id": null
    },
    {
-    "action": "Reject",
+    "action": "Modify",
     "allow_self_approval": 1,
     "allowed": "PO approval",
     "condition": "frappe.session.user == doc.custom_user_email",
@@ -604,10 +604,10 @@
     "workflow_builder_id": null
    },
    {
-    "action": "Cancel",
+    "action": "Reject",
     "allow_self_approval": 1,
     "allowed": "PO approval",
-    "condition": "",
+    "condition": "frappe.session.user == doc.custom_user_email",
     "next_state": "Cancelled",
     "parent": "Purchase Order Workflow New",
     "parentfield": "transitions",
