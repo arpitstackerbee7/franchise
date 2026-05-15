@@ -41,9 +41,8 @@ def get_columns():
         {
             "label": _("Customer"),
             "fieldname": "customer",
-            "fieldtype": "Link",
-            "options": "Customer",
-            "width": 150,
+            "fieldtype": "Data",
+            "width": 180,
         },
         # CHANGE 3 — Added Agent column
         {
@@ -264,7 +263,7 @@ def get_data(filters):
         data_row = {
             "sis_counter_sale":      row.sis_counter_sale,
             "date":                  row.date,
-            "customer":              row.customer,
+            "customer":              row.dn_company,
             "agent":                 agent,
             "item_code":             row.item_code,
             "qty":                   qty,
@@ -447,7 +446,7 @@ def get_conditions(filters):
     if filters.get("to_date"):
         conditions.append("dn.posting_date <= %(to_date)s")
     if filters.get("customer"):
-        conditions.append("dn.customer = %(customer)s")
+        conditions.append("dn.company = %(customer)s")
     if filters.get("company"):                          
         conditions.append("dn.company = %(company)s")
     if filters.get("agent"):
