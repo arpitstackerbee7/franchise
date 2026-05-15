@@ -15,11 +15,18 @@ frappe.query_reports["Commission Report"] = {
             reqd: 1,
         },
         {
-            fieldname: "customer",
-            label: __("Customer"),
-            fieldtype: "Link",
-            options: "Customer",
-        },
+        fieldname: "customer",
+        label: __("Customer"),
+        fieldtype: "Link",
+        options: "Company",
+        get_query: function () {
+        return {
+            filters: {
+                name: ["!=", "TZU Lifestyle Private Limited"]
+            }
+        };
+    }
+},
 		// CHANGE 20 — Added Agent filter
         {
             "fieldname": "company",
