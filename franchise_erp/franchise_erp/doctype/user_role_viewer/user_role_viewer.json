@@ -13,12 +13,16 @@
   "username",
   "company",
   "section_break_gajb",
-  "roles_html"
+  "roles_html",
+  "role_restrict_section",
+  "table_vjxt"
  ],
  "fields": [
   {
    "fieldname": "section_break_gajb",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Roles Assigned"
   },
   {
    "fieldname": "roles_html",
@@ -34,12 +38,14 @@
    "fetch_from": "user.enabled",
    "fieldname": "enabled",
    "fieldtype": "Check",
-   "label": "Enabled"
+   "label": "Enabled",
+   "read_only": 1
   },
   {
    "fieldname": "full_name",
    "fieldtype": "Data",
-   "label": "Full Name"
+   "label": "Full Name",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_omwi",
@@ -48,26 +54,39 @@
   {
    "fieldname": "username",
    "fieldtype": "Data",
-   "label": "Username"
+   "label": "Username",
+   "read_only": 1
   },
   {
    "fetch_from": "user.company",
    "fieldname": "company",
    "fieldtype": "Link",
    "label": "Company",
-   "options": "Company"
+   "options": "Company",
+   "read_only": 1
   },
   {
    "fieldname": "user",
    "fieldtype": "Data",
-   "label": "User"
+   "label": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "role_restrict_section",
+   "fieldtype": "Section Break",
+   "label": "Role Restriction"
+  },
+  {
+   "fieldname": "table_vjxt",
+   "fieldtype": "Table",
+   "options": "User Role Viewer Detail"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-15 11:30:47.928211",
+ "modified": "2026-05-16 10:41:14.751131",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "User Role Viewer",
