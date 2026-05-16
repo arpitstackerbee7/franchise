@@ -1,103 +1,86 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-05-14 10:58:29.608565",
+ "autoname": "field:user",
+ "creation": "2026-05-16 12:05:14.025436",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "enabled",
-  "user_details_section",
+  "section_break_jflt",
   "user",
   "full_name",
-  "column_break_omwi",
-  "username",
-  "company",
-  "section_break_gajb",
-  "roles_html",
-  "role_restrict_section",
+  "column_break_ezdn",
+  "role_profile",
+  "section_break_jedb",
   "table_vjxt"
  ],
  "fields": [
   {
-   "fieldname": "section_break_gajb",
-   "fieldtype": "Section Break",
-   "hidden": 1,
-   "label": "Roles Assigned"
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
   },
   {
-   "fieldname": "roles_html",
-   "fieldtype": "HTML",
-   "label": "Roles"
-  },
-  {
-   "fieldname": "user_details_section",
+   "fieldname": "section_break_jflt",
    "fieldtype": "Section Break"
   },
   {
-   "default": "0",
-   "fetch_from": "user.enabled",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled",
-   "read_only": 1
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "unique": 1
   },
   {
-   "fieldname": "full_name",
-   "fieldtype": "Data",
-   "label": "Full Name",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_omwi",
+   "fieldname": "column_break_ezdn",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "username",
-   "fieldtype": "Data",
-   "label": "Username",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "user.company",
-   "fieldname": "company",
+   "fieldname": "role_profile",
    "fieldtype": "Link",
-   "label": "Company",
-   "options": "Company",
-   "read_only": 1
+   "in_list_view": 1,
+   "label": "Role Profile",
+   "options": "Role Profile"
   },
   {
-   "fieldname": "user",
-   "fieldtype": "Data",
-   "label": "User",
-   "read_only": 1
-  },
-  {
-   "fieldname": "role_restrict_section",
-   "fieldtype": "Section Break",
-   "label": "Role Restriction"
+   "fieldname": "section_break_jedb",
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "table_vjxt",
    "fieldtype": "Table",
-   "options": "User Role Viewer Detail"
+   "options": "User Role Viewer Detail",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "user.full_name",
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Full Name",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "issingle": 1,
  "links": [],
- "modified": "2026-05-16 10:41:14.751131",
+ "modified": "2026-05-16 13:22:41.988707",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "User Role Viewer",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
    "delete": 1,
    "email": 1,
+   "export": 1,
    "print": 1,
    "read": 1,
+   "report": 1,
    "role": "System Manager",
    "share": 1,
    "write": 1

@@ -1,6 +1,5 @@
 # Copyright (c) 2026, Franchise Erp and contributors
 # For license information, please see license.txt
-# user_role_viewer.py
 
 import frappe
 from frappe.model.document import Document
@@ -10,19 +9,20 @@ class UserRoleViewer(Document):
     pass
 
 
-@frappe.whitelist()
-def get_logged_user_roles():
 
-    all_roles = frappe.get_all(
-        "Role",
-        fields=["name"],
+@frappe.whitelist()
+def get_roles_from_profile(role_profile):
+
+    if not role_profile:
+        return []
+
+    roles = frappe.get_all(
+        "Has Role",
         filters={
-            "disabled": 0
+            "parent": role_profile
         },
-        order_by="name asc"
+        fields=["role"],
+        order_by="role asc"
     )
 
-    return {
-        "user": frappe.session.user,
-        "roles": all_roles
-    }
+    return roles

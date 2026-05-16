@@ -223,7 +223,8 @@ doc_events = {
         "validate": "franchise_erp.custom.shipment.fix_address_issue"
     },
     "User": {
-        "validate": "franchise_erp.custom.user.validate"
+        "validate": "franchise_erp.custom.user.validate_user_roles",
+        "before_save": "franchise_erp.custom.user.validate_user_roles"
     }
 }
    
