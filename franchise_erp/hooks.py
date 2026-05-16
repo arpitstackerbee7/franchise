@@ -221,6 +221,9 @@ doc_events = {
     },
     "Shipment": {
         "validate": "franchise_erp.custom.shipment.fix_address_issue"
+    },
+    "User": {
+        "validate": "franchise_erp.custom.user.validate"
     }
 }
    

@@ -1,98 +1,58 @@
 // Copyright (c) 2026, Franchise Erp and contributors
 // For license information, please see license.txt
-
 frappe.ui.form.on("User Role Viewer", {
-
     refresh(frm) {
+        let grid = frm.fields_dict.table_vjxt.grid;
+
+        grid.cannot_add_rows = true;
+        grid.cannot_delete_rows = true;
+
+        grid.wrapper.find('.grid-add-row').hide();
+        grid.wrapper.find('.grid-remove-rows').hide();
+
+        if (!frm.is_new()) {
+            return;
+        }
         frappe.call({
             method: "franchise_erp.franchise_erp.doctype.user_role_viewer.user_role_viewer.get_logged_user_roles",
-
             callback(r) {
-
                 if (!r.message) return;
-
                 let d = r.message;
-
-                frm.doc.user = d.user;
-
-                frm.refresh_field("user");
+                frm.set_value("user", d.user);
 
                 frappe.db.get_doc("User", d.user)
                     .then(user => {
 
-                        frm.doc.enabled = cint(user.enabled);
-                        frm.doc.full_name = user.full_name;
-                        frm.doc.username = user.username;
-                        frm.doc.company = user.company;
-
-                        frm.refresh_field("enabled");
-                        frm.refresh_field("full_name");
-                        frm.refresh_field("username");
-                        frm.refresh_field("company");
+                        frm.set_value("enabled", cint(user.enabled));
+                        frm.set_value("full_name", user.full_name);
+                        frm.set_value("username", user.username);
+                        frm.set_value("company", user.company);
 
                         frm.page.set_indicator(
                             user.enabled ? __("Enabled") : __("Disabled"),
                             user.enabled ? "green" : "red"
                         );
-
-                        frm.dirty = false;
                     });
+                frm.clear_table("table_vjxt");
 
-                let roles_html = `
+                (d.roles || []).forEach(role => {
 
-                    <div class="role-editor">
+                    let row = frm.add_child("table_vjxt");
 
-                        <div class="frappe-control" data-fieldtype="MultiCheck">
-
-                            <div class="checkbox-options"
-                                style="
-                                    --checkbox-options-columns: 15rem;
-                                    padding: 1em;
-                                ">
-                `;
-
-                d.roles.forEach(role => {
-
-                    roles_html += `
-
-                        <div class="checkbox unit-checkbox">
-
-                            <label
-                                style="
-                                    display:flex;
-                                    align-items:center;
-                                ">
-
-                                <input
-                                    type="checkbox"
-                                    ${role.checked ? "checked" : ""}
-                                    disabled
-                                    style="flex-shrink:0;">
-
-                                <span
-                                    class="label-area"
-                                    style="margin-left:8px;">
-
-                                    ${role.role}
-                                </span>
-                            </label>
-                        </div>
-                    `;
+                    row.role = role.name;
+                    row.check = 0;
                 });
 
-                roles_html += `
+                frm.refresh_field("table_vjxt");
 
-                            </div>
-                        </div>
-                    </div>
-                `;
+                // hide again after render
+                grid.wrapper.find('.grid-add-row').hide();
+                grid.wrapper.find('.grid-remove-rows').hide();
 
-                frm.get_field("roles_html").$wrapper.html(roles_html);
-
-                frm.get_field("modules_html").$wrapper.html("");
-
+                grid.wrapper.find('.grid-row-check').hide();
+                grid.wrapper.find('.row-check').hide();
+                grid.wrapper.find('.grid-heading-row .grid-row-check').hide();
             }
         });
     }
-
 });
