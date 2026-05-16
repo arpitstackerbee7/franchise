@@ -1,24 +1,60 @@
+
 import frappe
 from frappe import _
-from frappe.utils import cint
 
 
-def validate(doc, method=None):
+def validate_user_roles(doc, method=None):
 
-    blocked_roles = []
+    # current logged in user
+    current_user = frappe.session.user
 
-    viewer_doc = frappe.get_single("User Role Viewer")
+    # Administrator bypass
+    if current_user == "Administrator":
+        return
 
-    # collect blocked roles
-    restricted_roles = [row.role for row in viewer_doc.table_vjxt if cint(row.check)]
+    # get enabled User Role Viewer docs
+    viewer_docs = frappe.get_all(
+        "User Role Viewer",
+        filters={
+            "user": current_user,
+            "enabled": 1
+        },
+        pluck="name"
+    )
 
-    # find matches in current document
-    for row in doc.roles:
-        if row.role in restricted_roles:
-            blocked_roles.append(row.role)
+    if not viewer_docs:
+        return
 
-    # throw once with all roles
+    restricted_roles = []
+
+    # get checked restricted roles
+    for viewer in viewer_docs:
+
+        rows = frappe.get_all(
+            "User Role Viewer Detail",
+            filters={
+                "parent": viewer,
+                "check": 1
+            },
+            pluck="role"
+        )
+
+        restricted_roles.extend(rows)
+
+    if not restricted_roles:
+        return
+
+    # roles selected in User form
+    assigned_roles = [d.role for d in doc.roles]
+
+    # restricted roles match
+    blocked_roles = list(
+        set(assigned_roles) & set(restricted_roles)
+    )
+
     if blocked_roles:
+
         frappe.throw(
-            _("Roles Restricted: <b>{0}</b>").format(", ".join(blocked_roles))
+            _("You are not allowed to assign these roles:<br><b>{0}</b>")
+            .format(", ".join(blocked_roles))
         )
