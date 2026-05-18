@@ -6,52 +6,11 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "invoice_date",
-  "item_barcode",
-  "sale_type",
-  "sale_qty",
-  "sale_amount",
   "photo_of_counter",
   "focal_point",
   "mannequins"
  ],
  "fields": [
-  {
-   "fieldname": "invoice_date",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Invoice Date",
-   "reqd": 1
-  },
-  {
-   "fieldname": "item_barcode",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Item Barcode",
-   "reqd": 1
-  },
-  {
-   "fieldname": "sale_type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Sale Type",
-   "options": "\nSales\nReturn\nExchange",
-   "reqd": 1
-  },
-  {
-   "fieldname": "sale_qty",
-   "fieldtype": "Float",
-   "in_list_view": 1,
-   "label": " Sale Qty",
-   "reqd": 1
-  },
-  {
-   "fieldname": "sale_amount",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "Sale Amount",
-   "reqd": 1
-  },
   {
    "fieldname": "photo_of_counter",
    "fieldtype": "Attach Image",
@@ -72,7 +31,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-18 12:56:59.612853",
+ "modified": "2026-05-18 13:20:59.467361",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "VM Daily Checklist Item",

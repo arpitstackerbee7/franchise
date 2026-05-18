@@ -5,55 +5,11 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "user_id",
-  "sis_counter",
-  "column_break_yohe",
-  "name_of_the_sales_promoter",
-  "asmtl_name",
-  "column_break_vgfm",
   "posting_date",
-  "small_text_fbrd",
   "section_break_ktre",
   "vm_daily_checklist_item"
  ],
  "fields": [
-  {
-   "fieldname": "user_id",
-   "fieldtype": "Link",
-   "label": "User ID",
-   "options": "User"
-  },
-  {
-   "fieldname": "sis_counter",
-   "fieldtype": "Link",
-   "label": "SIS Counter",
-   "options": "Company"
-  },
-  {
-   "fieldname": "column_break_yohe",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "name_of_the_sales_promoter",
-   "fieldtype": "Link",
-   "label": "Name of The Sales Promoter",
-   "options": "User"
-  },
-  {
-   "fieldname": "asmtl_name",
-   "fieldtype": "Link",
-   "label": "ASM/TL Name",
-   "options": "Employee"
-  },
-  {
-   "fieldname": "column_break_vgfm",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "small_text_fbrd",
-   "fieldtype": "Small Text",
-   "label": "Location"
-  },
   {
    "fieldname": "section_break_ktre",
    "fieldtype": "Section Break"
@@ -74,7 +30,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-18 13:05:03.074419",
+ "modified": "2026-05-18 13:19:00.858398",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "VM Daily Checklist",
