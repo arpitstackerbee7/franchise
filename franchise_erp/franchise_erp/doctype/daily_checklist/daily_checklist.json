@@ -11,6 +11,7 @@
   "name_of_the_sales_promoter",
   "asmtl_name",
   "column_break_qhmz",
+  "posting_date",
   "location",
   "section_break_chvp",
   "daily_checklist_item"
@@ -74,12 +75,18 @@
    "label": "Daily Checklist Item",
    "options": "Daily Checklist Item",
    "reqd": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "posting_date",
+   "fieldtype": "Datetime",
+   "label": "Posting Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-16 12:27:00.748115",
+ "modified": "2026-05-18 13:05:31.782142",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Daily Checklist",
