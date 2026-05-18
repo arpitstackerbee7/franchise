@@ -1,80 +1,68 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-05-16 12:11:52.225798",
+ "creation": "2026-05-18 12:52:23.145685",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "user_id",
   "sis_counter",
-  "column_break_kvvi",
+  "column_break_yohe",
   "name_of_the_sales_promoter",
   "asmtl_name",
-  "column_break_qhmz",
+  "column_break_vgfm",
   "posting_date",
-  "location",
-  "section_break_chvp",
-  "daily_checklist_item"
+  "small_text_fbrd",
+  "section_break_ktre",
+  "vm_daily_checklist_item"
  ],
  "fields": [
   {
    "fieldname": "user_id",
    "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "User ID",
-   "options": "User",
-   "read_only": 1
+   "options": "User"
   },
   {
    "fieldname": "sis_counter",
    "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "SIS Counter",
-   "options": "Company",
-   "read_only": 1
+   "options": "Company"
   },
   {
-   "fieldname": "column_break_kvvi",
+   "fieldname": "column_break_yohe",
    "fieldtype": "Column Break"
   },
   {
    "fieldname": "name_of_the_sales_promoter",
    "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "Name of The Sales Promoter",
    "options": "User"
   },
   {
    "fieldname": "asmtl_name",
    "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "ASM/TL Name",
    "options": "Employee"
   },
   {
-   "fieldname": "column_break_qhmz",
+   "fieldname": "column_break_vgfm",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "location",
+   "fieldname": "small_text_fbrd",
    "fieldtype": "Small Text",
-   "label": "Location",
-   "read_only": 1
+   "label": "Location"
   },
   {
-   "fieldname": "section_break_chvp",
+   "fieldname": "section_break_ktre",
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "daily_checklist_item",
+   "fieldname": "vm_daily_checklist_item",
    "fieldtype": "Table",
-   "label": "Daily Checklist Item",
-   "options": "Daily Checklist Item",
-   "reqd": 1
+   "label": "VM Daily Checklist Item",
+   "options": "VM Daily Checklist Item"
   },
   {
    "default": "Now",
@@ -86,10 +74,10 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-18 13:05:31.782142",
+ "modified": "2026-05-18 13:05:03.074419",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
- "name": "Daily Checklist",
+ "name": "VM Daily Checklist",
  "owner": "Administrator",
  "permissions": [
   {
