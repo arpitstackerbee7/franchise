@@ -12,16 +12,19 @@
  ],
  "fields": [
   {
+   "columns": 2,
    "fieldname": "photo_of_counter",
    "fieldtype": "Attach Image",
    "label": "Photo of Counter"
   },
   {
+   "columns": 2,
    "fieldname": "focal_point",
    "fieldtype": "Attach Image",
    "label": "Focal Point"
   },
   {
+   "columns": 2,
    "fieldname": "mannequins",
    "fieldtype": "Attach Image",
    "label": "Mannequins"
@@ -31,7 +34,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-18 13:20:59.467361",
+ "modified": "2026-05-19 17:58:19.236362",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "VM Daily Checklist Item",
