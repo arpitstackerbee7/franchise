@@ -257,12 +257,6 @@ frappe.ui.form.on("Sales Invoice Item", {
             serials.length
         );
     },
-    rate(frm, cdt, cdn) {
-
-        let row = locals[cdt][cdn];
-
-        row.custom_sis_calculated = 1;
-    }
 });
 
 /* =====================================================
