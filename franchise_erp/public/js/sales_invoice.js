@@ -256,6 +256,14 @@ frappe.ui.form.on("Sales Invoice Item", {
             "qty",
             serials.length
         );
+    },
+    rate(frm, cdt, cdn) {
+
+        let row = locals[cdt][cdn];
+
+        row.price_list_rate = row.rate;
+
+        frm.refresh_field("items");
     }
 });
 
