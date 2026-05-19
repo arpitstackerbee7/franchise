@@ -105,8 +105,7 @@ def apply_sis_pricing(doc, method=None):
         item.custom_total_invoice_amount = d["taxable_value"]
 
         # -------- FINAL RATE --------
-        if not item.custom_sis_calculated:
-            item.rate = d["taxable_value"]
+        item.rate = d["taxable_value"]
 
         # -------- TAX TEMPLATE --------
         item.item_tax_template = get_item_tax_template(
