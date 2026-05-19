@@ -261,9 +261,7 @@ frappe.ui.form.on("Sales Invoice Item", {
 
         let row = locals[cdt][cdn];
 
-        row.price_list_rate = row.rate;
-
-        frm.refresh_field("items");
+        row.custom_sis_calculated = 1;
     }
 });
 
