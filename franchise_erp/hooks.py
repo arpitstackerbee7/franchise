@@ -425,13 +425,16 @@ scheduler_events = {
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+permission_query_conditions = {
+    "Daily Checklist": "franchise_erp.franchise_erp.doctype.daily_checklist.daily_checklist.get_permission_query_conditions",
+    "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.get_permission_query_conditions",
+
+}
+
+has_permission = {
+    "Daily Checklist": "franchise_erp.franchise_erp.doctype.daily_checklist.daily_checklist.has_permission",
+    "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.has_permission"
+}
 
 # DocType Class
 # ---------------

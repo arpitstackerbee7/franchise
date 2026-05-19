@@ -10,6 +10,7 @@
   "column_break_kvvi",
   "name_of_the_sales_promoter",
   "asmtl_name",
+  "asmtl_user_id",
   "column_break_qhmz",
   "posting_date",
   "location",
@@ -50,6 +51,7 @@
   {
    "fieldname": "asmtl_name",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "ASM/TL Name",
@@ -81,12 +83,21 @@
    "fieldname": "posting_date",
    "fieldtype": "Datetime",
    "label": "Posting Date"
+  },
+  {
+   "fetch_from": "asmtl_name.user_id",
+   "fieldname": "asmtl_user_id",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "ignore_user_permissions": 1,
+   "label": "ASM/TL User ID",
+   "options": "User"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-18 17:01:00.358651",
+ "modified": "2026-05-19 20:12:04.061430",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Daily Checklist",
