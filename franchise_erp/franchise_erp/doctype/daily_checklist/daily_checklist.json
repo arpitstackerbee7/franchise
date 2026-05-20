@@ -1,10 +1,12 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "DC-.YYYY.-.#####",
  "creation": "2026-05-16 12:11:52.225798",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "employee",
   "user_id",
   "sis_counter",
   "column_break_kvvi",
@@ -21,8 +23,6 @@
   {
    "fieldname": "user_id",
    "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "User ID",
    "options": "User",
    "read_only": 1
@@ -30,8 +30,6 @@
   {
    "fieldname": "sis_counter",
    "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "SIS Counter",
    "options": "Company",
    "read_only": 1
@@ -53,7 +51,6 @@
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
    "in_list_view": 1,
-   "in_standard_filter": 1,
    "label": "ASM/TL Name",
    "options": "Employee"
   },
@@ -82,6 +79,7 @@
    "default": "Now",
    "fieldname": "posting_date",
    "fieldtype": "Datetime",
+   "in_list_view": 1,
    "label": "Posting Date"
   },
   {
@@ -92,15 +90,24 @@
    "ignore_user_permissions": 1,
    "label": "ASM/TL User ID",
    "options": "User"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-19 20:12:04.061430",
+ "modified": "2026-05-20 14:55:50.387745",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Daily Checklist",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
