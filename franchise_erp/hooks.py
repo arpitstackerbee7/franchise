@@ -571,6 +571,7 @@ has_permission = {
 # ]
 
 
+
 # fixtures = [
 #     {
 #         "dt": "Custom Field",
@@ -607,13 +608,17 @@ has_permission = {
 # ]
 
 
+
 fixtures = [
     {"dt": "Workflow"},
     {"dt": "Workflow Action Master"},
     {"dt": "Workflow State"},
-    {"dt": "Role"}
+    {"dt": "Role"},
+    {"dt": "Print Format"}
+]
 
- ]
+
+ 
 # fixtures = [
 #     {
 #         "dt": "Custom Field",
