@@ -336,6 +336,7 @@ frappe.ui.form.on('Stock Entry', {
 
         // Send to Subcontractor logic
         if (
+            frm.doc.docstatus === 0 &&
             frm.doc.stock_entry_type === "Send to Subcontractor"
             && !frm.doc.bill_from_address
             && frm.doc.company
