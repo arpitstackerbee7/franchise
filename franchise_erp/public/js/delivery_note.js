@@ -96,7 +96,7 @@ function apply_sis_counter_minimal_ui(frm) {
 
     // 3. Clean Items Table - FIX: Changed get_all_fields to docfields
     let grid = frm.get_field("items").grid;
-    let show_list = ['item_code', 'qty', 'rate', 'discount_amount', 'amount'];
+    let show_list = ['item_code', 'qty', 'rate', 'discount_amount', 'amount',"custom_style"];
 
     if (grid && grid.docfields) {
         grid.docfields.forEach(df => {
