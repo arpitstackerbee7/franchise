@@ -1,130 +1,6 @@
 import frappe
 from frappe.utils import flt, cint
 
-# @frappe.whitelist()
-# def calculate_sis_values(customer, rate):
-#     # ---------------- BASIC CHECK ----------------
-#     if not customer or not rate:
-#         return None
-
-#     user_type = frappe.db.get_value(
-#         "User", frappe.session.user, "user_type"
-#     )
-#     if user_type == "Website User":
-#         return None
-
-#     # ---------------- CUSTOMER → COMPANY ----------------
-#     company = frappe.db.get_value(
-#         "Customer", customer, "represents_company"
-#     )
-#     if not company:
-#         return None
-
-#     # ---------------- SIS CONFIG ----------------
-#     c = frappe.get_value(
-#         "SIS Configuration",
-#         {"company": company},
-#         [
-#             "output_gst_min_net_rate",
-#             "output_gst_max_net_rate",
-#             "fresh_margin",
-#         ],
-#         as_dict=True,
-#     )
-
-#     if not c:
-#         return None
-
-#     rate = flt(rate)
-
-#     # ---------------- OUTPUT GST SLAB ----------------
-#     if rate <= flt(c.output_gst_min_net_rate):
-#         gst_percent = 5
-#     elif rate >= flt(c.output_gst_max_net_rate):
-#         gst_percent = 18
-#     else:
-#         gst_percent = 12
-
-#     # ---------------- GST INCLUSIVE SPLIT ----------------
-#     net_sale_value = flt((rate * 100) / (100 + gst_percent), 2)
-#     gst_value = flt(rate - net_sale_value, 2)
-
-#     # ---------------- MARGIN (ON MRP) ----------------
-#     margin_percent = flt(c.fresh_margin)
-#     margin_amount = flt((rate * margin_percent) / 100, 2)
-
-#     # ---------------- FINAL TAXABLE VALUE ----------------
-#     taxable_value = flt(net_sale_value - margin_amount, 2)
-
-#     return {
-#         "gst_percent": gst_percent,
-#         "output_gst_value": gst_value,
-#         "margin_percent": margin_percent,
-#         "margin_amount": margin_amount,
-#         "net_sale_value": net_sale_value,
-#         "taxable_value": taxable_value,
-#     }
-
-
-# def apply_sis_pricing(doc, method=None):
-
-#     # if doc.is_return:
-#     #     return
-    
-#     if not doc.customer or not doc.items:
-#         return
-
-#     # ❌ Product Bundle case skip
-#     if doc.get("packed_items"):
-#         return
-
-#     for item in doc.items:
-
-#         # Already calculated → skip
-#         if item.custom_sis_calculated:
-#             continue
-
-#         # Rate must exist
-#         if not item.rate or item.rate <= 0:
-#             continue
-
-#         # Product bundle line skip
-#         if item.custom_product_bundle:
-#             continue
-
-#         d = calculate_sis_values(doc.customer, item.rate)
-#         if not d:
-#             continue
-
-#         # -------- DISPLAY FIELDS --------
-#         item.custom_output_gst_ = d["gst_percent"]
-#         item.custom_output_gst_value = d["output_gst_value"]
-#         item.custom_net_sale_value = d["net_sale_value"]
-#         item.custom_margins_ = d["margin_percent"]
-#         item.custom_margin_amount = d["margin_amount"]
-#         item.custom_total_invoice_amount = d["taxable_value"]
-
-#         # -------- FINAL RATE --------
-#         item.rate = d["taxable_value"]
-
-#         # -------- TAX TEMPLATE --------
-#         item.item_tax_template = get_item_tax_template(
-#             d["gst_percent"]
-#         )
-
-#         item.custom_sis_calculated = 1
-
-#     doc.calculate_taxes_and_totals()
-
-
-# def get_item_tax_template(gst_percent):
-#     if gst_percent == 5:
-#         return "GST 5%"
-#     elif gst_percent == 18:
-#         return "GST 18%"
-#     else:
-#         return "GST 0%"
-
 @frappe.whitelist()
 def calculate_sis_values(customer, rate):
     # ---------------- BASIC CHECK ----------------
@@ -249,6 +125,146 @@ def get_item_tax_template(gst_percent):
     else:
         return "GST 0%"
 
+# @frappe.whitelist()
+# def calculate_sis_values(customer, rate):
+#     # ---------------- BASIC CHECK ----------------
+#     if not customer or not rate:
+#         return None
+
+#     user_type = frappe.db.get_value(
+#         "User", frappe.session.user, "user_type"
+#     )
+#     if user_type == "Website User":
+#         return None
+
+#     # ---------------- CUSTOMER → COMPANY ----------------
+#     company = frappe.db.get_value(
+#         "Customer", customer, "represents_company"
+#     )
+#     if not company:
+#         return None
+
+#     # ---------------- SIS CONFIG ----------------
+#     c = frappe.get_value(
+#         "SIS Configuration",
+#         {"company": company},
+#         [
+#             "output_gst_min_net_rate",
+#             "output_gst_max_net_rate",
+#             "fresh_margin",
+#         ],
+#         as_dict=True,
+#     )
+
+#     if not c:
+#         return None
+
+#     rate = flt(rate)
+
+#     # ---------------- OUTPUT GST SLAB ----------------
+#     if rate <= flt(c.output_gst_min_net_rate):
+#         gst_percent = 5
+#     elif rate >= flt(c.output_gst_max_net_rate):
+#         gst_percent = 18
+#     else:
+#         gst_percent = 12
+
+#     # ---------------- GST INCLUSIVE SPLIT ----------------
+#     net_sale_value = flt((rate * 100) / (100 + gst_percent), 2)
+#     gst_value = flt(rate - net_sale_value, 2)
+
+#     # ---------------- MARGIN (ON MRP) ----------------
+#     margin_percent = flt(c.fresh_margin)
+#     margin_amount = flt((rate * margin_percent) / 100, 2)
+
+#     # ---------------- FINAL TAXABLE VALUE ----------------
+#     taxable_value = flt(net_sale_value - margin_amount, 2)
+
+#     return {
+#         "gst_percent": gst_percent,
+#         "output_gst_value": gst_value,
+#         "margin_percent": margin_percent,
+#         "margin_amount": margin_amount,
+#         "net_sale_value": net_sale_value,
+#         "taxable_value": taxable_value,
+#     }
+
+
+# def apply_sis_pricing(doc, method=None):
+
+#     # if doc.is_return:
+#     #     return
+    
+#     if not doc.customer or not doc.items:
+#         return
+
+#     # ❌ Product Bundle case skip
+#     if doc.get("packed_items"):
+#         return
+
+#     for item in doc.items:
+
+#         # Already calculated → skip
+#         if item.custom_sis_calculated:
+#             continue
+
+#         # Rate must exist
+#         if not item.rate or item.rate <= 0:
+#             continue
+
+#         # Product bundle line skip
+#         if item.custom_product_bundle:
+#             continue
+
+#         d = calculate_sis_values(doc.customer, item.rate)
+#         if not d:
+#             continue
+
+#         # -------- DISPLAY FIELDS --------
+#         item.custom_output_gst_ = d["gst_percent"]
+#         item.custom_output_gst_value = d["output_gst_value"]
+#         item.custom_net_sale_value = d["net_sale_value"]
+#         item.custom_margins_ = d["margin_percent"]
+#         item.custom_margin_amount = d["margin_amount"]
+#         item.custom_total_invoice_amount = d["taxable_value"]
+
+#         # -------- FINAL RATE --------
+#         item.rate = d["taxable_value"]
+
+#         # -------- TAX TEMPLATE --------
+#         item.item_tax_template = get_item_tax_template(
+#             d["gst_percent"]
+#         )
+
+#         item.custom_sis_calculated = 1
+
+#     doc.calculate_taxes_and_totals()
+
+
+# def get_item_tax_template(gst_percent):
+
+#     gst_percent = flt(gst_percent)
+
+#     template_map = {
+#         5: "GST 5%",
+#         12: "GST 12%",
+#         18: "GST 18%"
+#     }
+
+#     template = template_map.get(gst_percent)
+
+#     if not template:
+#         return ""
+
+#     # CHECK TEMPLATE EXISTS
+#     if frappe.db.exists("Item Tax Template", template):
+#         return template
+
+#     frappe.msgprint(
+#         f"Item Tax Template '{template}' not found"
+#     )
+
+#     return ""
 
 
 def update_packed_items_serial_no(doc, method):
