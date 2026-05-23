@@ -227,7 +227,8 @@ doc_events = {
     "User": {
         "validate": "franchise_erp.custom.user.validate_user_roles",
         "before_save": "franchise_erp.custom.user.validate_user_roles"
-    }
+    },
+
 }
    
 
@@ -259,7 +260,7 @@ doctype_js = {
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
     "Employee": "public/js/employee.js",
     "Shipment": "public/js/shipment.js",
-    "Serial No": "public/js/serial_no.js",
+    # "Serial No": "public/js/serial_no.js",    
 
 }
 
@@ -386,6 +387,9 @@ scheduler_events = {
     "cron": {
         "45 23 * * *": [
             "franchise_erp.send_whatsapp_notification.send_daily_counter_sales"
+        ],
+        "* * * * *": [
+            "franchise_erp.custom.serial_no.update_serial_custom_style"
         ]
     }
 }
