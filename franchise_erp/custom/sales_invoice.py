@@ -127,6 +127,7 @@ from frappe.utils import flt, cint
 #     else:
 #         return "GST 0%"
 
+
 import frappe
 
 from frappe.utils import flt, cstr
@@ -134,6 +135,10 @@ from frappe.utils import flt, cstr
 
 @frappe.whitelist()
 def calculate_sis_values(customer, rate):
+
+    # ==================================================
+    # BASIC CHECK
+    # ==================================================
 
     if not customer or not rate:
         return None
@@ -150,7 +155,9 @@ def calculate_sis_values(customer, rate):
     if user_type == "Website User":
         return None
 
-    # CUSTOMER COMPANY
+    # ==================================================
+    # CUSTOMER → COMPANY
+    # ==================================================
 
     company = frappe.db.get_value(
         "Customer",
@@ -161,7 +168,9 @@ def calculate_sis_values(customer, rate):
     if not company:
         return None
 
+    # ==================================================
     # SIS CONFIG
+    # ==================================================
 
     c = frappe.db.get_value(
         "SIS Configuration",
@@ -177,9 +186,13 @@ def calculate_sis_values(customer, rate):
     if not c:
         return None
 
-    rate = flt(rate)
+    # ALWAYS POSITIVE FOR CALCULATION
 
+    rate = abs(flt(rate))
+
+    # ==================================================
     # GST SLAB
+    # ==================================================
 
     if rate <= flt(c.output_gst_min_net_rate):
 
@@ -193,7 +206,9 @@ def calculate_sis_values(customer, rate):
 
         gst_percent = 12
 
+    # ==================================================
     # GST SPLIT
+    # ==================================================
 
     net_sale_value = flt(
         (rate * 100) / (100 + gst_percent),
@@ -205,7 +220,9 @@ def calculate_sis_values(customer, rate):
         2
     )
 
+    # ==================================================
     # MARGIN
+    # ==================================================
 
     margin_percent = flt(c.fresh_margin)
 
@@ -214,7 +231,9 @@ def calculate_sis_values(customer, rate):
         2
     )
 
+    # ==================================================
     # FINAL TAXABLE
+    # ==================================================
 
     taxable_value = flt(
         net_sale_value - margin_amount,
@@ -239,10 +258,9 @@ def apply_sis_pricing(doc, method=None):
     if not doc.items:
         return
 
-    if doc.get("is_return"):
-        return
-
+    # ==================================================
     # PRODUCT BUNDLE SKIP
+    # ==================================================
 
     if doc.get("packed_items"):
         return
@@ -252,7 +270,7 @@ def apply_sis_pricing(doc, method=None):
         if not item.item_code:
             continue
 
-        if flt(item.rate) <= 0:
+        if abs(flt(item.rate)) <= 0:
             continue
 
         if item.get("custom_product_bundle"):
@@ -282,10 +300,12 @@ def apply_sis_pricing(doc, method=None):
         item.custom_last_serial_no = current_serial
 
         # ==================================================
-        # CALCULATION
+        # ORIGINAL RATE
         # ==================================================
 
-        original_rate = flt(item.price_list_rate or item.rate)
+        original_rate = abs(
+            flt(item.price_list_rate or item.rate)
+        )
 
         d = calculate_sis_values(
             doc.customer,
@@ -295,7 +315,9 @@ def apply_sis_pricing(doc, method=None):
         if not d:
             continue
 
+        # ==================================================
         # DISPLAY FIELDS
+        # ==================================================
 
         item.custom_output_gst_ = d["gst_percent"]
 
@@ -310,10 +332,34 @@ def apply_sis_pricing(doc, method=None):
         item.custom_total_invoice_amount = d["taxable_value"]
 
         # ==================================================
-        # RATE UPDATE
+        # FINAL RATE
         # ==================================================
 
-        item.rate = d["taxable_value"]
+        final_rate = d["taxable_value"]
+
+        # RETURN INVOICE
+        # ONLY RATE NEGATIVE
+        # DO NOT TOUCH DISCOUNT FIELDS
+        # ERPNext handles remaining calculation
+
+        if doc.get("is_return"):
+
+            item.rate = final_rate
+
+        else:
+
+            item.rate = final_rate
+
+        # ==================================================
+        # IMPORTANT
+        # ==================================================
+
+        item.discount_percentage = 0
+        item.discount_amount = 0
+
+        # ==================================================
+        # AMOUNT
+        # ==================================================
 
         item.amount = flt(
             item.qty * item.rate,
@@ -339,7 +385,9 @@ def apply_sis_pricing(doc, method=None):
 
         item.custom_sis_done_calculated = 1
 
+    # ==================================================
     # IMPORTANT FOR V15
+    # ==================================================
 
     doc.flags.ignore_validate_update_after_submit = True
 
@@ -362,8 +410,6 @@ def get_item_tax_template(gst_percent):
 
     if not template:
         return ""
-
-    # CHECK EXISTS
 
     if frappe.db.exists(
         "Item Tax Template",
