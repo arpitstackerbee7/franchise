@@ -9,7 +9,6 @@ app_license = "mit"
 # ------------------
 
 # required_apps = []
-
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
@@ -69,17 +68,20 @@ doc_events = {
                     "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return",
                     ],
 
-        "before_save": ["franchise_erp.custom.sales_invoice.apply_sis_pricing",
+        "before_save": [
+            # "franchise_erp.custom.sales_invoice.apply_sis_pricing",
         # "franchise_erp.custom.sales_invoice.update_packed_items_serial_no",
         "franchise_erp.custom.sales_invoice.validate_item_from_so",
         "franchise_erp.custom.sales_invoice.validate_sales_invoice",
         ],
         "before_validate": [
+            "franchise_erp.custom.sales_invoice.apply_sis_pricing",
             "franchise_erp.custom.sales_invoice.apply_sales_term",
             # "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
             
             ],
         "before_submit": "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+        "on_submit": "franchise_erp.custom.sales_invoice.update_serial_no_mrp"
     },
     "Purchase Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
@@ -225,7 +227,8 @@ doc_events = {
     "User": {
         "validate": "franchise_erp.custom.user.validate_user_roles",
         "before_save": "franchise_erp.custom.user.validate_user_roles"
-    }
+    },
+
 }
    
 
@@ -257,7 +260,8 @@ doctype_js = {
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
     "Employee": "public/js/employee.js",
     "Shipment": "public/js/shipment.js",
-    "Serial No": "public/js/serial_no.js",
+    # "Serial No": "public/js/serial_no.js",    
+    "Employee Checkin": "public/js/employee_checkin.js",
 
 }
 
@@ -384,6 +388,9 @@ scheduler_events = {
     "cron": {
         "45 23 * * *": [
             "franchise_erp.send_whatsapp_notification.send_daily_counter_sales"
+        ],
+        "* * * * *": [
+            "franchise_erp.custom.serial_no.update_serial_custom_style"
         ]
     }
 }
