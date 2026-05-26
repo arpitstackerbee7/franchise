@@ -81,7 +81,31 @@ frappe.ui.form.on("Daily Checklist", {
                 frm.set_value("employee", r.message.name);
             }
         });
+        // Employee + Reports To Fetch
+        frappe.db.get_value(
+            "Employee",
+            { user_id: current_user },
+            ["name", "reports_to"]
+        ).then(r => {
 
+            if (r.message) {
+
+                // Employee
+                if (r.message.name) {
+                    frm.set_value("employee", r.message.name);
+                }
+
+                // ASM/TL Name
+                if (r.message.reports_to) {
+
+                    frm.set_value(
+                        "asmtl_name",
+                        r.message.reports_to
+                    );
+
+                }
+            }
+        });
         // User Company
         frappe.db.get_doc("User", current_user).then(user => {
 
