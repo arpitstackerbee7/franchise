@@ -2000,3 +2000,44 @@ class CustomSalesInvoice(SalesInvoice):
                 item.qty = -abs(item.qty or 0)
                 if item.stock_qty:
                     item.stock_qty = -abs(item.stock_qty)
+
+
+def update_serial_no_mrp(doc, method=None):
+    """
+    After Sales Invoice Submit:
+    Update Serial No custom_mrp field
+    from Sales Invoice Item rate
+    """
+
+    for item in doc.items:
+
+        # Skip if no serial no
+        if not item.serial_no:
+            continue
+
+        # Split serial numbers
+        serial_nos = []
+
+        if "\n" in item.serial_no:
+            serial_nos = item.serial_no.split("\n")
+        elif "," in item.serial_no:
+            serial_nos = item.serial_no.split(",")
+        else:
+            serial_nos = [item.serial_no]
+
+        # Clean spaces
+        serial_nos = [sn.strip() for sn in serial_nos if sn.strip()]
+
+        # Update each serial no
+        for serial_no in serial_nos:
+
+            if frappe.db.exists("Serial No", serial_no):
+
+                frappe.db.set_value(
+                    "Serial No",
+                    serial_no,
+                    "custom_mrp",
+                    item.rate
+                )
+
+    frappe.db.commit()
