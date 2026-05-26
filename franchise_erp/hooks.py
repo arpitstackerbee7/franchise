@@ -81,6 +81,7 @@ doc_events = {
             
             ],
         "before_submit": "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+        "on_submit": "franchise_erp.custom.sales_invoice.update_serial_no_mrp"
     },
     "Purchase Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
@@ -260,6 +261,7 @@ doctype_js = {
     "Employee": "public/js/employee.js",
     "Shipment": "public/js/shipment.js",
     # "Serial No": "public/js/serial_no.js",    
+    "Employee Checkin": "public/js/employee_checkin.js",
 
 }
 
