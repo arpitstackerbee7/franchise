@@ -1,3 +1,6 @@
+// Copyright (c) 2026, Franchise Erp and contributors
+// For license information, please see license.txt
+
 frappe.query_reports["Stock Book Report"] = {
 	"filters": [
 		{
@@ -23,6 +26,6 @@ frappe.query_reports["Stock Book Report"] = {
 			"label": __("Barcode"),
 			"fieldtype": "Data"
 		}
-	]
-}; 
-
+	],
+	initial_depth: 1
+};
