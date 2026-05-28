@@ -129,21 +129,58 @@ def create_discount_debit_note(pi, discount_amount, company):
 
 
 # by mayuri
+# def validate_duplicate_cheque_no(doc, method=None):
+#     """
+#     Validation to prevent duplicate Cheque/Reference No for 'Pay' type Payment Entries.
+#     Checks against Draft (0) and Submitted (1) documents.
+#     """
+#     if doc.payment_type == "Pay" and doc.reference_no:
+#         duplicate = frappe.db.get_value("Payment Entry", {
+#             "reference_no": doc.reference_no,
+#             "payment_type": "Pay",
+#             "company": doc.company,
+#             "name": ["!=", doc.name],
+#             "docstatus": ["<", 2]  # 0 = Draft, 1 = Submitted
+#         }, "name")
+
+#         if duplicate:
+#             msg = _("The Cheque/Reference No {0} is already used in Payment Entry {1}. "
+#                     "Duplicate entries are not allowed for 'Pay' type unless the existing entry is cancelled.")
+#             frappe.throw(msg.format(frappe.bold(doc.reference_no), frappe.bold(duplicate)))
+
+import frappe
+from frappe import _
+from frappe.utils import cstr
+
 def validate_duplicate_cheque_no(doc, method=None):
     """
-    Validation to prevent duplicate Cheque/Reference No for 'Pay' type Payment Entries.
-    Checks against Draft (0) and Submitted (1) documents.
+    Prevent duplicate cheque/reference no for same bank account.
+    Same cheque no allowed in different banks.
     """
+
     if doc.payment_type == "Pay" and doc.reference_no:
-        duplicate = frappe.db.get_value("Payment Entry", {
-            "reference_no": doc.reference_no,
+
+        duplicate_filters = {
+            "reference_no": cstr(doc.reference_no).strip(),
             "payment_type": "Pay",
             "company": doc.company,
+            "paid_from": doc.paid_from,   # ✅ same bank account only
             "name": ["!=", doc.name],
-            "docstatus": ["<", 2]  # 0 = Draft, 1 = Submitted
-        }, "name")
+            "docstatus": ["<", 2]
+        }
+
+        duplicate = frappe.db.get_value(
+            "Payment Entry",
+            duplicate_filters,
+            "name"
+        )
 
         if duplicate:
-            msg = _("The Cheque/Reference No {0} is already used in Payment Entry {1}. "
-                    "Duplicate entries are not allowed for 'Pay' type unless the existing entry is cancelled.")
-            frappe.throw(msg.format(frappe.bold(doc.reference_no), frappe.bold(duplicate)))
+            frappe.throw(_(
+                "Cheque/Reference No {0} is already used in Payment Entry {1} "
+                "for the same Bank Account. Duplicate cheque no is not allowed "
+                "within the same bank account unless the existing entry is cancelled."
+            ).format(
+                frappe.bold(doc.reference_no),
+                frappe.bold(duplicate)
+            ))
