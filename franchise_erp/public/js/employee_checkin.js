@@ -6,7 +6,10 @@ frappe.ui.form.on("Employee Checkin", {
 
         try {
 
+            // ==============================
             // Employee -> User ID
+            // ==============================
+
             let employee = await frappe.db.get_value(
                 "Employee",
                 frm.doc.employee,
@@ -14,6 +17,8 @@ frappe.ui.form.on("Employee Checkin", {
             );
 
             let user_id = employee.message.user_id;
+
+            console.log("USER ID:", user_id);
 
             if (!user_id) {
 
@@ -26,16 +31,46 @@ frappe.ui.form.on("Employee Checkin", {
                 return;
             }
 
+            // ==============================
             // Counter Location
+            // ==============================
+
             let counter = await frappe.db.get_value(
                 "Counter Location",
                 {
                     user: user_id
                 },
-                "location_name"
+                [
+                    "location_name",
+                    "enable_location_restriction"
+                ]
             );
 
-            let location_name = counter.message.location_name;
+            console.log("COUNTER:", counter);
+
+            let location_name =
+                counter.message.location_name;
+
+            let enable_location_restriction =
+                counter.message.enable_location_restriction;
+
+            // ==============================
+            // Restriction OFF
+            // ==============================
+
+            if (!enable_location_restriction) {
+
+                console.log("Location restriction disabled");
+
+                // Device ID blank/remove
+                frm.set_value("device_id", "");
+
+                return;
+            }
+
+            // ==============================
+            // Location Missing
+            // ==============================
 
             if (!location_name) {
 
@@ -48,7 +83,10 @@ frappe.ui.form.on("Employee Checkin", {
                 return;
             }
 
-            // Device ID set
+            // ==============================
+            // Device ID Set
+            // ==============================
+
             frm.set_value("device_id", location_name);
 
             console.log("Location Set:", location_name);
@@ -67,12 +105,66 @@ frappe.ui.form.on("Employee Checkin", {
 
     before_save: async function(frm) {
 
+        // ==============================
+        // Employee Required
+        // ==============================
+
+        if (!frm.doc.employee) return;
+
+        // ==============================
+        // Employee -> User ID
+        // ==============================
+
+        let employee = await frappe.db.get_value(
+            "Employee",
+            frm.doc.employee,
+            "user_id"
+        );
+
+        let user_id = employee.message.user_id;
+
+        // ==============================
+        // Counter Location
+        // ==============================
+
+        let counter = await frappe.db.get_value(
+            "Counter Location",
+            {
+                user: user_id
+            },
+            [
+                "location_name",
+                "enable_location_restriction"
+            ]
+        );
+
+        let enable_location_restriction =
+            counter.message.enable_location_restriction;
+
+        // ==============================
+        // Restriction OFF
+        // ==============================
+
+        if (!enable_location_restriction) {
+
+            console.log("GPS validation skipped");
+
+            return;
+        }
+
+        // ==============================
+        // Device ID Required
+        // ==============================
+
         if (!frm.doc.device_id) {
 
             frappe.throw(__("Location not found."));
         }
 
-        // GPS Fetch Promise
+        // ==============================
+        // GPS Fetch
+        // ==============================
+
         const position = await getCurrentPosition();
 
         let current_lat = position.coords.latitude;
@@ -80,7 +172,10 @@ frappe.ui.form.on("Employee Checkin", {
 
         console.log("Current:", current_lat, current_lng);
 
+        // ==============================
         // Location Fetch
+        // ==============================
+
         let location = await frappe.db.get_doc(
             "Location",
             frm.doc.device_id
@@ -93,7 +188,10 @@ frappe.ui.form.on("Employee Checkin", {
             location.allow_radius_for_login || 100
         );
 
+        // ==============================
         // Distance
+        // ==============================
+
         let distance = getDistanceFromLatLonInMeters(
             current_lat,
             current_lng,
@@ -103,7 +201,10 @@ frappe.ui.form.on("Employee Checkin", {
 
         console.log("Distance:", distance);
 
-        // Match
+        // ==============================
+        // Validation
+        // ==============================
+
         if (distance > allowed_radius) {
 
             frappe.throw(
@@ -153,7 +254,12 @@ function getCurrentPosition() {
 // Distance Formula
 // ==============================
 
-function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+function getDistanceFromLatLonInMeters(
+    lat1,
+    lon1,
+    lat2,
+    lon2
+) {
 
     let R = 6371000;
 
@@ -161,17 +267,24 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
     let dLon = deg2rad(lon2 - lon1);
 
     let a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.sin(dLat / 2) *
+        Math.sin(dLat / 2) +
+
         Math.cos(deg2rad(lat1)) *
         Math.cos(deg2rad(lat2)) *
+
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
 
-    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    let c = 2 * Math.atan2(
+        Math.sqrt(a),
+        Math.sqrt(1 - a)
+    );
 
     return R * c;
 }
 
 function deg2rad(deg) {
+
     return deg * (Math.PI / 180);
 }
