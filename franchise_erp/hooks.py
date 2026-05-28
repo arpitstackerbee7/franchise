@@ -81,7 +81,7 @@ doc_events = {
             
             ],
         "before_submit": "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
-        "on_submit": "franchise_erp.custom.sales_invoice.update_serial_no_mrp"
+        # "on_submit": "franchise_erp.custom.sales_invoice.update_serial_no_mrp"
     },
     "Purchase Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
