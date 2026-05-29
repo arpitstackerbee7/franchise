@@ -102,3 +102,4 @@ frappe.query_reports["Stock Taking Analysis Report"] = {
         }
     ]
 };
+
