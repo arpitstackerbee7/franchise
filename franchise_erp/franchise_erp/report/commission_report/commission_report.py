@@ -221,7 +221,7 @@ def get_data(filters):
         
         # CHANGE 8 — qty and price_list_rate extracted separately
         qty             = flt(row.qty)
-        price_list_rate = flt(row.price_list_rate)
+        price_list_rate = flt(row.price_list_rate) or flt(row.item_rate)
         discount_pct    = flt(row.discount_percentage)
         item_rate       = flt(row.item_rate)
         
