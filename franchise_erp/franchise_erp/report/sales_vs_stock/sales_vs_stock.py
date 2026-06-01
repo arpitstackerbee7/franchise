@@ -115,6 +115,240 @@
 #     }
 # file: monthly_item_report.py
 
+# import frappe
+# from frappe.utils import nowdate
+
+# def execute(filters=None):
+#     if not filters:
+#         filters = {}
+
+#     if filters.get("from_date"):
+#         filters["month"] = int(filters["from_date"].split("-")[1])
+#     elif filters.get("to_date"):
+#         filters["month"] = int(filters["to_date"].split("-")[1])
+#     elif not filters.get("month"):
+#         # Default — current month
+#         filters["month"] = int(nowdate().split("-")[1])
+
+#     columns = get_columns()
+#     data = get_data(filters)
+#     chart = get_chart_data(data)
+
+#     return columns, data, None, chart
+
+
+# def get_columns():
+#     return [
+#         {"label": "Item", "fieldname": "item_name", "fieldtype": "Link", "options": "Item", "width": 200},
+#         {"label": "Month", "fieldname": "month", "fieldtype": "Data", "width": 100},
+#         {"label": "Sales Qty", "fieldname": "sales_qty", "fieldtype": "Float", "width": 120},
+#         {"label": "Stock Qty", "fieldname": "stock_qty", "fieldtype": "Float", "width": 120},
+#         {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 120},
+#     ]
+
+
+# def get_data(filters):
+#     conditions = ""  # ✅ Pehle initialize
+
+#     if filters.get("month"):
+#         conditions += " AND MONTH(si.posting_date) = %(month)s"
+
+#     if filters.get("from_date"):
+#         conditions += " AND si.posting_date >= %(from_date)s"
+
+#     if filters.get("to_date"):
+#         conditions += " AND si.posting_date <= %(to_date)s"
+
+#     if filters.get("company"):
+#         conditions += " AND si.company = %(company)s"
+
+#     data = frappe.db.sql(f"""
+#         SELECT
+#             i.image AS image,
+#             sii.item_name AS item_name,
+#             MONTH(si.posting_date) AS month,
+#             SUM(sii.qty) AS sales_qty,
+
+#             IFNULL((
+#                 SELECT actual_qty
+#                 FROM `tabBin` b
+#                 WHERE b.item_code = sii.item_code
+#                 LIMIT 1
+#             ), 0) AS stock_qty,
+
+#             CASE
+#                 WHEN IFNULL((
+#                     SELECT actual_qty
+#                     FROM `tabBin` b
+#                     WHERE b.item_code = sii.item_code
+#                     LIMIT 1
+#                 ), 0) > SUM(sii.qty)
+#                 THEN 'In Stock'
+#                 ELSE 'Low Stock'
+#             END AS status
+
+#         FROM `tabSales Invoice Item` sii
+#         JOIN `tabSales Invoice` si ON sii.parent = si.name
+#         LEFT JOIN `tabItem` i ON i.item_code = sii.item_code
+
+#         WHERE si.docstatus = 1 {conditions}
+
+#         GROUP BY sii.item_code, MONTH(si.posting_date)
+#         ORDER BY sales_qty DESC
+#     """, filters, as_dict=1)
+
+#     for row in data:
+#         if row.get("image"):
+#             img_url = row["image"]
+#             if not img_url.startswith("/"):
+#                 img_url = "/" + img_url
+#             row["image_url"] = img_url
+#         else:
+#             row["image_url"] = ""
+#         row["image"] = ""
+
+#     return data
+
+
+# def get_chart_data(data):
+#     labels = []
+#     sales = []
+#     stock = []
+
+#     for row in data:
+#         labels.append(row.get("item_name") or "No Item")
+#         sales.append(row.get("sales_qty") or 0)
+#         stock.append(row.get("stock_qty") or 0)
+
+#     return {
+#         "data": {
+#             "labels": labels,
+#             "datasets": [
+#                 {"name": "Sales", "values": sales},
+#                 {"name": "Stock", "values": stock}
+#             ]
+#         },
+#         "type": "bar"
+#     }
+
+
+# import frappe
+# from frappe.utils import nowdate
+
+# def execute(filters=None):
+#     if not filters:
+#         filters = {}
+
+#     if filters.get("from_date"):
+#         filters["month"] = int(filters["from_date"].split("-")[1])
+#     elif filters.get("to_date"):
+#         filters["month"] = int(filters["to_date"].split("-")[1])
+#     elif not filters.get("month"):
+#         filters["month"] = int(nowdate().split("-")[1])
+
+#     columns = get_columns()
+#     data = get_data(filters)
+#     chart = get_chart_data(data)
+
+#     return columns, data, None, chart
+
+
+# def get_columns():
+#     return [
+#         {"label": "Style No.", "fieldname": "custom_barcode_code", "fieldtype": "Data", "width": 150},
+#         {"label": "Department", "fieldname": "custom_departments", "fieldtype": "Data", "width": 150},
+#         {"label": "Month", "fieldname": "month", "fieldtype": "Data", "width": 100},
+#         {"label": "Sales Qty", "fieldname": "sales_qty", "fieldtype": "Float", "width": 120},
+#         {"label": "Stock Qty", "fieldname": "stock_qty", "fieldtype": "Float", "width": 120},
+#         {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 120},
+#     ]
+
+
+# def get_data(filters):
+#     conditions = ""
+
+#     if filters.get("month"):
+#         conditions += " AND MONTH(si.posting_date) = %(month)s"
+#     if filters.get("from_date"):
+#         conditions += " AND si.posting_date >= %(from_date)s"
+#     if filters.get("to_date"):
+#         conditions += " AND si.posting_date <= %(to_date)s"
+#     if filters.get("company"):
+#         conditions += " AND si.company = %(company)s"
+
+#     data = frappe.db.sql(f"""
+#         SELECT
+#             i.image                  AS image,
+#             i.custom_barcode_code    AS custom_barcode_code,
+#             i.custom_departments      AS custom_department,
+#             MONTH(si.posting_date)   AS month,
+#             SUM(sii.qty)             AS sales_qty,
+
+#             IFNULL((
+#                 SELECT actual_qty FROM `tabBin` b
+#                 WHERE b.item_code = sii.item_code
+#                 LIMIT 1
+#             ), 0) AS stock_qty,
+
+#             CASE
+#                 WHEN IFNULL((
+#                     SELECT actual_qty FROM `tabBin` b
+#                     WHERE b.item_code = sii.item_code
+#                     LIMIT 1
+#                 ), 0) > SUM(sii.qty)
+#                 THEN 'In Stock'
+#                 ELSE 'Low Stock'
+#             END AS status
+
+#         FROM `tabSales Invoice Item` sii
+#         JOIN `tabSales Invoice` si ON sii.parent = si.name
+#         LEFT JOIN `tabItem` i ON i.item_code = sii.item_code
+
+#         WHERE si.docstatus = 1 {conditions}
+
+#         GROUP BY sii.item_code, MONTH(si.posting_date)
+#         ORDER BY sales_qty DESC
+#     """, filters, as_dict=1)
+
+#     for row in data:
+#         if row.get("image"):
+#             img_url = row["image"]
+#             if not img_url.startswith("/"):
+#                 img_url = "/" + img_url
+#             row["image_url"] = img_url
+#         else:
+#             row["image_url"] = ""
+#         row["image"] = ""
+
+#         # ✅ Department ka sirf last part rakho
+#         dept = row.get("custom_department") or ""
+#         row["custom_department"] = dept.split("-")[-1].strip() if dept else ""
+
+#     return data
+
+
+# def get_chart_data(data):
+#     labels = []
+#     sales = []
+#     stock = []
+
+#     for row in data:
+#         labels.append(row.get("custom_barcode_code") or "No Style")
+#         sales.append(row.get("sales_qty") or 0)
+#         stock.append(row.get("stock_qty") or 0)
+
+#     return {
+#         "data": {
+#             "labels": labels,
+#             "datasets": [
+#                 {"name": "Sales", "values": sales},
+#                 {"name": "Stock", "values": stock}
+#             ]
+#         },
+#         "type": "bar"
+#     }
+
+
 import frappe
 from frappe.utils import nowdate
 
@@ -122,53 +356,75 @@ def execute(filters=None):
     if not filters:
         filters = {}
 
-    # Fix: default month (important for dashboard)
-    if not filters.get("month"):
+    
+    if filters.get("from_date"):
+        try:
+            filters["month"] = int(str(filters["from_date"]).split("-")[1])
+        except (IndexError, ValueError):
+            pass
+    elif filters.get("to_date"):
+        try:
+            filters["month"] = int(str(filters["to_date"]).split("-")[1])
+        except (IndexError, ValueError):
+            pass
+    elif filters.get("month"):
+        
+        try:
+            filters["month"] = int(filters["month"])
+        except (ValueError, TypeError):
+            filters["month"] = int(nowdate().split("-")[1])
+    else:
         filters["month"] = int(nowdate().split("-")[1])
 
     columns = get_columns()
-    data = get_data(filters)
-    chart = get_chart_data(data)
+    data    = get_data(filters)
+    chart   = get_chart_data(data)
 
     return columns, data, None, chart
 
 
 def get_columns():
     return [
-        #{"label": "Image", "fieldname": "image", "fieldtype": "HTML", "width": 120},
-        {"label": "Item", "fieldname": "item_name", "fieldtype": "link", "width": 200},
-        {"label": "Month", "fieldname": "month", "fieldtype": "Data", "width": 100},
-        {"label": "Sales Qty", "fieldname": "sales_qty", "fieldtype": "Float", "width": 120},
-        {"label": "Stock Qty", "fieldname": "stock_qty", "fieldtype": "Float", "width": 120},
-        {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 120},
+        {"label": "Style No.",    "fieldname": "custom_barcode_code", "fieldtype": "Data",  "width": 150},
+        {"label": "Department",   "fieldname": "custom_departments",  "fieldtype": "Data",  "width": 150},
+        {"label": "Month",        "fieldname": "month",               "fieldtype": "Data",  "width": 100},
+        {"label": "Sales Qty",    "fieldname": "sales_qty",           "fieldtype": "Float", "width": 120},
+        {"label": "Stock Qty",    "fieldname": "stock_qty",           "fieldtype": "Float", "width": 120},
+        {"label": "Status",       "fieldname": "status",              "fieldtype": "Data",  "width": 120},
     ]
 
-from frappe.utils import get_url
+
 def get_data(filters):
     conditions = ""
+    params     = dict(filters)  
 
     if filters.get("month"):
         conditions += " AND MONTH(si.posting_date) = %(month)s"
-    
+    if filters.get("from_date"):
+        conditions += " AND si.posting_date >= %(from_date)s"
+    if filters.get("to_date"):
+        conditions += " AND si.posting_date <= %(to_date)s"
+    if filters.get("company"):
+        conditions += " AND si.company = %(company)s"
+
     data = frappe.db.sql(f"""
-        SELECT 
-            i.image AS image,
-            sii.item_name AS item_name,
-            MONTH(si.posting_date) AS month,
-            SUM(sii.qty) AS sales_qty,
+        SELECT
+            i.image                  AS image,
+            i.custom_barcode_code    AS custom_barcode_code,
+            i.custom_departments     AS custom_department,
+            MONTH(si.posting_date)   AS month,
+            SUM(sii.qty)             AS sales_qty,
 
             IFNULL((
-                SELECT actual_qty 
-                FROM `tabBin` b 
-                WHERE b.item_code = sii.item_code 
+                SELECT actual_qty FROM `tabBin` b
+                WHERE b.item_code = sii.item_code
                 LIMIT 1
             ), 0) AS stock_qty,
 
-            CASE 
+            CASE
                 WHEN IFNULL((
-                    SELECT actual_qty 
-                    FROM `tabBin` b 
-                    WHERE b.item_code = sii.item_code 
+                    SELECT actual_qty FROM `tabBin` b
+                    WHERE b.item_code = sii.item_code
                     LIMIT 1
                 ), 0) > SUM(sii.qty)
                 THEN 'In Stock'
@@ -177,56 +433,60 @@ def get_data(filters):
 
         FROM `tabSales Invoice Item` sii
         JOIN `tabSales Invoice` si ON sii.parent = si.name
-        
-        LEFT JOIN `tabItem` i
-            ON i.item_code = sii.item_code
+        LEFT JOIN `tabItem` i ON i.item_code = sii.item_code
 
         WHERE si.docstatus = 1 {conditions}
 
         GROUP BY sii.item_code, MONTH(si.posting_date)
-    """, filters, as_dict=1)
-
+        ORDER BY sales_qty DESC
+    """, params, as_dict=1)
 
     for row in data:
+        
         if row.get("image"):
             img_url = row["image"]
-            
             if not img_url.startswith("/"):
-                    img_url = "/" + img_url
-                
-            row["image_url"] = img_url  
+                img_url = "/" + img_url
+            row["image_url"] = img_url
         else:
-            row["image_url"] = ""       
+            row["image_url"] = ""
+        row["image"] = ""
 
-        row["image"] = ""               
+        
+        dept = row.get("custom_department") or ""
+        row["custom_department"] = dept.split("-")[-1].strip() if dept else ""
 
-                
     return data
 
 
-#  NEW: Chart function (REQUIRED for dashboard)
 def get_chart_data(data):
+    if not data:  
+        return {
+            "data": {
+                "labels": [],
+                "datasets": [
+                    {"name": "Sales", "values": []},
+                    {"name": "Stock", "values": []}
+                ]
+            },
+            "type": "bar"
+        }
+
     labels = []
-    sales = []
-    stock = []
+    sales  = []
+    stock  = []
 
     for row in data:
-        labels.append(row.get("item_name") or "No Item")
-        sales.append(row.get("sales_qty") or 0)
-        stock.append(row.get("stock_qty") or 0)
+        labels.append(row.get("custom_barcode_code") or "No Style")
+        sales.append(float(row.get("sales_qty") or 0))  
+        stock.append(float(row.get("stock_qty") or 0))  
 
     return {
         "data": {
             "labels": labels,
             "datasets": [
-                {
-                    "name": "Sales",
-                    "values": sales
-                },
-                {
-                    "name": "Stock",
-                    "values": stock
-                }
+                {"name": "Sales", "values": sales},
+                {"name": "Stock", "values": stock}
             ]
         },
         "type": "bar"

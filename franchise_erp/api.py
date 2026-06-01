@@ -2473,3 +2473,97 @@ def get_used_delivery_notes():
     all_dn.update({d["delivery_note"] for d in serial_used_dn})
 
     return [{"delivery_note": dn} for dn in all_dn]
+
+import frappe
+from frappe import _
+from datetime import datetime
+
+
+@frappe.whitelist()
+def get_chart_data(chart_name, from_date, to_date, view_type='qty', company='', month='', year=''):
+    """
+    Unified API — sab dashboard charts ke liye
+    view_type JS se: 'qty' ya 'amt'
+    """
+
+    report_map = {
+        'Sales Trend'              : 'Sales Trend',
+        'Sales Progress'           : 'Sales Progress',
+        'Sale vs Stock'            : 'Sales vs Stock',
+        'Top Selling Items Chart'  : 'Top Selling Items 1',
+        'Least Selling Items Chart': 'Least Selling Items',
+    }
+
+    report_name = report_map.get(chart_name)
+    if not report_name:
+        frappe.throw(_('Chart not found: {0}').format(chart_name))
+
+    # ── Date parse ────────────────────────────────────────────
+    def parse_date(d):
+        for f in ('%Y-%m-%d', '%d-%m-%Y'):
+            try:
+                return datetime.strptime(d, f)
+            except Exception:
+                pass
+        return None
+
+    from_dt = parse_date(from_date)
+
+    # ── Company fallback ──────────────────────────────────────
+    resolved_company = (
+        company
+        or frappe.defaults.get_user_default('company')
+        or frappe.defaults.get_default('company')
+        or ''
+    )
+
+    # ── Base filters ──────────────────────────────────────────
+    filters = {
+        'from_date': from_date,
+        'to_date'  : to_date,
+        'company'  : resolved_company,
+    }
+
+    # ── view_type conversion helpers ──────────────────────────
+    # Sales Trend / Sales Progress  → 'qty' / 'amt'
+    # Top Selling / Least / Sale vs Stock → 'qty' / 'amount'
+
+    def as_amt(v):
+        
+        return 'amt' if v in ('amt', 'amount') else 'qty'
+
+    def as_amount(v):
+        
+        return 'amount' if v in ('amt', 'amount') else 'qty'
+
+    # ── Per-chart filters ─────────────────────────────────────
+    if chart_name == 'Sales Trend':
+        filters['view_type'] = as_amt(view_type)
+
+    elif chart_name == 'Sales Progress':
+        filters['view_type'] = as_amt(view_type)
+
+    elif chart_name in ('Top Selling Items Chart', 'Least Selling Items Chart'):
+        filters['metric'] = as_amount(view_type)
+
+    elif chart_name == 'Sale vs Stock':
+        filters['metric'] = as_amount(view_type)
+        
+        filters['month'] = month or (str(from_dt.month) if from_dt else '')
+        filters['year']  = year  or (str(from_dt.year)  if from_dt else '')
+
+    # ── Report run ────────────────────────────────────────────
+    from frappe.desk.query_report import run
+
+    try:
+        result = run(report_name, filters=filters, ignore_prepared_report=1)
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), 'get_chart_data failed: {0}'.format(chart_name))
+        frappe.throw(_('Report error ({0}): {1}').format(chart_name, str(e)))
+
+    return {
+        'chart'  : result.get('chart'),
+        'data'   : result.get('result'),
+        'columns': result.get('columns'),
+    }
+

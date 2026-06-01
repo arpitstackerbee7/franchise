@@ -72,20 +72,60 @@
 
 
 
+// frappe.query_reports["Top Selling Items 1"] = {
+//     "filters": [
+//         {
+//             "fieldname": "from_date",
+//             "label": "From Date",
+//             "fieldtype": "Date",
+//             "default": frappe.datetime.add_months(frappe.datetime.get_today(), -1),
+//             "reqd": 1
+//         },
+//         {
+//             "fieldname": "to_date",
+//             "label": "To Date",
+//             "fieldtype": "Date",
+//             "default": frappe.datetime.get_today(),
+//             "reqd": 1
+//         },
+//         {
+//             "fieldname": "limit",
+//             "label": "Top N Items",
+//             "fieldtype": "Int",
+//             "default": 10
+//         },
+//         {
+//             "fieldname": "metric",
+//             "label": "View By",
+//             "fieldtype": "Select",
+//             "options": ["qty", "amount"],
+//             "default": "qty"
+//         },
+//         {
+//             "fieldname": "period",
+//             "label": "Period",
+//             "fieldtype": "Select",
+//             "options": ["Monthly", "Quarterly", "Yearly"],
+//             "default": "Monthly"
+//         }
+//     ]
+// };
+
+
 frappe.query_reports["Top Selling Items 1"] = {
     "filters": [
         {
             "fieldname": "from_date",
             "label": "From Date",
             "fieldtype": "Date",
-            "default": frappe.datetime.add_months(frappe.datetime.get_today(), -1),
+            "default": frappe.datetime.month_start(),
             "reqd": 1
         },
         {
             "fieldname": "to_date",
             "label": "To Date",
             "fieldtype": "Date",
-            "default": frappe.datetime.get_today(),
+            "default": frappe.datetime.month_end(),
             "reqd": 1
         },
         {
@@ -98,7 +138,7 @@ frappe.query_reports["Top Selling Items 1"] = {
             "fieldname": "metric",
             "label": "View By",
             "fieldtype": "Select",
-            "options": ["qty", "amount"],
+            "options": ["qty", "amt"],
             "default": "qty"
         },
         {
@@ -107,6 +147,15 @@ frappe.query_reports["Top Selling Items 1"] = {
             "fieldtype": "Select",
             "options": ["Monthly", "Quarterly", "Yearly"],
             "default": "Monthly"
+        },
+        
+        {
+            "fieldname": "company",
+            "label": "Company",
+            "fieldtype": "Link",
+            "options": "Company",
+            "default": frappe.defaults.get_user_default("Company")
         }
     ]
 };
+
