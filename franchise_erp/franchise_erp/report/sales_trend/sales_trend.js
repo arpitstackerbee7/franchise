@@ -1,12 +1,70 @@
+// frappe.query_reports["Sales Trend"] = {
+//     filters: [
+//         {
+//             fieldname: "fiscal_year",
+//             label: "Fiscal Year",
+//             fieldtype: "Link",
+//             options: "Fiscal Year",
+//             default: frappe.defaults.get_user_default("fiscal_year"),
+//             reqd: 0
+//         }
+//     ]
+// };
+
 frappe.query_reports["Sales Trend"] = {
+
     filters: [
         {
-            fieldname: "fiscal_year",
-            label: "Fiscal Year",
+            fieldname: "from_date",
+            label: "From Date",
+            fieldtype: "Date",
+            default: frappe.datetime.month_start(),
+        },
+        {
+            fieldname: "to_date",
+            label: "To Date",
+            fieldtype: "Date",
+            default: frappe.datetime.month_end(),
+        },
+        {
+            fieldname: "view_type",
+            label: "View Type",
+            fieldtype: "Select",
+            options: "qty\namt",
+            default: "qty",
+        },
+        {
+            fieldname: "company",
+            label: "Company",
             fieldtype: "Link",
-            options: "Fiscal Year",
-            default: frappe.defaults.get_user_default("fiscal_year"),
-            reqd: 0
+            options: "Company",
+            default: frappe.defaults.get_user_default("Company")
         }
-    ]
+    ],
+
+    onload: function(report) {
+    
+
+    if (window._salesTrendListenerAdded) return;
+    window._salesTrendListenerAdded = true;
+
+    document.addEventListener(
+        'dashboardFilterChanged',
+        function(e) {
+            var f = e.detail;
+            try {
+                report.set_filter_value('from_date', f.from);
+                report.set_filter_value('to_date',   f.to);
+                report.set_filter_value('view_type', f.view);  // 'qty' or 'amt'
+                report.set_filter_value('company',   f.company || '');
+                setTimeout(function() {
+                    report.refresh();
+                }, 200);
+            } catch(e) {
+                console.error('Sales Trend filter error:', e);
+            }
+        }
+    );
+}
+
 };

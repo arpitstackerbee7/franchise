@@ -45,10 +45,23 @@ def get_data(filters):
         params["from_date"] = filters["from_date"]
         params["to_date"] = filters["to_date"]
 
+    
+    if filters.get("company"):
+        conditions += " AND company = %(company)s"
+        params["company"] = filters["company"]
+
+    
+    view_type = filters.get("view_type") or "qty"
+
+    if view_type == "qty":
+        select_field = "SUM(total_qty) AS total_sales"
+    else:
+        select_field = "SUM(grand_total) AS total_sales"
+
     return frappe.db.sql(f"""
         SELECT 
             DATE_FORMAT(posting_date, '%%Y-%%m') AS month,
-            SUM(grand_total) AS total_sales
+            {select_field}
         FROM `tabSales Invoice`
         {conditions}
         GROUP BY DATE_FORMAT(posting_date, '%%Y-%%m')
@@ -79,7 +92,7 @@ def get_chart_data(data):
         "type": "line",
         "colors": ["#ff5858"],
 
-        # IMPORTANT for proper hover + points
+        
         "lineOptions": {
             "hideDots": 0
         }
