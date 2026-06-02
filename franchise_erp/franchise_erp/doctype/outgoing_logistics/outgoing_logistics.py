@@ -301,3 +301,60 @@ def get_send_to_subcontractor_entries(
         "page_len": page_len
 
     }, as_dict=1)
+
+
+
+@frappe.whitelist()
+def get_outgoing_logistics_match_from_pi(supplier):
+
+    used_ids = frappe.db.sql("""
+        SELECT DISTINCT pii.custom_outgoing_logistics
+        FROM `tabPurchase Invoice Item` pii
+        INNER JOIN `tabPurchase Invoice` pi
+            ON pi.name = pii.parent
+        WHERE pi.docstatus = 1
+        AND IFNULL(pii.custom_outgoing_logistics,'') != ''
+    """, pluck="custom_outgoing_logistics")
+
+    data = frappe.get_all(
+        "Outgoing Logistics",
+        filters={
+            "docstatus": 1,
+            "to_pay": "Yes"
+        },
+        fields=[
+            "name",
+            "type",
+            "transporter",
+            "s_transporter",
+            "transfer_out_transport",
+            "transport_service_item",
+            "total_amount"
+        ]
+    )
+
+    result = []
+
+    for row in data:
+
+        # Already used in Submitted PI
+        if row.name in used_ids:
+            continue
+
+        ol_type = frappe.get_doc("Outgoing Logistics Type", row.type)
+
+        transporter_name = None
+
+        if ol_type.is_customer:
+            transporter_name = row.transporter
+
+        elif ol_type.is_supplier:
+            transporter_name = row.s_transporter
+
+        elif row.type == "Transfer Out":
+            transporter_name = row.transfer_out_transport
+
+        if transporter_name == supplier:
+            result.append(row)
+
+    return result

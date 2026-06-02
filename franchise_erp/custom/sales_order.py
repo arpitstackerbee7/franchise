@@ -39,3 +39,42 @@ def apply_sales_term(doc, method):
     elif total_flat_discount:
         doc.apply_discount_on = "Net Total"
         doc.discount_amount = total_flat_discount
+
+
+
+import frappe
+
+
+@frappe.whitelist()
+def validate_scanned_serial(serial_no):
+
+    invoice = frappe.db.sql("""
+        SELECT
+            si.name,
+            si.docstatus
+        FROM `tabSales Invoice Item` sii
+        INNER JOIN `tabSales Invoice` si
+            ON si.name = sii.parent
+        WHERE IFNULL(sii.serial_no,'') LIKE %(serial)s
+        LIMIT 1
+    """, {
+        "serial": f"%{serial_no}%"
+    }, as_dict=True)
+
+    if not invoice:
+        return {
+            "block": False
+        }
+
+    status_map = {
+        0: "Draft",
+        1: "Submitted",
+        2: "Cancelled"
+    }
+
+    return {
+        "block": True,
+        "serial_no": serial_no,
+        "invoice": invoice[0].name,
+        "status": status_map.get(invoice[0].docstatus)
+    }

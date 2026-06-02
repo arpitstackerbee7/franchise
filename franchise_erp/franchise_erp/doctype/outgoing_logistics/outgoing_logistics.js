@@ -14,6 +14,16 @@ frappe.ui.form.on("Outgoing Logistics", {
                     ]
              };
         });
+        if (frm.is_new()) {
+            frappe.db.get_single_value(
+                "TZU Setting",
+                "transport_service_item"
+            ).then(value => {
+                if (value) {
+                    frm.set_value("transport_service_item", value);
+                }
+            });
+        }
         // if (frm.doc.docstatus === 0) {
         //     frm.add_custom_button(
         //         __("Fetch Sales Invoice ID"),
