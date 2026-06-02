@@ -196,7 +196,8 @@ doc_events = {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
          "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
-         "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel"
+         "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel",
+         "on_submit": "franchise_erp.custom.subcontracting_receipt.create_purchase_receipt_for_all_job_orders"
     },
     "Leave Application":{
         "on_submit": "franchise_erp.custom.leave_application.update_late_log_on_short_leave"
@@ -262,6 +263,7 @@ doctype_js = {
     "Shipment": "public/js/shipment.js",
     # "Serial No": "public/js/serial_no.js",    
     "Employee Checkin": "public/js/employee_checkin.js",
+    "Leave Application": "public/js/leave_application.js"
 
 }
 
@@ -618,9 +620,11 @@ fixtures = [
     {"dt": "Workflow"},
     {"dt": "Workflow Action Master"},
     {"dt": "Workflow State"},
-    {"dt": "Role"}
+    {"dt": "Role"},
+    
 
  ]
+
 # fixtures = [
 #     {
 #         "dt": "Custom Field",
@@ -638,3 +642,26 @@ fixtures = [
 #     ]
 # }
 # ]
+
+fixtures = [
+    {
+        "dt": "Workflow",
+        "filters": [["name", "=", "Leave Application"]]
+    },
+    {
+        "dt": "Role",
+        "filters": [["name", "in", ["Employee", "Report Manager", "HR Manager"]]]
+    },
+    {
+        "dt": "Custom Field",
+        "filters": [["dt", "=", "Leave Application"]]
+    },
+    {
+        "dt": "Workflow State",
+        "filters": [["name", "in", ["Draft", "Pending Report Manager", "Pending HR Approval", "Approved", "Rejected"]]]
+    },
+    {
+        "dt": "Workflow Action Master",
+        "filters": [["name", "in", ["Submit", "Approve", "Reject"]]]
+    }
+]
