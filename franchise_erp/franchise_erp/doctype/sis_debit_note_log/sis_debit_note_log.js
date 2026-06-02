@@ -459,7 +459,10 @@ function show_invoice_dialog(frm) {
             th,td{border:1px solid #000;padding:6px;font-size:12px}
         </style>
         </head><body>
-        <h3>Invoice Report</h3>
+        <div style="text-align:center; margin-bottom:15px;">
+            <h2 style="margin:0;">${frm.doc.company}</h2>
+            <h3 style="margin:5px 0;">Invoice Report</h3>
+        </div>
         <table>
             <thead>
                 <tr>
@@ -507,8 +510,11 @@ function show_invoice_dialog(frm) {
         frappe.msgprint("No data to export");
         return;
     }
+    
+    let csv = `Company,${frm.doc.company}\n`;
+    csv += "Invoice Report\n\n";
 
-    let csv = "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN\n";
+    csv += "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN\n";
 
     let total_qty = 0;
     let total_mrp = 0;
