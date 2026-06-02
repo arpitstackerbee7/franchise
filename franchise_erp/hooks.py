@@ -151,8 +151,9 @@ doc_events = {
     },
     "Sales Order":{
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-        "before_validate": "franchise_erp.custom.sales_order.apply_sales_term"
-    },    "Item Price": {
+        "before_validate": "franchise_erp.custom.sales_order.apply_sales_term",
+    },
+            "Item Price": {
         "validate": "franchise_erp.custom.item_price.validate_item_price",
         "on_update": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",
         "after_insert": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",

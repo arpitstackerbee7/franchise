@@ -1,37 +1,5 @@
 frappe.ui.form.on('Sales Order', {
-    custom_scan_product_bundle(frm) {
-        if (!frm.doc.custom_scan_product_bundle) return;
-
-        const bundle_serial = frm.doc.custom_scan_product_bundle.trim();
-
-        frappe.call({
-            method: "frappe.client.get_value",
-            args: {
-                doctype: "Product Bundle",
-                filters: { custom_bundle_serial_no: bundle_serial },
-                fieldname: ["new_item_code"]
-            },
-            callback(r) {
-                if (!r.message?.new_item_code) {
-                    frappe.msgprint(__('No Item found for scanned bundle serial'));
-                    frm.set_value('custom_scan_product_bundle', '');
-                    return;
-                }
-
-                let row = frm.doc.items.find(d => !d.item_code) || frm.add_child('items');
-
-                frappe.model.set_value(row.doctype, row.name, 'item_code', r.message.new_item_code);
-                frappe.model.set_value(row.doctype, row.name, 'qty', row.qty || 1);
-
-                frm.refresh_field('items');
-                frm.set_value('custom_scan_product_bundle', '');
-            }
-        });
-    }
-});
-
-frappe.ui.form.on("Sales Order", {
-    customer(frm) {
+     customer(frm) {
         if (!frm.doc.customer) return;
 
         // wait for ERPNext to populate sales_team
@@ -70,8 +38,92 @@ frappe.ui.form.on("Sales Order", {
                 set_incentive_from_sales_person(frm, row);
             }
         });
+    },
+    custom_scan_product_bundle(frm) {
+        if (!frm.doc.custom_scan_product_bundle) return;
+
+        const bundle_serial = frm.doc.custom_scan_product_bundle.trim();
+
+        frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+                doctype: "Product Bundle",
+                filters: { custom_bundle_serial_no: bundle_serial },
+                fieldname: ["new_item_code"]
+            },
+            callback(r) {
+                if (!r.message?.new_item_code) {
+                    frappe.msgprint(__('No Item found for scanned bundle serial'));
+                    frm.set_value('custom_scan_product_bundle', '');
+                    return;
+                }
+
+                let row = frm.doc.items.find(d => !d.item_code) || frm.add_child('items');
+
+                frappe.model.set_value(row.doctype, row.name, 'item_code', r.message.new_item_code);
+                frappe.model.set_value(row.doctype, row.name, 'qty', row.qty || 1);
+
+                frm.refresh_field('items');
+                frm.set_value('custom_scan_product_bundle', '');
+            }
+        });
+    },
+     scan_barcode: function(frm) {
+
+        let barcode = frm.doc.scan_barcode;
+
+        if (!barcode) return;
+
+        frappe.call({
+            method: "franchise_erp.custom.sales_order.validate_scanned_serial",
+            args: {
+                serial_no: barcode
+            },
+            freeze: true,
+            callback: function(r) {
+
+                if (!r.message) return;
+
+                if (r.message.block) {
+
+                    frappe.msgprint({
+                        title: __("Serial Already Used"),
+                        indicator: "red",
+                        message: `
+                            <b>Serial No:</b> ${r.message.serial_no}<br>
+                            <b>Sales Invoice:</b> ${r.message.invoice}<br>
+                            <b>Status:</b> ${r.message.status}
+                        `
+                    });
+
+                    frm.set_value("scan_barcode", "");
+
+                    setTimeout(() => {
+
+                        let rows = frm.doc.items || [];
+
+                        rows.forEach(row => {
+                            if (
+                                row.serial_and_batch_bundle === r.message.serial_no ||
+                                row.serial_no === r.message.serial_no
+                            ) {
+                                frappe.model.clear_doc(
+                                    row.doctype,
+                                    row.name
+                                );
+                            }
+                        });
+
+                        frm.refresh_field("items");
+
+                    }, 300);
+                }
+            }
+        });
     }
 });
+
+
 
 function set_incentive_from_sales_person(frm, row) {
     if (!row.sales_person) return;
