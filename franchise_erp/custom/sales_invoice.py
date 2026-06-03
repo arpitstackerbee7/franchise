@@ -1219,6 +1219,14 @@ from frappe.utils import getdate, today, flt
 #         )
 def validate_overdue_invoice(doc, method):
 
+    # 🔥 ERPNext bypass
+    if doc.flags.get("ignore_credit_limit"):
+        return
+
+    # 🔥 Role based bypass
+    if "Credit Controller" in frappe.get_roles(frappe.session.user):
+        return
+    
     # 🔥 Disable ERPNext default validation (IMPORTANT)
     doc.ignore_credit_limit = True
     doc.flags.ignore_credit_limit = True
@@ -2000,6 +2008,7 @@ class CustomSalesInvoice(SalesInvoice):
                 item.qty = -abs(item.qty or 0)
                 if item.stock_qty:
                     item.stock_qty = -abs(item.stock_qty)
+
 
 
 def update_serial_no_mrp(doc, method=None):

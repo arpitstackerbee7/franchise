@@ -335,9 +335,13 @@ def get_outgoing_logistics_match_from_pi(supplier):
 
     result = []
 
+    tzu_item = frappe.db.get_single_value(
+        "TZU Setting",
+        "transport_service_item"
+    )
+
     for row in data:
 
-        # Already used in Submitted PI
         if row.name in used_ids:
             continue
 
@@ -355,6 +359,10 @@ def get_outgoing_logistics_match_from_pi(supplier):
             transporter_name = row.transfer_out_transport
 
         if transporter_name == supplier:
+
+            # Always use TZU Setting Item
+            row.transport_service_item = tzu_item
+
             result.append(row)
 
     return result
