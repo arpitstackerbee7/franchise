@@ -269,6 +269,105 @@ function handle_serial(frm, serial, step) {
         }
     });
 }
+
+// ===================================
+// 🚀 OPEN JOB WORK ORDER MAPPER
+// ===================================
+function open_job_work_order_mapper(frm) {
+
+    if (!frm.doc.supplier) {
+        frappe.throw(__("Please select Supplier first"));
+    }
+
+    let dialog = new frappe.ui.form.MultiSelectDialog({
+        doctype: "Subcontracting Order",
+        target: frm,
+
+        setters: {
+            supplier: frm.doc.supplier
+        },
+
+        get_query() {
+            return {
+                filters: {
+                    supplier: frm.doc.supplier,
+                    docstatus: 1,
+                    status: ["in", ["Open", "Partially Received"]]
+                }
+            };
+        },
+
+        columns: [
+            {
+                fieldname: "name",
+                label: __("Job Work Order"),
+                fieldtype: "Link",
+                options: "Subcontracting Order"
+            },
+            {
+                fieldname: "purchase_order",
+                label: __("Purchase Order"),
+                fieldtype: "Link",
+                options: "Purchase Order"
+            },
+            {
+                fieldname: "status",
+                label: __("Status"),
+                fieldtype: "Data"
+            },
+            {
+                fieldname: "total_qty",
+                label: __("Qty"),
+                fieldtype: "Float"
+            }
+        ],
+
+        action(selections) {
+            if (!selections.length) {
+                frappe.msgprint(__("Please select at least one Job Work Order"));
+                return;
+            }
+            fetch_items_from_jobos(frm, selections);
+            dialog.dialog.hide();
+        }
+    });
+}
+
+
+// ===================================
+// 🚀 FETCH ITEMS FROM SELECTED JOBOs
+// ===================================
+function fetch_items_from_jobos(frm, jobo_names) {
+
+    frappe.call({
+        method: "franchise_erp.custom.purchase_reciept.get_items_from_job_work_orders",
+        args: { jobo_names: jobo_names },
+        freeze: true,
+        freeze_message: __("Fetching items..."),
+        callback(r) {
+            if (!r.message || !r.message.length) {
+                frappe.msgprint(__("No items found"));
+                return;
+            }
+
+            // Clear existing items
+            frm.clear_table("items");
+
+            r.message.forEach(item => {
+                let row = frm.add_child("items");
+                Object.assign(row, item);
+            });
+
+            frm.refresh_field("items");
+            frm.trigger("calculate_taxes_and_totals");
+
+            frappe.show_alert({
+                message: r.message.length + __(" items added"),
+                indicator: "green"
+            });
+        }
+    });
+}
 // ===================================
 // 🚀 MAIN FORM
 // ===================================
@@ -300,6 +399,12 @@ frappe.ui.form.on("Purchase Receipt", {
             frm.add_custom_button(
                 __("Gate Entry"),
                 () => open_gate_entry_mapper(frm),
+                __("Get Items From")
+            );
+            // ADD this after it:
+            frm.add_custom_button(
+                __("Job Work Order"),
+                () => open_job_work_order_mapper(frm),
                 __("Get Items From")
             );
         }
