@@ -68,7 +68,7 @@ frappe.ui.form.on('Sales Order', {
             }
         });
     },
-     scan_barcode: function(frm) {
+    scan_barcode: function(frm) {
 
         let barcode = frm.doc.scan_barcode;
 
@@ -79,33 +79,36 @@ frappe.ui.form.on('Sales Order', {
             args: {
                 serial_no: barcode
             },
-            freeze: true,
             callback: function(r) {
 
                 if (!r.message) return;
 
-                if (r.message.block) {
+                // Already invoiced
+                if (r.message.used) {
 
                     frappe.msgprint({
                         title: __("Serial Already Used"),
                         indicator: "red",
                         message: `
-                            <b>Serial No:</b> ${r.message.serial_no}<br>
+                            <b>Serial No:</b> ${barcode}<br>
                             <b>Sales Invoice:</b> ${r.message.invoice}<br>
-                            <b>Status:</b> ${r.message.status}
+                            <b>Status:</b> ${r.message.status}<br><br>
+
+                            <b>Active Serials:</b><br>
+                            ${r.message.active_serials.join("<br>")}
                         `
                     });
 
                     frm.set_value("scan_barcode", "");
 
+                    // Remove scanned row if ERPNext already added it
                     setTimeout(() => {
-
                         let rows = frm.doc.items || [];
 
                         rows.forEach(row => {
                             if (
-                                row.serial_and_batch_bundle === r.message.serial_no ||
-                                row.serial_no === r.message.serial_no
+                                row.serial_no === barcode ||
+                                row.serial_and_batch_bundle === barcode
                             ) {
                                 frappe.model.clear_doc(
                                     row.doctype,
@@ -115,9 +118,22 @@ frappe.ui.form.on('Sales Order', {
                         });
 
                         frm.refresh_field("items");
-
                     }, 300);
+
+                    return;
                 }
+
+                // Active serial
+                frappe.msgprint({
+                    title: __("Serial Available"),
+                    indicator: "green",
+                    message: `
+                        <b>Item Code:</b> ${r.message.item_code}<br><br>
+
+                        <b>Other Active Serials:</b><br>
+                        ${r.message.active_serials.join("<br>")}
+                    `
+                });
             }
         });
     }
