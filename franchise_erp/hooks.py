@@ -199,8 +199,7 @@ doc_events = {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
          "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
-         "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel",
-         "on_submit": "franchise_erp.custom.subcontracting_receipt.create_purchase_receipt_for_all_job_orders"
+         "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel"
     },
     "Leave Application":{
         "on_submit": "franchise_erp.custom.leave_application.update_late_log_on_short_leave"

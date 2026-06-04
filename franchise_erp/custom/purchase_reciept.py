@@ -836,3 +836,46 @@ def clear_si_grn_flags(doc, method):
 #     pi.insert(ignore_permissions=True)
 
 #     frappe.msgprint(f"✅ Debit Note Created: {pi.name}")
+
+
+@frappe.whitelist()
+def get_items_from_job_work_orders(jobo_names):
+    import json
+    from frappe.utils import flt
+
+    if isinstance(jobo_names, str):
+        jobo_names = json.loads(jobo_names)
+
+    items = []
+
+    for jobo_name in jobo_names:
+        sco = frappe.get_doc("Subcontracting Order", jobo_name)
+        purchase_order = sco.purchase_order
+
+        po_item = frappe.db.get_value(
+            "Purchase Order Item",
+            {"parent": purchase_order},
+            ["name", "item_code", "rate", "item_name", "uom", "stock_uom"],  # ← add these
+            as_dict=True
+        )
+
+        if not po_item:
+            continue
+
+        total_qty = sum(flt(i.qty) for i in sco.items)
+
+        items.append({
+            "item_code": po_item.item_code,
+            "item_name": po_item.item_name,        
+            "uom": po_item.uom,                    
+            "stock_uom": po_item.stock_uom,       
+            "qty": total_qty,
+            "received_qty": total_qty,
+            "rate": po_item.rate,
+            "amount": flt(total_qty) * flt(po_item.rate),
+            "purchase_order": purchase_order,
+            "purchase_order_item": po_item.name,
+            "warehouse": "Finished Goods - TZUPL"
+        })
+
+    return items
