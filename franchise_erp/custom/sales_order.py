@@ -42,11 +42,57 @@ def apply_sales_term(doc, method):
 
 
 
-import frappe
+# import frappe
 
+
+# @frappe.whitelist()
+# def validate_scanned_serial(serial_no):
+
+#     invoice = frappe.db.sql("""
+#         SELECT
+#             si.name,
+#             si.docstatus
+#         FROM `tabSales Invoice Item` sii
+#         INNER JOIN `tabSales Invoice` si
+#             ON si.name = sii.parent
+#         WHERE IFNULL(sii.serial_no,'') LIKE %(serial)s
+#         LIMIT 1
+#     """, {
+#         "serial": f"%{serial_no}%"
+#     }, as_dict=True)
+
+#     if not invoice:
+#         return {
+#             "block": False
+#         }
+
+#     status_map = {
+#         0: "Draft",
+#         1: "Submitted",
+#         2: "Cancelled"
+#     }
+
+#     return {
+#         "block": True,
+#         "serial_no": serial_no,
+#         "invoice": invoice[0].name,
+#         "status": status_map.get(invoice[0].docstatus)
+#     }
 
 @frappe.whitelist()
 def validate_scanned_serial(serial_no):
+
+    item_code = frappe.db.get_value(
+        "Serial No",
+        serial_no,
+        "item_code"
+    )
+
+    if not item_code:
+        return {
+            "valid": False,
+            "message": "Invalid Serial No"
+        }
 
     invoice = frappe.db.sql("""
         SELECT
@@ -55,26 +101,39 @@ def validate_scanned_serial(serial_no):
         FROM `tabSales Invoice Item` sii
         INNER JOIN `tabSales Invoice` si
             ON si.name = sii.parent
-        WHERE IFNULL(sii.serial_no,'') LIKE %(serial)s
+        WHERE sii.serial_no LIKE %(serial)s
         LIMIT 1
     """, {
         "serial": f"%{serial_no}%"
     }, as_dict=True)
 
-    if not invoice:
+    active_serials = frappe.get_all(
+        "Serial No",
+        filters={
+            "item_code": item_code,
+            "status": "Active"
+        },
+        fields=["name"],
+        limit_page_length=20
+    )
+
+    active_serials = [d.name for d in active_serials if d.name != serial_no]
+
+    if invoice:
         return {
-            "block": False
+            "used": True,
+            "invoice": invoice[0].name,
+            "status": {
+                0: "Draft",
+                1: "Submitted",
+                2: "Cancelled"
+            }.get(invoice[0].docstatus),
+            "item_code": item_code,
+            "active_serials": active_serials
         }
 
-    status_map = {
-        0: "Draft",
-        1: "Submitted",
-        2: "Cancelled"
-    }
-
     return {
-        "block": True,
-        "serial_no": serial_no,
-        "invoice": invoice[0].name,
-        "status": status_map.get(invoice[0].docstatus)
+        "used": False,
+        "item_code": item_code,
+        "active_serials": active_serials
     }
