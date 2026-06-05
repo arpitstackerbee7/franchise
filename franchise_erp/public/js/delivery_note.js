@@ -4,6 +4,15 @@ frappe.ui.form.on("Delivery Note", {
         // set_sales_person(frm);
         frm.__export_button_added = false;
         add_export_button(frm);
+    },
+    validate(frm) {
+        frm.doc.items.forEach(row => {
+            if ((row.rate || 0) <= 0) {
+                frappe.throw(
+                    `Row #${row.idx}: MRP cannot be 0 for Item ${row.item_code}`
+                );
+            }
+        });
     }
 });
 
