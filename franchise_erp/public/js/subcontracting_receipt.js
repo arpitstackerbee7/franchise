@@ -43,6 +43,7 @@ frappe.ui.form.on("Subcontracting Receipt", {
 
         // Remove pencil icon
         $(".page-title .editable-title").css("pointer-events", "none");
+        calculate_total_service_cost(frm);
     },
 
         onload(frm) {
@@ -313,8 +314,29 @@ frappe.ui.form.on("Subcontracting Receipt Item", {
 
         // Apply editable / read-only logic
         toggle_qty_editable(frm, cdt, cdn, is_batch);
-    }
+    },
+    service_cost_per_qty: function(frm) {
+		calculate_total_service_cost(frm);
+	},
+
+	items_add: function(frm) {
+		calculate_total_service_cost(frm);
+	},
+
+	items_remove: function(frm) {
+		calculate_total_service_cost(frm);
+	}
 });
+
+function calculate_total_service_cost(frm) {
+	let total = 0;
+
+	(frm.doc.items || []).forEach(row => {
+		total += flt(row.service_cost_per_qty || 0);
+	});
+
+	frm.set_value("custom_total_service_cost", total);
+}
 
 frappe.ui.form.on("Subcontracting Receipt", {
     refresh(frm) {
