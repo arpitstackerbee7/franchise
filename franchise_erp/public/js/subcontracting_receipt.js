@@ -319,6 +319,10 @@ frappe.ui.form.on("Subcontracting Receipt Item", {
 		calculate_total_service_cost(frm);
 	},
 
+	qty: function(frm) {
+		calculate_total_service_cost(frm);
+	},
+
 	items_add: function(frm) {
 		calculate_total_service_cost(frm);
 	},
@@ -331,8 +335,8 @@ frappe.ui.form.on("Subcontracting Receipt Item", {
 function calculate_total_service_cost(frm) {
 	let total = 0;
 
-	(frm.doc.items || []).forEach(row => {
-		total += flt(row.service_cost_per_qty || 0);
+	(frm.doc.items || []).forEach(function(row) {
+		total += flt(row.service_cost_per_qty || 0) * flt(row.qty || 0);
 	});
 
 	frm.set_value("custom_total_service_cost", total);
