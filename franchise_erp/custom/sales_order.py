@@ -79,9 +79,84 @@ def apply_sales_term(doc, method):
 #         "status": status_map.get(invoice[0].docstatus)
 #     }
 
-@frappe.whitelist()
-def validate_scanned_serial(serial_no):
+# @frappe.whitelist()
+# def validate_scanned_serial(serial_no, customer):
 
+#     item_code = frappe.db.get_value(
+#         "Serial No",
+#         serial_no,
+#         "item_code"
+#     )
+
+#     if not item_code:
+#         return {
+#             "valid": False,
+#             "message": "Invalid Serial No"
+#         }
+
+#     # invoice = frappe.db.sql("""
+#     #     SELECT
+#     #         si.name,
+#     #         si.docstatus
+#     #     FROM `tabSales Invoice Item` sii
+#     #     INNER JOIN `tabSales Invoice` si
+#     #         ON si.name = sii.parent
+#     #     WHERE sii.serial_no LIKE %(serial)s
+#     #     LIMIT 1
+#     # """, {
+#     #     "serial": f"%{serial_no}%"
+#     # }, as_dict=True)
+#     invoice = frappe.db.sql("""
+#         SELECT
+#             si.name,
+#             si.docstatus,
+#             si.customer
+#         FROM `tabSales Invoice Item` sii
+#         INNER JOIN `tabSales Invoice` si
+#             ON si.name = sii.parent
+#         WHERE
+#             sii.serial_no LIKE %(serial)s
+#             AND si.docstatus != 2
+#         LIMIT 1
+#     """, {
+#         "serial": f"%{serial_no}%"
+#     }, as_dict=True)
+
+#     active_serials = frappe.get_all(
+#         "Serial No",
+#         filters={
+#             "item_code": item_code,
+#             "status": "Active"
+#         },
+#         fields=["name"],
+#         limit_page_length=20
+#     )
+
+#     active_serials = [d.name for d in active_serials if d.name != serial_no]
+
+#     if invoice:
+#         return {
+#             "used": True,
+#             "invoice": invoice[0].name,
+#             "status": {
+#                 0: "Draft",
+#                 1: "Submitted",
+#                 2: "Cancelled"
+#             }.get(invoice[0].docstatus),
+#             "item_code": item_code,
+#             "active_serials": active_serials
+#         }
+
+#     return {
+#         "used": False,
+#         "item_code": item_code,
+#         "active_serials": active_serials
+#     }
+
+@frappe.whitelist()
+def validate_scanned_serial(serial_no, customer=None):
+
+    # Get Item Code from Serial No
     item_code = frappe.db.get_value(
         "Serial No",
         serial_no,
@@ -94,35 +169,49 @@ def validate_scanned_serial(serial_no):
             "message": "Invalid Serial No"
         }
 
+    # Check whether this serial is already used in any Sales Invoice
     invoice = frappe.db.sql("""
         SELECT
             si.name,
-            si.docstatus
+            si.docstatus,
+            si.customer
         FROM `tabSales Invoice Item` sii
         INNER JOIN `tabSales Invoice` si
             ON si.name = sii.parent
-        WHERE sii.serial_no LIKE %(serial)s
+        WHERE
+            (
+                sii.serial_no = %(serial)s
+                OR sii.serial_no LIKE %(serial_start)s
+                OR sii.serial_no LIKE %(serial_end)s
+                OR sii.serial_no LIKE %(serial_middle)s
+            )
+            AND si.docstatus != 2
         LIMIT 1
     """, {
-        "serial": f"%{serial_no}%"
+        "serial": serial_no,
+        "serial_start": serial_no + "\n%",
+        "serial_end": "%\n" + serial_no,
+        "serial_middle": "%\n" + serial_no + "\n%"
     }, as_dict=True)
 
+    # Get Active Serials of same Item
     active_serials = frappe.get_all(
         "Serial No",
         filters={
             "item_code": item_code,
             "status": "Active"
         },
-        fields=["name"],
+        pluck="name",
         limit_page_length=20
     )
 
-    active_serials = [d.name for d in active_serials if d.name != serial_no]
+    active_serials = [d for d in active_serials if d != serial_no]
 
     if invoice:
         return {
             "used": True,
             "invoice": invoice[0].name,
+            "customer": invoice[0].customer,
             "status": {
                 0: "Draft",
                 1: "Submitted",
