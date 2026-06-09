@@ -191,10 +191,17 @@ frappe.ui.form.on("Subcontracting Receipt", {
             // UPDATE QTY BASED ON SERIAL COUNT
             // -------------------------
 
-            await frappe.model.set_value(
+           await frappe.model.set_value(
                 row.doctype,
                 row.name,
                 "qty",
+                serials.length
+            );
+
+            await frappe.model.set_value(
+                row.doctype,
+                row.name,
+                "received_qty",
                 serials.length
             );
 

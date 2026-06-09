@@ -198,8 +198,8 @@ doc_events = {
     "Subcontracting Receipt": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
-         "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
-         "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel"
+        "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
+        "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel",
     },
     "Leave Application":{
         "on_submit": "franchise_erp.custom.leave_application.update_late_log_on_short_leave"
@@ -273,7 +273,8 @@ doctype_js = {
 # franchise_erp/hooks.py
 override_doctype_class = {
     "Sales Invoice": "franchise_erp.custom.sales_invoice.CustomSalesInvoice",
-    "Purchase Invoice": "franchise_erp.custom.purchase_invoice.CustomPurchaseInvoice"
+    "Purchase Invoice": "franchise_erp.custom.purchase_invoice.CustomPurchaseInvoice",
+    "Subcontracting Receipt": "franchise_erp.custom.subcontracting_receipt.CustomSubcontractingReceipt"
 }
 # override_whitelisted_methods = {
 #     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"

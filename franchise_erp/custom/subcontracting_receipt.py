@@ -1,5 +1,24 @@
 import frappe
 
+from erpnext.subcontracting.doctype.subcontracting_receipt.subcontracting_receipt import (
+    SubcontractingReceipt
+)
+
+class CustomSubcontractingReceipt(SubcontractingReceipt):
+
+    def validate_items_qty(self):
+        for item in self.items:
+
+            # Agar qty aur rejected_qty dono 0 hain
+            # to qty ko received_qty se set kar do
+
+            if not item.qty and item.received_qty:
+                item.qty = item.received_qty
+
+        # Ab original validation call karo
+        super().validate_items_qty()
+
+        
 @frappe.whitelist()
 def create_incoming_logistics_from_scr(subcontracting_receipt):
     scr = frappe.get_doc("Subcontracting Receipt", subcontracting_receipt)
@@ -328,7 +347,6 @@ def get_available_gate_entries(doctype, txt, searchfield, start, page_len, filte
 
         LIMIT %s, %s
     """, ("%{}%".format(txt), start, page_len))
-
 
 
 
