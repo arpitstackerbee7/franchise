@@ -77,7 +77,8 @@ frappe.ui.form.on('Sales Order', {
         frappe.call({
             method: "franchise_erp.custom.sales_order.validate_scanned_serial",
             args: {
-                serial_no: barcode
+                serial_no: barcode,
+                customer: frm.doc.customer
             },
             callback: function(r) {
 
@@ -86,52 +87,84 @@ frappe.ui.form.on('Sales Order', {
                 // Already invoiced
                 if (r.message.used) {
 
-                    frappe.msgprint({
-                        title: __("Serial Already Used"),
-                        indicator: "red",
-                        message: `
-                            <b>Serial No:</b> ${barcode}<br>
-                            <b>Sales Invoice:</b> ${r.message.invoice}<br>
-                            <b>Status:</b> ${r.message.status}<br><br>
+    frappe.msgprint({
+        title: __("Serial Already Used"),
+        indicator: "red",
+        message: `
+            <div style="line-height:1.8">
+                <b>Scanned Serial No:</b> ${barcode}<br>
+                <b>Item Code:</b> ${r.message.item_code}<br>
+                <b>Sales Invoice:</b> ${r.message.invoice}<br>
+                <b>Customer:</b> ${r.message.customer}<br>
+                <b>Status:</b> ${r.message.status}<br><br>
 
-                            <b>Active Serials:</b><br>
-                            ${r.message.active_serials.join("<br>")}
-                        `
-                    });
+                <span style="color:#d9534f;">
+                    This serial has already been used in a Sales Invoice and cannot be scanned again.
+                </span>
 
-                    frm.set_value("scan_barcode", "");
+                <br><br>
 
-                    // Remove scanned row if ERPNext already added it
-                    setTimeout(() => {
-                        let rows = frm.doc.items || [];
+                <b>Other Available Active Serials:</b><br>
+                ${
+                    r.message.active_serials.length
+                        ? r.message.active_serials.join("<br>")
+                        : "No other active serials available."
+                }
+            </div>
+        `
+    });
 
-                        rows.forEach(row => {
-                            if (
-                                row.serial_no === barcode ||
-                                row.serial_and_batch_bundle === barcode
-                            ) {
-                                frappe.model.clear_doc(
-                                    row.doctype,
-                                    row.name
-                                );
-                            }
-                        });
+    frm.set_value("scan_barcode", "");
 
-                        frm.refresh_field("items");
-                    }, 300);
+    // Remove row if ERPNext already added it
+    setTimeout(() => {
+        let rows = frm.doc.items || [];
 
-                    return;
+        rows.forEach(row => {
+            if (
+                row.serial_no === barcode ||
+                row.serial_and_batch_bundle === barcode
+            ) {
+                frappe.model.clear_doc(row.doctype, row.name);
+            }
+        });
+
+        frm.refresh_field("items");
+    }, 300);
+
+    return;
+}
+
+               // Active serial
+               let activeSerialHtml = "";
+
+                if (r.message.active_serials && r.message.active_serials.length > 0) {
+                    activeSerialHtml = `
+                        <b>Other Available Active Serials:</b><br>
+                        ${r.message.active_serials.join("<br>")}
+                    `;
+                } else {
+                    activeSerialHtml = `
+                        <b>No other active serials are currently available for this item.</b>
+                    `;
                 }
 
-                // Active serial
                 frappe.msgprint({
                     title: __("Serial Available"),
                     indicator: "green",
                     message: `
-                        <b>Item Code:</b> ${r.message.item_code}<br><br>
+                        <div style="line-height:1.8">
+                            <b>Scanned Serial No:</b> ${barcode}<br>
+                            <b>Item Code:</b> ${r.message.item_code}<br><br>
 
-                        <b>Other Active Serials:</b><br>
-                        ${r.message.active_serials.join("<br>")}
+                            <span style="color:green;">
+                                This serial has not been invoiced for the selected customer and can be added to this Sales Order.
+                            </span>
+
+                            <br><br>
+
+                            ${activeSerialHtml}
+                        </div>
                     `
                 });
             }
