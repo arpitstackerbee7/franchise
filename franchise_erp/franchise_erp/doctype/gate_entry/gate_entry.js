@@ -396,7 +396,6 @@ function validate_not_future(frm, fieldname) {
 //         });
 //     }
 // });
-
 frappe.ui.form.on("Gate Entry", {
     onload(frm) {
         set_transport_service_item(frm);
@@ -404,6 +403,12 @@ frappe.ui.form.on("Gate Entry", {
 
     refresh(frm) {
         set_transport_service_item(frm);
+         frm.set_query("door_no", function () {
+
+            return {
+                query: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_incoming_logistics_users"
+            };
+        });
     }
 });
 
