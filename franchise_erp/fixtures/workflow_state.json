@@ -3,19 +3,10 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
-  "modified": "2026-06-01 16:50:53.988904",
-  "name": "Pending Report Manager",
+  "modified": "2026-06-01 16:54:32.809647",
+  "name": "Pending Reporting Manager",
   "style": "",
-  "workflow_state_name": "Pending Report Manager"
- },
- {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
-  "modified": "2026-06-01 16:52:00.354078",
-  "name": "Pending HR Approval",
-  "style": "",
-  "workflow_state_name": "Pending HR Approval"
+  "workflow_state_name": "Pending Reporting Manager"
  },
  {
   "docstatus": 0,

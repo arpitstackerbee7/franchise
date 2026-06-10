@@ -231,6 +231,10 @@ doc_events = {
         "validate": "franchise_erp.custom.user.validate_user_roles",
         "before_save": "franchise_erp.custom.user.validate_user_roles"
     },
+    "Compensatory Leave Request": {
+        "validate": "franchise_erp.custom.comp_off.validate_comp_off_submission",
+        "on_submit": "franchise_erp.custom.comp_off.set_comp_off_expiry"
+    }
 
 }
    
@@ -397,7 +401,10 @@ scheduler_events = {
         "* * * * *": [
             "franchise_erp.custom.serial_no.update_serial_custom_style"
         ]
-    }
+    },
+    "daily": [
+        "franchise_erp.custom.comp_off.expire_comp_off_allocations"
+    ]
 }
 # Installation
 # ------------
@@ -666,5 +673,31 @@ fixtures = [
     {
         "dt": "Workflow Action Master",
         "filters": [["name", "in", ["Submit", "Approve", "Reject"]]]
+    }
+]
+
+fixtures = [
+    {
+        "dt": "Workflow",
+        "filters": [
+            ["name", "=", "Compensatory Leave Request Workflow"]
+        ]
+    },
+    {
+        "dt": "Workflow State",
+        "filters": [
+            ["name", "in", [
+                "Draft",
+                "Pending Reporting Manager",
+                "Approved",
+                "Rejected"
+            ]]
+        ]
+    },
+    {
+        "dt": "Workflow Transition",
+        "filters": [
+            ["parent", "=", "Compensatory Leave Request Workflow"]
+        ]
     }
 ]
