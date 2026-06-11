@@ -2567,3 +2567,56 @@ def get_chart_data(chart_name, from_date, to_date, view_type='qty', company='', 
         'columns': result.get('columns'),
     }
 
+import frappe
+
+@frappe.whitelist()
+def get_catalogue_items(keyword=""):
+
+    items = frappe.get_all(
+        "Item",
+        filters={
+            "disabled": 0
+        },
+        fields=[
+            "name",
+            "item_code",
+            "item_name",
+            "image",
+            "custom_barcode_code",
+            "custom_departments",
+            "custom_silvet",
+            "custom_group_collection",
+            "division"
+        ],
+        limit_page_length=100
+    )
+
+    result = []
+
+    for item in items:
+
+        if keyword:
+            search_text = (
+                f"{item.item_code} "
+                f"{item.item_name or ''} "
+                f"{item.custom_barcode_code or ''}"
+            ).lower()
+
+            if keyword.lower() not in search_text:
+                continue
+
+        images = frappe.get_all(
+            "File",
+            filters={
+                "attached_to_doctype": "Item",
+                "attached_to_name": item.name
+            },
+            fields=["file_url"]
+        )
+
+        item["gallery"] = [img.file_url for img in images]
+
+        result.append(item)
+
+    return result
+
