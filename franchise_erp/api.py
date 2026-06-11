@@ -2586,7 +2586,7 @@ def get_catalogue_items(keyword=""):
             "custom_departments",
             "custom_silvet",
             "custom_group_collection",
-            "division"
+            "item_group"
         ],
         limit_page_length=100
     )
