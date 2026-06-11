@@ -396,12 +396,107 @@ def generate_serials_on_po_submit(doc, method):
 #         doc.apply_discount_on = "Net Total"
 #         doc.discount_amount = total_flat_discount
 
+# def apply_purchase_term(doc, method):
+
+#     if not doc.custom_purchase_term:
+#         return
+
+#     term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
+
+#     # -------------------------------
+#     # 🔥 STEP 0: RESET ITEM DISTRIBUTED DISCOUNT
+#     # -------------------------------
+#     for item in doc.items:
+#         item.distributed_discount_amount = 0
+
+#     # -------------------------------
+#     # 🔥 RESET DOC LEVEL
+#     # -------------------------------
+#     doc.additional_discount_percentage = 0
+#     doc.discount_amount = 0
+#     doc.apply_discount_on = None
+
+#     doc.ignore_pricing_rule = 1
+
+#     total_flat_discount = 0.0
+#     header_discount_percent = 0.0
+
+#     # -------------------------------
+#     # 1️⃣ ITEM LEVEL (RATE DIFF)
+#     # -------------------------------
+#     for item in doc.items:
+
+#         base_rate = item.price_list_rate or item.rate
+#         adjusted_rate = base_rate
+
+#         for row in term.purchase_term_charges:
+#             if row.charge_type == "Rate Diff":
+#                 adjusted_rate -= row.value
+
+#         item.rate = adjusted_rate
+
+
+#     # -------------------------------
+#     # 2️⃣ DOCUMENT LEVEL (DISCOUNT)
+#     # -------------------------------
+#     for row in term.purchase_term_charges:
+
+#         if row.charge_type == "Discount":
+
+#             if row.value_type == "Percentage":
+#                 header_discount_percent += row.value
+
+#             elif row.value_type == "Amount":
+#                 total_flat_discount += row.value
+
+
+#     # -------------------------------
+#     # 3️⃣ APPLY DISCOUNT
+#     # -------------------------------
+#     if header_discount_percent:
+#         doc.apply_discount_on = "Net Total"
+#         doc.additional_discount_percentage = header_discount_percent
+
+#     elif total_flat_discount:
+#         doc.apply_discount_on = "Net Total"
+#         doc.discount_amount = total_flat_discount
+
+
+#     # -----------------------------------
+#     # 🔥 FINAL RECALCULATION (MANDATORY)
+#     # -----------------------------------
+#     doc.run_method("calculate_taxes_and_totals")
+
 def apply_purchase_term(doc, method):
 
     if not doc.custom_purchase_term:
         return
 
     term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
+
+    # -------------------------------------------------
+    # 🔥 If manual discount is already applied,
+    # don't overwrite ERPNext's default discount.
+    # -------------------------------------------------
+    # if (
+    #     doc.apply_discount_on
+    #     and (
+    #         float(doc.discount_amount or 0) > 0
+    #         or float(doc.additional_discount_percentage or 0) > 0
+    #     )
+    # ):
+    #     return
+    # Agar Purchase Term change nahi hua aur user ne manual discount lagaya hai
+    # tabhi skip karo
+    if (
+        not doc.has_value_changed("custom_purchase_term")
+        and doc.apply_discount_on
+        and (
+            float(doc.discount_amount or 0) > 0
+            or float(doc.additional_discount_percentage or 0) > 0
+        )
+    ):
+        return
 
     # -------------------------------
     # 🔥 STEP 0: RESET ITEM DISTRIBUTED DISCOUNT
@@ -435,7 +530,6 @@ def apply_purchase_term(doc, method):
 
         item.rate = adjusted_rate
 
-
     # -------------------------------
     # 2️⃣ DOCUMENT LEVEL (DISCOUNT)
     # -------------------------------
@@ -449,7 +543,6 @@ def apply_purchase_term(doc, method):
             elif row.value_type == "Amount":
                 total_flat_discount += row.value
 
-
     # -------------------------------
     # 3️⃣ APPLY DISCOUNT
     # -------------------------------
@@ -461,9 +554,8 @@ def apply_purchase_term(doc, method):
         doc.apply_discount_on = "Net Total"
         doc.discount_amount = total_flat_discount
 
-
     # -----------------------------------
-    # 🔥 FINAL RECALCULATION (MANDATORY)
+    # 🔥 FINAL RECALCULATION
     # -----------------------------------
     doc.run_method("calculate_taxes_and_totals")
 
