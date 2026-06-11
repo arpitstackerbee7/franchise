@@ -104,6 +104,7 @@
    "options": "Supplier"
   },
   {
+   "allow_on_submit": 1,
    "depends_on": "eval:doc.consignor",
    "fetch_from": "consignor.custom_transporter",
    "fetch_if_empty": 1,
@@ -382,6 +383,7 @@
    "options": "Customer"
   },
   {
+   "allow_on_submit": 1,
    "depends_on": "eval:doc.consignor_customer",
    "fetch_from": "consignor_customer.custom_transporter",
    "fetch_if_empty": 1,
@@ -408,7 +410,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-05-28 15:58:30.135072",
+ "modified": "2026-06-11 18:13:52.999401",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
