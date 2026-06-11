@@ -53,13 +53,13 @@ def expire_comp_off_allocations():
 
     frappe.db.commit()
 
-def validate_comp_off_submission(doc, method=None):
+# def validate_comp_off_submission(doc, method=None):
 
-    deadline = get_datetime(
-        f"{add_days(doc.work_end_date, 1)} 17:00:00"
-    )
+#     deadline = get_datetime(
+#         f"{add_days(doc.work_end_date, 1)} 17:00:00"
+#     )
 
-    if get_datetime() > deadline:
-        frappe.throw(
-            "Comp Off Request can only be submitted until 2:00 PM of the next day."
-        )
+#     if get_datetime() > deadline:
+#         frappe.throw(
+#             "Comp Off Request can only be submitted until 2:00 PM of the next day."
+#         )
