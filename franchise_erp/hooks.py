@@ -232,7 +232,7 @@ doc_events = {
         "before_save": "franchise_erp.custom.user.validate_user_roles"
     },
     "Compensatory Leave Request": {
-        #"validate": "franchise_erp.custom.comp_off.validate_comp_off_submission",
+        "validate": "franchise_erp.custom.comp_off.validate_comp_off_submission",
         "on_submit": "franchise_erp.custom.comp_off.set_comp_off_expiry"
     }
 
