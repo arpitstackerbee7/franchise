@@ -123,6 +123,22 @@ def get_data(filters):
         style = (item.custom_barcode_code or "").strip()
 
         # Purchase Receipt Qty
+        # purchase_qty = frappe.db.sql("""
+        #     SELECT COALESCE(SUM(pri.qty),0)
+        #     FROM `tabPurchase Receipt Item` pri
+        #     INNER JOIN `tabPurchase Receipt` pr
+        #         ON pr.name = pri.parent
+        #     WHERE
+        #         pr.docstatus = 1
+        #         AND pr.company = %s
+        #         AND pri.item_code = %s
+        #         AND pr.posting_date BETWEEN %s AND %s
+        # """, (
+        #     "TZU Lifestyle Private Limited",
+        #     item.item_code,
+        #     filters.get("from_date"),
+        #     filters.get("to_date")
+        # ))[0][0]
         purchase_qty = frappe.db.sql("""
             SELECT COALESCE(SUM(pri.qty),0)
             FROM `tabPurchase Receipt Item` pri
@@ -139,6 +155,10 @@ def get_data(filters):
             filters.get("from_date"),
             filters.get("to_date")
         ))[0][0]
+
+        # 🔥 ADD THIS FILTER
+        if not purchase_qty or purchase_qty == 0:
+            continue
         
 
         # Dispatch Qty (Sales Invoice -> Internal Customer)
