@@ -347,9 +347,34 @@ def get_data(filters):
         )
     )
 
+    # for row in data:
+
+    #     style = row.get("style")
+
+    #     if current_style is None:
+    #         current_style = style
+
+    #     if current_style != style:
+
+    #         final_data.extend(style_rows)
+    #         add_style_total(
+    #             final_data,
+    #             style_rows,
+    #             current_style
+    #         )
+
+    #         style_rows = []
+    #         current_style = style
+
+    #     if style != previous_style:
+    #         previous_style = style
+    #     else:
+    #         row["style"] = ""
+
+    #     style_rows.append(row)
     for row in data:
 
-        style = row.get("style")
+        style = row["style"]
 
         if current_style is None:
             current_style = style
@@ -357,19 +382,17 @@ def get_data(filters):
         if current_style != style:
 
             final_data.extend(style_rows)
-            add_style_total(
-                final_data,
-                style_rows,
-                current_style
-            )
+            add_style_total(final_data, style_rows, current_style)
 
             style_rows = []
             current_style = style
+            previous_style = None
 
-        if style != previous_style:
-            previous_style = style
-        else:
+        # style sirf first row me
+        if style == previous_style:
             row["style"] = ""
+        else:
+            previous_style = style
 
         style_rows.append(row)
 
@@ -429,7 +452,7 @@ def add_style_total(final_data, style_rows, style):
         2
     ) if dispatch_qty else 0
 
-    final_data.extend(style_rows)
+    # final_data.extend(style_rows)
 
     final_data.append({
         "style": f"{style} Total",
