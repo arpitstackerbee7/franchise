@@ -35,38 +35,38 @@ frappe.query_reports["Sell Through Report"] = {
         }
 
         // Status Color
-        if (column.fieldname === "status") {
+        // if (column.fieldname === "status") {
 
-            if (data.status === "GREEN") {
-                value = `<span style="
-                    background-color: #28a745;
-                    color: white;
-                    padding: 3px 8px;
-                    border-radius: 4px;
-                    font-weight: bold;
-                ">${data.status}</span>`;
-            }
+        //     if (data.status === "GREEN") {
+        //         value = `<span style="
+        //             background-color: #28a745;
+        //             color: white;
+        //             padding: 3px 8px;
+        //             border-radius: 4px;
+        //             font-weight: bold;
+        //         ">${data.status}</span>`;
+        //     }
 
-            else if (data.status === "YELLOW") {
-                value = `<span style="
-                    background-color: #ffc107;
-                    color: black;
-                    padding: 3px 8px;
-                    border-radius: 4px;
-                    font-weight: bold;
-                ">${data.status}</span>`;
-            }
+        //     else if (data.status === "YELLOW") {
+        //         value = `<span style="
+        //             background-color: #ffc107;
+        //             color: black;
+        //             padding: 3px 8px;
+        //             border-radius: 4px;
+        //             font-weight: bold;
+        //         ">${data.status}</span>`;
+        //     }
 
-            else if (data.status === "RED") {
-                value = `<span style="
-                    background-color: #dc3545;
-                    color: white;
-                    padding: 3px 8px;
-                    border-radius: 4px;
-                    font-weight: bold;
-                ">${data.status}</span>`;
-            }
-        }
+        //     else if (data.status === "RED") {
+        //         value = `<span style="
+        //             background-color: #dc3545;
+        //             color: white;
+        //             padding: 3px 8px;
+        //             border-radius: 4px;
+        //             font-weight: bold;
+        //         ">${data.status}</span>`;
+        //     }
+        // }
 
         return value;
     }
