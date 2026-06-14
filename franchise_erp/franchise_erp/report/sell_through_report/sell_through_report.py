@@ -26,37 +26,37 @@ def get_columns():
         {
             "label": "Purchase Receipts Qty",
             "fieldname": "purchase_qty",
-            "fieldtype": "Float",
+            "fieldtype": "int",
             "width": 80,
         },
         {
             "label": "Dispatch",
             "fieldname": "dispatch_qty",
-            "fieldtype": "Float",
+            "fieldtype": "int",
             "width": 80,
         },
         {
             "label": "Sales",
             "fieldname": "sales_qty",
-            "fieldtype": "Float",
+            "fieldtype": "int",
             "width": 80,
         },
         {
             "label": "Stock at Warehouse",
             "fieldname": "warehouse_stock",
-            "fieldtype": "Float",
+            "fieldtype": "int",
             "width": 80,
         },
         {
             "label": "Stock at SIS Counter",
             "fieldname": "sis_stock",
-            "fieldtype": "Float",
+            "fieldtype": "int",
             "width": 80,
         },
         {
             "label": "Total Stock(Wharehouse + SIS Counter)",
             "fieldname": "total_stock",
-            "fieldtype": "Float",
+            "fieldtype": "int",
             "width": 80,
         },
         {
@@ -68,7 +68,7 @@ def get_columns():
         {
             "label": "Avg Stock Carrying Days at SIS",
             "fieldname": "avg_stock_carrying_days",
-            "fieldtype": "Float",
+            "fieldtype": "int",
             "width": 80,
         },
         {
@@ -80,13 +80,13 @@ def get_columns():
         {
             "label": "Daily Planned Sale (1% of Average Carrying Days at SIS)",
             "fieldname": "daily_planned_sale",
-            "fieldtype": "Float",
+            "fieldtype": "int",
             "width": 80,
         },
         {
             "label": "Actual Sale Through %",
             "fieldname": "actual_sale_through",
-            "fieldtype": "Percent",
+            "fieldtype": "int",
             "width": 80,
         },
         {
