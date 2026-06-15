@@ -499,3 +499,9 @@ def get_status(actual_sale_through, daily_planned_sale):
         return "YELLOW"
     else:
         return "RED"
+    
+
+# @frappe.whitelist()
+# def export_styled_excel(filters=None):
+#     frappe.msgprint("Export function called successfully")
+#     return "/app/query-report/Sell%20Through%20Report"

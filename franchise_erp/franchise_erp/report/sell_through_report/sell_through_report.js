@@ -15,6 +15,21 @@ frappe.query_reports["Sell Through Report"] = {
             default: frappe.datetime.month_end()
         }
     ],
+    // onload: function(report) {
+    //     report.page.add_inner_button(__("Export Styled Excel"), function() {
+
+    //         frappe.call({
+    //             method: "franchise_erp.franchise_erp.report.sell_through_report.sell_through_report.export_styled_excel",
+    //             args: {
+    //                 filters: report.get_values()
+    //             },
+    //             callback: function(r) {
+    //                 console.log(r.message);
+    //             }
+    //         });
+
+    //     });
+    // },
 
     formatter: function(value, row, column, data, default_formatter) {
 
@@ -87,7 +102,7 @@ frappe.query_reports["Sell Through Report"] = {
             let text = "#000";
 
             if (data.status === "GREEN") {
-                bg = "#D4EDDA";      // Light Green
+                bg = "#74d28b";      // Light Green
                 text = "#155724";
             }
             else if (data.status === "YELLOW") {
