@@ -47,9 +47,11 @@ frappe.pages['catalogue-view'].on_page_load = function(wrapper) {
     width:100%;
     aspect-ratio:3/4;
     object-fit:contain;
-    border-radius:8px;
     background:#f8f8f8;
-    border:1px solid #eee;
+}
+
+video.main-image{
+    background:#000;
 }
 
     .thumbnail-row{
@@ -188,11 +190,48 @@ frappe.pages['catalogue-view'].on_page_load = function(wrapper) {
         </div>
     `);
 
-    $(document).off("click", "#search-btn");
-    $(document).off("click", ".catalog-details");
-    $(document).off("click", ".thumbnail");
-    $(document).off("click", ".next-slide");
-    $(document).off("click", ".prev-slide");
+   $(document).off("click", "#search-btn");
+$(document).off("click", ".catalog-details");
+$(document).off("click", ".thumbnail");
+$(document).off("click", ".next-slide");
+$(document).off("click", ".prev-slide");
+
+function renderPreview(wrapper, src) {
+
+    let isVideo =
+        /\.(mp4|mpeg4|webm|ogg)(\?|$)/i.test(src);
+
+    wrapper.html(`
+
+        ${
+            isVideo
+            ? `
+                <video
+                    src="${src}"
+                    class="main-image"
+                    controls
+                    autoplay
+                    preload="metadata"
+                ></video>
+              `
+            : `
+                <img
+                    src="${src}"
+                    class="main-image"
+                >
+              `
+        }
+
+        <button class="slide-btn prev-slide">
+            ◀
+        </button>
+
+        <button class="slide-btn next-slide">
+            ▶
+        </button>
+
+    `);
+}
 
     // SEARCH
 
@@ -219,17 +258,34 @@ frappe.pages['catalogue-view'].on_page_load = function(wrapper) {
                         ];
                     }
 
-                    let thumbnails = "";
+                   let thumbnails = "";
 
-                    gallery.forEach(img => {
+gallery.forEach(file => {
 
-                        thumbnails += `
-                            <img
-                                src="${img}"
-                                class="thumbnail"
-                            >
-                        `;
-                    });
+    const isVideo =
+        /\.(mp4|mpeg4|webm|ogg)(\?|$)/i.test(file);
+
+    if (isVideo) {
+
+        thumbnails += `
+            <video
+                src="${file}"
+                class="thumbnail"
+                muted
+                preload="metadata"
+            ></video>
+        `;
+
+    } else {
+
+        thumbnails += `
+            <img
+                src="${file}"
+                class="thumbnail"
+            >
+        `;
+    }
+});
 
                     html += `
 
@@ -241,10 +297,25 @@ frappe.pages['catalogue-view'].on_page_load = function(wrapper) {
 
                                 <div class="main-image-wrapper">
 
-                                    <img
-                                        src="${gallery[0]}"
-                                        class="main-image"
-                                    >
+                                   ${
+    /\.(mp4|mpeg4|webm|ogg)(\?|$)/i.test(gallery[0])
+
+    ? `
+        <video
+            src="${gallery[0]}"
+            class="main-image"
+            controls
+            preload="metadata"
+        ></video>
+      `
+
+    : `
+        <img
+            src="${gallery[0]}"
+            class="main-image"
+        >
+      `
+}
 
                                     ${
                                         gallery.length > 1
@@ -333,18 +404,21 @@ frappe.pages['catalogue-view'].on_page_load = function(wrapper) {
 
     // THUMBNAIL CLICK
 
-    $(document).on("click", ".thumbnail", function(e) {
+   $(document).on("click", ".thumbnail", function(e) {
 
-        e.stopPropagation();
+    e.stopPropagation();
 
-        let img = $(this).attr("src");
+    let src = $(this).attr("src");
 
-        $(this)
-            .closest(".catalog-images")
-            .find(".main-image")
-            .attr("src", img);
+    let wrapper = $(this)
+        .closest(".catalog-images")
+        .find(".main-image-wrapper");
 
-    });
+    let isVideo =
+        /\.(mp4|mpeg4|webm|ogg)(\?|$)/i.test(src);
+
+    renderPreview(wrapper, src);
+});
 
     // NEXT
 
@@ -375,10 +449,11 @@ frappe.pages['catalogue-view'].on_page_load = function(wrapper) {
         let nextIndex =
             (currentIndex + 1) % thumbs.length;
 
-        mainImage.attr(
-            "src",
-            $(thumbs[nextIndex]).attr("src")
-        );
+       let src = $(thumbs[nextIndex]).attr("src");
+
+let preview = wrapper.find(".main-image-wrapper");
+
+renderPreview(preview, src);
 
     });
 
@@ -412,10 +487,11 @@ frappe.pages['catalogue-view'].on_page_load = function(wrapper) {
             (currentIndex - 1 + thumbs.length)
             % thumbs.length;
 
-        mainImage.attr(
-            "src",
-            $(thumbs[prevIndex]).attr("src")
-        );
+       let src = $(thumbs[prevIndex]).attr("src");
+
+let preview = wrapper.find(".main-image-wrapper");
+
+renderPreview(preview, src);
 
     });
 
