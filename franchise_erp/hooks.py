@@ -404,6 +404,9 @@ scheduler_events = {
     },
     "daily": [
         "franchise_erp.custom.comp_off.expire_comp_off_allocations"
+    ],
+    "hourly": [
+        "franchise_erp.custom.attendence.update_shift_last_sync"
     ]
 }
 # Installation
