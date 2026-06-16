@@ -198,7 +198,6 @@ def on_submit(doc, method):
 #         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
 #     )
 
-import frappe
 
 # @frappe.whitelist()
 # def validate_po_serial(scanned_serial, po_items, is_return=0):
