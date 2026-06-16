@@ -31,14 +31,20 @@ def execute(filters=None):
     REMOVE_FIELDS = {"credit_note", "range1", "range2", "range3", "range4", "range5"}
     columns = [c for c in columns if c.get("fieldname") not in REMOVE_FIELDS]
 
-    # ── Add Running Balance column ─────────────────────────────────────────
-    columns.append({
+    running_balance_col = {
         "label": "Running Balance",
         "fieldname": "running_balance",
         "fieldtype": "Currency",
         "options": "currency",
         "width": 150,
-    })
+    }
+
+    outstanding_idx = next(
+        (i for i, c in enumerate(columns) if c.get("fieldname") == "outstanding"),
+        len(columns) - 1,
+    )
+    columns.insert(outstanding_idx + 1, running_balance_col)
+
 
     # ── Batch fetch all is_return Purchase Invoices ────────────────────────
     all_pinv_nos = [
@@ -87,12 +93,14 @@ def execute(filters=None):
 
     # ── Build output ──────────────────────────────────────────────────────
     output = []
-    running_balance = 0.0
+    
 
     for party in party_order:
         rows = party_buckets[party]
         if not rows:
             continue
+
+        running_balance = 0.0 
 
         sample_row = rows[0]
         currency   = sample_row.get("currency", "")
