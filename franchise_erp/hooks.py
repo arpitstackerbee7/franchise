@@ -30,17 +30,10 @@ on_login = "franchise_erp.auth.check_session_limit"
 on_session_creation = [
      
     "franchise_erp.custom.session_company.set_session_company_from_user",
-    # "franchise_erp.custom.attendance_patch"
+    # "franchise_erp.login_one_machine.check_single_session"
      
 ]
 
-before_job = [
-    "franchise_erp.custom.attendance_patch.load_patch"
-]
-
-after_migrate = [
-    "franchise_erp.custom.attendance_patch.load_patch"
-]
 
 doc_events = {
 
@@ -280,10 +273,7 @@ doctype_js = {
 
 }
 
-# override_whitelisted_methods = {
-#     "hrms.hr.doctype.attendance.attendance.mark_attendance":
-#     "franchise_erp.custom.attendence.mark_attendance"
-# }
+
 # franchise_erp/hooks.py
 override_doctype_class = {
     "Sales Invoice": "franchise_erp.custom.sales_invoice.CustomSalesInvoice",
