@@ -35,6 +35,14 @@ on_session_creation = [
 ]
 
 
+# before_job = [
+#     "franchise_erp.custom.attendance_patch.load_patch"
+# ]
+
+# after_migrate = [
+#     "franchise_erp.custom.attendance_patch.load_patch"
+# ]
+
 doc_events = {
 
     # apps/franchise_erp/franchise_erp/hooks.py
@@ -404,10 +412,7 @@ scheduler_events = {
     },
     "daily": [
         "franchise_erp.custom.comp_off.expire_comp_off_allocations"
-    ],
-    # "hourly": [
-    #     "franchise_erp.custom.attendence.update_shift_last_sync"
-    # ]
+    ]
 }
 # Installation
 # ------------
