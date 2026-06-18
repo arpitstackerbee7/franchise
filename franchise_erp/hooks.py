@@ -634,14 +634,14 @@ has_permission = {
 # ]
 
 
-fixtures = [
-    {"dt": "Workflow"},
-    {"dt": "Workflow Action Master"},
-    {"dt": "Workflow State"},
-    {"dt": "Role"},
+# fixtures = [
+#     {"dt": "Workflow"},
+#     {"dt": "Workflow Action Master"},
+#     {"dt": "Workflow State"},
+#     {"dt": "Role"},
     
 
- ]
+#  ]
 
 # fixtures = [
 #     {
@@ -661,34 +661,37 @@ fixtures = [
 # }
 # ]
 
-fixtures = [
-    {
-        "dt": "Workflow",
-        "filters": [["name", "=", "Leave Application"]]
-    },
-    {
-        "dt": "Role",
-        "filters": [["name", "in", ["Employee", "Report Manager", "HR Manager"]]]
-    },
-    {
-        "dt": "Custom Field",
-        "filters": [["dt", "=", "Leave Application"]]
-    },
-    {
-        "dt": "Workflow State",
-        "filters": [["name", "in", ["Draft", "Pending Report Manager", "Pending HR Approval", "Approved", "Rejected"]]]
-    },
-    {
-        "dt": "Workflow Action Master",
-        "filters": [["name", "in", ["Submit", "Approve", "Reject"]]]
-    }
-]
+# fixtures = [
+#     {
+#         "dt": "Workflow",
+#         "filters": [["name", "=", "Leave Application"]]
+#     },
+#     {
+#         "dt": "Role",
+#         "filters": [["name", "in", ["Employee", "Report Manager", "HR Manager"]]]
+#     },
+#     {
+#         "dt": "Custom Field",
+#         "filters": [["dt", "=", "Leave Application"]]
+#     },
+#     {
+#         "dt": "Workflow State",
+#         "filters": [["name", "in", ["Draft", "Pending Report Manager", "Pending HR Approval", "Approved", "Rejected"]]]
+#     },
+#     {
+#         "dt": "Workflow Action Master",
+#         "filters": [["name", "in", ["Submit", "Approve", "Reject"]]]
+#     }
+# ]
 
 fixtures = [
     {
         "dt": "Workflow",
         "filters": [
-            ["name", "=", "Compensatory Leave Request Workflow"]
+            ["name", "in", [
+                "Compensatory Leave Request Workflow",
+                "Leave Application Workflow"
+            ]]
         ]
     },
     {
@@ -697,6 +700,8 @@ fixtures = [
             ["name", "in", [
                 "Draft",
                 "Pending Reporting Manager",
+                "Pending Report Manager",
+                "Pending HR Approval",
                 "Approved",
                 "Rejected"
             ]]
@@ -705,7 +710,30 @@ fixtures = [
     {
         "dt": "Workflow Transition",
         "filters": [
-            ["parent", "=", "Compensatory Leave Request Workflow"]
+            ["parent", "in", [
+                "Compensatory Leave Request Workflow",
+                "Leave Application Workflow"
+            ]]
+        ]
+    },
+    {
+        "dt": "Workflow Action Master",
+        "filters": [
+            ["name", "in", [
+                "Submit",
+                "Approve",
+                "Reject"
+            ]]
+        ]
+    },
+    {
+        "dt": "Role",
+        "filters": [
+            ["name", "in", [
+                "Employee",
+                "Report Manager",
+                "HR Manager"
+            ]]
         ]
     }
 ]

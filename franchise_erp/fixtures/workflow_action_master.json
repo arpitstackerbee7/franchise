@@ -9,15 +9,15 @@
  {
   "docstatus": 0,
   "doctype": "Workflow Action Master",
-  "modified": "2025-11-18 23:42:05.169804",
-  "name": "Approve",
-  "workflow_action_name": "Approve"
+  "modified": "2025-11-18 23:42:05.173585",
+  "name": "Reject",
+  "workflow_action_name": "Reject"
  },
  {
   "docstatus": 0,
   "doctype": "Workflow Action Master",
-  "modified": "2025-11-18 23:42:05.173585",
-  "name": "Reject",
-  "workflow_action_name": "Reject"
+  "modified": "2025-11-18 23:42:05.169804",
+  "name": "Approve",
+  "workflow_action_name": "Approve"
  }
 ]
