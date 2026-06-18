@@ -1,6 +1,53 @@
 import frappe
 import requests
 
+def send_otp_whatsapp(mobile_no, otp):
+
+    chatId = f"91{mobile_no}@c.us"
+
+    message = f"""
+Dear User,
+
+Your Login OTP is: {otp}
+
+This OTP is valid for 5 minutes.
+
+Team TZU
+"""
+
+    url = "https://7103.api.greenapi.com/waInstance7103539592/sendMessage/9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+
+    payload = {
+        "chatId": chatId,
+        "message": message
+    }
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.post(
+            url,
+            json=payload,
+            headers=headers
+        )
+
+        frappe.logger().info(
+            f"OTP WhatsApp Sent: {response.text}"
+        )
+
+        return response.json()
+
+    except Exception as e:
+
+        frappe.log_error(
+            str(e),
+            "OTP WhatsApp Error"
+        )
+
+        return None
+
 def send_text_msg_on_whatsapp_sales_invoice(doc, method=None):
 
     mobile = frappe.db.get_value("Customer", doc.customer, "custom_mobile_no_customer")

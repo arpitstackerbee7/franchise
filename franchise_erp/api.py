@@ -2620,3 +2620,137 @@ def get_catalogue_items(keyword=""):
 
     return result
 
+
+import frappe
+
+
+@frappe.whitelist(allow_guest=True)
+def send_mobile_otp(mobile_no):
+
+    from franchise_erp.send_whatsapp_notification import send_otp_whatsapp
+    import random
+    from frappe.utils import now_datetime, add_to_date
+
+    if not mobile_no.isdigit() or len(mobile_no) != 10:
+        return {
+            "success": False,
+            "message": "Please enter a valid 10 digit mobile number"
+        }
+    user = frappe.db.get_value(
+        "User",
+        {"mobile_no": mobile_no},
+        "name"
+    )
+
+    if not user:
+        return {
+            "success": False,
+            "message": "No User found with this Mobile Number"
+        }
+
+    otp = str(random.randint(100000, 999999))
+
+    expiry_time = add_to_date(
+        now_datetime(),
+        minutes=5
+    )
+
+    frappe.get_doc({
+        "doctype": "User Login OTP",
+        "mobile": mobile_no,
+        "user": user,
+        "otp": otp,
+        "created_on": now_datetime(),
+        "expiry_time": expiry_time,
+        "is_verified": 0
+    }).insert(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    frappe.logger().info(
+        f"OTP for {mobile_no} = {otp}"
+    )
+
+    send_otp_whatsapp(
+        mobile_no,
+        otp
+    )
+
+    return {
+        "success": True
+    }
+
+
+@frappe.whitelist(allow_guest=True)
+def verify_mobile_otp(mobile_no, otp):
+
+    from frappe.utils import now_datetime
+
+    otp_record = frappe.get_all(
+        "User Login OTP",
+        filters={
+            "mobile": mobile_no,
+            "is_verified": 0
+        },
+        fields=[
+            "name",
+            "otp",
+            "expiry_time",
+            "user"
+        ],
+        order_by="creation desc",
+        limit=1
+    )
+
+    if not otp_record:
+        return {
+            "success": False,
+            "message": "OTP Not Found"
+        }
+
+    record = otp_record[0]
+
+    if now_datetime() > record.expiry_time:
+        return {
+            "success": False,
+            "message": "OTP Expired"
+        }
+
+    if str(record.otp) != str(otp):
+        return {
+            "success": False,
+            "message": "Invalid OTP"
+        }
+
+    doc = frappe.get_doc(
+        "User Login OTP",
+        record.name
+    )
+
+    doc.is_verified = 1
+
+    doc.save(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    # Login User
+    frappe.set_user(record.user)
+
+    frappe.local.login_manager.user = record.user
+
+    frappe.local.login_manager.post_login()
+
+    return {
+        "success": True,
+        "user": record.user
+   }
+
+@frappe.whitelist(allow_guest=True)
+def is_otp_login_enabled():
+
+    enabled = frappe.db.get_single_value(
+        "TZU Setting",
+        "is_user_login_with_otp"
+    )
+
+    return 1 if enabled else 0
