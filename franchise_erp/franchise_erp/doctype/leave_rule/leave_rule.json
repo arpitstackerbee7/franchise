@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:rule_name",
+ "creation": "2026-06-18 08:35:13.853589",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enable",
+  "affect_payroll_directly",
+  "affect_leave_balance",
+  "rule_name",
+  "rule_type",
+  "min_hours_required",
+  "allowed_late_minutes",
+  "violations",
+  "deduction_unit",
+  "column_break_osxv",
+  "include_weekend",
+  "include_between_offs",
+  "amended_from",
+  "leave_priority_for_deduction_section",
+  "leave_priority",
+  "section_break_wdvp",
+  "priority_rules_display",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "enable",
+   "fieldtype": "Check",
+   "label": "Enable"
+  },
+  {
+   "default": "0",
+   "fieldname": "affect_payroll_directly",
+   "fieldtype": "Check",
+   "label": "Affect Payroll Directly"
+  },
+  {
+   "default": "0",
+   "fieldname": "affect_leave_balance",
+   "fieldtype": "Check",
+   "label": "Affect Leave Balance"
+  },
+  {
+   "fieldname": "rule_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Rule Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "rule_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Rule Type",
+   "options": "\nSandwich\nLate Entry Count\nEarly Exit Count\nDaily Hours Fulfilment\nMonthly Late Time Allowance",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.rule_type==\"Daily Hours Fulfilment\"",
+   "fieldname": "min_hours_required",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Min Hours Required"
+  },
+  {
+   "depends_on": "eval:doc.rule_type==\"Monthly Late Time Allowance\"",
+   "fieldname": "allowed_late_minutes",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Allowed Late Minutes"
+  },
+  {
+   "depends_on": "eval:doc.rule_type==\"Early Exit Count\" || doc.rule_type == \"Late Entry Count\" || doc.rule_type == \"Daily Hours Fulfilment\" || doc.rule_type ==\"Monthly Late Time Allowance\"",
+   "fieldname": "violations",
+   "fieldtype": "Int",
+   "label": "Violations"
+  },
+  {
+   "fieldname": "deduction_unit",
+   "fieldtype": "Select",
+   "label": "Deduction Unit",
+   "options": "\n0.25\n0.33\n0.5\n0.75\n1",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_osxv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.rule_type==\"Sandwich\"",
+   "fieldname": "include_weekend",
+   "fieldtype": "Check",
+   "label": "Include Weekend Before/After Leave"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.rule_type==\"Sandwich\"",
+   "fieldname": "include_between_offs",
+   "fieldtype": "Check",
+   "label": "Include Leaves Between Holidays"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Leave Rule",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "leave_priority_for_deduction_section",
+   "fieldtype": "Section Break",
+   "label": "Leave Priority for Deduction"
+  },
+  {
+   "depends_on": "eval:doc.affect_leave_balance==1",
+   "fieldname": "leave_priority",
+   "fieldtype": "Table",
+   "label": "Leave Priority",
+   "options": "Leave Priority"
+  },
+  {
+   "fieldname": "section_break_wdvp",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "priority_rules_display",
+   "fieldtype": "HTML",
+   "label": "Priority Rules Display"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Leave Rule",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-06-18 08:35:13.853589",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Leave Rule",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
