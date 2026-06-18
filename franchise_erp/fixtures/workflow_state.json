@@ -34,5 +34,23 @@
   "name": "Draft",
   "style": "Primary",
   "workflow_state_name": "Draft"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-06-01 16:52:00.354078",
+  "name": "Pending HR Approval",
+  "style": "",
+  "workflow_state_name": "Pending HR Approval"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
+  "modified": "2026-06-01 16:50:53.988904",
+  "name": "Pending Report Manager",
+  "style": "",
+  "workflow_state_name": "Pending Report Manager"
  }
 ]
