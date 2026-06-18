@@ -476,6 +476,28 @@ has_permission = {
 # 		"on_trash": "method"
 # 	}
 # }
+# auth_hooks = [
+#     "franchise_erp.franchise_erp.doctype.login_security_settings.login_security_settings.validate_login_access"
+# ]
+# auth_hooks = [
+#     "franchise_erp.franchise_erp.doctype.login_security_settings.login_security_settings.validate_login_access"
+# ]
+
+# auth_hooks = [
+#     "franchise_erp.user_login _custom.validate_login_access"
+# ]
+
+auth_hooks = [
+    # "franchise_erp.utils.login_security.validate_login_access",
+    "franchise_erp.franchise_erp.user_login _custom.validate_login_access",
+]
+# auth_hooks = [
+#     "franchise_erp.utils.login_security.validate_login_access"
+# ]
+# auth_hooks = [
+#     "franchise_erp.utils.login_security.validate_login_access"
+# ]
+
 
 # Scheduled Tasks
 # ---------------
