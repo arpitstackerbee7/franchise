@@ -46,6 +46,26 @@ def execute(filters=None):
     )
     columns.insert(outstanding_idx + 1, running_balance_col)
 
+    # ── Add Reference No / Reference Date columns (right after Voucher No) ─
+    reference_no_col = {
+        "label": "Cheque/Reference No",
+        "fieldname": "reference_no",
+        "fieldtype": "Data",
+        "width": 130,
+    }
+    reference_date_col = {
+        "label": "Reference Date",
+        "fieldname": "reference_date",
+        "fieldtype": "Date",
+        "width": 110,
+    }
+    voucher_no_idx = next(
+        (i for i, c in enumerate(columns) if c.get("fieldname") == "voucher_no"),
+        len(columns) - 1,
+    )
+    columns.insert(voucher_no_idx + 1, reference_no_col)
+    columns.insert(voucher_no_idx + 2, reference_date_col)
+
     
     # ── Batch fetch all is_return Sales Invoices ───────────────────────────
     all_sinv_nos = [
@@ -64,12 +84,40 @@ def execute(filters=None):
         )
         return_set = set(returns)
 
-    # ── Patch voucher_type for Credit Notes ───────────────────────────────
+    # ── Batch fetch reference_no / reference_date for Payment Entry rows ──
+    all_pe_nos = [
+        row.get("voucher_no")
+        for row in raw_data
+        if (row.get("voucher_type") or "").strip() == "Payment Entry"
+        and row.get("voucher_no")
+    ]
+
+    pe_reference_map = {}
+    if all_pe_nos:
+        pe_records = frappe.db.get_all(
+            "Payment Entry",
+            filters={"name": ["in", all_pe_nos]},
+            fields=["name", "reference_no", "reference_date"],
+        )
+        pe_reference_map = {
+            pe["name"]: (pe.get("reference_no"), pe.get("reference_date"))
+            for pe in pe_records
+        }
+
+    # ── Patch voucher_type for Credit Notes + attach reference fields ─────
     for row in raw_data:
         vno   = (row.get("voucher_no")   or "").strip()
         vtype = (row.get("voucher_type") or "").strip()
         if vtype == "Sales Invoice" and (vno in return_set or vno.startswith("SINV-RET")):
             row["voucher_type"] = "Credit Note"
+
+        if vtype == "Payment Entry" and vno in pe_reference_map:
+            ref_no, ref_date = pe_reference_map[vno]
+            row["reference_no"] = ref_no
+            row["reference_date"] = ref_date
+        else:
+            row["reference_no"] = None
+            row["reference_date"] = None
 
     def get_group(row):
         vtype = (row.get("voucher_type") or "").strip()
@@ -149,6 +197,8 @@ def execute(filters=None):
                 "voucher_no":         f"── {vg} Total ──",
                 "posting_date":       None,
                 "due_date":           None,
+                "reference_no":       None,
+                "reference_date":     None,
                 "invoiced":           vg_data["invoiced"],
                 "paid":               vg_data["paid"],
                 "outstanding":        vg_data["outstanding"],
@@ -167,6 +217,8 @@ def execute(filters=None):
             "voucher_no":         f"★ {party} Total ★",
             "posting_date":       None,
             "due_date":           None,
+            "reference_no":       None,
+            "reference_date":     None,
             "invoiced":           party_invoiced,
             "paid":               party_paid,
             "outstanding":        party_outstanding,
