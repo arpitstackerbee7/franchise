@@ -26,7 +26,8 @@
   "all_counters_name_show_on_supplier",
   "enable_geo_location",
   "enable_whatsapp_notification",
-  "is_credit_note_account"
+  "is_credit_note_account",
+  "is_user_login_with_otp"
  ],
  "fields": [
   {
@@ -162,13 +163,19 @@
    "fieldtype": "Table",
    "label": "Incoming Logistics Users",
    "options": "Incoming Logistics Users"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_user_login_with_otp",
+   "fieldtype": "Check",
+   "label": "Is User Login with OTP"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-07 12:19:00.025085",
+ "modified": "2026-06-17 17:04:34.039035",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
