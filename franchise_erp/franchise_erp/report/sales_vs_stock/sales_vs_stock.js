@@ -62,21 +62,41 @@ frappe.query_reports["Sales vs Stock"] = {
     // },
 onload: function(report) {
 
-    if (window._salesVsStockListenerAdded) return;
-    window._salesVsStockListenerAdded = true;
+    if (report._dashboard_listener_added) {
+        return;
+    }
 
-    document.addEventListener("dashboardFilterChanged", function (e) {
+    report._dashboard_listener_added = true;
 
-        console.log("Sales vs Stock Event");
-        console.log(e.detail);
+    document.addEventListener(
+        "dashboardFilterChanged",
+        function(e) {
 
-        report.set_filter_value("from_date", e.detail.from);
-        report.set_filter_value("to_date", e.detail.to);
-        report.set_filter_value("metric", e.detail.view);
-        report.set_filter_value("company", e.detail.company);
+            const f = e.detail;
 
-        report.refresh();
-    });
+            if (report.get_filter("from_date")) {
+                report.set_filter_value("from_date", f.from);
+            }
+
+            if (report.get_filter("to_date")) {
+                report.set_filter_value("to_date", f.to);
+            }
+
+            if (report.get_filter("view_type")) {
+                report.set_filter_value("view_type", f.view);
+            }
+
+            if (report.get_filter("metric")) {
+                report.set_filter_value("metric", f.view);
+            }
+
+            if (report.get_filter("company")) {
+                report.set_filter_value("company", f.company || "");
+            }
+
+            report.refresh();
+        }
+    );
 },
 
     formatter: function(value, row, column, data, default_formatter) {

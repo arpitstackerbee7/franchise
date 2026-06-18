@@ -13,6 +13,11 @@ def execute(filters=None):
 
     view_type = filters.get("view_type") or "qty"
 
+    if view_type == "qty":
+        value_field = "SUM(total_qty)"
+    else:
+        value_field = "SUM(grand_total)"
+
     company = filters.get("company")
 
     if not from_date or not to_date:

@@ -31,48 +31,31 @@ frappe.query_reports["Sales Trend"] = {
         }
     ],
 
-    onload: function(report) {
-    
+   onload: function(report) {
 
-    if (window._salesTrendListenerAdded) return;
-    window._salesTrendListenerAdded = true;
+    if (report._dashboard_listener_added) {
+        return;
+    }
 
-    // document.addEventListener(
-    //     'dashboardFilterChanged',
-    //     function(e) {
-    //         var f = e.detail;
-    //         try {
-    //             report.set_filter_value('from_date', f.from);
-    //             report.set_filter_value('to_date',   f.to);
-    //             report.set_filter_value('view_type', f.view);  // 'qty' or 'amt'
-    //             report.set_filter_value('company',   f.company || '');
-    //             setTimeout(function() {
-    //                 report.refresh();
-    //             }, 200);
-    //         } catch(e) {
-    //             console.error('Sales Trend filter error:', e);
-    //         }
-    //     }
-    // );
+    report._dashboard_listener_added = true;
 
-    document.addEventListener(
-        "dashboardFilterChanged",
-        function (e) {
+   document.addEventListener(
+    "dashboardFilterChanged",
+    function (e) {
 
-            console.log("Received Payload:", e.detail);
+        console.log(e.detail);
 
-            report.set_filter_value("from_date", e.detail.from);
-            report.set_filter_value("to_date", e.detail.to);
-            report.set_filter_value("view_type", e.detail.view);
-            report.set_filter_value("company", e.detail.company || "");
+        report.set_filter_value("from_date", e.detail.from);
+        report.set_filter_value("to_date", e.detail.to);
 
-            setTimeout(function () {
-                console.log(report.get_values());
-                report.refresh();
-            }, 200);
-        }
-    );
-    
+        // IMPORTANT
+        report.set_filter_value("view_type", e.detail.view);
+
+        report.set_filter_value("company", e.detail.company || "");
+
+        report.refresh();
+    }
+);
 }
 
 };
