@@ -1,0 +1,63 @@
+{
+ "charts": [
+  {
+   "chart_name": "Least Selling Items Chart",
+   "label": "Least Selling Items Chart"
+  },
+  {
+   "chart_name": "Top Selling Items Chart",
+   "label": "Top Selling Items Chart"
+  },
+  {
+   "chart_name": "Sales vs Stock",
+   "label": "Sales vs Stock"
+  },
+  {
+   "chart_name": "Sales by Category",
+   "label": "Sales by Category"
+  },
+  {
+   "chart_name": "Sales Trend",
+   "label": "Sales Trend"
+  },
+  {
+   "chart_name": "Sales Progress",
+   "label": "Sales Progress"
+  }
+ ],
+ "content": "[{\"id\":\"z7MJ0EgcLN\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Selling Dashboard</span>\",\"col\":12}},{\"id\":\"4H9JeeK9GO\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Date Range\",\"col\":12}},{\"id\":\"rV6PuoW4XT\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Sales Trend\",\"col\":6}},{\"id\":\"SjtL8ih__m\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Sales Progress\",\"col\":6}},{\"id\":\"Zwq9FGovO5\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Sales by Category\",\"col\":12}},{\"id\":\"fhreA3frQO\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Selling Items Chart\",\"col\":6}},{\"id\":\"lnzQAPfSsB\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Least Selling Items Chart\",\"col\":6}},{\"id\":\"Xd9P46CWM7\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Selling Items\",\"col\":12}},{\"id\":\"w-BW_15D2L\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Sales vs Stock\",\"col\":12}}]",
+ "creation": "2026-06-02 10:16:46.801888",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Date Range",
+   "label": "Date Range"
+  },
+  {
+   "custom_block_name": "Selling Items",
+   "label": "Selling Items"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Selling Dashboard",
+ "links": [],
+ "modified": "2026-06-17 19:49:55.623927",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Selling Dashboard",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "Selling",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 39.0,
+ "shortcuts": [],
+ "title": "Selling Dashboard"
+}
