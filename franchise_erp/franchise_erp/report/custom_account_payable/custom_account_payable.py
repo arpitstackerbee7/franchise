@@ -8,9 +8,9 @@ from erpnext.accounts.report.accounts_receivable.accounts_receivable import (
 )
 
 VOUCHER_TYPE_ORDER = [
+    "Payment Entry",
     "Purchase Invoice",
     "Debit Note",
-    "Payment Entry",
     "Journal Entry",
     "Purchase Order",
     "OTHERS",
@@ -28,7 +28,7 @@ def execute(filters=None):
     raw_data = [row for row in result[1] if isinstance(row, dict)]
 
     # ── Remove unwanted columns ────────────────────────────────────────────
-    REMOVE_FIELDS = {"credit_note", "range1", "range2", "range3", "range4", "range5"}
+    REMOVE_FIELDS = {"credit_note", "range1", "range2", "range3", "range4", "range5","due_date"}
     columns = [c for c in columns if c.get("fieldname") not in REMOVE_FIELDS]
 
     running_balance_col = {
