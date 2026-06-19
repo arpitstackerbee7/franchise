@@ -99,6 +99,25 @@ function fetch_and_update() {
     });
 }
 
+async function get_company_city(company) {
+    let res = await frappe.call({
+        method: "frappe.client.get_list",
+        args: {
+            doctype: "Address",
+            filters: [
+                ["Dynamic Link", "link_doctype", "=", "Customer"],
+                ["Dynamic Link", "link_name", "=", company],
+                ["is_primary_address", "=", 1]
+            ],
+            fields: ["city", "state"],
+            limit: 1
+        }
+    });
+    let addr = res?.message?.[0];
+    if (!addr) return "";
+    return addr.state || addr.city || "";
+}
+
 function show_invoice_dialog(frm) {
     let all_items = [];
     let current_filtered_data = [];
@@ -397,7 +416,7 @@ function show_invoice_dialog(frm) {
     // -----------------------
     // PRINT
     // -----------------------
-   d.$wrapper.on("click", "#print_table_btn", function () {
+    d.$wrapper.on("click", "#print_table_btn", async function () {
     if (!current_filtered_data.length) {
         frappe.msgprint("No data to print");
         return;
@@ -451,6 +470,7 @@ function show_invoice_dialog(frm) {
         `;
     }).join("");
 
+    let city = await get_company_city(frm.doc.company);
     let win = window.open("", "_blank");
     win.document.write(`
         <html><head>
@@ -460,8 +480,8 @@ function show_invoice_dialog(frm) {
         </style>
         </head><body>
         <div style="text-align:center; margin-bottom:15px;">
-            <h2 style="margin:0;">${frm.doc.company}</h2>
-            <h3 style="margin:5px 0;">Invoice Report</h3>
+            <h2 style="margin:0;">${frm.doc.company}${city ? " - " + city : ""}</h2>
+            <h3 style="margin:5px 0;">Invoice Report ${from_date_ctrl.get_value()} to ${to_date_ctrl.get_value()}</h3>
         </div>
         <table>
             <thead>
@@ -505,14 +525,15 @@ function show_invoice_dialog(frm) {
     // -----------------------
     // EXPORT CSV
     // -----------------------
-    d.$wrapper.on("click", "#export_table_btn", function () {
+    d.$wrapper.on("click", "#export_table_btn", async function () {
     if (!current_filtered_data.length) {
         frappe.msgprint("No data to export");
         return;
     }
     
-    let csv = `Company,${frm.doc.company}\n`;
-    csv += "Invoice Report\n\n";
+    let city = await get_company_city(frm.doc.company);
+    let csv = `Company,${frm.doc.company}${city ? " - " + city : ""}\n`;
+    csv += `Invoice Report ${from_date_ctrl.get_value()} to ${to_date_ctrl.get_value()}\n\n`;
 
     csv += "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN\n";
 
