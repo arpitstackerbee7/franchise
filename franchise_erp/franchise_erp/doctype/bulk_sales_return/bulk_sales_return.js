@@ -1,11 +1,6 @@
 // Copyright (c) 2026, Franchise Erp and contributors
 // For license information, please see license.txt
 
-// frappe.ui.form.on("Bulk Sales Return", {
-// 	refresh(frm) {
-
-// 	},
-// });
 frappe.ui.form.on('Bulk Sales Return', {
     refresh(frm) {
       
@@ -34,7 +29,6 @@ frappe.ui.form.on('Bulk Sales Return', {
 
         if (frm.doc.docstatus !== 1) return;
 
-        // 🔥 Check if any draft Return DNs exist
         Promise.all([
     frappe.call({
         method: 'franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.has_draft_return_dns',
@@ -72,7 +66,7 @@ frappe.ui.form.on('Bulk Sales Return', {
         //     callback: function(r) {
 
         //         if (r.message) {
-        //             // ✅ Only show button if drafts exist
+        //             //  Only show button if drafts exist
         //             frm.add_custom_button('Submit Return DNs', async function() {
 
         //                 await frappe.call({
@@ -85,7 +79,7 @@ frappe.ui.form.on('Bulk Sales Return', {
         //                 });
 
         //                 frappe.msgprint('Return Delivery Notes Submitted');
-        //                 frm.reload_doc(); // 🔥 refresh after submit
+        //                 frm.reload_doc(); // refresh after submit
         //             });
         //         }
         //     }
@@ -282,14 +276,12 @@ function open_sales_invoice_dialog(frm) {
                                     return;
                                 }
 
-                                // keep qty in sync with scanned serial count
                                 d.return_qty = serial_count;
 
                                 grid.refresh();
                                 return;
                             }
 
-                            // ❌ Prevent zero or empty
                             if (!d.return_qty || d.return_qty <= 0) {
                                 frappe.msgprint(`Please enter valid Return Qty for Item ${d.item_code}`);
                                 d.return_qty = 0;
@@ -297,7 +289,6 @@ function open_sales_invoice_dialog(frm) {
                                 return;
                             }
 
-                            // ❌ Exceed validation
                             if (flt(d.return_qty) > flt(d.returnable_qty)) {
                                 frappe.msgprint(`Return Qty cannot exceed ${d.returnable_qty}`);
                                 d.return_qty = d.returnable_qty;
@@ -324,7 +315,6 @@ function open_sales_invoice_dialog(frm) {
                 return;
             }
 
-            // 🔥 FINAL VALIDATION
             for (let d of selected_rows) {
 
                 if (!d.return_qty || d.return_qty <= 0) {
@@ -351,7 +341,6 @@ function open_sales_invoice_dialog(frm) {
                 }
             }
 
-            // Merge rows scanned multiple times for the same SI item
             let merged_rows = {};
 
             selected_rows.forEach(d => {
@@ -508,7 +497,6 @@ function open_return_items_dialog(frm) {
                                 return;
                             }
                         
-                            // ❌ Condition 1 — Serial status Active
                             if (r.message.status !== "Delivered") {
                                 frappe.msgprint(`Serial ${serial} is not delivered, cannot return.`);
                                 dialog.set_value("serial_no", "");
@@ -516,7 +504,6 @@ function open_return_items_dialog(frm) {
                                 return;
                             }
                         
-                            // ❌ Condition 2 — Serial already exists in Items child table
                             let serial_exists = false;
                         
                             (frm.doc.items || []).forEach(row => {
@@ -544,7 +531,6 @@ function open_return_items_dialog(frm) {
 
                                 let existing = rows[index];
 
-                                // Prevent duplicate serial
                                 if (existing.serial_nos && existing.serial_nos.split("\n").includes(serial)) {
                                     frappe.msgprint(`Serial ${serial} already scanned`);
                                 } else {
@@ -556,9 +542,8 @@ function open_return_items_dialog(frm) {
                                             ? existing.serial_nos + "\n" + serial
                                             : serial;
 
-                                    // 🔥 MOVE UPDATED ROW TO TOP
-                                    rows.splice(index, 1);   // remove from old position
-                                    rows.unshift(existing);  // add to top
+                                    rows.splice(index, 1);
+                                    rows.unshift(existing);
                                 }
 
                             } else {
@@ -566,7 +551,6 @@ function open_return_items_dialog(frm) {
                                 r.message.return_qty = 1;
                                 r.message.serial_nos = serial;
 
-                                // 🔥 ADD NEW ROW TO TOP
                                 rows.unshift(r.message);
                             }
 
@@ -581,7 +565,6 @@ function open_return_items_dialog(frm) {
                             
                                         let checkbox = row.wrapper.find('.grid-row-check');
                             
-                                        // ✅ Only click if NOT already checked
                                         if (!checkbox.prop("checked")) {
                                             checkbox.click();
                                         }
@@ -624,7 +607,6 @@ function open_return_items_dialog(frm) {
                             let row = grid.get_row(this.doc.name);
                             let d = row.doc;
                     
-                            // Serialized item rule
                             if (d.has_serial_no == 1) {
                     
                                 let serial_count = 0;
@@ -646,14 +628,12 @@ function open_return_items_dialog(frm) {
                                     return;
                                 }
                     
-                                // always sync qty with serial count
                                 d.return_qty = serial_count;
                     
                                 grid.refresh();
                                 return;
                             }
                     
-                            // Normal validation for non-serialized
                             if (flt(d.return_qty) > flt(d.returnable_qty)) {
                     
                                 frappe.msgprint(
@@ -684,7 +664,6 @@ function open_return_items_dialog(frm) {
                 return;
             }
         
-            // 🔴 Validate return qty in dialog
             for (let r of selected_rows) {
         
                 if (!r.return_qty || r.return_qty <= 0) {
@@ -746,7 +725,6 @@ function open_return_items_dialog(frm) {
 
                                     let new_qty = flt(existing.qty) + flt(d.qty);
                                 
-                                    // validation
                                     if (new_qty > flt(existing.returnable_quantity)) {
                                         frappe.throw(
                                             __("Return Qty exceeded for Item {0}. Allowed Qty: {1}", 
