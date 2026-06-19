@@ -17,3 +17,6 @@ def set_naming_series(doc, method):
         doc.naming_series = "SPI/.FY./."
     else:
         doc.naming_series = "PI/.FY./."
+
+
+    

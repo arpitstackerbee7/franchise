@@ -334,8 +334,11 @@ doctype_tree_js = {
 # include js, css files in header of web template
 # web_include_css = "/assets/franchise_erp/css/franchise_erp.css"
 # web_include_js = "/assets/franchise_erp/js/franchise_erp.js"
+# web_include_js = [
+#     "/assets/franchise_erp/js/login_location.js?v=3.0"
+# ]
 web_include_js = [
-    "/assets/franchise_erp/js/login_location.js?v=3.0"
+    "/assets/franchise_erp/js/login_location.js?v=4.0"
 ]
 
 
@@ -469,13 +472,17 @@ has_permission = {
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	# "*": {
+    
+    "Purchase Invoice": {
+        "before_insert": "franchise_erp.franchise_erp.custom_py.naming_series_purchase_inv.set_naming_series"
+    }
+    # 	"on_update": "method",
+	# 	"on_cancel": "method",
+	# 	"on_trash": "method"
+	}
+
 # auth_hooks = [
 #     "franchise_erp.franchise_erp.doctype.login_security_settings.login_security_settings.validate_login_access"
 # ]
