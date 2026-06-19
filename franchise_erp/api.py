@@ -2572,11 +2572,19 @@ import frappe
 @frappe.whitelist()
 def get_catalogue_items(keyword=""):
 
+    if not keyword:
+        return []
+
     items = frappe.get_all(
         "Item",
         filters={
             "disabled": 0
         },
+        or_filters=[
+            ["item_code", "like", f"%{keyword}%"],
+            ["item_name", "like", f"%{keyword}%"],
+            ["custom_barcode_code", "like", f"%{keyword}%"]
+        ],
         fields=[
             "name",
             "item_code",
@@ -2587,25 +2595,14 @@ def get_catalogue_items(keyword=""):
             "custom_silvet",
             "custom_group_collection",
             "item_group"
-        ],
-        limit_page_length=100
+        ]
     )
 
     result = []
 
     for item in items:
 
-        if keyword:
-            search_text = (
-                f"{item.item_code} "
-                f"{item.item_name or ''} "
-                f"{item.custom_barcode_code or ''}"
-            ).lower()
-
-            if keyword.lower() not in search_text:
-                continue
-
-        images = frappe.get_all(
+        files = frappe.get_all(
             "File",
             filters={
                 "attached_to_doctype": "Item",
@@ -2614,7 +2611,7 @@ def get_catalogue_items(keyword=""):
             fields=["file_url"]
         )
 
-        item["gallery"] = [img.file_url for img in images]
+        item["gallery"] = [f.file_url for f in files]
 
         result.append(item)
 
