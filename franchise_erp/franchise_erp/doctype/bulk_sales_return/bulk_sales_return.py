@@ -21,7 +21,6 @@ class BulkSalesReturn(Document):
 
       for row in self.items:
 
-        # 🔹 Case 1: Delivery Note based
         if row.delivery_note_item:
 
             sent_qty = frappe.db.get_value(
@@ -35,7 +34,6 @@ class BulkSalesReturn(Document):
                     f"Return qty cannot exceed sent qty in row {row.idx}"
                 )
 
-        # 🔹 Case 2: Sales Invoice based
         elif row.sales_invoice_item:
 
             billed_qty = frappe.db.get_value(
@@ -49,7 +47,6 @@ class BulkSalesReturn(Document):
                     f"Return qty cannot exceed billed qty in row {row.idx}"
                 )
 
-        # 🔥 SERIAL VALIDATION (same as before)
         has_serial_no = frappe.db.get_value(
             "Item",
             row.item_code,
@@ -78,7 +75,6 @@ class BulkSalesReturn(Document):
         self.db_set("status", "Queued")
         frappe.db.commit()
 
-        # 🚀 Enqueue background job
         frappe.enqueue(
             method="franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.process_bulk_sales_return",
             docname=self.name,
@@ -87,7 +83,6 @@ class BulkSalesReturn(Document):
             job_name=f"Bulk Sales Return {self.name}"
         )
 
-        # 💬 User message
         frappe.msgprint(
             "Return documents are being created in the background."
         )
@@ -102,92 +97,14 @@ def process_bulk_sales_return(docname):
         doc.db_set("status", "In Progress")
         frappe.db.commit()
 
-        delivery_notes = {}
-        sales_invoices = {}
+        dn_rows = [r for r in doc.items if r.delivery_note]
+        si_rows = [r for r in doc.items if r.sales_invoice]
 
-        for row in doc.items:
+        if dn_rows:
+            create_combined_return(doc, "Delivery Note", dn_rows)
 
-            if row.delivery_note:
-                delivery_notes.setdefault(row.delivery_note, []).append(row)
-
-            elif row.sales_invoice:
-                sales_invoices.setdefault(row.sales_invoice, []).append(row)
-
-        # 🔹 DELIVERY NOTE RETURN
-        for dn, items in delivery_notes.items():
-
-            return_doc = make_return_doc("Delivery Note", dn)
-            return_doc.custom_bulk_sales_return = doc.name
-
-            # Aggregate user-selected rows by source Delivery Note Item name
-            selected = {}
-            for row in items:
-                key = row.delivery_note_item
-                if not key:
-                    continue
-                selected.setdefault(key, {"qty": 0, "serials": []})
-                selected[key]["qty"] += flt(row.qty)
-                if row.serial_nos:
-                    selected[key]["serials"].extend(
-                        s.strip() for s in row.serial_nos.split("\n") if s.strip()
-                    )
-
-            # make_return_doc preserves source order, so match return items
-            # to original DN items by position. Keep only selected lines and
-            # override qty + serials; all pricing/tax fields stay intact.
-            original_dn = frappe.get_doc("Delivery Note", dn)
-            kept = []
-            for orig_item, ret_item in zip(original_dn.items, return_doc.items):
-                sel = selected.get(orig_item.name)
-                if not sel:
-                    continue
-                ret_item.qty = -abs(sel["qty"])
-                if sel["serials"]:
-                    ret_item.serial_no = "\n".join(sel["serials"])
-                    ret_item.use_serial_batch_fields = 1
-                kept.append(ret_item)
-
-            return_doc.items = kept
-            return_doc.set_missing_values()
-            return_doc.calculate_taxes_and_totals()
-
-            return_doc.insert(ignore_permissions=True)
-
-        # 🔹 SALES INVOICE RETURN
-        for si, items in sales_invoices.items():
-
-            si_return = make_return_doc("Sales Invoice", si)
-            si_return.custom_bulk_sales_return = doc.name
-
-            selected = {}
-            for row in items:
-                key = row.sales_invoice_item
-                if not key:
-                    continue
-                selected.setdefault(key, {"qty": 0, "serials": []})
-                selected[key]["qty"] += flt(row.qty)
-                if row.serial_nos:
-                    selected[key]["serials"].extend(
-                        s.strip() for s in row.serial_nos.split("\n") if s.strip()
-                    )
-
-            original_si = frappe.get_doc("Sales Invoice", si)
-            kept = []
-            for orig_item, ret_item in zip(original_si.items, si_return.items):
-                sel = selected.get(orig_item.name)
-                if not sel:
-                    continue
-                ret_item.qty = -abs(sel["qty"])
-                if sel["serials"]:
-                    ret_item.serial_no = "\n".join(sel["serials"])
-                    ret_item.use_serial_batch_fields = 1
-                kept.append(ret_item)
-
-            si_return.items = kept
-            si_return.set_missing_values()
-            si_return.calculate_taxes_and_totals()
-
-            si_return.insert(ignore_permissions=True)
+        if si_rows:
+            create_combined_return(doc, "Sales Invoice", si_rows)
 
         doc.db_set("status", "Completed")
         frappe.db.commit()
@@ -199,6 +116,77 @@ def process_bulk_sales_return(docname):
         doc.db_set("status", "Failed")
         frappe.db.commit()
 
+
+def create_combined_return(doc, doctype, rows):
+
+    source_field = "delivery_note" if doctype == "Delivery Note" else "sales_invoice"
+    detail_field = "delivery_note_item" if doctype == "Delivery Note" else "sales_invoice_item"
+
+    grouped = {}
+    for row in rows:
+        grouped.setdefault(row.get(source_field), []).append(row)
+
+    combined_doc = None
+
+    for source_name, source_rows in grouped.items():
+
+        return_doc = make_return_doc(doctype, source_name)
+
+        selected = {}
+        for row in source_rows:
+            key = row.get(detail_field)
+            if not key:
+                continue
+            selected.setdefault(key, {"qty": 0, "serials": []})
+            selected[key]["qty"] += flt(row.qty)
+            if row.serial_nos:
+                selected[key]["serials"].extend(
+                    s.strip() for s in row.serial_nos.split("\n") if s.strip()
+                )
+
+        original_doc = frappe.get_doc(doctype, source_name)
+
+        kept = []
+        for orig_item, ret_item in zip(original_doc.items, return_doc.items):
+
+            sel = selected.get(orig_item.name)
+            if not sel:
+                continue
+
+            ret_item.qty = -abs(sel["qty"])
+
+            if sel["serials"]:
+                ret_item.serial_no = "\n".join(sel["serials"])
+                ret_item.use_serial_batch_fields = 1
+
+            kept.append(ret_item)
+
+        if combined_doc is None:
+            return_doc.items = kept
+            combined_doc = return_doc
+        else:
+            for ret_item in kept:
+
+                item_dict = ret_item.as_dict()
+
+                for f in ("name", "parent", "parenttype", "parentfield",
+                          "owner", "creation", "modified", "modified_by",
+                          "idx", "docstatus"):
+                    item_dict.pop(f, None)
+
+                combined_doc.append("items", item_dict)
+
+    if not combined_doc or not combined_doc.items:
+        return None
+
+    combined_doc.custom_bulk_sales_return = doc.name
+
+    combined_doc.set_missing_values()
+    combined_doc.calculate_taxes_and_totals()
+
+    combined_doc.insert(ignore_permissions=True)
+
+    return combined_doc.name
 
 @frappe.whitelist()
 def submit_created_returns(docname):
@@ -341,12 +329,10 @@ def get_dn_item_details(items):
 
         is_serialized = item_doc.has_serial_no
 
-        # original DN serials
         dn_serials = []
         if dn_item.serial_no:
             dn_serials = dn_item.serial_no.split("\n")
 
-        # returned serials (from Sales Return DN)
         returned_serials = frappe.db.sql("""
             SELECT dni.serial_no
             FROM `tabDelivery Note Item` dni
@@ -372,14 +358,12 @@ def get_dn_item_details(items):
                 s.strip() for s in d.get("serial_nos").split("\n") if s.strip()
             ]
 
-        # ❌ validation
         invalid_serials = list(set(scanned_serials) - set(available_serials))
         if invalid_serials:
             frappe.throw(
                 f"Invalid Serial(s) for Item {dn_item.item_code}: {', '.join(invalid_serials)}"
             )
 
-        # warehouse grouping
         warehouse_map = {}
 
         if is_serialized:
@@ -388,7 +372,6 @@ def get_dn_item_details(items):
 
                 serial_doc = frappe.get_doc("Serial No", serial)
 
-                # For sales return → stock comes back to warehouse
                 wh = serial_doc.warehouse or dn_item.warehouse
 
                 warehouse_map.setdefault(wh, []).append(serial)
