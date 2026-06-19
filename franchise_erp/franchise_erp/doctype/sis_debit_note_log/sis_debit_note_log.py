@@ -836,9 +836,11 @@ def fetch_invoices(company, from_date=None, to_date=None):
 
         
 
-        
+        if is_return == 1:
+            gst_amount_per_item_1 = -gst_amount_per_item
+        else:
+            gst_amount_per_item_1 = gst_amount_per_item
       
-
         # -------------------------------------------------------------------
         # FINAL UPDATE
         # -------------------------------------------------------------------
@@ -853,7 +855,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
             "margin_percent": float(margin_percent),
             "margin_amount": float(margin_amount),
             "inv_base_value": float(inv_base_value),
-            "in_put_gst_value": float(gst_amount_per_item),
+            "in_put_gst_value": float(gst_amount_per_item_1),
             "invoice_value": float(invoice_value1),
             "debit_note": float(debit_note_value),
         })
