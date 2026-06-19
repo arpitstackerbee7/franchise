@@ -727,5 +727,11 @@ fixtures = [
                 "HR Manager"
             ]]
         ]
+    },
+    {
+        "dt": "Custom Field",
+        "filters": [
+            ["dt", "=", "Customer"]
+        ]
     }
 ]
