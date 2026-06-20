@@ -7,6 +7,8 @@ from frappe.utils import today
 
 from frappe.utils import  getdate
 from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
+from frappe.model.naming import make_autoname
+from frappe.utils import cint
 
 class CustomPurchaseInvoice(PurchaseInvoice):
 
@@ -27,17 +29,60 @@ class CustomPurchaseInvoice(PurchaseInvoice):
 
         else:
             super().set_expense_account(for_validate)
+    # def autoname(self):
+    #     if self.custom_is_credit_note:
+    #         from franchise_erp.utils.fy_naming import get_fy_short, get_doc_date
+
+    #         date = get_doc_date(self)
+    #         fy = get_fy_short(date)
+
+    #         if fy:
+    #             self.name = make_autoname(f"PDC/{fy}/.####")
     def autoname(self):
+        from franchise_erp.utils.fy_naming import get_fy_short, get_doc_date
+
+        date = get_doc_date(self)
+        fy = get_fy_short(date)
+
+        if not fy:
+            return
+
+        # Credit Note
         if self.custom_is_credit_note:
-            from frappe.model.naming import make_autoname
-            from franchise_erp.utils.fy_naming import get_fy_short, get_doc_date
+            self.name = make_autoname(f"PDC/{fy}/.####")
+            return
 
-            date = get_doc_date(self)
-            fy = get_fy_short(date)
+        # Gate Entry check
+        has_gate_entry = any(
+            item.custom_gate_entry
+            for item in self.items
+        )
 
-            if fy:
-                self.name = make_autoname(f"PDC/{fy}/.####")
+        if has_gate_entry:
+            self.name = make_autoname(f"SPL/{fy}/.#####")
+            return
+
+    # otherwise default naming_series
     # else → do nothing, Frappe will auto-handle naming_series
+
+    # def set_naming_series(doc, method):
+    #     all_service = True
+
+    #     for d in doc.items:
+    #         item_group = frappe.db.get_value(
+    #             "Item",
+    #             d.item_code,
+    #             "item_group"
+    #         )
+
+    #         if item_group != "All Item Groups-Services":
+    #             all_service = False
+    #             break
+
+    #     if all_service:
+    #         doc.naming_series = "SPI/.FY./."
+    #     else:
+    #         doc.naming_series = "PI/.FY./."
 
 def set_buffer_due_date(doc, method):
     if not doc.supplier or not doc.due_date:

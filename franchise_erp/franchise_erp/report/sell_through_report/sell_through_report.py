@@ -202,39 +202,145 @@ def get_data(filters):
         ))[0][0]
         
         # Stock at Warehouse (All TZU Warehouses)
+        # warehouse_stock = frappe.db.sql("""
+        #     SELECT COALESCE(SUM(b.actual_qty), 0)
+        #     FROM `tabBin` b
+        #     INNER JOIN `tabWarehouse` w
+        #         ON w.name = b.warehouse
+        #     WHERE
+        #         b.item_code = %s
+        #         AND w.company = %s
+        #         AND IFNULL(w.disabled, 0) = 0
+        # """, (
+        #     item.item_code,
+        #     "TZU Lifestyle Private Limited"
+        # ))[0][0]
         warehouse_stock = frappe.db.sql("""
-            SELECT COALESCE(SUM(b.actual_qty), 0)
-            FROM `tabBin` b
+            SELECT COALESCE(SUM(bal.qty_after_transaction),0)
+            FROM (
+                SELECT
+                    sle.warehouse,
+                    sle.qty_after_transaction
+                FROM `tabStock Ledger Entry` sle
+                INNER JOIN (
+                    SELECT
+                        warehouse,
+                        MAX(CONCAT(posting_date,' ',posting_time,' ',creation)) mx,
+                        warehouse AS wh
+                    FROM `tabStock Ledger Entry`
+                    WHERE
+                        item_code=%s
+                        AND posting_date<=%s
+                    GROUP BY warehouse
+                ) x
+                ON x.wh=sle.warehouse
+                AND CONCAT(sle.posting_date,' ',sle.posting_time,' ',sle.creation)=x.mx
+                WHERE sle.item_code=%s
+            ) bal
             INNER JOIN `tabWarehouse` w
-                ON w.name = b.warehouse
+                ON w.name=bal.warehouse
             WHERE
-                b.item_code = %s
-                AND w.company = %s
-                AND IFNULL(w.disabled, 0) = 0
+                w.company=%s
+                AND IFNULL(w.disabled,0)=0
         """, (
+            item.item_code,
+            filters.get("to_date"),
             item.item_code,
             "TZU Lifestyle Private Limited"
         ))[0][0]
 
         # Stock at SIS Counter
+        # sis_stock = frappe.db.sql("""
+        #     SELECT COALESCE(SUM(b.actual_qty), 0)
+        #     FROM `tabBin` b
+        #     INNER JOIN `tabWarehouse` w
+        #         ON w.name = b.warehouse
+        #     WHERE
+        #         b.item_code = %s
+        #         AND w.company IN (
+        #             SELECT DISTINCT represents_company
+        #             FROM `tabCustomer`
+        #             WHERE IFNULL(is_internal_customer, 0) = 1
+        #         )
+        #         AND IFNULL(w.disabled, 0) = 0
+        # """, (
+        #     item.item_code,
+        # ))[0][0]
         sis_stock = frappe.db.sql("""
-            SELECT COALESCE(SUM(b.actual_qty), 0)
-            FROM `tabBin` b
+            SELECT COALESCE(SUM(t.qty_after_transaction),0)
+            FROM (
+
+                SELECT
+                    sle.warehouse,
+                    sle.qty_after_transaction
+
+                FROM `tabStock Ledger Entry` sle
+
+                INNER JOIN (
+
+                    SELECT
+                        warehouse,
+                        MAX(CONCAT(posting_date,' ',posting_time,' ',creation)) mx
+
+                    FROM `tabStock Ledger Entry`
+
+                    WHERE
+                        item_code=%s
+                        AND posting_date<=%s
+
+                    GROUP BY warehouse
+
+                ) x
+
+                ON
+                    x.warehouse=sle.warehouse
+                    AND CONCAT(
+                        sle.posting_date,' ',
+                        sle.posting_time,' ',
+                        sle.creation
+                    )=x.mx
+
+                WHERE
+                    sle.item_code=%s
+
+            ) t
+
             INNER JOIN `tabWarehouse` w
-                ON w.name = b.warehouse
+                ON w.name=t.warehouse
+
             WHERE
-                b.item_code = %s
-                AND w.company IN (
+                w.company IN (
+
                     SELECT DISTINCT represents_company
+
                     FROM `tabCustomer`
-                    WHERE IFNULL(is_internal_customer, 0) = 1
+
+                    WHERE
+                        IFNULL(is_internal_customer,0)=1
+
                 )
-                AND IFNULL(w.disabled, 0) = 0
-        """, (
-            item.item_code,
-        ))[0][0]
+
+                AND IFNULL(w.disabled,0)=0
+            """, (
+                item.item_code,
+                filters.get("to_date"),
+                item.item_code
+            ))[0][0]
 
         # Stock In Date (Latest Purchase Receipt Date)
+        # stock_in_date = frappe.db.sql("""
+        #     SELECT MAX(pr.posting_date)
+        #     FROM `tabPurchase Receipt Item` pri
+        #     INNER JOIN `tabPurchase Receipt` pr
+        #         ON pr.name = pri.parent
+        #     WHERE
+        #         pr.docstatus = 1
+        #         AND pr.company = %s
+        #         AND pri.item_code = %s
+        # """, (
+        #     "TZU Lifestyle Private Limited",
+        #     item.item_code
+        # ))[0][0]
         stock_in_date = frappe.db.sql("""
             SELECT MAX(pr.posting_date)
             FROM `tabPurchase Receipt Item` pri
@@ -244,9 +350,11 @@ def get_data(filters):
                 pr.docstatus = 1
                 AND pr.company = %s
                 AND pri.item_code = %s
+                AND pr.posting_date <= %s
         """, (
             "TZU Lifestyle Private Limited",
-            item.item_code
+            item.item_code,
+            filters.get("to_date")
         ))[0][0]
 
         # Avg Stock Carrying Days at SIS
