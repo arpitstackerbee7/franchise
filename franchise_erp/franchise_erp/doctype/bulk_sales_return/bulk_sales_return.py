@@ -183,7 +183,8 @@ def create_combined_return(doc, doctype, rows):
 
     combined_doc.set_missing_values()
     combined_doc.calculate_taxes_and_totals()
-
+    # if doctype == "Sales Invoice":
+    #     combined_doc.return_against = ""
     combined_doc.insert(ignore_permissions=True)
 
     return combined_doc.name
@@ -478,6 +479,26 @@ def get_si_from_serial(serial_no, company, sales_invoice=None, customer=None):
         conditions += " AND si.customer = %(customer)s"
         params["customer"] = customer
 
+    # si_item = frappe.db.sql(f"""
+    #     SELECT
+    #         sii.name AS sales_invoice_item,
+    #         sii.parent AS sales_invoice,
+    #         sii.item_code,
+    #         sii.item_name,
+    #         sii.qty AS billed_qty,
+    #         sii.rate,
+    #         sii.warehouse,
+    #         i.has_serial_no
+    #     FROM `tabSales Invoice Item` sii
+    #     JOIN `tabSales Invoice` si ON si.name = sii.parent
+    #     LEFT JOIN `tabItem` i ON i.name = sii.item_code
+    #     WHERE si.docstatus = 1
+    #     AND si.is_return = 0
+    #     AND si.update_stock = 1
+    #     AND sii.serial_no LIKE %(serial_pattern)s
+    #     {conditions}
+    #     LIMIT 1
+    # """, params, as_dict=True)
     si_item = frappe.db.sql(f"""
         SELECT
             sii.name AS sales_invoice_item,
@@ -487,15 +508,23 @@ def get_si_from_serial(serial_no, company, sales_invoice=None, customer=None):
             sii.qty AS billed_qty,
             sii.rate,
             sii.warehouse,
-            i.has_serial_no
+            i.has_serial_no,
+            si.posting_date,
+            si.posting_time
         FROM `tabSales Invoice Item` sii
-        JOIN `tabSales Invoice` si ON si.name = sii.parent
-        LEFT JOIN `tabItem` i ON i.name = sii.item_code
+        JOIN `tabSales Invoice` si
+            ON si.name = sii.parent
+        LEFT JOIN `tabItem` i
+            ON i.name = sii.item_code
         WHERE si.docstatus = 1
         AND si.is_return = 0
         AND si.update_stock = 1
         AND sii.serial_no LIKE %(serial_pattern)s
         {conditions}
+        ORDER BY
+            si.posting_date DESC,
+            si.posting_time DESC,
+            si.creation DESC
         LIMIT 1
     """, params, as_dict=True)
 
@@ -509,15 +538,27 @@ def get_si_from_serial(serial_no, company, sales_invoice=None, customer=None):
 
     serial = frappe.get_doc("Serial No", serial_no)
 
+    # returned_qty = frappe.db.sql("""
+    #     SELECT IFNULL(SUM(ABS(sii2.qty)), 0) AS returned_qty
+    #     FROM `tabSales Invoice Item` sii2
+    #     JOIN `tabSales Invoice` si2 ON si2.name = sii2.parent
+    #     WHERE si2.is_return = 1
+    #     AND si2.docstatus = 1
+    #     # AND si2.return_against = %s
+    #     AND sii2.item_code = %s
+    # """, (si_item.sales_invoice, si_item.item_code), as_dict=True)
     returned_qty = frappe.db.sql("""
-        SELECT IFNULL(SUM(ABS(sii2.qty)), 0) AS returned_qty
+        SELECT IFNULL(SUM(ABS(sii2.qty)),0) AS returned_qty
         FROM `tabSales Invoice Item` sii2
-        JOIN `tabSales Invoice` si2 ON si2.name = sii2.parent
-        WHERE si2.is_return = 1
-        AND si2.docstatus = 1
+        JOIN `tabSales Invoice` si2
+            ON si2.name = sii2.parent
+        WHERE si2.docstatus = 1
+        AND si2.is_return = 1
         AND si2.return_against = %s
         AND sii2.item_code = %s
-    """, (si_item.sales_invoice, si_item.item_code), as_dict=True)
+    """,
+    (si_item.sales_invoice, si_item.item_code),
+    as_dict=True)
 
     returned_qty_val = returned_qty[0].returned_qty if returned_qty else 0
     returnable_qty = (si_item.billed_qty or 0) - (returned_qty_val or 0)
@@ -585,7 +626,7 @@ def get_sales_invoice_returnable_items(customer, company, sales_invoice=None, it
                 FROM `tabSales Invoice Item` sii2
                 JOIN `tabSales Invoice` si2 ON si2.name = sii2.parent
                 WHERE si2.is_return = 1
-                AND si2.return_against = sii.parent
+                # AND si2.return_against = sii.parent
                 AND sii2.item_code = sii.item_code
                 ), 0) AS returned_qty,
 
@@ -600,7 +641,7 @@ def get_sales_invoice_returnable_items(customer, company, sales_invoice=None, it
                    FROM `tabSales Invoice Item` sii2
                    JOIN `tabSales Invoice` si2 ON si2.name = sii2.parent
                    WHERE si2.is_return = 1
-                   AND si2.return_against = sii.parent
+                #    AND si2.return_against = sii.parent
                    AND sii2.item_code = sii.item_code
                  ), 0)
             ) AS returnable_qty,
