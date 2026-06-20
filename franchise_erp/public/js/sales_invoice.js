@@ -45,6 +45,9 @@ frappe.ui.form.on("Sales Invoice", {
 
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
+        if (frm.doc.custom_bulk_sales_return) {
+            frm.set_df_property("return_against", "hidden", 1);
+        }
 
         handle_inter_company_grn(frm);
         toggle_incoming_logistic_button(frm);
@@ -116,6 +119,7 @@ frappe.ui.form.on("Sales Invoice", {
 
         });
         make_total_qty_bold(frm);
+        
     },
     on_submit(frm) {
         // ✅ ensure button appears immediately after submit
