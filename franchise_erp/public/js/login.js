@@ -7,9 +7,10 @@ setTimeout(() => {
         callback: function(r) {
 
             if (!r.message) {
-    console.log("OTP Login Disabled");
-    return;
-}
+                console.log("OTP Login Disabled");
+                return;
+            }
+
             if ($("#mobile-otp-login").length) {
                 return;
             }
@@ -25,12 +26,9 @@ setTimeout(() => {
                 </div>
             `);
 
-            $(".btn")
-                .filter(function () {
-                    return $(this).text().trim() === "Login with Email Link";
-                })
-                .parent()
-                .before(otp_btn);
+            console.log("OTP Login Enabled");
+
+            $(".page-card-body").append(otp_btn);
         }
     });
 
