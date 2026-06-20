@@ -64,12 +64,6 @@ frappe.query_reports["Custom Account Payable"] = {
             fieldtype: "Check",
             default: 0,
         },
-        {
-            fieldname: "cost_center",
-            label: __("Cost Center"),
-            fieldtype: "Link",
-            options: "Cost Center",
-        },
     ],
 
     formatter: function(value, row, column, data, default_formatter) {
