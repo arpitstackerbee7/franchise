@@ -41,12 +41,6 @@ frappe.query_reports["Custom Account Receivable"] = {
             },
         },
         {
-            fieldname: "cost_center",
-            label: __("Cost Center"),
-            fieldtype: "Link",
-            options: "Cost Center",
-        },
-        {
             fieldname: "group_by_party",
             label: __("Group By Party"),
             fieldtype: "Check",

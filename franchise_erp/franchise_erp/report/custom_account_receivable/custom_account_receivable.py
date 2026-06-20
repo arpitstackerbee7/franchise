@@ -28,7 +28,7 @@ def execute(filters=None):
     raw_data = [row for row in (result[1] or []) if isinstance(row, dict)]
 
     # ── Remove unwanted columns ────────────────────────────────────────────
-    REMOVE_FIELDS = {"debit_note", "range1", "range2", "range3", "range4", "range5", "due_date"}
+    REMOVE_FIELDS = {"credit_note", "range1", "range2", "range3", "range4", "range5", "due_date", "cost_center", "project", "currency"}
     columns = [c for c in columns if c.get("fieldname") not in REMOVE_FIELDS]
 
     # ── Add Running Balance column right after Outstanding Amount ─────────
