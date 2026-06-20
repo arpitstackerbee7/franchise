@@ -53,7 +53,9 @@ doc_events = {
     # },
 
    "Purchase Invoice": {
-       "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+       "autoname": [
+           "franchise_erp.utils.fy_naming.company_fy_autoname",
+       ],
        "validate": [
                     "franchise_erp.custom.purchase_invoice.set_buffer_due_date",
                     # "franchise_erp.custom.purchase_invoice.sync_merged_discounts"
@@ -61,7 +63,8 @@ doc_events = {
                     ],
         "before_save": [  
             "franchise_erp.custom.purchase_invoice.sync_merged_discounts"
-        ]
+        ],
+        # "before_insert": "franchise_erp.custom.purchase_invoice.set_spl_purchase_invoice_name"
     },
     "Journal Entry": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
