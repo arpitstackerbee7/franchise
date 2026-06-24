@@ -27,6 +27,19 @@ def execute(filters=None):
     columns = list(result[0])
     raw_data = [row for row in result[1] if isinstance(row, dict)]
 
+    supplier_filter = (filters or {}).get("supplier") or []
+    if supplier_filter:
+        supplier_list = [
+            (s if isinstance(s, str) else s.get("value", "")).strip()
+            for s in supplier_filter
+        ]
+        supplier_list = [s for s in supplier_list if s]  
+        if supplier_list:
+            raw_data = [
+                row for row in raw_data
+                if (row.get("party") or "").strip() in supplier_list
+            ]
+
     # ── Remove unwanted columns ────────────────────────────────────────────
     REMOVE_FIELDS = {"credit_note", "range1", "range2", "range3", "range4", "range5", "due_date", "cost_center", "project", "currency"}
     columns = [c for c in columns if c.get("fieldname") not in REMOVE_FIELDS]

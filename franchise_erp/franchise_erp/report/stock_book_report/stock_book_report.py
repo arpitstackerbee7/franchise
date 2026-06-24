@@ -23,6 +23,7 @@ def get_columns():
         "Party Name:Data:180",
         "Party City:Data:120",
         "Item Code:Link/Item:120",
+        "Image:Attach Image:120",
         "Barcode:Data:160",
         "HSN:Data:100",
         "Division:Data:120",
@@ -100,6 +101,15 @@ def get_data(filters):
             ],
             as_dict=1,
         )
+
+        image = frappe.db.get_value(
+            "File",
+            {
+                "attached_to_doctype": "Item",
+                "attached_to_name": item_code
+            },
+        "file_url"
+    )
 
         # Barcode
         barcode = frappe.db.get_value(
@@ -268,6 +278,7 @@ def get_data(filters):
             supplier_name,
             party_city,
             item_code,
+            image or "",
             barcode,
             item.gst_hsn_code if item else "",
             division,
