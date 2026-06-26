@@ -16,19 +16,20 @@ setTimeout(() => {
             }
 
             const otp_btn = $(`
-                <div class="mt-3">
-                    <button
-                        class="btn btn-sm btn-primary btn-block btn-login"
-                        id="mobile-otp-login"
-                        type="button">
-                        Login with Mobile OTP
-                    </button>
-                </div>
-            `);
+    <div class="mt-3">
+        <button
+            class="btn btn-sm btn-primary btn-block btn-login"
+            id="mobile-otp-login"
+            type="button">
+            Login with Mobile OTP
+        </button>
+    </div>
+`);
 
-            console.log("OTP Login Enabled");
+console.log("OTP Login Enabled");
+console.log("Page Card Count:", $(".page-card-body").length);
 
-            $(".page-card-body").append(otp_btn);
+$(".page-card-body").first().append(otp_btn);
         }
     });
 

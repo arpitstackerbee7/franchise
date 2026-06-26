@@ -41,6 +41,14 @@ frappe.query_reports["Custom Account Payable"] = {
             },
         },
         {
+            fieldname: "supplier",
+            label: __("Supplier"),
+            fieldtype: "MultiSelectList",
+            get_data: function(txt) {
+                return frappe.db.get_link_options("Supplier", txt);
+            },
+        },
+        {
             fieldname: "payment_terms_template",
             label: __("Payment Terms Template"),
             fieldtype: "Link",
