@@ -219,7 +219,8 @@ doc_events = {
         "validate": "franchise_erp.custom.leave_type.validate_only_one_short_leave"
     },
     "Employee Checkin":{
-        "after_insert": "franchise_erp.custom.employee_checkin.process_late_entry"
+        "after_insert": "franchise_erp.custom.employee_checkin.process_late_entry",
+        "after_insert": "franchise_erp.custom.attendance.update_last_sync"
     },
     "Salary Component":{
         "validate": "franchise_erp.custom.salary_component.validate_short_leave_component"
