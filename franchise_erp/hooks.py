@@ -410,8 +410,6 @@ scheduler_events = {
     "cron": {
         "45 23 * * *": [
             "franchise_erp.send_whatsapp_notification.send_daily_counter_sales",
-        ],
-        "45 23 * * *": [
             "franchise_erp.send_whatsapp_notification.send_daily_counter_sales_group",
         ],
         "* * * * *": [
