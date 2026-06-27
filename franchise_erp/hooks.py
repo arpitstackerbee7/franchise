@@ -409,7 +409,10 @@ jinja = {
 scheduler_events = {
     "cron": {
         "45 23 * * *": [
-            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales"
+            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales",
+        ],
+        "45 23 * * *": [
+            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales_group",
         ],
         "* * * * *": [
             "franchise_erp.custom.serial_no.update_serial_custom_style"
