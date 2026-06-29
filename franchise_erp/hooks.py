@@ -246,8 +246,7 @@ doc_events = {
     "Compensatory Leave Request": {
         "validate": "franchise_erp.custom.comp_off.validate_comp_off_submission",
         "on_submit": "franchise_erp.custom.comp_off.set_comp_off_expiry"
-    }
-
+    },
 }
    
 
