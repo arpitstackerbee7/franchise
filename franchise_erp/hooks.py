@@ -219,7 +219,8 @@ doc_events = {
         "validate": "franchise_erp.custom.leave_type.validate_only_one_short_leave"
     },
     "Employee Checkin":{
-        "after_insert": "franchise_erp.custom.employee_checkin.process_late_entry"
+        "after_insert": "franchise_erp.custom.employee_checkin.process_late_entry",
+        "after_insert": "franchise_erp.custom.attendance.update_last_sync"
     },
     "Salary Component":{
         "validate": "franchise_erp.custom.salary_component.validate_short_leave_component"
@@ -245,8 +246,7 @@ doc_events = {
     "Compensatory Leave Request": {
         "validate": "franchise_erp.custom.comp_off.validate_comp_off_submission",
         "on_submit": "franchise_erp.custom.comp_off.set_comp_off_expiry"
-    }
-
+    },
 }
    
 
@@ -408,7 +408,8 @@ jinja = {
 scheduler_events = {
     "cron": {
         "45 23 * * *": [
-            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales"
+            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales",
+            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales_group",
         ],
         "* * * * *": [
             "franchise_erp.custom.serial_no.update_serial_custom_style"
@@ -744,6 +745,12 @@ fixtures = [
         "dt": "Custom Field",
         "filters": [
             ["dt", "=", "Customer"]
+        ]
+    },
+    {
+        "dt": "Client Script",
+        "filters": [
+            ["dt", "=", "Leave Application"]
         ]
     }
 ]

@@ -24,10 +24,11 @@
   "item_restricted_roles",
   "update_items_allowed_roles",
   "all_counters_name_show_on_supplier",
+  "is_user_login_with_otp",
   "enable_geo_location",
   "enable_whatsapp_notification",
-  "is_credit_note_account",
-  "is_user_login_with_otp"
+  "enable_whatsapp_group_notification",
+  "is_credit_note_account"
  ],
  "fields": [
   {
@@ -169,13 +170,19 @@
    "fieldname": "is_user_login_with_otp",
    "fieldtype": "Check",
    "label": "Is User Login with OTP"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_whatsapp_group_notification",
+   "fieldtype": "Check",
+   "label": "Enable Whatsapp Group Notification"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-17 17:04:34.039035",
+ "modified": "2026-06-27 14:05:32.174174",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
