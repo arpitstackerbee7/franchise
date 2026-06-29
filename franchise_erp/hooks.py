@@ -746,5 +746,11 @@ fixtures = [
         "filters": [
             ["dt", "=", "Customer"]
         ]
+    },
+    {
+        "dt": "Client Script",
+        "filters": [
+            ["dt", "=", "Leave Application"]
+        ]
     }
 ]
