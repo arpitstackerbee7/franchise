@@ -13,6 +13,12 @@ frappe.query_reports["Sell Through Report"] = {
             fieldtype: "Date",
             reqd: 1,
             default: frappe.datetime.month_end()
+        },
+        {
+            fieldname: "brand",
+            label: __("Brand"),
+            fieldtype: "Link",
+            options: "Brand"
         }
     ],
     // onload: function(report) {

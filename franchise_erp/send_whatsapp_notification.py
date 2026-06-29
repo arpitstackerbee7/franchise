@@ -1,5 +1,12 @@
 import frappe
 import requests
+import os
+import requests
+import frappe
+
+from frappe.utils import nowdate, formatdate
+from frappe.utils.pdf import get_pdf
+
 
 def send_otp_whatsapp(mobile_no, otp):
 
@@ -93,10 +100,6 @@ def send_text_msg_on_whatsapp_sales_invoice(doc, method=None):
 
 
 
-import frappe
-import os
-import requests
-
 # --- PDF Generate function ---
 def generate_pdf(doc):
     """
@@ -162,10 +165,6 @@ def send_pdf_on_whatsapp_sales_invoice(doc, method=None):
         if os.path.exists(file_path):
             os.remove(file_path)
 
-
-import frappe
-import os
-import requests
 
 def send_sales_invoice_pdf_from_outgoing_logistics(doc, method=None):
 
@@ -297,11 +296,6 @@ Thank you!"""
 
 
 # daily sales for countor send to directors
-import frappe
-from frappe.utils import nowdate, getdate, formatdate
-from frappe.utils.pdf import get_pdf
-import os
-import requests
 
 # for single field mobile no
 # @frappe.whitelist()
@@ -577,3 +571,263 @@ def send_daily_counter_sales():
 
     return "Sent Successfully"
 
+
+
+# send report to counter group
+@frappe.whitelist()
+def send_daily_counter_sales_group():
+
+    settings = frappe.get_single("TZU Setting")
+
+    if not settings.enable_whatsapp_group_notification:
+        return "WhatsApp Group Notification is Disabled"
+
+    today = nowdate()
+    formatted_date = formatdate(today, "dd-MMM-yy")
+
+    file_url = "https://7103.api.greenapi.com/waInstance7103539592/sendFileByUpload/9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+
+    # ----------------------------------------------------
+    # Get all companies having Internal Customer
+    # ----------------------------------------------------
+
+    companies = frappe.db.sql("""
+        SELECT DISTINCT
+            c.name,
+            c.company_name
+        FROM `tabCompany` c
+        INNER JOIN `tabCustomer` cust
+            ON cust.represents_company = c.name
+        WHERE cust.is_internal_customer = 1
+    """, as_dict=True)
+
+    if not companies:
+        return "No Company Found"
+
+    sent = 0
+
+    # ----------------------------------------------------
+    # Loop Company Wise
+    # ----------------------------------------------------
+
+    for company in companies:
+
+        # ----------------------------------------
+        # Delivery Note Summary
+        # ----------------------------------------
+
+        summary = frappe.db.sql("""
+            SELECT
+                IFNULL(q.qty, 0) AS total_qty,
+                IFNULL(a.amount, 0) AS total_amount
+            FROM
+            (
+                SELECT
+                    SUM(dni.qty) AS qty
+                FROM `tabDelivery Note` dn
+                INNER JOIN `tabDelivery Note Item` dni
+                    ON dni.parent = dn.name
+                WHERE
+                    dn.docstatus = 1
+                    AND dn.company = %s
+                    AND dn.posting_date = %s
+            ) q,
+            (
+                SELECT
+                    SUM(grand_total) AS amount
+                FROM `tabDelivery Note`
+                WHERE
+                    docstatus = 1
+                    AND company = %s
+                    AND posting_date = %s
+            ) a
+        """, (company.name, today, company.name, today), as_dict=True)
+
+        if not summary:
+            continue
+
+        total_qty = summary[0].total_qty or 0
+        total_amount = summary[0].total_amount or 0
+
+        if total_qty == 0 and total_amount == 0:
+            continue
+
+        # ----------------------------------------
+        # PDF HTML
+        # ----------------------------------------
+
+        html = f"""
+        <div style="font-family:Arial;padding:20px;">
+        <h1 style="text-align:center; margin-bottom:5px;">
+            {company.company_name}
+        </h1>
+        <h2 style="text-align:center;">
+            Counter Sale Dt - {formatted_date}
+        </h2>
+
+        <table
+            border="1"
+            cellspacing="0"
+            cellpadding="8"
+            width="100%"
+            style="border-collapse:collapse;font-size:14px;">
+
+            <thead>
+
+                <tr>
+
+                    <th width="18%">Date</th>
+
+                    <th width="28%">Counter Name</th>
+
+                    <th width="22%">Net Sale Qty</th>
+
+                    <th width="32%">Net Sale Amount</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                <tr>
+
+                    <td>{formatted_date}</td>
+
+                    <td>{company.company_name}</td>
+
+                    <td>{int(total_qty)}</td>
+
+                    <td>{frappe.utils.fmt_money(total_amount)}</td>
+
+                </tr>
+
+                <tr>
+
+                    <td><b>Total</b></td>
+
+                    <td></td>
+
+                    <td><b>{int(total_qty)}</b></td>
+
+                    <td><b>{frappe.utils.fmt_money(total_amount)}</b></td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+        </div>
+        """
+
+        pdf = get_pdf(html)
+
+        filename = f"Counter_Sales_{company.name}_{today}.pdf"
+
+        filepath = frappe.get_site_path(
+            "private",
+            "files",
+            filename
+        )
+
+        with open(filepath, "wb") as f:
+            f.write(pdf)
+
+        # ----------------------------------------
+        # Fetch WhatsApp Group IDs
+        # ----------------------------------------
+
+        groups = frappe.get_all(
+            "WhatsApp Group Id",
+            filters={
+                "parent": company.name
+            },
+            fields=["whatsapp_group_id"]
+        )
+        # Skip if no Group IDs configured
+        valid_groups = [
+            g for g in groups
+            if g.whatsapp_group_id and g.whatsapp_group_id.strip()
+        ]
+
+        if not valid_groups:
+            frappe.logger().info(
+                f"Skipping {company.name} - No WhatsApp Group ID Found"
+            )
+
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+            continue
+
+        if not valid_groups:
+
+            frappe.log_error(
+                f"No Group Found for {company.name}",
+                "Counter Sale WhatsApp"
+            )
+
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+            continue
+
+        # ----------------------------------------
+        # Send PDF
+        # ----------------------------------------
+
+        for g in valid_groups:
+
+            if not g.whatsapp_group_id:
+                continue
+
+            chatId = g.whatsapp_group_id.strip()
+
+            if "@g.us" not in chatId:
+                chatId += "@g.us"
+
+            data = {
+                "chatId": chatId,
+                "caption": f"Daily Counter Sales - {formatted_date}",
+                "fileName": filename
+            }
+
+            try:
+
+                with open(filepath, "rb") as pdf_file:
+
+                    response = requests.post(
+                        file_url,
+                        data=data,
+                        files={
+                            "file": pdf_file
+                        }
+                    )
+
+                if response.status_code == 200:
+
+                    sent += 1
+
+                else:
+
+                    frappe.log_error(
+                        response.text,
+                        f"WhatsApp Failed {chatId}"
+                    )
+
+            except Exception:
+
+                frappe.log_error(
+                    frappe.get_traceback(),
+                    f"WhatsApp Error {chatId}"
+                )
+
+        # ----------------------------------------
+        # Delete PDF
+        # ----------------------------------------
+
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+    return f"Successfully Sent to {sent} Group(s)"

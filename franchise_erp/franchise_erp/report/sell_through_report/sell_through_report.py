@@ -17,6 +17,13 @@ def get_columns():
             "width": 90,
         },
         {
+            "label": "Brand",
+            "fieldname": "brand",
+            "fieldtype": "Link",
+            "options": "Brand",
+            "width": 120,
+        },
+        {
             "label": "Item Code",
             "fieldname": "item_code",
             "fieldtype": "Link",
@@ -102,15 +109,32 @@ def get_data(filters):
 
     filters = filters or {}
 
+    # items = frappe.get_all(
+    #     "Item",
+    #     fields=[
+    #         "item_code",
+    #         "custom_barcode_code"
+    #     ],
+    #     filters={
+    #         "disabled": 0
+    #     },
+    #     order_by="custom_barcode_code asc, item_code asc"
+    # )
+    item_filters = {
+    "disabled": 0
+    }
+
+    if filters.get("brand"):
+        item_filters["brand"] = filters.get("brand")
+
     items = frappe.get_all(
         "Item",
         fields=[
             "item_code",
-            "custom_barcode_code"
+            "custom_barcode_code",
+            "brand"
         ],
-        filters={
-            "disabled": 0
-        },
+        filters=item_filters,
         order_by="custom_barcode_code asc, item_code asc"
     )
 
@@ -441,6 +465,7 @@ def get_data(filters):
 
         row = {
             "style": style,
+            "brand": item.brand,
             "item_code": item.item_code,
             "purchase_qty": purchase_qty,
             "dispatch_qty": dispatch_qty,
