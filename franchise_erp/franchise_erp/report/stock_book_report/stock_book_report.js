@@ -1,8 +1,5 @@
-// Copyright (c) 2026, Franchise Erp and contributors
-// For license information, please see license.txt
-
 frappe.query_reports["Stock Book Report"] = {
-	"filters": [
+	filters: [
 		{
 			"fieldname": "company",
 			"label": __("Company"),
@@ -27,5 +24,18 @@ frappe.query_reports["Stock Book Report"] = {
 			"fieldtype": "Data"
 		}
 	],
-	initial_depth: 1
+
+	formatter: function (value, row, column, data, default_formatter) {
+		if (column.fieldname === "image" && value) {
+			return `<div style="display:flex; align-items:center; justify-content:center; height:100%;">
+				<img src="${value}" style="height:60px;width:60px;object-fit:cover;border-radius:4px;">
+			</div>`;
+		}
+		return default_formatter(value, row, column, data);
+	},
+
+	after_datatable_render: function (datatable_obj) {
+		datatable_obj.options.cellHeight = 70;
+		datatable_obj.refresh();
+	}
 };
