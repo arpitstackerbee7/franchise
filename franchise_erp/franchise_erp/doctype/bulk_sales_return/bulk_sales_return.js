@@ -9,6 +9,7 @@ frappe.ui.form.on('Bulk Sales Return', {
             frm.add_custom_button('Get Items from Sales Invoice', () => {
                 open_sales_invoice_dialog(frm);
             });
+            update_total_quantity(frm);
         
     }
 });
@@ -24,6 +25,30 @@ frappe.ui.form.on("Bulk Sales Return", {
 
     }
 });
+frappe.ui.form.on("Bulk Sales Return Item Table", {
+    qty(frm) {
+        update_total_quantity(frm);
+    },
+
+    items_add(frm) {
+        update_total_quantity(frm);
+    },
+
+    items_remove(frm) {
+        update_total_quantity(frm);
+    }
+});
+function update_total_quantity(frm) {
+    let total = 0;
+
+    (frm.doc.items || []).forEach(row => {
+        total += cint(row.qty || 0);
+    });
+
+    frm.doc.total_quantity = total;
+    frm.refresh_field("total_quantity");
+}
+
 frappe.ui.form.on('Bulk Sales Return', {
     refresh: function(frm) {
 

@@ -15,6 +15,7 @@
   "status",
   "submit_status",
   "section_break_rotl",
+  "total_quantity",
   "items"
  ],
  "fields": [
@@ -60,29 +61,35 @@
    "reqd": 1
   },
   {
-  "fieldname": "status",
-  "fieldtype": "Select",
-  "label": "Return Creation Status",
-  "options": "\nQueued\nIn Progress\nCompleted\nFailed",
- "read_only": 1
-},
- {
-  "fieldname": "submit_status",
-  "fieldtype": "Select",
-  "label": "Return Submission Status",
-  "options": "Not Started\nQueued\nIn Progress\nCompleted\nFailed",
-  "default": "Not Started",
-  "read_only": 1
- },
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Return Creation Status",
+   "options": "\nQueued\nIn Progress\nCompleted\nFailed",
+   "read_only": 1
+  },
+  {
+   "default": "Not Started",
+   "fieldname": "submit_status",
+   "fieldtype": "Select",
+   "label": "Return Submission Status",
+   "options": "Not Started\nQueued\nIn Progress\nCompleted\nFailed",
+   "read_only": 1
+  },
   {
    "fieldname": "section_break_rotl",
-   "fieldtype": "Section Break" 
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
    "options": "Bulk Sales Return Item Table"
+  },
+  {
+   "fieldname": "total_quantity",
+   "fieldtype": "Data",
+   "label": "Total Quantity",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -98,7 +105,7 @@
    "link_fieldname": "custom_bulk_sales_return"
   }
  ],
- "modified": "2026-04-11 12:10:38.630655",
+ "modified": "2026-06-30 18:50:02.816410",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Bulk Sales Return",
