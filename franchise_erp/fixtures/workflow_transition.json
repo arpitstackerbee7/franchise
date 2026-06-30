@@ -193,8 +193,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.487827",
   "name": "mmo871qs9c",
+=======
+  "modified": "2026-06-19 22:23:33.210789",
+  "name": "244l9bie59",
+>>>>>>> Stashed changes
   "next_state": "Rejected",
   "parent": "Compensatory Leave Request Workflow",
   "parentfield": "transitions",
@@ -210,8 +215,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.552760",
   "name": "mmp958dkvq",
+=======
+  "modified": "2026-06-19 22:23:33.317475",
+  "name": "245crmtnps",
+>>>>>>> Stashed changes
   "next_state": "Pending Report Manager",
   "parent": "Leave Application Workflow",
   "parentfield": "transitions",
@@ -227,8 +237,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.488204",
   "name": "mmooii3pmp",
+=======
+  "modified": "2026-06-19 22:23:33.211387",
+  "name": "24482dtuk2",
+>>>>>>> Stashed changes
   "next_state": "Pending Reporting Manager",
   "parent": "Compensatory Leave Request Workflow",
   "parentfield": "transitions",
@@ -244,8 +259,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.553086",
   "name": "mmpquj0m9r",
+=======
+  "modified": "2026-06-19 22:23:33.318109",
+  "name": "245tlh7mvq",
+>>>>>>> Stashed changes
   "next_state": "Pending HR Approval",
   "parent": "Leave Application Workflow",
   "parentfield": "transitions",
@@ -261,8 +281,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.488598",
   "name": "mmo0kf5bqt",
+=======
+  "modified": "2026-06-19 22:23:33.211965",
+  "name": "244kqcb7f5",
+>>>>>>> Stashed changes
   "next_state": "Approved",
   "parent": "Compensatory Leave Request Workflow",
   "parentfield": "transitions",
@@ -278,8 +303,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.553385",
   "name": "mmp0ggc295",
+=======
+  "modified": "2026-06-19 22:23:33.318576",
+  "name": "2452toitm2",
+>>>>>>> Stashed changes
   "next_state": "Rejected",
   "parent": "Leave Application Workflow",
   "parentfield": "transitions",
@@ -295,8 +325,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.488990",
   "name": "mmotu0d9aj",
+=======
+  "modified": "2026-06-19 22:23:33.212553",
+  "name": "2443dakrk8",
+>>>>>>> Stashed changes
   "next_state": "Pending Reporting Manager",
   "parent": "Compensatory Leave Request Workflow",
   "parentfield": "transitions",
@@ -312,8 +347,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.553698",
   "name": "mmpeaf3kan",
+=======
+  "modified": "2026-06-19 22:23:33.319144",
+  "name": "2456bpc4iu",
+>>>>>>> Stashed changes
   "next_state": "Approved",
   "parent": "Leave Application Workflow",
   "parentfield": "transitions",
@@ -329,8 +369,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.489380",
   "name": "mmoetf6t0d",
+=======
+  "modified": "2026-06-19 22:23:33.213070",
+  "name": "24414rvk49",
+>>>>>>> Stashed changes
   "next_state": "Approved",
   "parent": "Compensatory Leave Request Workflow",
   "parentfield": "transitions",
@@ -346,8 +391,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.553975",
   "name": "mmp2nmq07v",
+=======
+  "modified": "2026-06-19 22:23:33.319917",
+  "name": "24595nmu93",
+>>>>>>> Stashed changes
   "next_state": "Rejected",
   "parent": "Leave Application Workflow",
   "parentfield": "transitions",
@@ -363,8 +413,13 @@
   "condition": null,
   "docstatus": 0,
   "doctype": "Workflow Transition",
+<<<<<<< Updated upstream
   "modified": "2026-06-26 16:05:14.489716",
   "name": "mmof99ibk3",
+=======
+  "modified": "2026-06-19 22:23:33.213966",
+  "name": "244t67vpku",
+>>>>>>> Stashed changes
   "next_state": "Rejected",
   "parent": "Compensatory Leave Request Workflow",
   "parentfield": "transitions",
