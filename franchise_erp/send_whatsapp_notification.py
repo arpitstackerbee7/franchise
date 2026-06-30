@@ -702,17 +702,7 @@ def send_daily_counter_sales_group():
 
                 </tr>
 
-                <tr>
-
-                    <td><b>Total</b></td>
-
-                    <td></td>
-
-                    <td><b>{int(total_qty)}</b></td>
-
-                    <td style="text-align:left;"><b>{rounded_total_amount:,}</b></td>
-
-                </tr>
+               
 
             </tbody>
 
