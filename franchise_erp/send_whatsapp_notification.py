@@ -648,7 +648,7 @@ def send_daily_counter_sales_group():
 
         total_qty = summary[0].total_qty or 0
         total_amount = summary[0].total_amount or 0
-
+        rounded_total_amount = int(round(total_amount))
         if total_qty == 0 and total_amount == 0:
             continue
 
@@ -698,7 +698,7 @@ def send_daily_counter_sales_group():
 
                     <td>{int(total_qty)}</td>
 
-                    <td>{frappe.utils.fmt_money(total_amount)}</td>
+                    <td style="text-align:left;">{rounded_total_amount:,}</td>
 
                 </tr>
 
@@ -710,7 +710,7 @@ def send_daily_counter_sales_group():
 
                     <td><b>{int(total_qty)}</b></td>
 
-                    <td><b>{frappe.utils.fmt_money(total_amount)}</b></td>
+                    <td style="text-align:left;"><b>{rounded_total_amount:,}</b></td>
 
                 </tr>
 
