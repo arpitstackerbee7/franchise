@@ -19,28 +19,28 @@ def execute(filters=None):
 
 def get_columns():
     return [
-        "Company:Link/Company:150",
-        "Party Name:Data:180",
-        "Party City:Data:120",
-        "Item Code:Link/Item:120",
-        "Image:Attach Image:120",
-        "Barcode:Data:160",
-        "HSN:Data:100",
-        "Division:Data:120",
-        "Silhouette:Data:120",
-        "Department:Data:120",
-        "Warehouse:Link/Warehouse:180",
-        "Brand:Data:120",
-        "Item Name:Data:180",
-        "Standard Buying:Currency:120",
-        "WSP:Currency:100",
-        "MRP:Currency:100",
-        "RSP:Currency:100",
-        "STD:Currency:100",
-        "Standard Selling:Currency:120",
-        "UOM:Data:80",
-        "Closing Stock Quantity:Float:120",
-        "Last Stock Inward Date:Date:140",
+        {"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 150},
+        {"label": "Party Name", "fieldname": "party_name", "fieldtype": "Data", "width": 180},
+        {"label": "Party City", "fieldname": "party_city", "fieldtype": "Data", "width": 120},
+        {"label": "Item Code", "fieldname": "item_code", "fieldtype": "Link", "options": "Item", "width": 120},
+        {"label": "Image", "fieldname": "image", "fieldtype": "Data", "width": 120},
+        {"label": "Barcode", "fieldname": "barcode", "fieldtype": "Data", "width": 160},
+        {"label": "HSN", "fieldname": "hsn", "fieldtype": "Data", "width": 100},
+        {"label": "Division", "fieldname": "division", "fieldtype": "Data", "width": 120},
+        {"label": "Silhouette", "fieldname": "silhouette", "fieldtype": "Data", "width": 120},
+        {"label": "Department", "fieldname": "department", "fieldtype": "Data", "width": 120},
+        {"label": "Warehouse", "fieldname": "warehouse", "fieldtype": "Link", "options": "Warehouse", "width": 180},
+        {"label": "Brand", "fieldname": "brand", "fieldtype": "Data", "width": 120},
+        {"label": "Item Name", "fieldname": "item_name", "fieldtype": "Data", "width": 180},
+        {"label": "Standard Buying", "fieldname": "standard_buying", "fieldtype": "Currency", "width": 120},
+        {"label": "WSP", "fieldname": "wsp", "fieldtype": "Currency", "width": 100},
+        {"label": "MRP", "fieldname": "mrp", "fieldtype": "Currency", "width": 100},
+        {"label": "RSP", "fieldname": "rsp", "fieldtype": "Currency", "width": 100},
+        {"label": "STD", "fieldname": "std", "fieldtype": "Currency", "width": 100},
+        {"label": "Standard Selling", "fieldname": "standard_selling", "fieldtype": "Currency", "width": 120},
+        {"label": "UOM", "fieldname": "uom", "fieldtype": "Data", "width": 80},
+        {"label": "Closing Stock Quantity", "fieldname": "closing_stock_qty", "fieldtype": "Float", "width": 120},
+        {"label": "Last Stock Inward Date", "fieldname": "last_inward_date", "fieldtype": "Date", "width": 140},
     ]
 
 
@@ -86,6 +86,7 @@ def get_data(filters):
         if round(float(qty or 0), 3) == 0:
             continue
 
+        
         # Item Master
         item = frappe.db.get_value(
             "Item",
@@ -98,18 +99,25 @@ def get_data(filters):
                 "item_group",
                 "custom_silvet",
                 "custom_departments",
+                "image",
             ],
             as_dict=1,
         )
 
-        image = frappe.db.get_value(
-            "File",
-            {
-                "attached_to_doctype": "Item",
-                "attached_to_name": item_code
-            },
-        "file_url"
-    )
+        # Use Item's image field first, fallback to File doctype
+        image = item.image if item and item.image else None
+
+        if not image:
+            image = frappe.db.get_value(
+                "File",
+                {
+                    "attached_to_doctype": "Item",
+                    "attached_to_name": item_code
+                },
+                "file_url"
+            )
+         
+                
 
         # Barcode
         barcode = frappe.db.get_value(
