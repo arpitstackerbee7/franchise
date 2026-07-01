@@ -211,6 +211,7 @@ doc_events = {
         "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
         "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
         "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel",
+        "on_submit": "franchise_erp.custom.subcontracting_receipt.recalculate_tax_on_service_cost",
     },
     "Leave Application":{
         "on_submit": "franchise_erp.custom.leave_application.update_late_log_on_short_leave"
