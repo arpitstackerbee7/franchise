@@ -58,6 +58,7 @@ doc_events = {
        ],
        "validate": [
                     "franchise_erp.custom.purchase_invoice.set_buffer_due_date",
+                    "franchise_erp.utils.back_date_validation.validate_back_date",
                     # "franchise_erp.custom.purchase_invoice.sync_merged_discounts"
                     
                     ],
