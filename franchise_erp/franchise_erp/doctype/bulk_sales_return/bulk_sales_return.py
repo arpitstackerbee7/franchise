@@ -617,34 +617,36 @@ def get_sales_invoice_returnable_items(customer, company, sales_invoice=None, it
             sii.item_name,
             sii.qty AS billed_qty,
             CASE
-              WHEN si.update_stock = 1 THEN sii.qty
-              ELSE sii.delivered_qty
-            END AS delivered_qty,
+                    WHEN si.update_stock = 1 THEN sii.qty
+                    ELSE sii.delivered_qty
+                END AS delivered_qty,
 
-            IFNULL((
-                SELECT SUM(ABS(sii2.qty))
-                FROM `tabSales Invoice Item` sii2
-                JOIN `tabSales Invoice` si2 ON si2.name = sii2.parent
-                WHERE si2.is_return = 1
-                # AND si2.return_against = sii.parent
-                AND sii2.item_code = sii.item_code
+                IFNULL((
+                    SELECT SUM(ABS(sii2.qty))
+                    FROM `tabSales Invoice Item` sii2
+                    JOIN `tabSales Invoice` si2
+                        ON si2.name = sii2.parent
+                    WHERE si2.is_return = 1
+                    AND si2.return_against = si.name
+                    AND sii2.sales_invoice_item = sii.name
                 ), 0) AS returned_qty,
 
-            (
-               CASE
-                   WHEN si.update_stock = 1 THEN sii.qty
-                   ELSE sii.delivered_qty
-                END
-                -
-                IFNULL((
-                   SELECT SUM(ABS(sii2.qty))
-                   FROM `tabSales Invoice Item` sii2
-                   JOIN `tabSales Invoice` si2 ON si2.name = sii2.parent
-                   WHERE si2.is_return = 1
-                #    AND si2.return_against = sii.parent
-                   AND sii2.item_code = sii.item_code
-                 ), 0)
-            ) AS returnable_qty,
+                (
+                    CASE
+                        WHEN si.update_stock = 1 THEN sii.qty
+                        ELSE sii.delivered_qty
+                    END
+                    -
+                    IFNULL((
+                        SELECT SUM(ABS(sii2.qty))
+                        FROM `tabSales Invoice Item` sii2
+                        JOIN `tabSales Invoice` si2
+                            ON si2.name = sii2.parent
+                        WHERE si2.is_return = 1
+                        AND si2.return_against = si.name
+                        AND sii2.sales_invoice_item = sii.name
+                    ), 0)
+                ) AS returnable_qty,
 
             0 AS return_qty,
             i.has_serial_no,
