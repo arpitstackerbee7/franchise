@@ -276,9 +276,12 @@ def create_item_price(
 import frappe
 from frappe.utils import flt, cint
 
-
+def is_price_list_enabled(price_list):
+    return cint(frappe.db.get_value("Price List", price_list, "enabled"))
 def create_selling_price_from_po(doc, method):
-
+    mrp_enabled = is_price_list_enabled("MRP")
+    rsp_enabled = is_price_list_enabled("RSP")
+    wsp_enabled = is_price_list_enabled("WSP")
     pricing_rule = frappe.db.get_value(
         "Pricing Rule",
         {"disable": 0},
@@ -344,43 +347,46 @@ def create_selling_price_from_po(doc, method):
             continue
 
         # ===== MRP =====
-        mrp_cost = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
+        if mrp_enabled:
+            mrp_cost = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
 
-        create_item_price(
-            item_code=row.item_code,
-            price_list="MRP",
-            cost=mrp_cost,
-            margin_type=mrp_margin_type,
-            margin_value=mrp_margin_val,
-            valid_from=doc.transaction_date,
-            apply_rounding=False
-        )
+            create_item_price(
+                item_code=row.item_code,
+                price_list="MRP",
+                cost=mrp_cost,
+                margin_type=mrp_margin_type,
+                margin_value=mrp_margin_val,
+                valid_from=doc.transaction_date,
+                apply_rounding=False
+            )
 
         # ===== RSP =====
-        rsp_cost = calculate_cost(row, rsp_cost_type, rsp_tax_mode)
+        if rsp_enabled:
+            rsp_cost = calculate_cost(row, rsp_cost_type, rsp_tax_mode)
 
-        create_item_price(
-            item_code=row.item_code,
-            price_list="RSP",
-            cost=rsp_cost,
-            margin_type=rsp_margin_type,
-            margin_value=rsp_margin_val,
-            valid_from=doc.transaction_date,
-            apply_rounding=False
-        )
+            create_item_price(
+                item_code=row.item_code,
+                price_list="RSP",
+                cost=rsp_cost,
+                margin_type=rsp_margin_type,
+                margin_value=rsp_margin_val,
+                valid_from=doc.transaction_date,
+                apply_rounding=False
+            )
 
         # ===== WSP =====
-        wsp_cost = calculate_cost(row, wsp_cost_type, wsp_tax_mode)
+        if wsp_enabled:
+            wsp_cost = calculate_cost(row, wsp_cost_type, wsp_tax_mode)
 
-        create_item_price(
-            item_code=row.item_code,
-            price_list="WSP",
-            cost=wsp_cost,
-            margin_type=wsp_margin_type,
-            margin_value=wsp_margin_val,
-            valid_from=doc.transaction_date,
-            apply_rounding=False
-        )
+            create_item_price(
+                item_code=row.item_code,
+                price_list="WSP",
+                cost=wsp_cost,
+                margin_type=wsp_margin_type,
+                margin_value=wsp_margin_val,
+                valid_from=doc.transaction_date,
+                apply_rounding=False
+            )
 
     frappe.db.commit()
 
