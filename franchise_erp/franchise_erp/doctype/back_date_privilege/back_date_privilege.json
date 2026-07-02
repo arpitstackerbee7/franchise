@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-07-01 13:12:18.092716",
+ "creation": "2026-07-02 09:49:04.306574",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -21,8 +21,8 @@
   {
    "fieldname": "allowed_days",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "Allowed Days",
-   "options": "\n",
    "reqd": 1
   },
   {
@@ -35,7 +35,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-01 14:18:42.344903",
+ "modified": "2026-07-02 09:51:46.062257",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Back Date Privilege",
