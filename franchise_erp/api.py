@@ -278,7 +278,12 @@ from frappe.utils import flt, cint
 
 def is_price_list_enabled(price_list):
     return cint(frappe.db.get_value("Price List", price_list, "enabled"))
+
 def create_selling_price_from_po(doc, method):
+    # Run only if enabled in TZU Setting
+    if not frappe.db.get_single_value("TZU Setting", "enable_pricing_rule"):
+        return
+    
     mrp_enabled = is_price_list_enabled("MRP")
     rsp_enabled = is_price_list_enabled("RSP")
     wsp_enabled = is_price_list_enabled("WSP")

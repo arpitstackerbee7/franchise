@@ -28,7 +28,8 @@
   "enable_geo_location",
   "enable_whatsapp_notification",
   "enable_whatsapp_group_notification",
-  "is_credit_note_account"
+  "is_credit_note_account",
+  "enable_pricing_rule"
  ],
  "fields": [
   {
@@ -176,13 +177,19 @@
    "fieldname": "enable_whatsapp_group_notification",
    "fieldtype": "Check",
    "label": "Enable Whatsapp Group Notification"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_pricing_rule",
+   "fieldtype": "Check",
+   "label": "Enable Pricing Rule"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-27 14:05:32.174174",
+ "modified": "2026-07-03 08:55:11.587197",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
