@@ -317,40 +317,88 @@ def apply_buy_n_get_x_free(doc, items, n, x):
 
 
 
+# def apply_buy_n_get_x_percent_off(doc, items, n, percent):
+#     total_qty = sum(int(r.qty) for r in items)
+#     if total_qty < n:
+#         return
+
+#     items.sort(key=lambda r: r.price_list_rate)
+#     discount_sets = total_qty // n
+#     free_units = discount_sets
+
+#     for row in items:
+#         if free_units <= 0:
+#             break
+
+#         qty_to_discount = min(int(row.qty), free_units)
+#         discounted_rate = flt(row.price_list_rate * (100 - percent) / 100)
+
+#         if qty_to_discount == int(row.qty):
+#             row.rate = discounted_rate
+#             row.discount_percentage = percent
+#             row.custom_is_promo_scheme = 1
+#             free_units -= qty_to_discount
+#         else:
+#             discount_row = doc.append("items", {})
+#             copy_item_fields(row, discount_row)
+
+#             discount_row.qty = qty_to_discount
+#             discount_row.rate = discounted_rate
+#             discount_row.price_list_rate = row.price_list_rate
+#             discount_row.discount_percentage = percent
+#             discount_row.custom_is_promo_scheme = 1
+
+#             row.qty -= qty_to_discount
+#             free_units -= qty_to_discount
+
+
 def apply_buy_n_get_x_percent_off(doc, items, n, percent):
+
     total_qty = sum(int(r.qty) for r in items)
+
     if total_qty < n:
         return
 
+    eligible_sets = total_qty // n
+
+    discount_qty = eligible_sets * n
+
     items.sort(key=lambda r: r.price_list_rate)
-    discount_sets = total_qty // n
-    free_units = discount_sets
+
+    remaining = discount_qty
 
     for row in items:
-        if free_units <= 0:
+
+        if remaining <= 0:
             break
 
-        qty_to_discount = min(int(row.qty), free_units)
-        discounted_rate = flt(row.price_list_rate * (100 - percent) / 100)
+        qty_to_discount = min(int(row.qty), remaining)
+
+        discounted_rate = flt(
+            row.price_list_rate * (100 - percent) / 100
+        )
 
         if qty_to_discount == int(row.qty):
+
             row.rate = discounted_rate
             row.discount_percentage = percent
             row.custom_is_promo_scheme = 1
-            free_units -= qty_to_discount
+
         else:
+
             discount_row = doc.append("items", {})
             copy_item_fields(row, discount_row)
 
             discount_row.qty = qty_to_discount
-            discount_row.rate = discounted_rate
             discount_row.price_list_rate = row.price_list_rate
+            discount_row.rate = discounted_rate
             discount_row.discount_percentage = percent
             discount_row.custom_is_promo_scheme = 1
 
             row.qty -= qty_to_discount
-            free_units -= qty_to_discount
 
+        remaining -= qty_to_discount
+        
 # ============================================================
 # TOTAL RECALC
 # ============================================================
