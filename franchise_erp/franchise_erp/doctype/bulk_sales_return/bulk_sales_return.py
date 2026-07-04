@@ -181,6 +181,10 @@ def create_combined_return(doc, doctype, rows):
 
     combined_doc.custom_bulk_sales_return = doc.name
 
+    # Reset item numbering
+    for idx, item in enumerate(combined_doc.items, start=1):
+        item.idx = idx
+
     combined_doc.set_missing_values()
     combined_doc.calculate_taxes_and_totals()
     # if doctype == "Sales Invoice":

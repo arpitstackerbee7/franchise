@@ -2006,8 +2006,8 @@ class CustomSalesInvoice(SalesInvoice):
         if self.is_return:
             for item in self.items:
                 item.qty = -abs(item.qty or 0)
-                if item.stock_qty:
-                    item.stock_qty = -abs(item.stock_qty)
+                
+                item.stock_qty = item.qty * (item.conversion_factor or 1)
 
 
 
@@ -2050,3 +2050,4 @@ def update_serial_no_mrp(doc, method=None):
                 )
 
     frappe.db.commit()
+

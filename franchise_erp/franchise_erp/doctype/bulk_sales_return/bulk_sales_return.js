@@ -9,22 +9,14 @@ frappe.ui.form.on('Bulk Sales Return', {
             frm.add_custom_button('Get Items from Sales Invoice', () => {
                 open_sales_invoice_dialog(frm);
             });
+            frm.add_custom_button("Get Items from Delivery Notes", () => {
+                open_return_items_dialog(frm);
+            });
             update_total_quantity(frm);
         
     }
 });
 
-frappe.ui.form.on("Bulk Sales Return", {
-    refresh(frm) {
-
-        if (frm.is_new() || frm.doc.docstatus !== 0) return;
-
-        frm.add_custom_button("Get Items from Delivery Notes", () => {
-            open_return_items_dialog(frm);
-        });
-
-    }
-});
 frappe.ui.form.on("Bulk Sales Return Item Table", {
     qty(frm) {
         update_total_quantity(frm);
@@ -42,10 +34,10 @@ function update_total_quantity(frm) {
     let total = 0;
 
     (frm.doc.items || []).forEach(row => {
-        total += cint(row.qty || 0);
+        total += flt(row.qty || 0);
     });
 
-    frm.doc.total_quantity = total;
+    frm.set_value("total_quantity", total);
     frm.refresh_field("total_quantity");
 }
 
@@ -111,6 +103,29 @@ frappe.ui.form.on('Bulk Sales Return', {
         // });
     }
 });
+
+function update_serial_numbers(dialog) {
+
+    let rows = dialog.fields_dict.items_table.df.data || [];
+
+    rows.forEach((row, i) => {
+        row.sr_no = i + 1;
+    });
+
+    dialog.fields_dict.items_table.grid.refresh();
+}
+function update_scan_total_quantity(dialog) {
+
+    let total = 0;
+
+    let rows = dialog.fields_dict.items_table.grid.get_selected_children();
+
+    rows.forEach(row => {
+        total += flt(row.return_qty || 0);
+    });
+
+    dialog.set_value("total_quantity", total);
+}
 function open_sales_invoice_dialog(frm) {
 
     let dialog = new frappe.ui.Dialog({
@@ -216,6 +231,11 @@ function open_sales_invoice_dialog(frm) {
 
                                     rows.splice(index, 1);
                                     rows.unshift(existing);
+                                    update_serial_numbers(dialog);
+
+table.refresh();
+
+update_scan_total_quantity(dialog);
                                 }
 
                             } else {
@@ -223,10 +243,14 @@ function open_sales_invoice_dialog(frm) {
                                 r.message.return_qty = 1;
                                 r.message.serial_nos = serial;
 
-                                rows.unshift(r.message);
+                                update_serial_numbers(dialog);
+
+table.refresh();
+
+update_scan_total_quantity(dialog);
                             }
 
-                            table.refresh();
+                            // table.refresh();
 
                             frappe.after_ajax(() => {
                                 setTimeout(() => {
@@ -250,7 +274,13 @@ function open_sales_invoice_dialog(frm) {
                     });
                 }
             },
-
+{
+    fieldname: "total_quantity",
+    label: "Total Quantity",
+    fieldtype: "Float",
+    read_only: 1,
+    default: 0
+},
             {
                 fieldname: "items_table",
                 fieldtype: "Table",
@@ -258,73 +288,88 @@ function open_sales_invoice_dialog(frm) {
                 cannot_add_rows: true,
                 in_place_edit: true,
 
-                fields: [
+               fields: [
 
-                    { fieldname: "sales_invoice", label: "Sales Invoice", fieldtype: "Data", in_list_view: 1, read_only: 1 },
+    
 
-                    { fieldname: "item_code", label: "Item", fieldtype: "Data", in_list_view: 1,read_only:1 },
+    {
+        fieldname: "sales_invoice",
+        label: "Sales Invoice",
+        fieldtype: "Data",
+        read_only: 1,
+        in_list_view: 1,
+        columns: 2
+    },
 
-                    { fieldname: "returnable_qty", label: "Returnable Qty", fieldtype: "Float", in_list_view: 1,read_only:1 },
+    {
+        fieldname: "item_code",
+        label: "Item",
+        fieldtype: "Data",
+        read_only: 1,
+        in_list_view: 1,
+        columns: 2
+    },
 
-                    { fieldname: "returned_qty", label: "Already Returned", fieldtype: "Float", in_list_view: 1,read_only:1},
+    {
+        fieldname: "serial_nos",
+        label: "Serial Nos",
+        fieldtype: "Data",
+        read_only: 1,
+        in_list_view: 1,
+        columns: 2
+    },
 
-                    {
-                        fieldname: "return_qty",
-                        label: "Return Qty",
-                        fieldtype: "Float",
-                        in_list_view: 1,
-                        onchange() {
+    {
+        fieldname: "returnable_qty",
+        label: "Returnable",
+        fieldtype: "Float",
+        read_only: 1,
+        in_list_view: 1,
+        columns: 1
+    },
 
-                            let grid = dialog.fields_dict.items_table.grid;
-                            let row = grid.get_row(this.doc.name);
-                            let d = row.doc;
+    {
+        fieldname: "returned_qty",
+        label: "Returned",
+        fieldtype: "Float",
+        read_only: 1,
+        in_list_view: 1,
+        columns: 1
+    },
 
-                            // Serialized item rule
-                            if (d.has_serial_no == 1) {
+    {
+        fieldname: "return_qty",
+        label: "Return Qty",
+        fieldtype: "Float",
+        in_list_view: 1,
+        columns: 2,
 
-                                let serial_count = 0;
+        onchange() {
 
-                                if (d.serial_nos) {
-                                    serial_count = d.serial_nos
-                                        .split("\n")
-                                        .filter(s => s.trim()).length;
-                                }
+            let d = this.doc;
 
-                                if (serial_count === 0) {
+            if (!d) return;
 
-                                    frappe.msgprint(
-                                        __("Scan Serial Numbers first for serialized item {0}.", [d.item_code])
-                                    );
+            if (d.has_serial_no) {
 
-                                    d.return_qty = 0;
-                                    grid.refresh();
-                                    return;
-                                }
+                d.return_qty = (d.serial_nos || "")
+                    .split("\n")
+                    .filter(x => x.trim()).length;
+            }
 
-                                d.return_qty = serial_count;
+            if (flt(d.return_qty) > flt(d.returnable_qty)) {
 
-                                grid.refresh();
-                                return;
-                            }
+                d.return_qty = d.returnable_qty;
 
-                            if (!d.return_qty || d.return_qty <= 0) {
-                                frappe.msgprint(`Please enter valid Return Qty for Item ${d.item_code}`);
-                                d.return_qty = 0;
-                                grid.refresh();
-                                return;
-                            }
+                frappe.msgprint(__("Return Qty cannot exceed Returnable Qty"));
+            }
 
-                            if (flt(d.return_qty) > flt(d.returnable_qty)) {
-                                frappe.msgprint(`Return Qty cannot exceed ${d.returnable_qty}`);
-                                d.return_qty = d.returnable_qty;
-                                grid.refresh();
-                            }
-                        }
-                    },
+            dialog.fields_dict.items_table.grid.refresh();
 
-                    { fieldname: "serial_nos", label: "Serial Nos", fieldtype: "Small Text", in_list_view: 1, read_only: 1 },
-
-                ]
+            update_total_quantity(dialog);
+        }
+    }
+]
             }
         ],
 
@@ -451,12 +496,19 @@ function open_sales_invoice_dialog(frm) {
             });
 
             frm.refresh_field("items");
+            // 👇 Total Quantity immediately update
+            setTimeout(() => {
+                update_total_quantity(frm);
+            }, 50);
             dialog.hide();
         }
     });
 
     dialog.show();
+    dialog.$wrapper.on("change", ".grid-row-check", function () {
 
+        update_scan_total_quantity(dialog);
+    });
     dialog.$wrapper.on("keydown", function(e) {
         if (e.key === "Enter") {
             e.preventDefault();
@@ -467,6 +519,8 @@ function open_sales_invoice_dialog(frm) {
 
     load_sales_invoice_items(frm, dialog);
 }
+
+
 function open_return_items_dialog(frm) {
 
     let dialog = new frappe.ui.Dialog({
