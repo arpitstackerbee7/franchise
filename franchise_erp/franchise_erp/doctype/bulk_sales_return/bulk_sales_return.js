@@ -104,28 +104,24 @@ frappe.ui.form.on('Bulk Sales Return', {
     }
 });
 
-function update_serial_numbers(dialog) {
+function update_scan_total_quantity(dialog){
 
-    let rows = dialog.fields_dict.items_table.df.data || [];
+    let total=0;
 
-    rows.forEach((row, i) => {
-        row.sr_no = i + 1;
+    dialog.fields_dict.items_table.df.data.forEach(d=>{
+
+        if(d.is_selected){
+
+            total+=flt(d.return_qty);
+
+        }
+
     });
 
-    dialog.fields_dict.items_table.grid.refresh();
+    dialog.set_value("total_quantity",total);
+
 }
-function update_scan_total_quantity(dialog) {
 
-    let total = 0;
-
-    let rows = dialog.fields_dict.items_table.grid.get_selected_children();
-
-    rows.forEach(row => {
-        total += flt(row.return_qty || 0);
-    });
-
-    dialog.set_value("total_quantity", total);
-}
 function open_sales_invoice_dialog(frm) {
 
     let dialog = new frappe.ui.Dialog({
@@ -231,11 +227,10 @@ function open_sales_invoice_dialog(frm) {
 
                                     rows.splice(index, 1);
                                     rows.unshift(existing);
-                                    update_serial_numbers(dialog);
 
-table.refresh();
+                                    table.refresh();
 
-update_scan_total_quantity(dialog);
+                                    update_scan_total_quantity(dialog);
                                 }
 
                             } else {
@@ -243,11 +238,9 @@ update_scan_total_quantity(dialog);
                                 r.message.return_qty = 1;
                                 r.message.serial_nos = serial;
 
-                                update_serial_numbers(dialog);
+                                table.refresh();
 
-table.refresh();
-
-update_scan_total_quantity(dialog);
+                                update_scan_total_quantity(dialog);
                             }
 
                             // table.refresh();
@@ -274,13 +267,13 @@ update_scan_total_quantity(dialog);
                     });
                 }
             },
-{
-    fieldname: "total_quantity",
-    label: "Total Quantity",
-    fieldtype: "Float",
-    read_only: 1,
-    default: 0
-},
+            {
+                fieldname: "total_quantity",
+                label: "Total Quantity",
+                fieldtype: "Float",
+                read_only: 1,
+                default: 0
+            },
             {
                 fieldname: "items_table",
                 fieldtype: "Table",
@@ -291,85 +284,90 @@ update_scan_total_quantity(dialog);
                fields: [
 
     
+                    {
+                        fieldname: "is_selected",
+                        fieldtype: "Check",
+                        default: 0,
+                        hidden: 1
+                    },
+                    {
+                        fieldname: "sales_invoice",
+                        label: "Sales Invoice",
+                        fieldtype: "Data",
+                        read_only: 1,
+                        in_list_view: 1,
+                        columns: 2
+                    },
 
-    {
-        fieldname: "sales_invoice",
-        label: "Sales Invoice",
-        fieldtype: "Data",
-        read_only: 1,
-        in_list_view: 1,
-        columns: 2
-    },
+                    {
+                        fieldname: "item_code",
+                        label: "Item",
+                        fieldtype: "Data",
+                        read_only: 1,
+                        in_list_view: 1,
+                        columns: 2
+                    },
 
-    {
-        fieldname: "item_code",
-        label: "Item",
-        fieldtype: "Data",
-        read_only: 1,
-        in_list_view: 1,
-        columns: 2
-    },
+                    {
+                        fieldname: "serial_nos",
+                        label: "Serial Nos",
+                        fieldtype: "Data",
+                        read_only: 1,
+                        in_list_view: 1,
+                        columns: 2
+                    },
 
-    {
-        fieldname: "serial_nos",
-        label: "Serial Nos",
-        fieldtype: "Data",
-        read_only: 1,
-        in_list_view: 1,
-        columns: 2
-    },
+                    {
+                        fieldname: "returnable_qty",
+                        label: "Returnable",
+                        fieldtype: "Float",
+                        read_only: 1,
+                        in_list_view: 1,
+                        columns: 1
+                    },
 
-    {
-        fieldname: "returnable_qty",
-        label: "Returnable",
-        fieldtype: "Float",
-        read_only: 1,
-        in_list_view: 1,
-        columns: 1
-    },
+                    {
+                        fieldname: "returned_qty",
+                        label: "Returned",
+                        fieldtype: "Float",
+                        read_only: 1,
+                        in_list_view: 1,
+                        columns: 1
+                    },
 
-    {
-        fieldname: "returned_qty",
-        label: "Returned",
-        fieldtype: "Float",
-        read_only: 1,
-        in_list_view: 1,
-        columns: 1
-    },
+                    {
+                        fieldname: "return_qty",
+                        label: "Return Qty",
+                        fieldtype: "Float",
+                        in_list_view: 1,
+                        columns: 2,
 
-    {
-        fieldname: "return_qty",
-        label: "Return Qty",
-        fieldtype: "Float",
-        in_list_view: 1,
-        columns: 2,
+                        onchange() {
 
-        onchange() {
+                            let d = this.doc;
 
-            let d = this.doc;
+                            if (!d) return;
 
-            if (!d) return;
+                            if (d.has_serial_no) {
 
-            if (d.has_serial_no) {
+                                d.return_qty = (d.serial_nos || "")
+                                    .split("\n")
+                                    .filter(x => x.trim()).length;
+                            }
 
-                d.return_qty = (d.serial_nos || "")
-                    .split("\n")
-                    .filter(x => x.trim()).length;
-            }
+                            if (flt(d.return_qty) > flt(d.returnable_qty)) {
 
-            if (flt(d.return_qty) > flt(d.returnable_qty)) {
+                                d.return_qty = d.returnable_qty;
 
-                d.return_qty = d.returnable_qty;
+                                frappe.msgprint(__("Return Qty cannot exceed Returnable Qty"));
+                            }
 
-                frappe.msgprint(__("Return Qty cannot exceed Returnable Qty"));
-            }
+                            dialog.fields_dict.items_table.grid.refresh();
 
-            dialog.fields_dict.items_table.grid.refresh();
-
-            update_total_quantity(dialog);
-        }
-    }
-]
+                            update_total_quantity(dialog);
+                        }
+                    }
+                ]
             }
         ],
 
@@ -378,7 +376,7 @@ update_scan_total_quantity(dialog);
         primary_action() {
 
             let selected_rows =
-                dialog.fields_dict.items_table.grid.get_selected_children();
+                dialog.fields_dict.items_table.df.data.filter(d => d.is_selected);
 
             if (!selected_rows.length) {
                 frappe.msgprint("Please select rows");
@@ -505,7 +503,18 @@ update_scan_total_quantity(dialog);
     });
 
     dialog.show();
+    // Checkbox event
     dialog.$wrapper.on("change", ".grid-row-check", function () {
+
+        let grid = dialog.fields_dict.items_table.grid;
+
+        grid.grid_rows.forEach(row => {
+
+            let checked = row.wrapper.find(".grid-row-check").prop("checked");
+
+            row.doc.is_selected = checked ? 1 : 0;
+
+        });
 
         update_scan_total_quantity(dialog);
     });
@@ -520,6 +529,149 @@ update_scan_total_quantity(dialog);
     load_sales_invoice_items(frm, dialog);
 }
 
+// function load_sales_invoice_items(frm, dialog) {
+
+//     let customer = dialog.get_value("customer");
+//     let item_code = dialog.get_value("item_code");
+
+//     if (!customer) return;
+
+//     frappe.call({
+//         method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_sales_invoice_returnable_items",
+//         args: {
+//             customer: customer,
+//             item_code: item_code,
+//             company: frm.doc.company
+//         },
+//         callback(r) {
+
+//         if (!r.message) return;
+
+//         let old_rows = dialog.fields_dict.items_table.df.data || [];
+//         let new_rows = r.message || [];
+
+//         let row_map = {};
+
+//         old_rows.forEach(row => {
+//             row_map[row.sales_invoice_item] = row;
+//         });
+
+//         new_rows.forEach(row => {
+
+//             if (row_map[row.sales_invoice_item]) {
+
+//                 // Purani values preserve
+//                 row.return_qty = row_map[row.sales_invoice_item].return_qty;
+//                 row.serial_nos = row_map[row.sales_invoice_item].serial_nos;
+//                 row.is_selected = row_map[row.sales_invoice_item].is_selected;
+
+//             }
+
+//             row_map[row.sales_invoice_item] = row;
+
+//         });
+
+//         dialog.fields_dict.items_table.df.data = Object.values(row_map);
+
+//         let grid = dialog.fields_dict.items_table.grid;
+
+//         grid.refresh();
+
+//         // ✅ YAHAN LAGEGA
+//         frappe.after_ajax(() => {
+
+//             grid.grid_rows.forEach(row => {
+
+//                 if (row.doc.is_selected) {
+
+//                     let chk = row.wrapper.find(".grid-row-check");
+
+//                     chk.prop("checked", true);
+
+//                 }
+
+//             });
+
+//         });
+
+//         update_scan_total_quantity(dialog);
+
+//     }
+//     });
+// }
+
+function load_sales_invoice_items(frm, dialog) {
+
+    let customer = dialog.get_value("customer");
+    let item_code = dialog.get_value("item_code");
+
+    if (!customer) return;
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_sales_invoice_returnable_items",
+        args: {
+            customer: customer,
+            item_code: item_code,
+            company: frm.doc.company
+        },
+        callback(r) {
+
+        if (!r.message) return;
+
+        let old_rows = dialog.fields_dict.items_table.df.data || [];
+        let new_rows = r.message || [];
+
+        let row_map = {};
+
+        old_rows.forEach(row => {
+
+            // Sirf selected rows preserve karo
+            if (row.is_selected) {
+                row_map[row.sales_invoice_item] = row;
+            }
+
+        });
+
+        new_rows.forEach(row => {
+
+            if (row_map[row.sales_invoice_item]) {
+
+                row.return_qty = row_map[row.sales_invoice_item].return_qty;
+                row.serial_nos = row_map[row.sales_invoice_item].serial_nos;
+                row.is_selected = row_map[row.sales_invoice_item].is_selected;
+            }
+
+            row_map[row.sales_invoice_item] = row;
+        });
+
+        dialog.fields_dict.items_table.df.data = Object.values(row_map);
+
+        let grid = dialog.fields_dict.items_table.grid;
+
+        grid.refresh();
+
+        // ✅ YAHAN LAGEGA
+        frappe.after_ajax(() => {
+
+            grid.grid_rows.forEach(row => {
+
+                if (row.doc.is_selected) {
+
+                    let chk = row.wrapper.find(".grid-row-check");
+
+                    chk.prop("checked", true);
+
+                }
+
+            });
+
+        });
+
+        update_scan_total_quantity(dialog);
+
+    }
+    });
+}
 
 function open_return_items_dialog(frm) {
 
@@ -893,30 +1045,6 @@ function open_return_items_dialog(frm) {
 
     load_returnable_items(frm,dialog);
 }
-
-function load_sales_invoice_items(frm, dialog) {
-
-    let customer = dialog.get_value("customer");
-    let item_code = dialog.get_value("item_code");
-
-    if (!customer) return;
-
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_sales_invoice_returnable_items",
-        args: {
-            customer: customer,
-            item_code: item_code,
-            company: frm.doc.company
-        },
-        callback(r) {
-            if (!r.message) return;
-
-            dialog.fields_dict.items_table.df.data = r.message;
-            dialog.fields_dict.items_table.grid.refresh();
-        }
-    });
-}
-
 function load_returnable_items(frm, dialog) {
 
     let customer = dialog.get_value("customer");
