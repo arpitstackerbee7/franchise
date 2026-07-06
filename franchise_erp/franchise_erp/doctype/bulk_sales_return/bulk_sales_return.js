@@ -104,25 +104,24 @@ frappe.ui.form.on('Bulk Sales Return', {
     }
 });
 
-function update_scan_total_quantity(dialog){
+function update_scan_total_quantity(dialog, selected_rows) {
 
-    let total=0;
+    let total = 0;
 
-    dialog.fields_dict.items_table.df.data.forEach(d=>{
+    (dialog.fields_dict.items_table.df.data || []).forEach(row => {
 
-        if(d.is_selected){
-
-            total+=flt(d.return_qty);
-
+        if (selected_rows[row.sales_invoice_item]) {
+            total += flt(row.return_qty || 0);
         }
 
     });
 
-    dialog.set_value("total_quantity",total);
-
+    dialog.set_value("total_quantity", total);
 }
 
 function open_sales_invoice_dialog(frm) {
+
+    let selected_rows = {};
 
     let dialog = new frappe.ui.Dialog({
         title: "Return Items from Sales Invoice",
@@ -139,7 +138,7 @@ function open_sales_invoice_dialog(frm) {
                 read_only: 1,
                 reqd: 1,
                 onchange() {
-                    load_sales_invoice_items(frm, dialog);
+                    load_sales_invoice_items(frm, dialog, selected_rows);
                 }
             },
 
@@ -149,7 +148,7 @@ function open_sales_invoice_dialog(frm) {
                 fieldtype: "Link",
                 options: "Item",
                 onchange() {
-                    load_sales_invoice_items(frm, dialog);
+                    load_sales_invoice_items(frm, dialog, selected_rows);
                 }
             },
             {
@@ -204,7 +203,7 @@ function open_sales_invoice_dialog(frm) {
                             }
 
                             let table = dialog.fields_dict.items_table.grid;
-                            let rows = table.get_data();
+                            let rows = dialog.fields_dict.items_table.df.data || [];
 
                             let index = rows.findIndex(d =>
                                 d.sales_invoice_item === r.message.sales_invoice_item
@@ -215,52 +214,80 @@ function open_sales_invoice_dialog(frm) {
                                 let existing = rows[index];
 
                                 if (existing.serial_nos && existing.serial_nos.split("\n").includes(serial)) {
+
                                     frappe.msgprint(`Serial ${serial} already scanned`);
+
                                 } else {
 
-                                    existing.return_qty = (existing.return_qty || 0) + 1;
+                                    existing.return_qty = flt(existing.return_qty || 0) + 1;
 
-                                    existing.serial_nos =
-                                        existing.serial_nos
-                                            ? existing.serial_nos + "\n" + serial
-                                            : serial;
+                                    existing.serial_nos = existing.serial_nos
+                                        ? existing.serial_nos + "\n" + serial
+                                        : serial;
+                                    selected_rows[existing.sales_invoice_item] = true;
+                                    // existing.select = 1;
 
-                                    rows.splice(index, 1);
-                                    rows.unshift(existing);
+                                    // rows.splice(index, 1);
+                                    // rows[index] = existing;
+                                    rows.splice(index,1);
+
+rows.unshift(existing);
+
+                                    dialog.fields_dict.items_table.df.data = rows;
 
                                     table.refresh();
-
-                                    update_scan_total_quantity(dialog);
                                 }
 
                             } else {
 
                                 r.message.return_qty = 1;
                                 r.message.serial_nos = serial;
+                                // r.message.select = 1;
+                                selected_rows[r.message.sales_invoice_item] = true;
+                                rows.push(r.message);
+
+                                dialog.fields_dict.items_table.df.data = rows;
 
                                 table.refresh();
 
-                                update_scan_total_quantity(dialog);
                             }
 
                             // table.refresh();
 
-                            frappe.after_ajax(() => {
-                                setTimeout(() => {
-                                    let grid = dialog.fields_dict.items_table.grid;
+                            // frappe.after_ajax(() => {
+                            //     setTimeout(() => {
+                            //         let grid = dialog.fields_dict.items_table.grid;
 
-                                    if (grid.grid_rows.length) {
-                                        let row = grid.grid_rows[0];
+                            //         if (grid.grid_rows.length) {
+                            //             let row = grid.grid_rows[0];
 
-                                        let checkbox = row.wrapper.find('.grid-row-check');
+                            //             let checkbox = row.wrapper.find('.grid-row-check');
 
-                                        if (!checkbox.prop("checked")) {
-                                            checkbox.click();
-                                        }
-                                    }
-                                }, 200);
-                            });
+                            //             if (!checkbox.prop("checked")) {
+                            //                 checkbox.click();
+                            //             }
+                            //         }
+                            //     }, 200);
+                            // });
+                         frappe.after_ajax(() => {
 
+    let grid = dialog.fields_dict.items_table.grid;
+
+    setTimeout(() => {
+
+        grid.grid_rows.forEach(gr => {
+
+            let checked = !!selected_rows[gr.doc.sales_invoice_item];
+
+            gr.wrapper.find(".grid-row-check").prop("checked", checked);
+
+        });
+
+        update_scan_total_quantity(dialog, selected_rows);
+
+    },100);
+
+});
                             dialog.set_value("serial_no", "");
                             dialog.fields_dict.serial_no.$input.focus();
                         }
@@ -281,16 +308,7 @@ function open_sales_invoice_dialog(frm) {
                 cannot_add_rows: true,
                 in_place_edit: true,
 
-               fields: [
-
-    
-                    {
-                        fieldname: "is_selected",
-                        fieldtype: "Check",
-                        default: 0,
-                        hidden: 1
-                    },
-                    {
+               fields: [                    {
                         fieldname: "sales_invoice",
                         label: "Sales Invoice",
                         fieldtype: "Data",
@@ -342,30 +360,27 @@ function open_sales_invoice_dialog(frm) {
                         in_list_view: 1,
                         columns: 2,
 
-                        onchange() {
+                    onchange() {
 
-                            let d = this.doc;
+    let d = this.doc;
 
-                            if (!d) return;
+    if (!d) return;
 
-                            if (d.has_serial_no) {
+    if (d.has_serial_no) {
+        d.return_qty = (d.serial_nos || "")
+            .split("\n")
+            .filter(x => x.trim()).length;
+    }
 
-                                d.return_qty = (d.serial_nos || "")
-                                    .split("\n")
-                                    .filter(x => x.trim()).length;
-                            }
+    if (flt(d.return_qty) > flt(d.returnable_qty)) {
 
-                            if (flt(d.return_qty) > flt(d.returnable_qty)) {
+        d.return_qty = d.returnable_qty;
 
-                                d.return_qty = d.returnable_qty;
+        frappe.msgprint("Return Qty cannot exceed Returnable Qty");
+    }
 
-                                frappe.msgprint(__("Return Qty cannot exceed Returnable Qty"));
-                            }
-
-                            dialog.fields_dict.items_table.grid.refresh();
-
-                            update_total_quantity(dialog);
-                        }
+    update_scan_total_quantity(dialog, selected_rows);
+}
                     }
                 ]
             }
@@ -375,15 +390,16 @@ function open_sales_invoice_dialog(frm) {
 
         primary_action() {
 
-            let selected_rows =
-                dialog.fields_dict.items_table.df.data.filter(d => d.is_selected);
+           let selected = dialog.fields_dict.items_table.df.data.filter(
+    d => selected_rows[d.sales_invoice_item]
+);
 
-            if (!selected_rows.length) {
+            if (!selected.length) {
                 frappe.msgprint("Please select rows");
                 return;
             }
 
-            for (let d of selected_rows) {
+            for (let d of selected) {
 
                 if (!d.return_qty || d.return_qty <= 0) {
                     frappe.throw(`Return Qty must be greater than 0 for Item ${d.item_code}`);
@@ -411,7 +427,7 @@ function open_sales_invoice_dialog(frm) {
 
             let merged_rows = {};
 
-            selected_rows.forEach(d => {
+            selected.forEach(d => {
 
                 let key = d.sales_invoice_item;
 
@@ -432,9 +448,9 @@ function open_sales_invoice_dialog(frm) {
                 }
             });
 
-            selected_rows = Object.values(merged_rows);
+            selected = Object.values(merged_rows);
 
-            selected_rows.forEach(d => {
+            selected.forEach(d => {
 
                 let existing = frm.doc.items.find(row =>
                     row.sales_invoice_item === d.sales_invoice_item
@@ -502,22 +518,31 @@ function open_sales_invoice_dialog(frm) {
         }
     });
 
-    dialog.show();
-    // Checkbox event
+   dialog.show();
     dialog.$wrapper.on("change", ".grid-row-check", function () {
 
-        let grid = dialog.fields_dict.items_table.grid;
+    let grid = dialog.fields_dict.items_table.grid;
 
-        grid.grid_rows.forEach(row => {
+    grid.grid_rows.forEach(row => {
 
-            let checked = row.wrapper.find(".grid-row-check").prop("checked");
+        let checked = row.wrapper
+            .find(".grid-row-check")
+            .prop("checked");
 
-            row.doc.is_selected = checked ? 1 : 0;
+        if (checked) {
+            selected_rows[row.doc.sales_invoice_item] = true;
+        } else {
+            delete selected_rows[row.doc.sales_invoice_item];
+        }
 
-        });
-
-        update_scan_total_quantity(dialog);
     });
+
+    update_scan_total_quantity(dialog, selected_rows);
+
+});
+    // Default Frappe checkbox column hide
+
+    // Enter key disable
     dialog.$wrapper.on("keydown", function(e) {
         if (e.key === "Enter") {
             e.preventDefault();
@@ -526,8 +551,79 @@ function open_sales_invoice_dialog(frm) {
         }
     });
 
-    load_sales_invoice_items(frm, dialog);
+    load_sales_invoice_items(frm, dialog, selected_rows);
 }
+function load_sales_invoice_items(frm, dialog, selected_rows) {
+
+    let customer = dialog.get_value("customer");
+    let item_code = dialog.get_value("item_code");
+
+    if (!customer) return;
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_sales_invoice_returnable_items",
+        args: {
+            customer: customer,
+            item_code: item_code,
+            company: frm.doc.company
+        },
+        callback(r) {
+
+        if (!r.message) return;
+
+        let old_rows = dialog.fields_dict.items_table.df.data || [];
+        let new_rows = r.message || [];
+
+        let row_map = {};
+
+       old_rows.forEach(row => {
+
+    if (selected_rows[row.sales_invoice_item]) {
+        row_map[row.sales_invoice_item] = row;
+    }
+
+});
+        new_rows.forEach(row => {
+
+            if (row_map[row.sales_invoice_item]) {
+
+                row.return_qty = row_map[row.sales_invoice_item].return_qty;
+                row.serial_nos = row_map[row.sales_invoice_item].serial_nos;
+                // row.select = row_map[row.sales_invoice_item].select;
+            }
+
+            row_map[row.sales_invoice_item] = row;
+        });
+
+        dialog.fields_dict.items_table.df.data = Object.values(row_map);
+
+        let grid = dialog.fields_dict.items_table.grid;
+
+        grid.refresh();
+
+        // ✅ YAHAN LAGEGA
+     frappe.after_ajax(() => {
+
+    let grid = dialog.fields_dict.items_table.grid;
+
+    grid.grid_rows.forEach(row => {
+
+        row.wrapper
+            .find(".grid-row-check")
+            .prop("checked",
+                !!selected_rows[row.doc.sales_invoice_item]);
+
+    });
+
+    update_scan_total_quantity(dialog, selected_rows);
+
+});
+
+
+    }
+    });
+}
+
 
 // function load_sales_invoice_items(frm, dialog) {
 
@@ -600,78 +696,7 @@ function open_sales_invoice_dialog(frm) {
 //     });
 // }
 
-function load_sales_invoice_items(frm, dialog) {
 
-    let customer = dialog.get_value("customer");
-    let item_code = dialog.get_value("item_code");
-
-    if (!customer) return;
-
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_sales_invoice_returnable_items",
-        args: {
-            customer: customer,
-            item_code: item_code,
-            company: frm.doc.company
-        },
-        callback(r) {
-
-        if (!r.message) return;
-
-        let old_rows = dialog.fields_dict.items_table.df.data || [];
-        let new_rows = r.message || [];
-
-        let row_map = {};
-
-        old_rows.forEach(row => {
-
-            // Sirf selected rows preserve karo
-            if (row.is_selected) {
-                row_map[row.sales_invoice_item] = row;
-            }
-
-        });
-
-        new_rows.forEach(row => {
-
-            if (row_map[row.sales_invoice_item]) {
-
-                row.return_qty = row_map[row.sales_invoice_item].return_qty;
-                row.serial_nos = row_map[row.sales_invoice_item].serial_nos;
-                row.is_selected = row_map[row.sales_invoice_item].is_selected;
-            }
-
-            row_map[row.sales_invoice_item] = row;
-        });
-
-        dialog.fields_dict.items_table.df.data = Object.values(row_map);
-
-        let grid = dialog.fields_dict.items_table.grid;
-
-        grid.refresh();
-
-        // ✅ YAHAN LAGEGA
-        frappe.after_ajax(() => {
-
-            grid.grid_rows.forEach(row => {
-
-                if (row.doc.is_selected) {
-
-                    let chk = row.wrapper.find(".grid-row-check");
-
-                    chk.prop("checked", true);
-
-                }
-
-            });
-
-        });
-
-        update_scan_total_quantity(dialog);
-
-    }
-    });
-}
 
 function open_return_items_dialog(frm) {
 
