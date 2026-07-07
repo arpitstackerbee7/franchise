@@ -69,6 +69,9 @@ doc_events = {
     },
     "Journal Entry": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+        "validate": [
+            "franchise_erp.custom.back_date_validation.validate_back_date",
+],
         "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
     },
    
@@ -77,7 +80,8 @@ doc_events = {
         "validate":[
             # "franchise_erp.custom.promotional_scheme.apply_promotions",
                     # "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
-                    "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return",
+                    "franchise_erp.custom.back_date_validation.validate_back_date", 
+                    "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return", 
                     ],
 
         "before_save": [
@@ -99,6 +103,9 @@ doc_events = {
     },
     "Purchase Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+        "validate": [
+            "franchise_erp.custom.back_date_validation.validate_back_date",
+],
         # "before_insert": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
         "on_submit": ["franchise_erp.api.create_selling_price_from_po","franchise_erp.custom.purchase_order.generate_serials_on_po_submit"],
         "before_save": ["franchise_erp.custom.purchase_order.apply_purchase_term"],
@@ -108,6 +115,7 @@ doc_events = {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate":[
             "franchise_erp.custom.purchase_reciept.validate_item",
+                    "franchise_erp.custom.back_date_validation.validate_back_date", 
                     "franchise_erp.custom.purchase_reciept.validate_gate_entry",
                     "franchise_erp.custom.purchase_reciept.validate_gate_entry_qty_on_grn"
                     ],
@@ -152,7 +160,10 @@ doc_events = {
     "Payment Entry":{
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "on_submit":"franchise_erp.custom.payment_entry.apply_early_payment_discount",
-        "validate": "franchise_erp.custom.payment_entry.validate_duplicate_cheque_no"
+        "validate": [
+            "franchise_erp.custom.back_date_validation.validate_back_date",
+            "franchise_erp.custom.payment_entry.validate_duplicate_cheque_no",
+]
     },
     "BOM": {
         "on_submit": "franchise_erp.custom.bom.create_subcontracting_bom"
@@ -183,7 +194,8 @@ doc_events = {
         ],
         # "before_naming": "franchise_erp.custom.delivery_note.set_delivery_note_name",        
         "before_insert": "franchise_erp.custom.delivery_note.set_dn_naming_series",
-        "validate": ["franchise_erp.custom.delivery_note.disable_eway_notification",
+        "validate": ["franchise_erp.custom.back_date_validation.validate_back_date",
+        "franchise_erp.custom.delivery_note.disable_eway_notification",
         "franchise_erp.custom.delivery_note.apply_sales_person_rules",
         "franchise_erp.custom.delivery_note.validate_internal_customer_credit"
         ],
@@ -201,6 +213,7 @@ doc_events = {
     "Stock Entry":{
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate": [
+            "franchise_erp.custom.back_date_validation.validate_back_date",
             "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
             # "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_wip_return_stock_entry"
              "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_transfer_in_stock_entry"
@@ -209,7 +222,10 @@ doc_events = {
     },
     "Subcontracting Receipt": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-        "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
+        "validate": [
+    "franchise_erp.custom.back_date_validation.validate_back_date",
+    "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
+],
         "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
         "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel",
         "on_submit": "franchise_erp.custom.subcontracting_receipt.recalculate_tax_on_service_cost",
