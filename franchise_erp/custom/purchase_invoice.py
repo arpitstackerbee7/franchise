@@ -52,13 +52,17 @@ class CustomPurchaseInvoice(PurchaseInvoice):
             self.name = make_autoname(f"PDC/{fy}/.####")
             return
 
-        # Gate Entry check
         has_gate_entry = any(
             item.custom_gate_entry
             for item in self.items
         )
 
-        if has_gate_entry:
+        has_outgoing_logistics = any(
+            item.custom_outgoing_logistics
+            for item in self.items
+        )
+
+        if has_gate_entry or has_outgoing_logistics:
             self.name = make_autoname(f"SPL/{fy}/.#####")
             return
 
