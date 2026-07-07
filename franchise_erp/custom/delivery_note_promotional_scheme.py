@@ -81,11 +81,18 @@ def apply_promotions(doc, method=None):
             )
 
         if slab.custom_get_50_off:
+            # apply_buy_n_get_x_percent_off(
+            #     doc,
+            #     eligible_items,
+            #     int(slab.custom_enter_50),
+            #     flt(slab.custom_enter_percent)
+            # )
             apply_buy_n_get_x_percent_off(
                 doc,
                 eligible_items,
                 int(slab.custom_enter_50),
-                flt(slab.custom_enter_percent)
+                flt(slab.custom_enter_percent),
+                getattr(slab, "custom_discount_apply_on", "Only N Items")
             )
 
     # 🔥 CRITICAL
@@ -352,21 +359,86 @@ def apply_buy_n_get_x_free(doc, items, n, x):
 #             free_units -= qty_to_discount
 
 
-def apply_buy_n_get_x_percent_off(doc, items, n, percent):
+# def apply_buy_n_get_x_percent_off(doc, items, n, percent):
+
+#     total_qty = sum(int(r.qty) for r in items)
+
+#     if total_qty < n:
+#         return
+
+#     eligible_sets = total_qty // n
+
+#     discount_qty = eligible_sets * n
+
+#     items.sort(key=lambda r: r.price_list_rate)
+
+#     remaining = discount_qty
+
+#     for row in items:
+
+#         if remaining <= 0:
+#             break
+
+#         qty_to_discount = min(int(row.qty), remaining)
+
+#         discounted_rate = flt(
+#             row.price_list_rate * (100 - percent) / 100
+#         )
+
+#         if qty_to_discount == int(row.qty):
+
+#             row.rate = discounted_rate
+#             row.discount_percentage = percent
+#             row.custom_is_promo_scheme = 1
+
+#         else:
+
+#             discount_row = doc.append("items", {})
+#             copy_item_fields(row, discount_row)
+
+#             discount_row.qty = qty_to_discount
+#             discount_row.price_list_rate = row.price_list_rate
+#             discount_row.rate = discounted_rate
+#             discount_row.discount_percentage = percent
+#             discount_row.custom_is_promo_scheme = 1
+
+#             row.qty -= qty_to_discount
+
+#         remaining -= qty_to_discount
+
+def apply_buy_n_get_x_percent_off(
+    doc,
+    items,
+    n,
+    percent,
+    discount_apply_on="Only N Items"
+):
 
     total_qty = sum(int(r.qty) for r in items)
 
     if total_qty < n:
         return
 
-    eligible_sets = total_qty // n
-
-    discount_qty = eligible_sets * n
-
+    # Lowest price first
     items.sort(key=lambda r: r.price_list_rate)
 
-    remaining = discount_qty
+    # ---------------------------------------
+    # Decide how many qty will get discount
+    # ---------------------------------------
+    # Decide how many qty will get discount
 
+    if discount_apply_on == "All Eligible Items":
+        remaining = total_qty
+
+    elif discount_apply_on == "Every Nth Item":
+        remaining = total_qty // n
+
+    else:
+        remaining = n
+
+    # ---------------------------------------
+    # Apply Discount
+    # ---------------------------------------
     for row in items:
 
         if remaining <= 0:
