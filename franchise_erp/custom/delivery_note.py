@@ -650,8 +650,7 @@ def apply_sis_pricing_delivery_note(doc, method=None):
 
         item.rate = d["taxable_value"]
 
-        # Keep original price list rate unchanged
-        # (ERPNext may calculate discount % automatically)
+        # Discount fields
         item.discount_percentage = 0
         item.discount_amount = 0
 
@@ -660,22 +659,22 @@ def apply_sis_pricing_delivery_note(doc, method=None):
             item.precision("amount")
         )
 
-        template = get_item_tax_template(
-            d["gst_percent"]
-        )
+        template = get_item_tax_template(d["gst_percent"])
 
         if template:
             item.item_tax_template = template
+            # Clear old tax mapping so ERPNext rebuilds it
+            item.item_tax_rate = "{}"
 
         item.custom_sis_calculated = 1
         item.custom_sis_done_calculated = 1
 
-    doc.set_missing_values()
+        doc.set_missing_values()
 
-    if hasattr(doc, "calculate_taxes_and_totals"):
-        doc.calculate_taxes_and_totals()
+        if hasattr(doc, "calculate_taxes_and_totals"):
+            doc.calculate_taxes_and_totals()
 
-    # Force values after tax calculation
-    for item in doc.items:
-        item.discount_percentage = 0
-        # item.discount_amount = 0
+        # Force discount fields after all calculations
+        for item in doc.items:
+            item.discount_percentage = 0
+            item.discount_amount = 0
