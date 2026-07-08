@@ -237,8 +237,10 @@ doc_events = {
         "validate": "franchise_erp.custom.leave_type.validate_only_one_short_leave"
     },
     "Employee Checkin":{
-        "after_insert": "franchise_erp.custom.employee_checkin.process_late_entry",
-        "after_insert": "franchise_erp.custom.attendance.update_last_sync"
+        "after_insert": [
+        "franchise_erp.custom.employee_checkin.process_late_entry",
+        "franchise_erp.custom.attendance.update_last_sync"
+    ]
     },
     "Salary Component":{
         "validate": "franchise_erp.custom.salary_component.validate_short_leave_component"
@@ -267,7 +269,12 @@ doc_events = {
     },
     "Attendance": {
         "on_update": "franchise_erp.custom.working_hours.fix_working_hours"
-    }
+    },
+    "Attendance Request": {
+    "validate": "franchise_erp.custom.attendance.validate_attendance_request",
+    "on_submit": "franchise_erp.custom.attendance.on_attendance_request_submit"
+},
+
 
 }
    
@@ -312,7 +319,8 @@ override_doctype_class = {
     "Sales Invoice": "franchise_erp.custom.sales_invoice.CustomSalesInvoice",
     "Purchase Invoice": "franchise_erp.custom.purchase_invoice.CustomPurchaseInvoice",
     "Subcontracting Receipt": "franchise_erp.custom.subcontracting_receipt.CustomSubcontractingReceipt",
-    "Leave Policy Assignment": "franchise_erp.custom.leave_policy_assignment.CustomLeavePolicyAssignment"
+    "Leave Policy Assignment": "franchise_erp.custom.leave_policy_assignment.CustomLeavePolicyAssignment",
+    "Attendance Request": "franchise_erp.overrides.attendance_request.CustomAttendanceRequest"
 }
 # override_whitelisted_methods = {
 #     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"
@@ -439,7 +447,8 @@ scheduler_events = {
         ]
     },
     "daily": [
-        "franchise_erp.custom.comp_off.expire_comp_off_allocations"
+        "franchise_erp.custom.comp_off.expire_comp_off_allocations",
+        "franchise_erp.custom.attendance.mark_absent_for_missing_checkout"
     ]
 }
 # Installation
