@@ -105,7 +105,7 @@ doc_events = {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate": [
             "franchise_erp.custom.back_date_validation.validate_back_date",
-],
+           ],
         # "before_insert": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
         "on_submit": ["franchise_erp.api.create_selling_price_from_po","franchise_erp.custom.purchase_order.generate_serials_on_po_submit"],
         "before_save": ["franchise_erp.custom.purchase_order.apply_purchase_term"],
@@ -163,7 +163,7 @@ doc_events = {
         "validate": [
             "franchise_erp.custom.back_date_validation.validate_back_date",
             "franchise_erp.custom.payment_entry.validate_duplicate_cheque_no",
-]
+            ]
     },
     "BOM": {
         "on_submit": "franchise_erp.custom.bom.create_subcontracting_bom"
@@ -178,7 +178,7 @@ doc_events = {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "before_validate": "franchise_erp.custom.sales_order.apply_sales_term",
     },
-            "Item Price": {
+    "Item Price": {
         "validate": "franchise_erp.custom.item_price.validate_item_price",
         "on_update": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",
         "after_insert": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",
@@ -186,7 +186,12 @@ doc_events = {
     },
 
     "Delivery Note": {
-
+        "validate": ["franchise_erp.custom.back_date_validation.validate_back_date",
+                    "franchise_erp.custom.delivery_note.disable_eway_notification",
+                    "franchise_erp.custom.delivery_note.apply_sales_person_rules",
+                    "franchise_erp.custom.delivery_note.validate_internal_customer_credit",
+                    "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note",
+                    ],
         "before_save": [
             "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
             "franchise_erp.custom.delivery_note.set_promo_group_id",
@@ -194,11 +199,7 @@ doc_events = {
         ],
         # "before_naming": "franchise_erp.custom.delivery_note.set_delivery_note_name",        
         "before_insert": "franchise_erp.custom.delivery_note.set_dn_naming_series",
-        "validate": ["franchise_erp.custom.back_date_validation.validate_back_date",
-        "franchise_erp.custom.delivery_note.disable_eway_notification",
-        "franchise_erp.custom.delivery_note.apply_sales_person_rules",
-        "franchise_erp.custom.delivery_note.validate_internal_customer_credit"
-        ],
+        
         "on_submit": "franchise_erp.custom.delivery_note.create_credit_note_from_dn",
         
         # "after_save": [

@@ -2,10 +2,14 @@ import frappe
 from frappe.model.naming import make_autoname
 import re
 from datetime import datetime
-from frappe.utils import nowdate, flt, getdate, today
+from frappe.utils import nowdate, flt, getdate, today, cstr
 
 #for 2 get 1 free item
 def set_promo_group_id(doc, method=None):
+
+    # Skip for Internal Customer
+    if doc.customer and frappe.db.get_value("Customer", doc.customer, "is_internal_customer"):
+        return
     # Agar koi free item hi nahi hai → koi promo nahi
     has_free_item = any(item.is_free_item for item in doc.items)
 
@@ -21,6 +25,11 @@ def set_promo_group_id(doc, method=None):
 #for 2 buy 1 item discount like 20%
 
 def set_percent_off_promo_flags(doc, method=None):
+
+    # Skip for Internal Customer
+    if doc.customer and frappe.db.get_value("Customer", doc.customer, "is_internal_customer"):
+        return
+    
     discounted_items = []
 
     for item in doc.items:
@@ -567,3 +576,106 @@ def validate_internal_customer_credit(doc, method):
             title="Credit Validation Failed",
             msg="<br>".join(messages)
         )
+
+# margin calculation code
+
+def apply_sis_pricing_delivery_note(doc, method=None):
+
+    # Run only when enabled in TZU Settings
+    if not frappe.db.get_single_value(
+        "TZU Setting",
+        "is_margin_calculate_on_dn"
+    ):
+        return
+
+    if not doc.customer:
+        return
+
+    # Run only for Internal Customers
+    if not frappe.db.get_value(
+        "Customer",
+        doc.customer,
+        "is_internal_customer"
+    ):
+        return
+
+    if not doc.items:
+        return
+
+    if doc.get("packed_items"):
+        return
+
+    from franchise_erp.custom.sales_invoice import (
+        calculate_sis_values,
+        get_item_tax_template,
+    )
+
+    for item in doc.items:
+
+        if not item.item_code:
+            continue
+
+        if abs(flt(item.rate)) <= 0:
+            continue
+
+        if item.get("custom_product_bundle"):
+            continue
+
+        original_rate = abs(
+            flt(item.price_list_rate or item.rate)
+        )
+
+        d = calculate_sis_values(
+            doc.customer,
+            original_rate
+        )
+
+        if not d:
+            continue
+
+        # ==========================
+        # DISPLAY FIELDS
+        # ==========================
+
+        item.custom_output_gst_ = d["gst_percent"]
+        item.custom_output_gst_value = d["output_gst_value"]
+        item.custom_net_sale_value = d["net_sale_value"]
+        item.custom_margins_ = d["margin_percent"]
+        item.custom_margin_amount = d["margin_amount"]
+        item.custom_total_invoice_amount = d["taxable_value"]
+
+        # ==========================
+        # RATE
+        # ==========================
+
+        item.rate = d["taxable_value"]
+
+        # Keep original price list rate unchanged
+        # (ERPNext may calculate discount % automatically)
+        item.discount_percentage = 0
+        item.discount_amount = 0
+
+        item.amount = flt(
+            item.qty * item.rate,
+            item.precision("amount")
+        )
+
+        template = get_item_tax_template(
+            d["gst_percent"]
+        )
+
+        if template:
+            item.item_tax_template = template
+
+        item.custom_sis_calculated = 1
+        item.custom_sis_done_calculated = 1
+
+    doc.set_missing_values()
+
+    if hasattr(doc, "calculate_taxes_and_totals"):
+        doc.calculate_taxes_and_totals()
+
+    # Force values after tax calculation
+    for item in doc.items:
+        item.discount_percentage = 0
+        # item.discount_amount = 0
