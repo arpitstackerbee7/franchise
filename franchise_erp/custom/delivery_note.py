@@ -577,7 +577,87 @@ def validate_internal_customer_credit(doc, method):
             msg="<br>".join(messages)
         )
 
-# margin calculation code
+# # margin calculation code
+# def apply_sis_pricing_delivery_note(doc, method=None):
+
+#     if not frappe.db.get_single_value(
+#         "TZU Setting",
+#         "is_margin_calculate_on_dn"
+#     ):
+#         return
+
+#     if not doc.customer:
+#         return
+
+#     if not frappe.db.get_value(
+#         "Customer",
+#         doc.customer,
+#         "is_internal_customer"
+#     ):
+#         return
+
+#     if not doc.items or doc.get("packed_items"):
+#         return
+
+#     from franchise_erp.custom.sales_invoice import (
+#         calculate_sis_values,
+#         get_item_tax_template,
+#     )
+
+#     for item in doc.items:
+
+#         if not item.item_code:
+#             continue
+
+#         if abs(flt(item.rate)) <= 0:
+#             continue
+
+#         if item.get("custom_product_bundle"):
+#             continue
+
+#         original_rate = abs(flt(item.price_list_rate or item.rate))
+
+#         d = calculate_sis_values(doc.customer, original_rate)
+
+#         if not d:
+#             continue
+
+#         item.custom_output_gst_ = d["gst_percent"]
+#         item.custom_output_gst_value = d["output_gst_value"]
+#         item.custom_net_sale_value = d["net_sale_value"]
+#         item.custom_margins_ = d["margin_percent"]
+#         item.custom_margin_amount = d["margin_amount"]
+#         item.custom_total_invoice_amount = d["taxable_value"]
+
+#         item.rate = d["taxable_value"]
+
+#         item.discount_percentage = 0
+#         item.discount_amount = 0
+
+#         item.amount = flt(
+#             item.qty * item.rate,
+#             item.precision("amount")
+#         )
+
+#         template = get_item_tax_template(d["gst_percent"])
+
+#         if template:
+#             item.item_tax_template = template
+#             # item.item_tax_rate = "{}"   <-- REMOVE THIS
+
+#         item.custom_sis_calculated = 1
+#         item.custom_sis_done_calculated = 1
+
+#     # Loop ke baad
+#     doc.set_missing_values()
+
+#     if hasattr(doc, "calculate_taxes_and_totals"):
+#         doc.calculate_taxes_and_totals()
+
+#     for row in doc.items:
+#         row.discount_percentage = 0
+#         # row.discount_amount = 0
+
 
 def apply_sis_pricing_delivery_note(doc, method=None):
 
@@ -664,17 +744,16 @@ def apply_sis_pricing_delivery_note(doc, method=None):
         if template:
             item.item_tax_template = template
             # Clear old tax mapping so ERPNext rebuilds it
-            item.item_tax_rate = "{}"
+            # item.item_tax_rate = "{}"
 
         item.custom_sis_calculated = 1
         item.custom_sis_done_calculated = 1
 
-        doc.set_missing_values()
+    doc.set_missing_values()
 
-        if hasattr(doc, "calculate_taxes_and_totals"):
-            doc.calculate_taxes_and_totals()
+    doc.calculate_taxes_and_totals()
 
-        # Force discount fields after all calculations
-        for item in doc.items:
-            item.discount_percentage = 0
-            item.discount_amount = 0
+    # Force discount fields after all calculations
+    for item in doc.items:
+        item.discount_percentage = 0
+        # item.discount_amount = 0
