@@ -13,6 +13,7 @@ frappe.ui.form.on("Delivery Note", {
                 );
             }
         });
+        handle_sis_calculation_on_dn(frm);
     }
 });
 
@@ -328,4 +329,105 @@ function generate_fixed_excel(frm, item_map) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+
+function handle_sis_calculation_on_dn(frm) {
+
+    if (!frm.doc.customer) return;
+
+    // Check TZU Setting first
+    frappe.db.get_single_value("TZU Setting", "is_margin_calculate_on_dn")
+        .then(enabled => {
+
+            if (!enabled) return;
+
+            (frm.doc.items || []).forEach(row => {
+
+                let last_qty = flt(row.custom_last_sis_qty || 0);
+                let current_qty = flt(row.qty || 0);
+
+                if (current_qty <= last_qty || !row.rate) return;
+
+                let delta = current_qty - last_qty;
+
+                frappe.call({
+                    method: "franchise_erp.custom.sales_invoice.calculate_sis_values",
+                    args: {
+                        customer: frm.doc.customer,
+                        rate: row.rate
+                    },
+                    callback(r) {
+
+                        if (!r.message) return;
+
+                        frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "custom_output_gst_",
+                            r.message.gst_percent
+                        );
+
+                        frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "custom_output_gst_value",
+                            r.message.output_gst_value
+                        );
+
+                        frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "custom_net_sale_value",
+                            r.message.net_sale_value
+                        );
+
+                        frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "custom_margins_",
+                            r.message.margin_percent
+                        );
+
+                        frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "custom_margin_amount",
+                            r.message.margin_amount
+                        );
+
+                        frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "custom_total_invoice_amount",
+                            r.message.taxable_value
+                        );
+
+                        frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "rate",
+                            r.message.taxable_value
+                        );
+
+                        frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "amount",
+                            flt(current_qty * r.message.taxable_value)
+                        );
+
+                        frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "custom_last_sis_qty",
+                            current_qty
+                        );
+
+                        frm.refresh_field("items");
+                    }
+                });
+            });
+
+        });
 }

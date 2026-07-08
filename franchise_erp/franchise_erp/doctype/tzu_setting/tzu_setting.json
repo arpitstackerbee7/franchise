@@ -16,6 +16,7 @@
   "sis_debit_note_creditors",
   "whatsapp_no",
   "incoming_logistics_users",
+  "is_margin_calculate_on_dn",
   "column_break_dltx",
   "item_name",
   "batch_uom",
@@ -183,13 +184,19 @@
    "fieldname": "enable_pricing_rule",
    "fieldtype": "Check",
    "label": "Enable Pricing Rule"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_margin_calculate_on_dn",
+   "fieldtype": "Check",
+   "label": "Is Margin Calculate On DN"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-03 08:55:11.587197",
+ "modified": "2026-07-08 16:11:22.292600",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",

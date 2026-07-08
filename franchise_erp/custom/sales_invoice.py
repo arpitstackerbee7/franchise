@@ -276,6 +276,20 @@ def apply_sis_pricing(doc, method=None):
         if item.get("custom_product_bundle"):
             continue
 
+
+        # ==========================================
+        # SKIP IF MARGIN ALREADY APPLIED ON DELIVERY NOTE
+        # ==========================================
+
+        if item.dn_detail:
+            margin_done = frappe.db.get_value(
+                "Delivery Note Item",
+                item.dn_detail,
+                "custom_sis_calculated"
+            )
+
+            if margin_done:
+                continue
         # ==================================================
         # RUN ONLY FIRST TIME
         # RUN AGAIN ONLY IF SERIAL NO CHANGED
@@ -423,6 +437,8 @@ def get_item_tax_template(gst_percent):
     )
 
     return ""
+
+
 
 def update_packed_items_serial_no(doc, method):
     for item in doc.items:

@@ -51,7 +51,18 @@ def get_all_active_schemes(doc):
 def apply_promotions(doc, method=None):
     if doc.docstatus == 1 or doc.ignore_pricing_rule:
         return
+    
+    # Don't apply promotion for Internal Customers
+    if doc.customer:
+        is_internal_customer = frappe.db.get_value(
+            "Customer",
+            doc.customer,
+            "is_internal_customer"
+        )
 
+        if is_internal_customer:
+            return
+        
     if getattr(doc, "_promotion_applied", False):
         return
     doc._promotion_applied = True
