@@ -773,7 +773,7 @@ fixtures = [
     {
         "dt": "Client Script",
         "filters": [
-            ["dt", "=", "Leave Application"]
+            ["dt", "in", ["Leave Application", "Subcontracting Receipt"]]
         ]
     }
 ]
