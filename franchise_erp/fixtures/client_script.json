@@ -9,5 +9,16 @@
   "name": "Leave Application Rejection Reason",
   "script": "frappe.ui.form.on('Leave Application', {\n    before_workflow_action(frm) {\n        if (frm.selected_workflow_action === 'Approve') {\n            frm.doc.custom_rejection_reason = 'N/A';\n            return;\n        }\n        \n        if (frm.selected_workflow_action === 'Reject') {\n            if (!frm.doc.custom_rejection_reason || \n                frm.doc.custom_rejection_reason.trim() === '' || \n                frm.doc.custom_rejection_reason.trim() === 'N/A') {\n                \n                frappe.msgprint({\n                    title: 'Rejection Reason Required',\n                    message: 'Please fill in the <b>Rejection Reason</b> before rejecting.',\n                    indicator: 'red'\n                });\n                \n                frappe.dom.unfreeze();\n                frm.scroll_to_field('custom_rejection_reason');\n                return Promise.reject();\n            }\n        }\n    }\n});",
   "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Subcontracting Receipt",
+  "enabled": 1,
+  "modified": "2026-07-08 12:34:54.155698",
+  "module": "Franchise Erp",
+  "name": "Subcontracting Receipt GST on Service Cost",
+  "script": "frappe.ui.form.on('Subcontracting Receipt', {\n    refresh: function(frm) {\n        calculate_service_cost_tax(frm);\n    },\n    validate: function(frm) {\n        calculate_service_cost_tax(frm);\n    }\n});\n\nfrappe.ui.form.on('Subcontracting Receipt Item', {\n    service_cost_per_qty: function(frm) {\n        calculate_service_cost_tax(frm);\n    },\n    qty: function(frm) {\n        calculate_service_cost_tax(frm);\n    },\n    items_remove: function(frm) {\n        calculate_service_cost_tax(frm);\n    }\n});\n\nfunction calculate_service_cost_tax(frm) {\n    if (!frm.doc.taxes || !frm.doc.taxes.length) return;\n    if (!frm.doc.items || !frm.doc.items.length) return;\n\n    let total_service_cost = 0;\n    frm.doc.items.forEach(item => {\n        total_service_cost += (flt(item.service_cost_per_qty) * flt(item.qty));\n    });\n\n    let running_total = flt(frm.doc.total);\n\n    frm.doc.taxes.forEach(tax => {\n        if (tax.charge_type === 'On Net Total' || tax.charge_type === 'On Previous Row Total') {\n            let tax_amount = total_service_cost * flt(tax.rate) / 100;\n            running_total += tax_amount;\n            frappe.model.set_value(tax.doctype, tax.name, 'tax_amount', tax_amount);\n            frappe.model.set_value(tax.doctype, tax.name, 'base_total', running_total);\n        }\n    });\n\n    let total_taxes = running_total - flt(frm.doc.total);\n    frm.set_value('total_taxes', total_taxes);\n    frm.set_value('base_grand_total', total_service_cost + total_taxes);\n    frm.refresh_fields(['taxes', 'total_taxes', 'base_grand_total']);\n}",
+  "view": "Form"
  }
 ]
