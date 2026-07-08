@@ -734,24 +734,19 @@ def apply_sis_pricing_delivery_note(doc, method=None):
         item.discount_percentage = 0
         item.discount_amount = 0
 
-        item.amount = flt(
-            item.qty * item.rate,
-            item.precision("amount")
-        )
-
-        template = get_item_tax_template(d["gst_percent"])
-
-        if template:
-            item.item_tax_template = template
-            # Clear old tax mapping so ERPNext rebuilds it
-            # item.item_tax_rate = "{}"
+        # Amount ERPNext automatically calculate karega
+        # item.amount = flt(
+        #     item.qty * item.rate,
+        #     item.precision("amount")
+        # )
 
         item.custom_sis_calculated = 1
         item.custom_sis_done_calculated = 1
 
     doc.set_missing_values()
 
-    doc.calculate_taxes_and_totals()
+    if hasattr(doc, "calculate_taxes_and_totals"):
+     doc.calculate_taxes_and_totals()
 
     # Force discount fields after all calculations
     for item in doc.items:
