@@ -132,6 +132,39 @@ doc_events = {
                        ],
         "on_trash": "franchise_erp.custom.purchase_reciept.clear_si_grn_flags",        
     },
+    "Incoming Logistics": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+    "Gate Entry": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+    "Outgoing Logistics": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+
+    "Material Request": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+
+    "Stock Reconciliation": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+
+    "Payroll Entry": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
 
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
