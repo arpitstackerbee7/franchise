@@ -132,21 +132,6 @@ doc_events = {
                        ],
         "on_trash": "franchise_erp.custom.purchase_reciept.clear_si_grn_flags",        
     },
-    "Incoming Logistics": {
-    "validate": [
-        "franchise_erp.custom.back_date_validation.validate_back_date",
-    ]
-},
-    "Gate Entry": {
-    "validate": [
-        "franchise_erp.custom.back_date_validation.validate_back_date",
-    ]
-},
-    "Outgoing Logistics": {
-    "validate": [
-        "franchise_erp.custom.back_date_validation.validate_back_date",
-    ]
-},
 
     "Material Request": {
     "validate": [

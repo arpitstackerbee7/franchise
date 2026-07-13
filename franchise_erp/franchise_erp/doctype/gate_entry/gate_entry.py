@@ -5,7 +5,9 @@ import frappe
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from franchise_erp.utils.fy_naming import company_fy_autoname
+from franchise_erp.custom.back_date_validation import validate_back_date
 from frappe.utils import now
+
 class GateEntry(Document):
 
     def autoname(self):
@@ -40,6 +42,12 @@ class GateEntry(Document):
     #     il_doc.status = "Issued"
     #     il_doc.gate_entry_no = None
     #     il_doc.save(ignore_permissions=True)
+    def validate(self):
+        validate_back_date(self)
+
+        if not self.references or len(self.references) == 0:
+            frappe.throw("At least one Reference is required before saving.")
+
     def before_submit(self):
 
             if not self.no_of_parcels:
@@ -606,10 +614,6 @@ def get_pending_gate_entries(supplier):
 
     return result
 
-
-def validate(self):
-    if not self.references or len(self.references) == 0:
-        frappe.throw("At least one Reference is required before saving.")
 
 @frappe.whitelist()
 def get_gate_entries_match_from_pi(supplier):

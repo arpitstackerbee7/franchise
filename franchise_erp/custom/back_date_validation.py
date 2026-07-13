@@ -36,7 +36,7 @@ def validate_back_date(doc, method=None):
     else:
         allowed_days = privilege.allowed_days or 0
 
-    # If editing an existing document, validate only when the date is changed
+        # If editing an existing document, validate only when the date is changed
     if not doc.is_new():
         old_doc = frappe.get_doc(doc.doctype, doc.name)
 
@@ -48,18 +48,18 @@ def validate_back_date(doc, method=None):
             return
 
     today = getdate(nowdate())
-difference = (today - document_date).days
+    difference = (today - document_date).days
 
-# Don't allow future dates
-if difference < 0:
-    frappe.throw(
-        _("Future dates are not allowed for {0}.")
-        .format(doc.doctype)
-    )
+    # Don't allow future dates
+    if difference < 0:
+        frappe.throw(
+            _("Future dates are not allowed for {0}.")
+            .format(doc.doctype)
+        )
 
-# Don't allow dates beyond the permitted back days
-if difference > allowed_days:
-    frappe.throw(
-        _("You are allowed to create {0} only up to {1} day(s) back.")
-        .format(doc.doctype, allowed_days)
-    )
+    # Don't allow dates beyond the permitted back days
+    if difference > allowed_days:
+        frappe.throw(
+            _("You are allowed to create {0} only up to {1} day(s) back.")
+            .format(doc.doctype, allowed_days)
+        )

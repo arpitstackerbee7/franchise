@@ -7,6 +7,8 @@ from erpnext.accounts.utils import get_fiscal_year
 from frappe.model.document import Document
 from franchise_erp.send_whatsapp_notification import send_sales_invoice_pdf_from_outgoing_logistics
 from franchise_erp.utils.fy_naming import company_fy_autoname
+from franchise_erp.custom.back_date_validation import validate_back_date
+
 class OutgoingLogistics(Document):
 
     def autoname(self):
@@ -19,9 +21,10 @@ class OutgoingLogistics(Document):
         company_fy_autoname(self)
 
     def validate(self):
+        validate_back_date(self)
+
         if not self.references or len(self.references) == 0:
             frappe.throw("Reference ID is mandatory. Please add at least one row.")
-
     # def autoname(self):
     #     """
     #     Custom autoname for Outgoing Logistics
