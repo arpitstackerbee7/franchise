@@ -133,6 +133,24 @@ doc_events = {
         "on_trash": "franchise_erp.custom.purchase_reciept.clear_si_grn_flags",        
     },
 
+    "Material Request": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+
+    "Stock Reconciliation": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+
+    "Payroll Entry": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
         # "after_insert": "franchise_erp.custom.item_master.create_item_barcode_once",

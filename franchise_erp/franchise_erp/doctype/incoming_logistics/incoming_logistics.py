@@ -12,6 +12,8 @@ import frappe
 import random
 from frappe.model.document import Document, flt
 from franchise_erp.utils.fy_naming import company_fy_autoname
+from franchise_erp.custom.back_date_validation import validate_back_date
+
 class IncomingLogistics(Document):
     
     def autoname(self):
@@ -24,13 +26,16 @@ class IncomingLogistics(Document):
         company_fy_autoname(self)
         
     def validate(self):
+        validate_back_date(self)
+
         self.validate_unique_lr_per_transporter()
         self.validate_unique_invoice_per_consignor()
-                # Only on new document
+
+    # Only on new document
         if not self.is_new():
             return
 
-        # Admin bypass
+    # Admin bypass
         if frappe.session.user == "Administrator":
             return
 
@@ -45,10 +50,9 @@ class IncomingLogistics(Document):
         current_user = frappe.session.user
 
         if current_user not in allowed_users:
-
-            frappe.throw((
+            frappe.throw(
                 "You are not authorized to create Incoming Logistics."
-            ))
+            )
 
 
     # def on_submit(self):
