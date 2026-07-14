@@ -20,23 +20,25 @@ def validate_back_date(doc, method=None):
     document_date = getdate(getattr(doc, date_field))
 
     # Find privilege for logged-in user
-    privilege = frappe.db.get_value(
+    privilege_name = frappe.db.get_value(
         "Back Date Privilege",
         {
             "user": frappe.session.user,
             "enabled": 1
-        },
-        ["allowed_days"],
-        as_dict=True
+        }
     )
 
-    # If no privilege record exists, allow only today's date
-    if not privilege:
-        allowed_days = 0
-    else:
-        allowed_days = privilege.allowed_days or 0
+    allowed_days = 0
 
-        # If editing an existing document, validate only when the date is changed
+    if privilege_name:
+        privilege = frappe.get_doc("Back Date Privilege", privilege_name)
+
+        for row in privilege.permissions:
+            if row.document_type == doc.doctype:
+                allowed_days = row.allowed_days or 0
+                break
+
+    # If editing an existing document, validate only when the date is changed
     if not doc.is_new():
         old_doc = frappe.get_doc(doc.doctype, doc.name)
 

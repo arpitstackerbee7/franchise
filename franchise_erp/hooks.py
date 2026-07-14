@@ -783,15 +783,16 @@ fixtures = [
             ]]
         ]
     },
-    {
-        "dt": "Role",
-        "filters": [
-            ["name", "in", [
-                "Employee",
-                "Report Manager",
-                "HR Manager"
-            ]]
-        ]
+   {
+    "dt": "Role",
+    "filters": [
+        ["name", "in", [
+            "Employee",
+            "Report Manager",
+            "HR Manager",
+            "Back Date Privilege Manager"
+        ]]
+    ]
     },
     {
         "dt": "Custom Field",
