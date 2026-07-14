@@ -6,8 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "user",
-  "allowed_days",
-  "enabled"
+  "enabled",
+  "permissions"
  ],
  "fields": [
   {
@@ -19,23 +19,22 @@
    "reqd": 1
   },
   {
-   "fieldname": "allowed_days",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Allowed Days",
-   "reqd": 1
-  },
-  {
    "default": "1",
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled"
+  },
+  {
+   "fieldname": "permissions",
+   "fieldtype": "Table",
+   "label": "Permissions",
+   "options": "Back Date Privilege Detail"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-02 09:51:46.062257",
+ "modified": "2026-07-13 11:40:23.237803",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Back Date Privilege",
