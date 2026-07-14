@@ -365,6 +365,10 @@ override_doctype_class = {
 # ]
 # after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
 
+after_migrate = [
+    "franchise_erp.overrides.scheduler.set_custom_scheduler_frequencies"
+]
+
 # app_include_js = "public/js/back_date_disabled.js"
 
 app_include_js = [
