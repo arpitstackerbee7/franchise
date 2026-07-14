@@ -365,6 +365,11 @@ override_doctype_class = {
 # ]
 # after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
 
+after_migrate = [
+    "franchise_erp.overrides.scheduler.disable_core_hourly_job",
+    "franchise_erp.overrides.scheduler.enable_create_log_for_all_shifts_job",
+]
+
 # app_include_js = "public/js/back_date_disabled.js"
 
 app_include_js = [
@@ -460,6 +465,7 @@ jinja = {
 }
 
 scheduler_events = {
+    
     "cron": {
         "45 23 * * *": [
             "franchise_erp.send_whatsapp_notification.send_daily_counter_sales",
@@ -472,6 +478,9 @@ scheduler_events = {
     "daily": [
         "franchise_erp.custom.comp_off.expire_comp_off_allocations",
         "franchise_erp.custom.attendance.mark_absent_for_missing_checkout"
+    ],
+    "all": [
+        "franchise_erp.overrides.scheduler.process_auto_attendance_for_all_shifts_all"
     ]
 }
 # Installation
