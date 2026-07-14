@@ -793,7 +793,8 @@ fixtures = [
             "Employee",
             "Report Manager",
             "HR Manager",
-            "Back Date Privilege Manager"
+            "Back Date Privilege Manager",
+            "Employee Self Service"
         ]]
     ]
     },
