@@ -70,12 +70,17 @@ def get_data(filters):
     if filters.get("supplier"):
         conditions += " AND pr.supplier = %(supplier)s"
 
+    if filters.get("supplier_group"):
+        conditions += " AND s.supplier_group = %(supplier_group)s"
+
+    if filters.get("supplier_agent"):
+        conditions += " AND s.custom_agent_supplier = %(supplier_agent)s"
+
     if filters.get("from_date"):
         conditions += " AND pr.posting_date >= %(from_date)s"
 
     if filters.get("to_date"):
         conditions += " AND pr.posting_date <= %(to_date)s"
-
     records = frappe.db.sql(
         f"""
         SELECT
@@ -92,9 +97,11 @@ def get_data(filters):
         FROM `tabPurchase Receipt` pr
         INNER JOIN `tabPurchase Receipt Item` pri
             ON pri.parent = pr.name
+        INNER JOIN `tabSupplier` s
+            ON s.name = pr.supplier
         WHERE
             pr.docstatus = 1
-            AND pr.per_billed < 100
+            AND pr.per_billed = 'To Bill'
             {conditions}
         GROUP BY
             pr.company,
