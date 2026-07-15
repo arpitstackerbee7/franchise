@@ -45,8 +45,8 @@ class GateEntry(Document):
     def validate(self):
         validate_back_date(self)
 
-        if not self.references or len(self.references) == 0:
-            frappe.throw("At least one Reference is required before saving.")
+        # if not self.references or len(self.references) == 0:
+        #     frappe.throw("At least one Reference is required before saving.")
 
     # def before_submit(self):
 
