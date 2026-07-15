@@ -48,35 +48,61 @@ class GateEntry(Document):
         if not self.references or len(self.references) == 0:
             frappe.throw("At least one Reference is required before saving.")
 
+    # def before_submit(self):
+
+    #         if not self.no_of_parcels:
+    #             return
+
+    #         self.set("gate_entry_box_barcode", [])
+
+    #         parts = self.name.split("-")
+
+    #         try:
+    #             last = "%03d" % int(parts[-1])
+    #         except:
+    #             last = parts[-1]
+
+    #         base_name = parts[0] + "-" + last
+
+    #         for i in range(1, int(self.no_of_parcels) + 1):
+
+    #             serial = "%02d" % i
+    #             final_barcode = f"{base_name}-{serial}"
+
+    #             self.append("gate_entry_box_barcode", {
+    #                 "box_barcode": final_barcode,
+    #                 "total_barcode_qty": self.no_of_parcels,
+    #                 "status": "Received",
+    #                 "scan_date_time": now(),
+    #                 "gate_entry": self.name,
+    #             })
     def before_submit(self):
 
-            if not self.no_of_parcels:
-                return
+        if not self.no_of_parcels:
+            return
 
-            self.set("gate_entry_box_barcode", [])
+        self.set("gate_entry_box_barcode", [])
 
-            parts = self.name.split("-")
+        # Remove financial year (26-27/) from name
+        base_name = self.name
 
-            try:
-                last = "%03d" % int(parts[-1])
-            except:
-                last = parts[-1]
+        if "/" in base_name:
+            parts = base_name.split("/")
+            if len(parts) >= 3:
+                base_name = f"{parts[0]}/{parts[-1]}"
 
-            base_name = parts[0] + "-" + last
+        for i in range(1, int(self.no_of_parcels) + 1):
 
-            for i in range(1, int(self.no_of_parcels) + 1):
+            serial = f"{i:02d}"
+            final_barcode = f"{base_name}-{serial}"
 
-                serial = "%02d" % i
-                final_barcode = f"{base_name}-{serial}"
-
-                self.append("gate_entry_box_barcode", {
-                    "box_barcode": final_barcode,
-                    "total_barcode_qty": self.no_of_parcels,
-                    "status": "Received",
-                    "scan_date_time": now(),
-                    "gate_entry": self.name,
-                })
-    
+            self.append("gate_entry_box_barcode", {
+                "box_barcode": final_barcode,
+                "total_barcode_qty": self.no_of_parcels,
+                "status": "Received",
+                "scan_date_time": now(),
+                "gate_entry": self.name,
+            })
     # def on_submit(self):
     #     self.status = "Submitted"
     #     self.db_update()
