@@ -161,3 +161,15 @@ def apply_leave_rule_deductions(doc, method):
                     "status": "Deducted"
                 }
             )
+
+from frappe.utils import flt
+
+def apply_payment_days_adjustment(doc, method):
+    adjustment = flt(doc.payment_days_adjustment or 0)
+
+    # Store ERPNext calculated value only once
+    if not doc.original_payment_days:
+        doc.original_payment_days = flt(doc.payment_days)
+
+    # Always calculate from original value
+    doc.payment_days = flt(doc.original_payment_days) + adjustment

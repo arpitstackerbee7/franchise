@@ -265,13 +265,19 @@ doc_events = {
     "Salary Component":{
         "validate": "franchise_erp.custom.salary_component.validate_short_leave_component"
     },
-    "Salary Slip":{
-        "before_validate": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions",
-        "on_submit": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions"
-    },
-    "Subcontracting Order": {
-        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-    },
+    "Salary Slip": {
+    "before_validate": [
+        "franchise_erp.custom.salary_slip.apply_leave_rule_deductions"
+    ],
+    "validate": [
+        "franchise_erp.custom.salary_slip.apply_payment_days_adjustment"
+    ],
+    "on_submit": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions"
+},
+
+"Subcontracting Order": {
+    "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+},
     "Supplier": {
         "after_insert": "franchise_erp.custom.supplier.create_supplier_warehouse",
         "on_update": "franchise_erp.custom.supplier.create_supplier_warehouse"
@@ -807,11 +813,11 @@ fixtures = [
         ]]
     ]
     },
-    {
-        "dt": "Custom Field",
-        "filters": [
-            ["dt", "=", "Customer"]
-        ]
+   {
+    "dt": "Custom Field",
+    "filters": [
+        ["dt", "in", ["Customer", "Salary Slip"]]
+    ]
     },
     {
         "dt": "Client Script",
