@@ -325,7 +325,7 @@
   {
    "fieldname": "document_nos",
    "fieldtype": "Data",
-   "label": "Builty No"
+   "label": "Bilty No"
   },
   {
    "fieldname": "no_of_parcels",
@@ -354,7 +354,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-05-08 12:04:51.316345",
+ "modified": "2026-07-15 18:28:17.982930",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
