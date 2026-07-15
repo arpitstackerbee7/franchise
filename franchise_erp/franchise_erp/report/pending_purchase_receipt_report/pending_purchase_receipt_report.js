@@ -26,6 +26,25 @@ frappe.query_reports["Pending Purchase Receipt Report"] = {
             label: __("Supplier"),
             fieldtype: "Link",
             options: "Supplier"
+        },
+        {
+            fieldname: "supplier_group",
+            label: __("Supplier Group"),
+            fieldtype: "Link",
+            options: "Supplier Group"
+        },
+        {
+            fieldname: "supplier_agent",
+            label: __("Supplier Agent"),
+            fieldtype: "Link",
+            options: "Supplier",
+            get_query: function () {
+                return {
+                    filters: {
+                        custom_is_agent: 1
+                    }
+                };
+            }
         }
     ]
 };
