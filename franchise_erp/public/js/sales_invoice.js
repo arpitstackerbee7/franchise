@@ -201,6 +201,37 @@ frappe.ui.form.on("Sales Invoice Item", {
 
         let row = locals[cdt][cdn];
         if (!row.item_code) return;
+        frappe.db.get_value("Item", row.item_code, [
+        "custom_count_of_pcs",
+        "custom_top_fabrics",
+        "custom_bottom_fabric",
+        "custom_dupatta_fabric",
+        ]).then(r => {
+
+        if (!r.message) return;
+
+        frappe.model.set_value(cdt, cdn, "custom_count_of_pcs", r.message.custom_count_of_pcs);
+        frappe.model.set_value(cdt, cdn, "custom_top_fabric", r.message.custom_top_fabrics);
+        frappe.model.set_value(cdt, cdn, "custom_bottom_fabric", r.message.custom_bottom_fabric);
+        frappe.model.set_value(cdt, cdn, "custom_dupatta_fabric", r.message.custom_dupatta_fabric);
+        
+        frappe.db.get_value(
+            "Item Price",
+          {
+                item_code: row.item_code,
+                price_list: "MRP"
+          },
+          "price_list_rate"
+      ).then(res => {
+          frappe.model.set_value(
+              cdt,
+              cdn,
+              "custom_mrp",
+              res.message ? res.message.price_list_rate : 0
+          );
+      });
+
+    });
 
         // 🔥 Add to queue instead of API call
         ITEM_FETCH_QUEUE.add(row.item_code);
@@ -740,6 +771,7 @@ let DISCOUNT_CACHE = {};
 function apply_discount_hide(frm, cdt, cdn) {
 
     let row = locals[cdt][cdn];
+    
     if (!row?.item_code) return;
 
     if (DISCOUNT_CACHE[row.item_code] !== undefined) {
