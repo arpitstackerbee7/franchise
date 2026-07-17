@@ -303,6 +303,9 @@ doc_events = {
     "Leave Encashment": {
         "validate": "franchise_erp.custom.custom_leave_encashment.override_leave_encashment_calculation"
     },
+    "Employee Checkin": {
+        "validate": "franchise_erp.overrides.employee_checkin.fix_shift_for_paired_checkin"
+    },
 
 
 }
