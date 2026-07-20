@@ -820,8 +820,12 @@ fixtures = [
    {
     "dt": "Custom Field",
     "filters": [
-        ["dt", "in", ["Customer", "Salary Slip"]]
-    ]
+        ["dt", "in", [
+            "Customer",
+            "Salary Slip",
+            "Sales Invoice Item"
+        ]]
+     ]
     },
     {
         "dt": "Client Script",
