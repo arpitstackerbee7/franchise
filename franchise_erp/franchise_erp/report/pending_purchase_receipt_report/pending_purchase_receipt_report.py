@@ -101,8 +101,23 @@ def get_data(filters):
             ON s.name = pr.supplier
         WHERE
             pr.docstatus = 1
-            AND pr.per_billed = 'To Bill'
             {conditions}
+            AND NOT EXISTS (
+                SELECT 1
+                FROM `tabPurchase Invoice Item` pii
+                INNER JOIN `tabPurchase Invoice` pi
+                    ON pi.name = pii.parent
+                WHERE
+                    pi.docstatus = 1
+                    AND (
+                        pii.purchase_receipt = pr.name
+                        OR pii.pr_detail IN (
+                            SELECT pri2.name
+                            FROM `tabPurchase Receipt Item` pri2
+                            WHERE pri2.parent = pr.name
+                        )
+                    )
+         )
         GROUP BY
             pr.company,
             pr.supplier,
