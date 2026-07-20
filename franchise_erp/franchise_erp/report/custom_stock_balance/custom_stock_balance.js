@@ -144,12 +144,12 @@ frappe.query_reports["Custom Stock Balance"] = {
 		value = default_formatter(value, row, column, data);
 
 		if (column.fieldname === "serial_no" && data && data.serial_no) {
-			return `
-				<a href="#" class="show-serials"
-					data-serials="${encodeURIComponent(data.serial_no)}">
-					View Serial Numbers
-				</a>
-			`;
+	       return `
+		       <a href="#" class="show-serials"
+			       data-serials="${encodeURIComponent(data.serial_no)}">
+			       View Serial Numbers (${data.serial_count || 0})
+		       </a>
+	       `;
 		}
 
 		if (column.fieldname == "out_qty" && data && data.out_qty > 0) {

@@ -498,7 +498,7 @@ class StockBalanceReport:
                 "label": _("Serial No"),
                 "fieldname": "serial_no",
                 "fieldtype": "Data",
-                "width": 250,
+                "width": 200,
             },
 			{
                 "label": _("Serial Count"),

@@ -13,6 +13,7 @@
  "name": "Custom Stock Balance",
  "owner": "Administrator",
  "prepared_report": 1,
+ "timeout": 300,
  "query": "",
  "ref_doctype": "Stock Ledger Entry",
  "report_name": "Custom Stock Balance",
