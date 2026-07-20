@@ -300,9 +300,9 @@ doc_events = {
     "validate": "franchise_erp.custom.attendance.validate_attendance_request",
     "on_submit": "franchise_erp.custom.attendance.on_attendance_request_submit"
     },
-    "Leave Encashment": {
-        "validate": "franchise_erp.custom.custom_leave_encashment.override_leave_encashment_calculation"
-    },
+    # "Leave Encashment": {
+    #     "validate": "franchise_erp.custom.custom_leave_encashment.override_leave_encashment_calculation"
+    # },
     "Employee Checkin": {
         "validate": "franchise_erp.overrides.employee_checkin.fix_shift_for_paired_checkin"
     },
