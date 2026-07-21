@@ -128,49 +128,48 @@ def get_data(filters):
 
         
 
-        # Supplier Details
+        
 
         # Supplier Details
 
-            supplier = ""
-            supplier_name = ""
-            party_city = ""
-            last_inward_date = None
+        supplier = ""
+        supplier_name = ""
+        party_city = ""
+        last_inward_date = None
 
-            supplier_data = frappe.db.sql(
-                """
-                SELECT
-                    pr.supplier,
-                    pr.supplier_name,
-                    pr.posting_date,
-                    addr.city
-                FROM `tabPurchase Receipt` pr
-                INNER JOIN `tabPurchase Receipt Item` pri
-                    ON pri.parent = pr.name
-                LEFT JOIN `tabDynamic Link` dl
-                    ON dl.link_doctype = 'Supplier'
-                    AND dl.link_name = pr.supplier
-                LEFT JOIN `tabAddress` addr
-                    ON addr.name = dl.parent
-                WHERE
-                    pri.item_code = %s
-                    AND pr.docstatus = 1
-                ORDER BY
-                    pr.posting_date DESC,
-                    pr.creation DESC
-                LIMIT 1
-                """,
-                (item_code,),
-                as_dict=True,
-            )
+        supplier_data = frappe.db.sql(
+            """
+            SELECT
+                pr.supplier,
+                pr.supplier_name,
+                pr.posting_date,
+                addr.city
+            FROM `tabPurchase Receipt` pr
+            INNER JOIN `tabPurchase Receipt Item` pri
+                ON pri.parent = pr.name
+            LEFT JOIN `tabDynamic Link` dl
+                ON dl.link_doctype = 'Supplier'
+                AND dl.link_name = pr.supplier
+            LEFT JOIN `tabAddress` addr
+                ON addr.name = dl.parent
+            WHERE
+                pri.item_code = %s
+                AND pr.docstatus = 1
+            ORDER BY
+                pr.posting_date DESC,
+                pr.creation DESC
+            LIMIT 1
+            """,
+            (item_code,),
+            as_dict=True,
+        )
 
-            if supplier_data:
-                supplier = supplier_data[0].supplier
-                supplier_name = supplier_data[0].supplier_name or supplier
-                party_city = supplier_data[0].city or ""
-                last_inward_date = supplier_data[0].posting_date
-
-            # 2. Fallback → Item Default supplier
+        if supplier_data:
+            supplier = supplier_data[0].supplier
+            supplier_name = supplier_data[0].supplier_name or supplier
+            party_city = supplier_data[0].city or ""
+            last_inward_date = supplier_data[0].posting_date
+        else:
             item_default = frappe.db.get_value(
                 "Item Default",
                 {
@@ -182,35 +181,33 @@ def get_data(filters):
             )
 
             if item_default and item_default.default_supplier:
-
                 supplier = item_default.default_supplier
+                supplier_name = (
+                    frappe.db.get_value(
+                        "Supplier",
+                        supplier,
+                        "supplier_name",
+                    )
+                    or supplier
+                )
 
-                supplier_name = frappe.db.get_value(
-                    "Supplier",
-                    supplier,
-                    "supplier_name",
-                ) or supplier
+                city_data = frappe.db.sql(
+                    """
+                    SELECT addr.city
+                    FROM `tabAddress` addr
+                    INNER JOIN `tabDynamic Link` dl
+                        ON dl.parent = addr.name
+                    WHERE
+                        dl.link_doctype = 'Supplier'
+                        AND dl.link_name = %s
+                    LIMIT 1
+                    """,
+                    (supplier,),
+                    as_dict=1,
+                )
 
-        # 3. Fetch city if supplier exists
-        if supplier:
-
-            city_data = frappe.db.sql(
-                """
-                SELECT addr.city
-                FROM `tabAddress` addr
-                INNER JOIN `tabDynamic Link` dl
-                    ON dl.parent = addr.name
-                WHERE
-                    dl.link_doctype = 'Supplier'
-                    AND dl.link_name = %s
-                LIMIT 1
-                """,
-                (supplier,),
-                as_dict=1,
-            )
-
-            if city_data:
-                party_city = city_data[0].city or ""
+                if city_data:
+                    party_city = city_data[0].city or ""
 
         # Supplier Filter
         if filters.get("supplier") and supplier != filters.get("supplier"):
