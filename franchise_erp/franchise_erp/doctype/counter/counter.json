@@ -1,8 +1,8 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "CT-.#####",
- "creation": "2026-06-30 11:54:06.721132",
+ "autoname": "field:counter_name",
+ "creation": "2026-07-21 12:55:49.798537",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -11,21 +11,21 @@
  "fields": [
   {
    "fieldname": "counter_name",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Counter Name",
-   "options": "Company",
-   "reqd": 1
+   "reqd": 1,
+   "unique": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-18 13:08:54.696947",
+ "modified": "2026-07-21 12:56:28.931853",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
- "name": "Counter Master",
- "naming_rule": "Expression",
+ "name": "Counter",
+ "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
   {
