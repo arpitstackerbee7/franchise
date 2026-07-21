@@ -142,11 +142,25 @@ frappe.query_reports["Custom Stock Report"] = {
 
 	formatter: function (value, row, column, data, default_formatter) {
 
+		// Image Column
 		if (column.fieldname === "image" && value) {
-            return `<div style="display:flex; align-items:center; justify-content:center; height:100%;">
-            <img src="${value}" style="height:60px;width:60px;object-fit:cover;border-radius:4px;">
-            </div>`;
-        }
+			return `
+				<div style="display:flex;align-items:center;justify-content:center;height:100%;">
+					<img src="${value}" style="height:60px;width:60px;object-fit:cover;border-radius:4px;">
+				</div>
+			`;
+		}
+
+		// Serial Number Column
+		if (column.fieldname === "serial_no" && data && data.serial_no) {
+			return `
+				<a href="#" class="show-serials"
+					data-serials="${encodeURIComponent(data.serial_no)}">
+					View Serial Numbers (${data.serial_count || 0})
+				</a>
+			`;
+		}
+
 		value = default_formatter(value, row, column, data);
 
 		if (column.fieldname == "out_qty" && data && data.out_qty > 0) {
@@ -157,31 +171,70 @@ frappe.query_reports["Custom Stock Report"] = {
 
 		return value;
 	},
+
 	after_datatable_render: function (datatable_obj) {
-    datatable_obj.options.cellHeight = 70;
-    datatable_obj.refresh();
-},
+		datatable_obj.options.cellHeight = 70;
+		datatable_obj.refresh();
+	},
 
 	onload: function (report) {
-	report.page.add_inner_button(__("View Stock Ledger"), function () {
-    var filters = report.get_values();
-    frappe.set_route("query-report", "Stock Ledger", filters);
-});
-	report.page.add_inner_button(__("Export with Images"), function () {
-    frappe.show_alert({ message: __("Generating Excel with images..."), indicator: "blue" });
-    frappe.call({
-        method: "franchise_erp.franchise_erp.report.custom_stock_report.export_with_images.export_custom_stock_report_with_images",
-        args: { filters: report.get_filter_values() },
-        callback: function (r) {
-            if (r.message) {
-                window.open(r.message);
-                frappe.show_alert({ message: __("Excel file ready!"), indicator: "green" });
-            }
-        },
-    });
-});
-	}
-}
 
+		report.page.add_inner_button(__("View Stock Ledger"), function () {
+			var filters = report.get_values();
+			frappe.set_route("query-report", "Stock Ledger", filters);
+		});
+
+		report.page.add_inner_button(__("Export with Images"), function () {
+			frappe.show_alert({
+				message: __("Generating Excel with images..."),
+				indicator: "blue"
+			});
+
+			frappe.call({
+				method: "franchise_erp.franchise_erp.report.custom_stock_report.export_with_images.export_custom_stock_report_with_images",
+				args: {
+					filters: report.get_filter_values()
+				},
+				callback: function (r) {
+					if (r.message) {
+						window.open(r.message);
+						frappe.show_alert({
+							message: __("Excel file ready!"),
+							indicator: "green"
+						});
+					}
+				},
+			});
+		});
+
+		// Serial Number Popup
+		$(document).off("click", ".show-serials");
+
+		$(document).on("click", ".show-serials", function (e) {
+			e.preventDefault();
+
+			let serials = decodeURIComponent($(this).attr("data-serials"));
+
+			let dialog = new frappe.ui.Dialog({
+				title: __("Serial Numbers"),
+				size: "large",
+				fields: [
+					{
+						fieldtype: "HTML",
+						fieldname: "serial_list",
+					},
+				],
+			});
+
+			dialog.fields_dict.serial_list.$wrapper.html(`
+				<div style="max-height:500px;overflow-y:auto;padding:10px;">
+					${serials.split(", ").join("<br>")}
+				</div>
+			`);
+
+			dialog.show();
+		});
+	},
+};
 
 erpnext.utils.add_inventory_dimensions("Custom Stock Report", 8);

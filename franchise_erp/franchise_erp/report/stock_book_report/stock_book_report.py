@@ -130,41 +130,45 @@ def get_data(filters):
 
         # Supplier Details
 
-        supplier = ""
-        supplier_name = ""
-        party_city = ""
+        # Supplier Details
 
-        # 1. Try latest Purchase Receipt supplier
-        supplier_data = frappe.db.sql(
-            """
-            SELECT
-                pr.supplier,
-                pr.supplier_name
-            FROM `tabPurchase Receipt` pr
-            INNER JOIN `tabPurchase Receipt Item` pri
-                ON pr.name = pri.parent
-            WHERE
-                pri.item_code = %s
-                AND pr.docstatus = 1
-            ORDER BY
-                pr.posting_date DESC,
-                pr.posting_time DESC
-            LIMIT 1
-            """,
-            (item_code,),
-            as_dict=1,
-        )
+            supplier = ""
+            supplier_name = ""
+            party_city = ""
+            last_inward_date = None
 
-        if supplier_data:
-
-            supplier = supplier_data[0].supplier
-
-            supplier_name = (
-                supplier_data[0].supplier_name
-                or supplier
+            supplier_data = frappe.db.sql(
+                """
+                SELECT
+                    pr.supplier,
+                    pr.supplier_name,
+                    pr.posting_date,
+                    addr.city
+                FROM `tabPurchase Receipt` pr
+                INNER JOIN `tabPurchase Receipt Item` pri
+                    ON pri.parent = pr.name
+                LEFT JOIN `tabDynamic Link` dl
+                    ON dl.link_doctype = 'Supplier'
+                    AND dl.link_name = pr.supplier
+                LEFT JOIN `tabAddress` addr
+                    ON addr.name = dl.parent
+                WHERE
+                    pri.item_code = %s
+                    AND pr.docstatus = 1
+                ORDER BY
+                    pr.posting_date DESC,
+                    pr.creation DESC
+                LIMIT 1
+                """,
+                (item_code,),
+                as_dict=True,
             )
 
-        else:
+            if supplier_data:
+                supplier = supplier_data[0].supplier
+                supplier_name = supplier_data[0].supplier_name or supplier
+                party_city = supplier_data[0].city or ""
+                last_inward_date = supplier_data[0].posting_date
 
             # 2. Fallback → Item Default supplier
             item_default = frappe.db.get_value(
@@ -260,26 +264,7 @@ def get_data(filters):
         for p in prices:
             price_map[p.price_list] = p.price_list_rate
 
-        # Last Stock Inward Date
-        last_inward_date = frappe.db.sql(
-            """
-            SELECT MAX(posting_date)
-            FROM `tabStock Ledger Entry`
-            WHERE
-                item_code = %s
-                AND warehouse = %s
-                AND actual_qty > 0
-                AND is_cancelled = 0
-                AND posting_date <= %s
-            """,
-            (item_code, warehouse, filters.get("to_date")),
-        )
-
-        last_inward_date = (
-            last_inward_date[0][0]
-            if last_inward_date and last_inward_date[0]
-            else None
-        )
+        
 
         final_data.append([
             company,

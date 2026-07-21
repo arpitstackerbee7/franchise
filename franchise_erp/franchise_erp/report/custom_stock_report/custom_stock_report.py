@@ -64,10 +64,13 @@ class StockBalanceReport:
 		self.prepare_opening_data_from_closing_balance()
 		self.prepare_stock_ledger_entries()
 		self.prepare_new_data()
+        
+		self.set_price_list_rates()
+		self.set_supplier_name()
 
 		if not self.columns:
 			self.columns = self.get_columns()
-
+			
 		self.add_additional_uom_columns()
 
 		return self.columns, self.data
@@ -145,6 +148,19 @@ class StockBalanceReport:
 				and report_data.bal_val == 0
 			):
 				continue
+
+			serials = frappe.get_all(
+				"Serial No",
+				filters={
+					"item_code": report_data.item_code,
+					"warehouse": report_data.warehouse,
+					"status": "Active",
+				},
+				pluck="name",
+			)
+
+			report_data.serial_no = ", ".join(serials)
+			report_data.serial_count = len(serials)
 
 			self.data.append(report_data)
 
@@ -466,6 +482,112 @@ class StockBalanceReport:
 
 		return query
 
+
+	def set_price_list_rates(self):
+		if not self.data:
+			return
+
+		item_codes = list({d.item_code for d in self.data})
+
+		prices = frappe.get_all(
+			"Item Price",
+			filters={
+				"item_code": ["in", item_codes],
+				"price_list": ["in", ["STD", "WSP", "MRP"]],
+			},
+			fields=["item_code", "price_list", "price_list_rate"],
+		)
+
+		price_map = {}
+
+		for d in prices:
+			price_map.setdefault(d.item_code, {})
+			price_map[d.item_code][d.price_list] = d.price_list_rate
+
+		for row in self.data:
+			row.std_rate = price_map.get(row.item_code, {}).get("STD", 0)
+			row.wsp_rate = price_map.get(row.item_code, {}).get("WSP", 0)
+			row.mrp_rate = price_map.get(row.item_code, {}).get("MRP", 0)
+
+	def set_supplier_name(self):
+		item_codes = list({row.item_code for row in self.data if row.item_code})
+
+		if not item_codes:
+			return
+
+		data = frappe.db.sql(
+			"""
+			SELECT
+				pri.item_code,
+				pr.supplier,
+				pr.posting_date
+			FROM `tabPurchase Receipt Item` pri
+			INNER JOIN `tabPurchase Receipt` pr
+				ON pr.name = pri.parent
+			WHERE
+				pr.docstatus = 1
+				AND pri.item_code IN %(items)s
+			ORDER BY
+				pri.item_code,
+				pr.posting_date DESC,
+				pr.creation DESC
+			""",
+			{"items": tuple(item_codes)},
+			as_dict=True,
+		)
+
+		item_map = {}
+
+		for d in data:
+			if d.item_code not in item_map:
+				item_map[d.item_code] = {
+					"supplier": d.supplier,
+					"last_stock_in_date": d.posting_date,
+				}
+
+		for row in self.data:
+			info = item_map.get(row.item_code, {})
+			row.party_name = info.get("supplier")
+			row.last_stock_in_date = info.get("last_stock_in_date")
+	
+	def set_last_stock_in_date(self):
+		items = {(row.item_code, row.warehouse) for row in self.data if row.item_code and row.warehouse}
+
+		if not items:
+			return
+
+		conditions = " OR ".join(["(item_code=%s AND warehouse=%s)"] * len(items))
+		values = []
+
+		for item_code, warehouse in items:
+			values.extend([item_code, warehouse])
+
+		data = frappe.db.sql(
+			f"""
+			SELECT
+				item_code,
+				warehouse,
+				MAX(posting_date) AS last_stock_in_date
+			FROM `tabStock Ledger Entry`
+			WHERE
+				actual_qty > 0
+				AND ({conditions})
+			GROUP BY item_code, warehouse
+			""",
+			values,
+			as_dict=True,
+		)
+
+		date_map = {
+			(d.item_code, d.warehouse): d.last_stock_in_date
+			for d in data
+		}
+
+		for row in self.data:
+			row.last_stock_in_date = date_map.get(
+				(row.item_code, row.warehouse)
+			)
+
 	def get_columns(self):
 		columns = [
 			{
@@ -475,23 +597,72 @@ class StockBalanceReport:
 				"options": "Item",
 				"width": 100,
 			},
-			{"label": _("Item Name"), "fieldname": "item_name", "width": 150},
-			{"label": "Image", "fieldname": "image", "fieldtype": "Data", "width": 120},
-			{"label": _("Style"), "fieldname": "style", "fieldtype": "Data", "width": 100},
-            {"label": _("Sup Design No."), "fieldname": "sup_design_no", "fieldtype": "Data", "width": 110},
-            {"label": _("Top Fabric"), "fieldname": "top_fabric", "fieldtype": "Data", "width": 110},
 			{
-				"label": _("Item Group"),
-				"fieldname": "item_group",
-				"fieldtype": "Link",
-				"options": "Item Group",
+				"label": _("Item Name"),
+				"fieldname": "item_name",
+				"width": 150,
+			},
+			{
+				"label": "Image",
+				"fieldname": "image",
+				"fieldtype": "Data",
+				"width": 120,
+			},
+			{
+				"label": _("Style"),
+				"fieldname": "style",
+				"fieldtype": "Data",
 				"width": 100,
+			},
+			{
+				"label": _("Sup Design No."),
+				"fieldname": "sup_design_no",
+				"fieldtype": "Data",
+				"width": 110,
+			},
+			{
+				"label": _("Top Fabric"),
+				"fieldname": "top_fabric",
+				"fieldtype": "Data",
+				"width": 110,
 			},
 			{
 				"label": _("Warehouse"),
 				"fieldname": "warehouse",
 				"fieldtype": "Link",
 				"options": "Warehouse",
+				"width": 100,
+			},
+			{
+				"label": _("Party Name"),
+				"fieldname": "party_name",
+				"fieldtype": "Link",
+				"options": "Supplier",
+				"width": 180,
+			},
+			{
+				"label": _("Serial No."),
+				"fieldname": "serial_no",
+				"fieldtype": "Data",
+				"width": 210,
+			},
+			{
+				"label": _("Serial Count"),
+				"fieldname": "serial_count",
+				"fieldtype": "Int",
+				"hidden": 1,			
+			},
+			{
+				"label": _("Last Stock In Date"),
+				"fieldname": "last_stock_in_date",
+				"fieldtype": "Date",
+				"width": 120,
+			},
+			{
+				"label": _("Item Group"),
+				"fieldname": "item_group",
+				"fieldtype": "Link",
+				"options": "Item Group",
 				"width": 100,
 			},
 		]
@@ -552,7 +723,12 @@ class StockBalanceReport:
 					"width": 80,
 					"convertible": "qty",
 				},
-				{"label": _("In Value"), "fieldname": "in_val", "fieldtype": "Float", "width": 80},
+				{
+					"label": _("In Value"),
+					"fieldname": "in_val",
+					"fieldtype": "Float",
+					"width": 80,
+				},
 				{
 					"label": _("Out Qty"),
 					"fieldname": "out_qty",
@@ -560,16 +736,23 @@ class StockBalanceReport:
 					"width": 80,
 					"convertible": "qty",
 				},
-				{"label": _("Out Value"), "fieldname": "out_val", "fieldtype": "Float", "width": 80},
+				{
+					"label": _("Out Value"),
+					"fieldname": "out_val",
+					"fieldtype": "Float",
+					"width": 80,
+				},
 				{
 					"label": _("Valuation Rate"),
 					"fieldname": "val_rate",
 					"fieldtype": self.filters.valuation_field_type or "Currency",
 					"width": 90,
 					"convertible": "rate",
-					"options": "Company:company:default_currency"
-					if self.filters.valuation_field_type == "Currency"
-					else None,
+					"options": (
+						"Company:company:default_currency"
+						if self.filters.valuation_field_type == "Currency"
+						else None
+					),
 				},
 				{
 					"label": _("Reserved Stock"),
@@ -577,6 +760,27 @@ class StockBalanceReport:
 					"fieldtype": "Float",
 					"width": 80,
 					"convertible": "qty",
+				},
+				{
+   				    "label": _("STD Rate"),
+   				    "fieldname": "std_rate",
+    				"fieldtype": "Currency",
+    				"width": 100,
+    				"options": "Company:company:default_currency",
+				},
+				{
+    				"label": _("WSP Rate"),
+    				"fieldname": "wsp_rate",
+    				"fieldtype": "Currency",
+    				"width": 100,
+    				"options": "Company:company:default_currency",
+				},
+				{
+    				"label": _("MRP Rate"),
+    				"fieldname": "mrp_rate",
+    				"fieldtype": "Currency",
+    				"width": 100,
+    				"options": "Company:company:default_currency",
 				},
 				{
 					"label": _("Company"),
