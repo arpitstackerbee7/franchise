@@ -45,12 +45,10 @@ def get_data(filters):
         params["from_date"] = filters["from_date"]
         params["to_date"] = filters["to_date"]
 
-    
     if filters.get("company"):
         conditions += " AND company = %(company)s"
         params["company"] = filters["company"]
 
-    
     view_type = filters.get("view_type") or "qty"
 
     if view_type == "qty":
@@ -73,8 +71,9 @@ def get_data(filters):
 # CHART
 # ---------------------------
 def get_chart_data(data):
+    
     if not data:
-        return None
+        return empty_chart()
 
     labels = [d.get("month") for d in data]
     values = [float(d.get("total_sales") or 0) for d in data]
@@ -92,7 +91,25 @@ def get_chart_data(data):
         "type": "line",
         "colors": ["#ff5858"],
 
-        
+        "lineOptions": {
+            "hideDots": 0
+        }
+    }
+
+
+def empty_chart():
+    return {
+        "data": {
+            "labels": [],
+            "datasets": [
+                {
+                    "name": "Sales Progress",
+                    "values": []
+                }
+            ]
+        },
+        "type": "line",
+        "colors": ["#ff5858"],
         "lineOptions": {
             "hideDots": 0
         }

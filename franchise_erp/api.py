@@ -2500,7 +2500,7 @@ def get_chart_data(chart_name, from_date, to_date, view_type='qty', company='', 
     report_map = {
         'Sales Trend'              : 'Sales Trend',
         'Sales Progress'           : 'Sales Progress',
-        'Sale vs Stock'            : 'Sales vs Stock',
+        'Sales vs Stock'           : 'Sales vs Stock',
         'Top Selling Items Chart'  : 'Top Selling Items 1',
         'Least Selling Items Chart': 'Least Selling Items',
     }
@@ -2762,3 +2762,4 @@ def is_otp_login_enabled():
     )
 
     return 1 if enabled else 0
+    

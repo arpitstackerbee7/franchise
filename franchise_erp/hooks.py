@@ -832,5 +832,15 @@ fixtures = [
         "filters": [
             ["dt", "in", ["Leave Application", "Subcontracting Receipt"]]
         ]
+    },
+    {
+        "dt": "Custom HTML Block",
+        "filters": [
+            ["name", "in", [
+                "Selling Items",
+                "Sales vs Stock",
+                "Date Range"
+            ]]
+        ]
     }
 ]
