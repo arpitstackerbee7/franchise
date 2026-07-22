@@ -1,16 +1,3 @@
-// frappe.query_reports["Sales Trend"] = {
-//     filters: [
-//         {
-//             fieldname: "fiscal_year",
-//             label: "Fiscal Year",
-//             fieldtype: "Link",
-//             options: "Fiscal Year",
-//             default: frappe.defaults.get_user_default("fiscal_year"),
-//             reqd: 0
-//         }
-//     ]
-// };
-
 frappe.query_reports["Sales Trend"] = {
 
     filters: [
@@ -42,29 +29,37 @@ frappe.query_reports["Sales Trend"] = {
         }
     ],
 
-    onload: function(report) {
-    
+    onload: function (report) {
 
-    if (window._salesTrendListenerAdded) return;
-    window._salesTrendListenerAdded = true;
+        // Remove any listener left behind by a previous instance of this report
+        if (window._salesTrendFilterHandler) {
+            document.removeEventListener('dashboardFilterChanged', window._salesTrendFilterHandler);
+        }
 
-    document.addEventListener(
-        'dashboardFilterChanged',
-        function(e) {
+        window._salesTrendFilterHandler = function (e) {
+            // If a refresh triggered by this same event is still running, skip
+            if (report._dashboard_sync_in_progress) return;
+            report._dashboard_sync_in_progress = true;
+
             var f = e.detail;
             try {
-                report.set_filter_value('from_date', f.from);
-                report.set_filter_value('to_date',   f.to);
-                report.set_filter_value('view_type', f.view);  // 'qty' or 'amt'
-                report.set_filter_value('company',   f.company || '');
-                setTimeout(function() {
-                    report.refresh();
-                }, 200);
-            } catch(e) {
-                console.error('Sales Trend filter error:', e);
+                // Single call, single refresh — not 4 separate ones
+                report.set_filter_value({
+                    from_date: f.from,
+                    to_date: f.to,
+                    view_type: f.view,   // 'qty' or 'amt'
+                    company: f.company || ''
+                });
+            } catch (err) {
+                console.error('Sales Trend filter error:', err);
+            } finally {
+                setTimeout(function () {
+                    report._dashboard_sync_in_progress = false;
+                }, 300);
             }
-        }
-    );
-}
+        };
+
+        document.addEventListener('dashboardFilterChanged', window._salesTrendFilterHandler);
+    }
 
 };
