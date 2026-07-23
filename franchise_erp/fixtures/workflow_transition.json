@@ -746,6 +746,7 @@
   "send_email_to_creator": 0,
   "state": "Pending Reporting Manager",
   "workflow_builder_id": null
+<<<<<<< Updated upstream
  },
  {
   "action": "Reject",
@@ -2990,5 +2991,7 @@
   "send_email_to_creator": 0,
   "state": "Pending Reporting Manager",
   "workflow_builder_id": null
+=======
+>>>>>>> Stashed changes
  }
 ]
