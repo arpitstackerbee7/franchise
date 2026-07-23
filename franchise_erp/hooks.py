@@ -492,7 +492,8 @@ scheduler_events = {
         "franchise_erp.custom.attendance.mark_absent_for_missing_checkout"
     ],
     "all": [
-        "franchise_erp.overrides.scheduler.process_auto_attendance_for_all_shifts_all"
+        "franchise_erp.overrides.scheduler.process_auto_attendance_for_all_shifts_all",
+        "franchise_erp.custom.attendance_helpers.run_sandwich_check_for_all"
     ]
 }
 # Installation
