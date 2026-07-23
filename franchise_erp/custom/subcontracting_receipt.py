@@ -362,21 +362,21 @@ def recalculate_tax_on_service_cost(doc, method):
         flt(item.service_cost_per_qty) * flt(item.qty) for item in doc.items
     )
 
+    running_total = total_service_cost
     total_taxes = 0
 
     for tax in doc.taxes:
         if tax.charge_type in ("On Net Total", "On Previous Row Total"):
             tax_amount = total_service_cost * flt(tax.rate) / 100
             total_taxes += tax_amount
+            running_total += tax_amount
 
             frappe.db.set_value("India Compliance Taxes and Charges", tax.name, {
                 "tax_amount": tax_amount,
-                "base_total": total_service_cost + total_taxes
+                "base_total": running_total
             })
-
-    base_grand_total = total_service_cost + total_taxes
 
     frappe.db.set_value("Subcontracting Receipt", doc.name, {
         "total_taxes": total_taxes,
-        "base_grand_total": base_grand_total,
+        "base_grand_total": total_service_cost + total_taxes,
     })
