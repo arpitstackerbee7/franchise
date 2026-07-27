@@ -45,6 +45,7 @@ def get_columns():
 
 
 def get_data(filters):
+    columns = get_columns()
 
     if not filters:
         filters = frappe._dict()
@@ -288,4 +289,27 @@ def get_data(filters):
             last_inward_date,
         ])
 
+    
+
+
+    if final_data:
+        
+        field_index = {col["fieldname"]: idx for idx, col in enumerate(columns)}
+
+        total_row = [""] * len(columns)
+        total_row[field_index["party_name"]] = "Total"
+
+        numeric_fields = [
+            "standard_buying", "wsp", "mrp", "rsp",
+            "std", "standard_selling", "closing_stock_qty"
+        ]
+
+        for field in numeric_fields:
+            col_idx = field_index[field]
+            total_row[col_idx] = round(
+                sum((row[col_idx] or 0) for row in final_data), 2
+            )
+        final_data.append(total_row)
+
     return final_data
+    

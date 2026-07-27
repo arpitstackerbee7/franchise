@@ -73,7 +73,37 @@ class StockBalanceReport:
 			
 		self.add_additional_uom_columns()
 
+		self.add_total_row() 
+
 		return self.columns, self.data
+
+	def add_total_row(self):
+		if not self.data:
+			return
+
+		numeric_fields = [
+			"bal_qty",
+			"bal_val",
+			"opening_qty",
+			"opening_val",
+			"in_qty",
+			"in_val",
+			"out_qty",
+			"out_val",
+			"reserved_stock",
+		]
+
+		total_row = frappe._dict()
+		total_row["item_name"] = _("Total")
+
+		for field in numeric_fields:
+			total_row[field] = flt(
+				sum(flt(row.get(field, 0)) for row in self.data),
+				self.float_precision,
+			)
+
+		self.data.append(total_row)
+
 
 	def prepare_opening_data_from_closing_balance(self) -> None:
 		self.opening_data = frappe._dict({})
