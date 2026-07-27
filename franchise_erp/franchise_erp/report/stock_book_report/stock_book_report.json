@@ -1,5 +1,5 @@
 {
- "add_total_row": 0,
+ "add_total_row": 1,
  "add_translate_data": 0,
  "columns": [],
  "creation": "2026-05-27 14:04:29.092995",
@@ -10,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letter_head": null,
- "modified": "2026-05-27 14:19:30.731108",
+ "modified": "2026-07-27 10:12:27.756417",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Stock Book Report",
