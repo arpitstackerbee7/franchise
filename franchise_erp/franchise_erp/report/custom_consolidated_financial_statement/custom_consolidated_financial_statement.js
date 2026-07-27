@@ -11,58 +11,73 @@ frappe.query_reports["Custom Consolidated Financial Statement"] = {
 			default: frappe.defaults.get_user_default("Company"),
 			reqd: 1,
 		},
+// 		{
+// 	fieldname: "counter",
+// 	label: __("Counter"),
+// 	fieldtype: "Link",
+// 	options: "Customer",
+// 	reqd: 0,
+
+// 	get_query: function () {
+// 		return {
+// 			filters: {
+// 				is_internal_customer: 1,
+// 			},
+// 		};
+// 	},
+
+// 	on_change: function () {
+// 		let counter = frappe.query_report.get_filter_value("counter");
+
+// 		if (counter) {
+// 			frappe.call({
+// 				method: "frappe.client.get_value",
+// 				args: {
+// 					doctype: "Customer",
+// 					filters: {
+// 						name: counter,
+// 					},
+// 					fieldname: ["represents_company"],
+// 				},
+// 				callback: function (r) {
+// 					if (r.message) {
+// 						// Backend ko company ka naam bhi bhejenge
+// 						frappe.query_report.set_filter_value(
+// 							"counter_company",
+// 							r.message.represents_company || ""
+// 						);
+
+// 						frappe.query_report.refresh();
+// 					}
+// 				},
+// 			});
+// 		} else {
+// 			frappe.query_report.set_filter_value("counter_company", "");
+// 			frappe.query_report.refresh();
+// 		}
+// 	},
+// },
 		{
-	fieldname: "counter",
-	label: __("Counter"),
-	fieldtype: "Link",
-	options: "Customer",
-	reqd: 0,
+			fieldname: "counter",
+			label: __("Counter"),
+			fieldtype: "Link",
+			options: "Counter",
+			reqd: 0,
 
-	get_query: function () {
-		return {
-			filters: {
-				is_internal_customer: 1,
-			},
-		};
-	},
-
-	on_change: function () {
-		let counter = frappe.query_report.get_filter_value("counter");
-
-		if (counter) {
-			frappe.call({
-				method: "frappe.client.get_value",
-				args: {
-					doctype: "Customer",
-					filters: {
-						name: counter,
-					},
-					fieldname: ["represents_company"],
-				},
-				callback: function (r) {
-					if (r.message) {
-						// Backend ko company ka naam bhi bhejenge
-						frappe.query_report.set_filter_value(
-							"counter_company",
-							r.message.represents_company || ""
-						);
-
-						frappe.query_report.refresh();
-					}
-				},
-			});
-		} else {
-			frappe.query_report.set_filter_value("counter_company", "");
-			frappe.query_report.refresh();
-		}
-	},
-},
-{
-	fieldname: "counter_company",
-	label: __("Counter Company"),
-	fieldtype: "Data",
-	hidden: 1,
-},
+			// get_query: function () {
+			// 	return {
+			// 		filters: {
+			// 			disabled: 0
+			// 		}
+			// 	};
+			// }
+		},
+		{
+			fieldname: "counter_company",
+			label: __("Counter Company"),
+			fieldtype: "Data",
+			hidden: 1,
+		},
 		{
 			fieldname: "filter_based_on",
 			label: __("Filter Based On"),

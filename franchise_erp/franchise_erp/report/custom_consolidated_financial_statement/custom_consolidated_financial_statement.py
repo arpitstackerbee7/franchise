@@ -52,10 +52,15 @@ def execute(filters=None):
 
 	# Counter se Company nikalo
 	if filters.get("counter"):
+		# filters.counter_company = frappe.db.get_value(
+		# 	"Customer",
+		# 	filters.get("counter"),
+		# 	"represents_company",
+		# )
 		filters.counter_company = frappe.db.get_value(
-			"Customer",
+			"Counter",
 			filters.get("counter"),
-			"represents_company",
+			"name"
 		)
 	else:
 		filters.counter_company = None
@@ -343,9 +348,9 @@ def get_company_columns(companies, filters):
 
     if not counter_company and filters.get("counter"):
         counter_company = frappe.db.get_value(
-            "Customer",
+            "Counter",
             filters.get("counter"),
-            "represents_company",
+            "name",
         )
 
     for company in companies:
