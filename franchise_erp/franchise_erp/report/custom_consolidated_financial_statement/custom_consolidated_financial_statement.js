@@ -64,13 +64,13 @@ frappe.query_reports["Custom Consolidated Financial Statement"] = {
 			options: "Counter",
 			reqd: 0,
 
-			// get_query: function () {
-			// 	return {
-			// 		filters: {
-			// 			disabled: 0
-			// 		}
-			// 	};
-			// }
+			get_query: function () {
+				return {
+					filters: {},
+				};
+			},
+
+			only_select: 1,
 		},
 		{
 			fieldname: "counter_company",
