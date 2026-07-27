@@ -91,6 +91,10 @@ class StockBalanceReport:
 			"out_qty",
 			"out_val",
 			"reserved_stock",
+			"val_rate",
+            "std_rate",
+            "wsp_rate",
+            "mrp_rate",
 		]
 
 		total_row = frappe._dict()
