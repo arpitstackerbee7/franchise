@@ -75,6 +75,12 @@ def get_columns(filters):
 			"width": 180,
 		},
 		{
+			"label": _("Sup Design No."),
+			"fieldname": "custom_sup_design_no",
+			"fieldtype": "Data",
+			"width": 140,
+		},
+		{
 			"label": _("Required Quantity"),
 			"fieldname": "required_qty",
 			"fieldtype": "Float",
@@ -108,6 +114,8 @@ def get_data(data, filters):
 	subcontracted_items = get_subcontract_order_supplied_item(
 		filters.order_type, orders_name
 	)
+	item_codes = list({item.item_code for item in subcontracted_items})
+	sup_design_map = get_item_sup_design_map(item_codes)
 
 	for item in subcontracted_items:
 		for order in orders:
@@ -122,12 +130,25 @@ def get_data(data, filters):
 					"status": order.status,
 					"fg_item_code": item.item_code,
 					"item_name": item.item_name,
+					"custom_sup_design_no": sup_design_map.get(item.item_code),
 					"required_qty": item.qty,
 					"received_qty": item.received_qty,
 					"pending_qty": item.qty - item.received_qty,
 				}
 
 				data.append(row)
+
+def get_item_sup_design_map(item_codes):
+	if not item_codes:
+		return {}
+ 
+	items = frappe.get_all(
+		"Item",
+		filters=[("name", "in", item_codes)],
+		fields=["name", "custom_sup_design_no"],
+	)
+ 
+	return {item.name: item.custom_sup_design_no for item in items}
 
 
 def get_subcontract_orders(filters):
