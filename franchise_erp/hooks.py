@@ -845,11 +845,5 @@ fixtures = [
                 "Date Range"
             ]]
         ]
-    },
-        {
-        "dt": "Print Format",
-        "filters": [
-            ["name", "=", "BOM Costing Sheet"]
-        ]
     }
 ]
