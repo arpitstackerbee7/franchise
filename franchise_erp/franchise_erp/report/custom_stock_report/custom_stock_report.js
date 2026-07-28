@@ -142,36 +142,42 @@ frappe.query_reports["Custom Stock Report"] = {
 
 	formatter: function (value, row, column, data, default_formatter) {
 
-		// Image Column
-		if (column.fieldname === "image" && value) {
-			return `
-				<div style="display:flex;align-items:center;justify-content:center;height:100%;">
-					<img src="${value}" style="height:60px;width:60px;object-fit:cover;border-radius:4px;">
-				</div>
-			`;
-		}
+    // Image Column
+    if (column.fieldname === "image" && value) {
+        return `
+            <div style="display:flex;align-items:center;justify-content:center;height:100%;">
+                <img src="${value}" style="height:60px;width:60px;object-fit:cover;border-radius:4px;">
+            </div>
+        `;
+    }
 
-		// Serial Number Column
-		if (column.fieldname === "serial_no" && data && data.serial_no) {
-			return `
-				<a href="#" class="show-serials"
-					data-serials="${encodeURIComponent(data.serial_no)}">
-					View Serial Numbers (${data.serial_count || 0})
-				</a>
-			`;
-		}
+    // Serial Number Column
+    if (column.fieldname === "serial_no" && data && data.serial_no) {
+        return `
+            <a href="#" class="show-serials"
+                data-serials="${encodeURIComponent(data.serial_no)}">
+                View Serial Numbers (${data.serial_count || 0})
+            </a>
+        `;
+    }
 
-		value = default_formatter(value, row, column, data);
+    value = default_formatter(value, row, column, data);
 
-		if (column.fieldname == "out_qty" && data && data.out_qty > 0) {
-			value = "<span style='color:red'>" + value + "</span>";
-		} else if (column.fieldname == "in_qty" && data && data.in_qty > 0) {
-			value = "<span style='color:green'>" + value + "</span>";
-		}
+    // Check if this is the Total row
+    let is_total_row = data && data.item_name === __("Total");
 
-		return value;
-	},
+    if (column.fieldname == "out_qty" && data && data.out_qty > 0) {
+        value = "<span style='color:red'>" + value + "</span>";
+    } else if (column.fieldname == "in_qty" && data && data.in_qty > 0) {
+        value = "<span style='color:green'>" + value + "</span>";
+    }
 
+    if (is_total_row) {
+        value = "<b>" + value + "</b>";
+    }
+
+    return value;
+},
 	after_datatable_render: function (datatable_obj) {
 		datatable_obj.options.cellHeight = 70;
 		datatable_obj.refresh();
