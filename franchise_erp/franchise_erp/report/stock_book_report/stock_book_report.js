@@ -31,7 +31,16 @@ frappe.query_reports["Stock Book Report"] = {
 				<img src="${value}" style="height:60px;width:60px;object-fit:cover;border-radius:4px;">
 			</div>`;
 		}
-		return default_formatter(value, row, column, data);
+
+		value = default_formatter(value, row, column, data);
+
+		let is_total_row = data && data.party_name === __("Total");
+
+		if (is_total_row) {
+			value = "<b>" + value + "</b>";
+		}
+
+		return value;
 	},
 
 	after_datatable_render: function (datatable_obj) {
