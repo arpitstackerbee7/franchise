@@ -544,15 +544,20 @@ class StockBalanceReport:
 			row.mrp_rate = price_map.get(row.item_code, {}).get("MRP", 0)
 
 	def set_supplier_name(self):
-		item_codes = list({row.item_code for row in self.data if row.item_code})
+		item_warehouse_pairs = {
+			(row.item_code, row.warehouse) for row in self.data if row.item_code
+		}
 
-		if not item_codes:
+		if not item_warehouse_pairs:
 			return
 
-		data = frappe.db.sql(
+		item_codes = list({item for item, _ in item_warehouse_pairs})
+
+		pr_data = frappe.db.sql(
 			"""
 			SELECT
 				pri.item_code,
+				pri.warehouse,
 				pr.supplier,
 				pr.posting_date
 			FROM `tabPurchase Receipt Item` pri
@@ -563,24 +568,53 @@ class StockBalanceReport:
 				AND pri.item_code IN %(items)s
 			ORDER BY
 				pri.item_code,
+				pri.warehouse,
 				pr.posting_date DESC,
 				pr.creation DESC
 			""",
-			{"items": tuple(item_codes)},
+			{"items": item_codes},
+			as_dict=True,
+		)
+
+		pi_data = frappe.db.sql(
+			"""
+			SELECT
+				pii.item_code,
+				pii.warehouse,
+				pi.supplier,
+				pi.posting_date
+			FROM `tabPurchase Invoice Item` pii
+			INNER JOIN `tabPurchase Invoice` pi
+				ON pi.name = pii.parent
+			WHERE
+				pi.docstatus = 1
+				AND pi.update_stock = 1
+				AND pii.item_code IN %(items)s
+			ORDER BY
+				pii.item_code,
+				pii.warehouse,
+				pi.posting_date DESC,
+				pi.creation DESC
+			""",
+			{"items": item_codes},
 			as_dict=True,
 		)
 
 		item_map = {}
 
-		for d in data:
-			if d.item_code not in item_map:
-				item_map[d.item_code] = {
-					"supplier": d.supplier,
-					"last_stock_in_date": d.posting_date,
-				}
+		# Pehle fallback (PI) se bharo
+		for d in pi_data:
+			key = (d.item_code, d.warehouse)
+			if key not in item_map:
+				item_map[key] = {"supplier": d.supplier, "last_stock_in_date": d.posting_date}
+
+		# Fir PR se overwrite (PR ko priority)
+		for d in pr_data:
+			key = (d.item_code, d.warehouse)
+			item_map[key] = {"supplier": d.supplier, "last_stock_in_date": d.posting_date}
 
 		for row in self.data:
-			info = item_map.get(row.item_code, {})
+			info = item_map.get((row.item_code, row.warehouse), {})
 			row.party_name = info.get("supplier")
 			row.last_stock_in_date = info.get("last_stock_in_date")
 	
