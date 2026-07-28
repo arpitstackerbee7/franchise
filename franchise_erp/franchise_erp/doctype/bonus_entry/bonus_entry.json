@@ -1,0 +1,162 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-28 12:06:40.136197",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_veid",
+  "employee",
+  "employee_name",
+  "salary_structure",
+  "amended_from",
+  "column_break_fvty",
+  "bonus_year",
+  "month",
+  "attendance_details_section",
+  "days_in_month",
+  "present_days",
+  "column_break_hnlv",
+  "bonus_wage_rate",
+  "bonus_percent",
+  "section_break_njfc",
+  "monthly_bonus_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_veid",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fetch_if_empty": 1,
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "salary_structure",
+   "fieldtype": "Link",
+   "label": "Salary Structure",
+   "options": "Salary Structure",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Bonus Entry",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "bonus_year",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Bonus Year",
+   "options": "2025-2026\n2026-2027",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_fvty",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "month",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Month",
+   "options": "Oct\nNov\nDec\nJan\nFeb\nMar\nApr\nMay\nJun\nJul\nAug\nSep",
+   "reqd": 1
+  },
+  {
+   "fieldname": "attendance_details_section",
+   "fieldtype": "Section Break",
+   "label": "Attendance Details"
+  },
+  {
+   "fieldname": "days_in_month",
+   "fieldtype": "Int",
+   "label": "Days in Month",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "present_days",
+   "fieldtype": "Float",
+   "label": "Present Days",
+   "non_negative": 1,
+   "precision": "2"
+  },
+  {
+   "fetch_from": "salary_structure.custom_bonus_wage_rate",
+   "fieldname": "bonus_wage_rate",
+   "fieldtype": "Currency",
+   "label": "Bonus Wage Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_hnlv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "salary_structure.custom_bonus_percent",
+   "fieldname": "bonus_percent",
+   "fieldtype": "Percent",
+   "label": "Bonus Percent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_njfc",
+   "fieldtype": "Section Break",
+   "label": "Bonus Calculation"
+  },
+  {
+   "fieldname": "monthly_bonus_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Monthly Bonus Amount",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-07-28 14:26:52.025206",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Bonus Entry",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
