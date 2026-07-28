@@ -29,7 +29,7 @@ class BonusEntry(Document):
             rate, percent = frappe.db.get_value(
                 "Salary Structure",
                 self.salary_structure,
-                ["bonus_wage_rate", "bonus_percent"]
+                ["custom_bonus_wage_rate", "custom_bonus_percent"]
             )
             self.bonus_wage_rate = rate or 0
             self.bonus_percent = percent or 0
