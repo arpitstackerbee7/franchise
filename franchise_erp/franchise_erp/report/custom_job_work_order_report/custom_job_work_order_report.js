@@ -7,7 +7,8 @@ frappe.query_reports["Custom Job Work Order Report"] = {
 			label: __("Order Type"),
 			fieldname: "order_type",
 			fieldtype: "Select",
-			options: ["Purchase Order", "Subcontracting Order"],
+			// options: ["Purchase Order", "Subcontracting Order"],
+			options: ["Subcontracting Order"],
 			default: "Subcontracting Order",
 		},
 		{
@@ -15,7 +16,6 @@ frappe.query_reports["Custom Job Work Order Report"] = {
 			label: __("Supplier"),
 			fieldtype: "Link",
 			options: "Supplier",
-			reqd: 1,
 		},
 		{
 			fieldname: "from_date",
@@ -32,4 +32,16 @@ frappe.query_reports["Custom Job Work Order Report"] = {
 			reqd: 1,
 		},
 	],
+
+	onload: function (report) {
+		frappe.db.get_list("Supplier", {
+			fields: ["name"],
+			limit: 1,
+			order_by: "creation asc"
+		}).then((r) => {
+			if (r.length && !report.get_filter_value("supplier")) {
+				report.set_filter_value("supplier", r[0].name);
+			}
+		});
+	}
 };
