@@ -16,6 +16,11 @@ frappe.query_reports["Custom Job Work Order Report"] = {
 			label: __("Supplier"),
 			fieldtype: "Link",
 			options: "Supplier",
+			get_query: function() {
+				return {
+					order_by: "name asc"
+				};
+			}
 		},
 		{
 			fieldname: "from_date",
@@ -33,13 +38,13 @@ frappe.query_reports["Custom Job Work Order Report"] = {
 		},
 	],
 
-	onload: function (report) {
+	onload: function(report) {
 		frappe.db.get_list("Supplier", {
 			fields: ["name"],
 			limit: 1,
-			order_by: "creation asc"
+			order_by: "name asc"
 		}).then((r) => {
-			if (r.length && !report.get_filter_value("supplier")) {
+			if (r.length) {
 				report.set_filter_value("supplier", r[0].name);
 			}
 		});
