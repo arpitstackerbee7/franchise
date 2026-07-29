@@ -22,7 +22,7 @@ def set_comp_off_expiry(doc, method=None):
     )
 
     allocation.db_set(
-        "custom_is_expired",
+        "custom_custom_expired",
         0
     )
 
@@ -32,7 +32,7 @@ def expire_comp_off_allocations():
         "Leave Allocation",
         filters={
             "leave_type": "Compensatory Off",
-            "custom_is_expired": 0,
+            "custom_custom_expired": 0,
             "custom_expiry_date": ["<=", today()],
             "docstatus": 1
         },
@@ -47,7 +47,7 @@ def expire_comp_off_allocations():
         frappe.db.set_value(
             "Leave Allocation",
             allocation.name,
-            "custom_is_expired",
+            "custom_custom_expired",
             1
         )
 
@@ -56,7 +56,7 @@ def expire_comp_off_allocations():
 def validate_comp_off_submission(doc, method=None):
 
     deadline = get_datetime(
-        f"{add_days(doc.work_end_date, 1)} 17:00:00"
+        f"{add_days(doc.work_end_date, 1)} 14:00:00"
     )
 
     if get_datetime() > deadline:
