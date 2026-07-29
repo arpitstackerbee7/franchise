@@ -164,7 +164,7 @@ class IncomingLogistics(Document):
             "incoming_logistics": self.name,
             "transport_service_item": transport_item,
             "document_date": self.lr_date,
-            "status": self.status,
+            "status": 'Submitted',
             "lr_entry_date": self.lr_date,
             "lr_quantity": self.lr_quantity,
             "declaration_amount": self.total_amount or 0,

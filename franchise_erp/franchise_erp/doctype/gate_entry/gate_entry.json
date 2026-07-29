@@ -226,6 +226,7 @@
   },
   {
    "allow_on_submit": 1,
+   "default": "Submitted",
    "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -354,7 +355,7 @@
    "link_fieldname": "custom_bulk_gate_entry"
   }
  ],
- "modified": "2026-07-15 18:28:17.982930",
+ "modified": "2026-07-29 15:22:03.800864",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
