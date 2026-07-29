@@ -7,25 +7,27 @@
 import frappe
 
 # Month order for Bonus Year (Oct to Sept)
-MONTH_ORDER = ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"]
+MONTH_ORDER = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
 def execute(filters=None):
     filters = filters or {}
-    columns = get_columns()
+    columns = get_columns(filters)
     data = get_data(filters)
     return columns, data
 
 
-def get_columns():
+def get_columns(filters):
     columns = [
         {"label": "Employee", "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "width": 120},
         {"label": "Employee Name", "fieldname": "employee_name", "fieldtype": "Data", "width": 150},
         {"label": "Salary Structure", "fieldname": "salary_structure", "fieldtype": "Link", "options": "Salary Structure", "width": 130},
     ]
+    selected_month = filters.get("month")
+    months_to_show = [selected_month] if selected_month else MONTH_ORDER
 
     # Month-wise PD and Bonus columns
-    for month in MONTH_ORDER:
+    for month in months_to_show:
         columns.append({
             "label": f"{month}-PD",
             "fieldname": f"{month.lower()}_pd",
@@ -66,6 +68,9 @@ def get_data(filters):
     if filters.get("department"):
         conditions.append("emp.department = %(department)s")
         values["department"] = filters.get("department")
+    if filters.get("month"):
+        conditions.append("be.month = %(month)s")
+        values["month"] = filters.get("month")
 
     condition_str = " AND ".join(conditions)
 
