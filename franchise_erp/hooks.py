@@ -240,18 +240,22 @@ doc_events = {
         ],
         "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
     },
-    "Subcontracting Receipt": {
-        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-        "validate": [
-    "franchise_erp.custom.back_date_validation.validate_back_date",
-    "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
-],
-        "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
-        "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel",
-        "on_submit": "franchise_erp.custom.subcontracting_receipt.recalculate_tax_on_service_cost",
-        "on_save": "franchise_erp.custom.subcontracting_receipt.recalculate_tax_on_service_cost",
+"Subcontracting Receipt": {
+    "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
 
-    },
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+        "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
+    ],
+
+    "before_save": [
+        "franchise_erp.custom.subcontracting_receipt.recalculate_tax_on_service_cost",
+    ],
+
+    "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
+
+    "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel",
+},
     "Leave Application":{
         "on_submit": "franchise_erp.custom.leave_application.update_late_log_on_short_leave"
     },
@@ -342,7 +346,8 @@ doctype_js = {
     "Shipment": "public/js/shipment.js",
     # "Serial No": "public/js/serial_no.js",    
     "Employee Checkin": "public/js/employee_checkin.js",
-    "Leave Application": "public/js/leave_application.js"
+    "Leave Application": "public/js/leave_application.js",
+    "Subcontracting Order": "public/js/job_work_order.js"
 
 }
 
