@@ -1,3 +1,6 @@
+
+let scan_in_progress = false;
+
 frappe.ui.form.on("Subcontracting Receipt", {
     refresh(frm) {
 
@@ -11,7 +14,6 @@ frappe.ui.form.on("Subcontracting Receipt", {
             "custom_gate_out_applicable",
             (r) => {
                 if (r && r.custom_gate_out_applicable) {
-                    // ✅ sirf tab button dikhega
                     frm.add_custom_button(
                         __("Incoming Logistics"),
                         () => {
@@ -33,43 +35,35 @@ frappe.ui.form.on("Subcontracting Receipt", {
                 }
             }
         );
-    }
-});
-
-frappe.ui.form.on("Subcontracting Receipt", {
-    refresh(frm) {
-        // Disable rename action
+        (frm.doc.items || []).forEach(row => {
+            toggle_qty_editable(frm, row.doctype, row.name, row.is_batch_item);
+        });
         frm.disable_rename = true;
 
         // Remove pencil icon
         $(".page-title .editable-title").css("pointer-events", "none");
         calculate_total_service_cost(frm);
     },
-
-        onload(frm) {
-        // !frm.doc.amended_from add karne se Amend karne par qty 0 nahi hogi
+    onload(frm) {
         if (frm.is_new() && !frm.doc.amended_from) {
             frappe.after_ajax(() => {
                 if (frm.doc.items) {
-                    frm.doc.items.forEach(function(row) {
+                    frm.doc.items.forEach(function (row) {
                         row.received_qty = 0;
                         row.qty = 0;
                     });
                     frm.refresh_field("items");
                 }
             });
-            
+
         }
+        frm.fields_dict.items.grid.get_field('custom_gate_entry').get_query = function () {
+            return {
+                query: "franchise_erp.custom.subcontracting_receipt.get_available_gate_entries"
+            };
+        };
     },
-});
-
-
-
-let scan_in_progress = false;
-
-frappe.ui.form.on("Subcontracting Receipt", {
-
-    custom_scan_barcode: async function(frm) {
+    custom_scan_barcode: async function (frm) {
 
         if (scan_in_progress) return;
 
@@ -191,7 +185,7 @@ frappe.ui.form.on("Subcontracting Receipt", {
             // UPDATE QTY BASED ON SERIAL COUNT
             // -------------------------
 
-           await frappe.model.set_value(
+            await frappe.model.set_value(
                 row.doctype,
                 row.name,
                 "qty",
@@ -226,8 +220,9 @@ frappe.ui.form.on("Subcontracting Receipt", {
         }
 
     }
-
 });
+
+
 
 
 async function increase_qty(frm, row) {
@@ -285,27 +280,7 @@ function update_total_qty(frm) {
 
 }
 
-// frappe.ui.form.on("Subcontracting Receipt", {
-//     setup(frm) {
-//         frm.set_query("custom_gate_entry", () => {
-//             return {
-//                 filters: {
-//                     consignor: frm.doc.supplier,
-//                     type: "Job Receipt"
-//                 }
-//             };
-//         });
-//     }
-// });
-frappe.ui.form.on('Subcontracting Receipt', {
-    onload: function(frm) {
-        frm.fields_dict.items.grid.get_field('custom_gate_entry').get_query = function() {
-            return {
-                query: "franchise_erp.custom.subcontracting_receipt.get_available_gate_entries"
-            };
-        };
-    }
-});
+
 //By Jaya
 frappe.ui.form.on("Subcontracting Receipt Item", {
     async item_code(frm, cdt, cdn) {
@@ -322,43 +297,34 @@ frappe.ui.form.on("Subcontracting Receipt Item", {
         // Apply editable / read-only logic
         toggle_qty_editable(frm, cdt, cdn, is_batch);
     },
-    service_cost_per_qty: function(frm) {
-		calculate_total_service_cost(frm);
-	},
+    service_cost_per_qty: function (frm) {
+        calculate_total_service_cost(frm);
+    },
 
-	qty: function(frm) {
-		calculate_total_service_cost(frm);
-	},
+    qty: function (frm) {
+        calculate_total_service_cost(frm);
+    },
 
-	items_add: function(frm) {
-		calculate_total_service_cost(frm);
-	},
+    items_add: function (frm) {
+        calculate_total_service_cost(frm);
+    },
 
-	items_remove: function(frm) {
-		calculate_total_service_cost(frm);
-	}
-});
-
-function calculate_total_service_cost(frm) {
-	let total = 0;
-
-	(frm.doc.items || []).forEach(function(row) {
-		total += flt(row.service_cost_per_qty || 0) * flt(row.qty || 0);
-	});
-
-	frm.set_value("custom_total_service_cost", total);
-}
-
-frappe.ui.form.on("Subcontracting Receipt", {
-    refresh(frm) {
-        // Apply logic on load/refresh for all rows
-        (frm.doc.items || []).forEach(row => {
-            toggle_qty_editable(frm, row.doctype, row.name, row.is_batch_item);
-        });
+    items_remove: function (frm) {
+        calculate_total_service_cost(frm);
     }
 });
 
-// 🔹 Common function
+function calculate_total_service_cost(frm) {
+    let total = 0;
+
+    (frm.doc.items || []).forEach(function (row) {
+        total += flt(row.service_cost_per_qty || 0) * flt(row.qty || 0);
+    });
+
+    frm.set_value("custom_total_service_cost", total);
+}
+
+
 function toggle_qty_editable(frm, cdt, cdn, is_batch) {
     // Grid-level control (important)
     frm.fields_dict["items"].grid.update_docfield_property(

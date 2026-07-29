@@ -348,35 +348,77 @@ def get_available_gate_entries(doctype, txt, searchfield, start, page_len, filte
         LIMIT %s, %s
     """, ("%{}%".format(txt), start, page_len))
 
-
-
-
-import frappe
+import json
 from frappe.utils import flt
 
-def recalculate_tax_on_service_cost(doc, method):
-    if not doc.taxes:
-        return
 
+def recalculate_tax_on_service_cost(doc, method=None):
     total_service_cost = sum(
-        flt(item.service_cost_per_qty) * flt(item.qty) for item in doc.items
+        flt(row.service_cost_per_qty) * flt(row.qty)
+        for row in (doc.items or [])
     )
 
-    running_total = total_service_cost
+    doc.custom_total_service_cost = total_service_cost
+
+    if not doc.taxes:
+        doc.total_taxes = 0
+        doc.grand_total = total_service_cost
+        doc.base_grand_total = total_service_cost
+        return
+
     total_taxes = 0
+    running_total = total_service_cost
 
     for tax in doc.taxes:
-        if tax.charge_type in ("On Net Total", "On Previous Row Total"):
-            tax_amount = total_service_cost * flt(tax.rate) / 100
-            total_taxes += tax_amount
-            running_total += tax_amount
+        tax_amount = 0
+        effective_rate = flt(tax.rate)
 
-            frappe.db.set_value("India Compliance Taxes and Charges", tax.name, {
-                "tax_amount": tax_amount,
-                "base_total": running_total
-            })
+        try:
+            item_wise_rates = json.loads(
+                tax.item_wise_tax_rates or "{}"
+            )
+        except (TypeError, ValueError):
+            item_wise_rates = {}
 
-    frappe.db.set_value("Subcontracting Receipt", doc.name, {
-        "total_taxes": total_taxes,
-        "base_grand_total": total_service_cost + total_taxes,
-    })
+        if not effective_rate and item_wise_rates:
+            rates = [
+                flt(rate)
+                for rate in item_wise_rates.values()
+                if flt(rate)
+            ]
+
+            if rates:
+                effective_rate = rates[0]
+
+        if tax.charge_type == "On Net Total":
+            tax_amount = (
+                total_service_cost * effective_rate / 100
+            )
+
+        elif tax.charge_type == "On Previous Row Total":
+            tax_amount = (
+                running_total * effective_rate / 100
+            )
+
+        tax.tax_amount = tax_amount
+
+        if tax.meta.has_field("base_tax_amount"):
+            tax.base_tax_amount = tax_amount
+
+        total_taxes += tax_amount
+        running_total += tax_amount
+
+        # THIS controls Estimated Taxes -> Total column
+        tax.base_total = running_total
+
+        if tax.meta.has_field("total"):
+            tax.total = running_total
+
+    doc.total_taxes = total_taxes
+
+    if doc.meta.has_field("base_total_taxes"):
+        doc.base_total_taxes = total_taxes
+
+    # Grand Total = Service Cost + GST
+    doc.grand_total = total_service_cost + total_taxes
+    doc.base_grand_total = total_service_cost + total_taxes
