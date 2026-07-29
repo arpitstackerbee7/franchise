@@ -42,7 +42,7 @@ def process_checkins_for_employee(employee):
 	checkins = frappe.get_all(
 		"Employee Checkin",
 		filters={"employee": employee, "attendance": ["is", "not set"]},
-		fields=["name", "employee_name", "time", "log_type", "shift"],
+		fields=["name", "employee", "employee_name", "time", "log_type", "shift"],
 		order_by="time asc",
 	)
 	if not checkins:
@@ -75,8 +75,39 @@ def process_checkins_for_employee(employee):
 
 		flag_if_stale(current)
 		i += 1
+
+
+def is_before_joining(employee, attendance_date):
+	joining_date = frappe.db.get_value("Employee", employee, "date_of_joining")
+	return bool(joining_date and attendance_date < joining_date)
+ 
+ 
+def flag_invalid_checkin(checkin, reason):
+	already_flagged = frappe.db.get_value(
+		"Employee Checkin", checkin.name, "custom_flagged_for_review"
+	)
+	if already_flagged:
+		return
+	frappe.db.set_value("Employee Checkin", checkin.name, "custom_flagged_for_review", 1)
+	frappe.log_error(
+		title=f"Invalid Employee Checkin: {checkin.employee}",
+		message=f"Checkin {checkin.name} at {checkin.time}: {reason}",
+	)
+
+
 def create_or_update_attendance(employee, in_checkin, out_checkin):
 	attendance_date = getdate(in_checkin.time)
+	if is_before_joining(employee, attendance_date):
+		flag_invalid_checkin(
+			in_checkin,
+			f"Attendance date {attendance_date} employee ki joining date se pehle hai.",
+		)
+		flag_invalid_checkin(
+			out_checkin,
+			f"Attendance date {attendance_date} employee ki joining date se pehle hai.",
+		)
+		return
+	
 	working_hours = round(time_diff_in_hours(out_checkin.time, in_checkin.time), 2)
 
 	existing = frappe.db.exists(
@@ -122,20 +153,61 @@ def create_or_update_attendance(employee, in_checkin, out_checkin):
 def flag_if_stale(checkin):
 	age_hours = time_diff_in_hours(now_datetime(), checkin.time)
 	if age_hours < ORPHAN_THRESHOLD_HOURS:
-		return  
-
+		return
+ 
 	already_flagged = frappe.db.get_value(
 		"Employee Checkin", checkin.name, "custom_flagged_for_review"
 	)
-	if already_flagged:
+	if not already_flagged:
+		frappe.db.set_value("Employee Checkin", checkin.name, "custom_flagged_for_review", 1)
+		frappe.log_error(
+			title="Unpaired Employee Checkin",
+			message=(
+				f"Checkin {checkin.name} ({checkin.employee}, {checkin.log_type}) "
+				f"at {checkin.time} ko {ORPHAN_THRESHOLD_HOURS}+ hours se pair nahi mila. "
+				f"Absent mark kiya gaya."
+			),
+		)
+
+	mark_absent_for_orphan_checkin(checkin)
+
+def mark_absent_for_orphan_checkin(checkin):
+
+	attendance_date = getdate(checkin.time)
+
+	if is_before_joining(checkin.employee, attendance_date):
+		flag_invalid_checkin(
+			checkin,
+			f"Attendance date {attendance_date} employee ki joining date se pehle hai.",
+		)
 		return
 
-	frappe.db.set_value("Employee Checkin", checkin.name, "custom_flagged_for_review", 1)
-	frappe.log_error(
-		title="Unpaired Employee Checkin",
-		message=(
-			f"Checkin {checkin.name} ({checkin.employee}, {checkin.log_type}) "
-			f"at {checkin.time} ko {ORPHAN_THRESHOLD_HOURS}+ hours se pair nahi mila. "
-			f"Manual review chahiye."
-		),
+	existing = frappe.db.exists(
+		"Attendance",
+		{"employee": checkin.employee, "attendance_date": attendance_date, "docstatus": ["!=", 2]},
 	)
+
+	if existing:
+		frappe.db.set_value("Employee Checkin", checkin.name, "attendance", existing)
+		return
+
+	try:
+		att = frappe.new_doc("Attendance")
+		att.employee = checkin.employee
+		att.employee_name = checkin.employee_name
+		att.attendance_date = attendance_date
+		att.company = frappe.db.get_value("Employee", checkin.employee, "company")
+		att.shift = checkin.shift
+		att.status = "Absent"
+		att.working_hours = 0
+		att.insert(ignore_permissions=True)
+		att.submit()
+
+		frappe.db.set_value("Employee Checkin", checkin.name, "attendance", att.name)
+		frappe.db.commit()
+	except Exception:
+		frappe.db.rollback()
+		frappe.log_error(
+			title=f"Absent Marking Failed: {checkin.employee}",
+			message=frappe.get_traceback(),
+		)

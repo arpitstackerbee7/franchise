@@ -261,8 +261,9 @@ doc_events = {
     "Employee Checkin":{
         "after_insert": [
         "franchise_erp.custom.employee_checkin.process_late_entry",
-        "franchise_erp.custom.attendance.update_last_sync"
-    ]
+        "franchise_erp.custom.attendance.update_last_sync",
+    ],
+    "validate": "franchise_erp.overrides.employee_checkin.fix_shift_for_paired_checkin",
     },
     "Salary Component":{
         "validate": "franchise_erp.custom.salary_component.validate_short_leave_component"
@@ -305,9 +306,7 @@ doc_events = {
     # "Leave Encashment": {
     #     "validate": "franchise_erp.custom.custom_leave_encashment.override_leave_encashment_calculation"
     # },
-    "Employee Checkin": {
-        "validate": "franchise_erp.overrides.employee_checkin.fix_shift_for_paired_checkin"
-    },
+    
 
 
 }
