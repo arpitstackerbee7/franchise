@@ -38,15 +38,15 @@ frappe.query_reports["Custom Job Work Order Report"] = {
 		},
 	],
 
-	onload: function(report) {
-		frappe.db.get_list("Supplier", {
-			fields: ["name"],
-			limit: 1,
-			order_by: "name asc"
-		}).then((r) => {
-			if (r.length) {
-				report.set_filter_value("supplier", r[0].name);
-			}
-		});
-	}
+	// onload: function(report) {
+	// 	frappe.db.get_list("Supplier", {
+	// 		fields: ["name"],
+	// 		limit: 1,
+	// 		order_by: "name asc"
+	// 	}).then((r) => {
+	// 		if (r.length) {
+	// 			report.set_filter_value("supplier", r[0].name);
+	// 		}
+	// 	});
+	// }
 };
