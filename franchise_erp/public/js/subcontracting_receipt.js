@@ -43,6 +43,18 @@ frappe.ui.form.on("Subcontracting Receipt", {
         // Remove pencil icon
         $(".page-title .editable-title").css("pointer-events", "none");
         calculate_total_service_cost(frm);
+        if (frm.doc.docstatus !== 1) return;
+
+		frm.add_custom_button(__("Fabric Wastage Register"), function () {
+
+			frappe.new_doc("Fabric Wastage Register", {
+				subcontracting_receipt: frm.doc.name,
+				company: frm.doc.company,
+				supplier: frm.doc.supplier,
+				warehouse: frm.doc.supplier_warehouse
+			});
+
+		}, __("Create"));
     },
     onload(frm) {
         if (frm.is_new() && !frm.doc.amended_from) {

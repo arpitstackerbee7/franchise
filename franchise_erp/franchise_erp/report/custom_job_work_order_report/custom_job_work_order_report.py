@@ -150,32 +150,33 @@ def get_item_sup_design_map(item_codes):
  
 	return {item.name: item.custom_sup_design_no for item in items}
 
-
 def get_subcontract_orders(filters):
-	record_filters = [
-		["supplier", "=", filters.supplier],
-		["transaction_date", "<=", filters.to_date],
-		["transaction_date", ">=", filters.from_date],
-		["docstatus", "=", 1],
-	]
+    record_filters = [
+        ["transaction_date", ">=", filters.from_date],
+        ["transaction_date", "<=", filters.to_date],
+        ["docstatus", "=", 1],
+    ]
 
-	if filters.order_type == "Purchase Order":
-		record_filters.append(["is_old_subcontracting_flow", "=", 1])
+    if filters.get("supplier"):
+        record_filters.append(["supplier", "=", filters.supplier])
 
-	return frappe.get_all(
-		filters.order_type,
-		filters=record_filters,
-		fields=[
-			"name",
-			"purchase_order",
-			"supplier",
-			"supplier_name",
-			"company",
-			"transaction_date",
-			"base_grand_total",
-			"status",
-		],
-	)
+    if filters.order_type == "Purchase Order":
+        record_filters.append(["is_old_subcontracting_flow", "=", 1])
+
+    return frappe.get_all(
+        filters.order_type,
+        filters=record_filters,
+        fields=[
+            "name",
+            "purchase_order",
+            "supplier",
+            "supplier_name",
+            "company",
+            "transaction_date",
+            "base_grand_total",
+            "status",
+        ],
+    )
 
 
 def get_subcontract_order_supplied_item(order_type, orders):

@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-27 12:58:29.732165",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "color",
+  "fabric_sent_qty",
+  "standard_consumption",
+  "actual_wastage_qty",
+  "reason",
+  "column_break_iysd",
+  "size",
+  "top_fabrics",
+  "finished_qty_received",
+  "actual_consumption",
+  "uom"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Code",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Color",
+   "options": "Color"
+  },
+  {
+   "fieldname": "fabric_sent_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Fabric Sent Qty"
+  },
+  {
+   "fieldname": "standard_consumption",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Standard Consumption"
+  },
+  {
+   "default": "0",
+   "fieldname": "actual_wastage_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Actual Wastage Qty"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Reason"
+  },
+  {
+   "fieldname": "column_break_iysd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Size",
+   "options": "Size"
+  },
+  {
+   "fieldname": "top_fabrics",
+   "fieldtype": "Link",
+   "label": "Top Fabrics",
+   "options": "Top Fabric"
+  },
+  {
+   "fieldname": "finished_qty_received",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Finished Qty Received"
+  },
+  {
+   "fieldname": "actual_consumption",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Actual Consumption"
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-29 11:46:43.475561",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Fabric Wastage Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
