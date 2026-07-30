@@ -17,6 +17,8 @@
   "whatsapp_no",
   "incoming_logistics_users",
   "is_margin_calculate_on_dn",
+  "individual_sales_representative_incentives",
+  "counter_store_level_performance",
   "column_break_dltx",
   "item_name",
   "batch_uom",
@@ -190,13 +192,25 @@
    "fieldname": "is_margin_calculate_on_dn",
    "fieldtype": "Check",
    "label": "Is Margin Calculate On DN"
+  },
+  {
+   "fieldname": "individual_sales_representative_incentives",
+   "fieldtype": "Table",
+   "label": "Individual Sales Representative Incentives",
+   "options": "Individual Sales Representative Incentives"
+  },
+  {
+   "fieldname": "counter_store_level_performance",
+   "fieldtype": "Table",
+   "label": "Counter Store Level Performance",
+   "options": "Counter Store Level Performance"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-08 16:11:22.292600",
+ "modified": "2026-07-30 14:37:11.436530",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
