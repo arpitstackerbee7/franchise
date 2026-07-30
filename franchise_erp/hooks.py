@@ -347,7 +347,7 @@ doctype_js = {
     # "Serial No": "public/js/serial_no.js",    
     "Employee Checkin": "public/js/employee_checkin.js",
     "Leave Application": "public/js/leave_application.js",
-    "Subcontracting Order": "public/js/job_work_order.js"
+    # "Subcontracting Order": "public/js/job_work_order.js"
 
 }
 
