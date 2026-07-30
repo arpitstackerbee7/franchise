@@ -173,3 +173,5 @@ def apply_payment_days_adjustment(doc, method):
 
     # Always calculate from original value
     doc.payment_days = flt(doc.original_payment_days) + adjustment
+
+    doc.calculate_net_pay()
