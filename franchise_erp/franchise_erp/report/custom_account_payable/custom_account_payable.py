@@ -250,6 +250,8 @@ def execute(filters=None):
             "running_balance": running_balance,
             "is_subtotal":     1,
         })
+    if output and output[-1].get("voucher_no") == "★ Total Total ★":
+        output.pop()
 
     result = list(result)
     result[0] = columns

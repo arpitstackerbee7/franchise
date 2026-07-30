@@ -161,17 +161,35 @@ def apply_leave_rule_deductions(doc, method):
                     "status": "Deducted"
                 }
             )
-
+#Adjust Payment Days on the Salary Slip
 from frappe.utils import flt
 
 def apply_payment_days_adjustment(doc, method):
     adjustment = flt(doc.payment_days_adjustment or 0)
-
-    # Store ERPNext calculated value only once
+ 
+    # Store ERPNext's original Payment Days only once
     if not doc.original_payment_days:
         doc.original_payment_days = flt(doc.payment_days)
-
-    # Always calculate from original value
+ 
+    # Recalculate from original value, not the already-adjusted one
     doc.payment_days = flt(doc.original_payment_days) + adjustment
-
+ 
+    # Payment Days cannot go below 0 ...
+    if doc.payment_days < 0:
+        doc.payment_days = 0
+ 
+    # ... or above Total Working Days
+    if doc.payment_days > flt(doc.total_working_days):
+        doc.payment_days = flt(doc.total_working_days)
+ 
+    # Absent Days = remainder, so totals still add up to Working Days
+    doc.absent_days = (
+        flt(doc.total_working_days)
+        - doc.payment_days
+        - flt(doc.leave_without_pay)
+    )
+ 
+    if doc.absent_days < 0:
+        doc.absent_days = 0
+ 
     doc.calculate_net_pay()
