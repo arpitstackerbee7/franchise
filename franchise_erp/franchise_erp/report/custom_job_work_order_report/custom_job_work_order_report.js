@@ -16,11 +16,14 @@ frappe.query_reports["Custom Job Work Order Report"] = {
 			label: __("Supplier"),
 			fieldtype: "Link",
 			options: "Supplier",
+<<<<<<< Updated upstream
 			get_query: function() {
 				return {
 					order_by: "name asc"
 				};
 			}
+=======
+>>>>>>> Stashed changes
 		},
 		{
 			fieldname: "from_date",
