@@ -204,3 +204,5 @@ def set_tax_rows_on_net_total(doc, method=None):
     for tax in doc.get("taxes") or []:
         if tax.charge_type in ("Actual", "On Previous Row Total"):
             tax.charge_type = "On Net Total"
+        
+

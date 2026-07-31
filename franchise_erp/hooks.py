@@ -230,16 +230,21 @@ doc_events = {
     "Sales Person":{
         "validate": "franchise_erp.custom.sales_person.validate_unique_custom_user"
     },
-    "Stock Entry":{
-        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-        "validate": [
-            "franchise_erp.custom.back_date_validation.validate_back_date",
-            "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
-            # "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_wip_return_stock_entry"
-             "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_transfer_in_stock_entry"
-        ],
-        "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
-    },
+"Stock Entry": {
+    "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+
+    "before_validate": [
+        "franchise_erp.custom.subcontracting_order.set_tax_rows_on_net_total"
+    ],
+
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+        "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
+        "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_transfer_in_stock_entry"
+    ],
+
+    "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
+},
 "Subcontracting Receipt": {
     "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
 
