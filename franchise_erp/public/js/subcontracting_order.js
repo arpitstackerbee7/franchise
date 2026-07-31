@@ -1,139 +1,179 @@
-// frappe.ui.form.on("Subcontracting Order", {
-//     refresh(frm) {
-//         if (frm.doc.docstatus !== 0) {
-//             return;
-//         }
+frappe.ui.form.on("Subcontracting Order", {
+    refresh(frm) {
+        if (frm.doc.docstatus !== 0) {
+            return;
+        }
 
-//         set_all_item_tax_templates(frm);
+        set_all_item_tax_templates(frm);
 
-//         if (
-//             frm.doc.purchase_order &&
-//             frm.doc.company &&
-//             !frm.doc.taxes_and_charges
-//         ) {
-//             set_taxes_and_charges(frm);
-//         }
-//     },
+        if (
+            frm.doc.purchase_order &&
+            frm.doc.company &&
+            !frm.doc.taxes_and_charges
+        ) {
+            set_taxes_and_charges(frm);
+        } else {
+            set_tax_rows_on_net_total(frm);
+        }
+    },
 
-//     purchase_order(frm) {
-//         if (frm.doc.purchase_order && frm.doc.company) {
-//             set_taxes_and_charges(frm);
-//         }
-//     },
+    purchase_order(frm) {
+        if (frm.doc.purchase_order && frm.doc.company) {
+            set_taxes_and_charges(frm);
+        }
+    },
 
-//     company(frm) {
-//         if (!frm.doc.company) {
-//             return;
-//         }
+    company(frm) {
+        if (!frm.doc.company) {
+            return;
+        }
 
-//         set_all_item_tax_templates(frm);
+        set_all_item_tax_templates(frm);
 
-//         if (frm.doc.purchase_order) {
-//             set_taxes_and_charges(frm);
-//         }
-//     }
-// });
+        if (frm.doc.purchase_order) {
+            set_taxes_and_charges(frm);
+        }
+    },
 
+    taxes_and_charges(frm) {
+        setTimeout(() => {
+            set_tax_rows_on_net_total(frm);
+        }, 500);
+    },
 
-// frappe.ui.form.on("Subcontracting Order Item", {
-//     item_code(frm, cdt, cdn) {
-//         set_item_tax_template(frm, cdt, cdn);
-//     },
-
-//     rate(frm, cdt, cdn) {
-//         set_item_tax_template(frm, cdt, cdn);
-//     }
-// });
-
-
-// function set_all_item_tax_templates(frm) {
-//     (frm.doc.items || []).forEach(row => {
-//         if (row.item_code) {
-//             set_item_tax_template(
-//                 frm,
-//                 row.doctype,
-//                 row.name
-//             );
-//         }
-//     });
-// }
+    validate(frm) {
+        set_tax_rows_on_net_total(frm);
+    }
+});
 
 
-// function set_item_tax_template(frm, cdt, cdn) {
-//     const row = locals[cdt][cdn];
+frappe.ui.form.on("Subcontracting Order Item", {
+    item_code(frm, cdt, cdn) {
+        set_item_tax_template(frm, cdt, cdn);
+    },
 
-//     if (!row) {
-//         return;
-//     }
-
-//     if (!row.item_code || !frm.doc.company) {
-//         if (row.item_tax_template) {
-//             frappe.model.set_value(
-//                 cdt,
-//                 cdn,
-//                 "item_tax_template",
-//                 ""
-//             );
-//         }
-
-//         return;
-//     }
-
-//     frappe.call({
-//         method:
-//             "franchise_erp.event.subcontracting_order.get_item_tax_template",
-
-//         args: {
-//             item_code: row.item_code,
-//             rate: row.rate || 0,
-//             company: frm.doc.company
-//         },
-
-//         callback(r) {
-//             const template = r.message || "";
-
-//             if (template !== row.item_tax_template) {
-//                 frappe.model.set_value(
-//                     cdt,
-//                     cdn,
-//                     "item_tax_template",
-//                     template
-//                 );
-//             }
-//         }
-//     });
-// }
+    rate(frm, cdt, cdn) {
+        set_item_tax_template(frm, cdt, cdn);
+    }
+});
 
 
-// function set_taxes_and_charges(frm) {
-//     if (!frm.doc.purchase_order || !frm.doc.company) {
-//         return;
-//     }
+function set_all_item_tax_templates(frm) {
+    (frm.doc.items || []).forEach(row => {
+        if (row.item_code) {
+            set_item_tax_template(
+                frm,
+                row.doctype,
+                row.name
+            );
+        }
+    });
+}
 
-//     frappe.call({
-//         method:
-//             "franchise_erp.event.subcontracting_order.get_job_work_order_taxes_and_charges",
 
-//         args: {
-//             purchase_order: frm.doc.purchase_order,
-//             company: frm.doc.company
-//         },
+function set_item_tax_template(frm, cdt, cdn) {
+    const row = locals[cdt][cdn];
 
-//         callback(r) {
-//             const template = r.message;
+    if (!row) {
+        return;
+    }
 
-//             if (
-//                 template &&
-//                 template !== frm.doc.taxes_and_charges
-//             ) {
-//                 frm.set_value(
-//                     "taxes_and_charges",
-//                     template
-//                 );
-//             }
-//         }
-//     });
-// }
+    if (!row.item_code || !frm.doc.company) {
+        if (row.item_tax_template) {
+            frappe.model.set_value(
+                cdt,
+                cdn,
+                "item_tax_template",
+                ""
+            );
+        }
+
+        return;
+    }
+
+    frappe.call({
+        method:
+            "franchise_erp.custom.subcontracting_order.get_item_tax_template",
+
+        args: {
+            item_code: row.item_code,
+            rate: row.rate || 0,
+            company: frm.doc.company
+        },
+
+        callback(r) {
+            const template = r.message || "";
+
+            if (template !== row.item_tax_template) {
+                frappe.model.set_value(
+                    cdt,
+                    cdn,
+                    "item_tax_template",
+                    template
+                );
+            }
+        }
+    });
+}
+
+
+function set_taxes_and_charges(frm) {
+    if (!frm.doc.purchase_order || !frm.doc.company) {
+        return;
+    }
+
+    frappe.call({
+        method:
+            "franchise_erp.custom.subcontracting_order.get_job_work_order_taxes_and_charges",
+
+        args: {
+            purchase_order: frm.doc.purchase_order,
+            company: frm.doc.company
+        },
+
+        callback(r) {
+            const template = r.message;
+
+            if (!template) {
+                return;
+            }
+
+            if (template !== frm.doc.taxes_and_charges) {
+                frm.set_value("taxes_and_charges", template)
+                    .then(() => {
+                        setTimeout(() => {
+                            set_tax_rows_on_net_total(frm);
+                        }, 500);
+                    });
+            } else {
+                set_tax_rows_on_net_total(frm);
+            }
+        }
+    });
+}
+
+
+function set_tax_rows_on_net_total(frm) {
+    if (!frm.doc.taxes || !frm.doc.taxes.length) {
+        return;
+    }
+
+    let changed = false;
+
+    frm.doc.taxes.forEach(row => {
+        if (
+            row.charge_type === "Actual" ||
+            row.charge_type === "On Previous Row Total"
+        ) {
+            row.charge_type = "On Net Total";
+            changed = true;
+        }
+    });
+
+    if (changed) {
+        frm.refresh_field("taxes");
+    }
+}
 
 frappe.ui.form.on('Subcontracting Order', {
     refresh(frm) {

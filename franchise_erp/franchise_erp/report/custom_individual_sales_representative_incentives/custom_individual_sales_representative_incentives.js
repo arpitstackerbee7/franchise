@@ -126,29 +126,31 @@ async function open_delivery_note_report_view(user) {
         }
     }
 
-    const filters = [
-        ["Delivery Note", "owner", "=", user],
-        ["Delivery Note", "docstatus", "=", 1],
-        [
-            "Delivery Note",
-            "posting_date",
+    const params = new URLSearchParams();
+
+    // Created By
+    params.set("owner", user);
+
+    // Submitted
+    params.set("docstatus", "1");
+
+    // Date range
+    params.set(
+        "posting_date",
+        JSON.stringify([
             "Between",
             [from_date, to_date]
-        ]
-    ];
+        ])
+    );
 
+    // Counter selected ho to uski company
     if (company) {
-        filters.push([
-            "Delivery Note",
-            "company",
-            "=",
-            company
-        ]);
+        params.set("company", company);
     }
 
     const url =
-        "/app/delivery-note/view/report?filters=" +
-        encodeURIComponent(JSON.stringify(filters));
+        "/app/delivery-note/view/report?" +
+        params.toString();
 
     window.open(url, "_blank");
 }
