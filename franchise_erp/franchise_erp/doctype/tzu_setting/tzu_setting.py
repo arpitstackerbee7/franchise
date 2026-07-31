@@ -30,19 +30,19 @@ class TZUSetting(Document):
                 )
 
 
-    def validate_incentive_table_rows(doc):
-        tables = {
-            "individual_sales_representative_incentives":
-                "Individual Sales Representative Incentives",
+def validate_incentive_table_rows(doc):
+    tables = {
+        "individual_sales_representative_incentives":
+            "Individual Sales Representative Incentives",
 
-            "counter_store_level_performance":
-                "Counter Store Level Performance",
-        }
+        "counter_store_level_performance":
+            "Counter Store Level Performance",
+    }
 
-        for fieldname, label in tables.items():
-            rows = doc.get(fieldname) or []
+    for fieldname, label in tables.items():
+        rows = doc.get(fieldname) or []
 
-            if len(rows) > 3:
-                frappe.throw(
-                    _("{0} can have a maximum of 3 rows.").format(label)
-                )
+        if len(rows) > 3:
+            frappe.throw(
+                _("{0} can have a maximum of 3 rows.").format(label)
+            )

@@ -301,20 +301,15 @@ def get_incentive_percentage(
     counter_count,
     incentive_slabs,
 ):
-    if not counter_count or not incentive_slabs:
+    if not incentive_slabs:
         return None
 
     matched_incentive = None
 
     for slab in incentive_slabs:
-        per_counter_target = slab["aggregate_sales"]
+        aggregate_target = slab["aggregate_sales"]
 
-        total_target = (
-            per_counter_target
-            * counter_count
-        )
-
-        if total_sales >= total_target:
+        if total_sales >= aggregate_target:
             matched_incentive = slab["incentive"]
         else:
             break
