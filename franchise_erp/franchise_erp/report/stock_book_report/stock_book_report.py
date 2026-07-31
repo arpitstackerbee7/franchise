@@ -161,8 +161,6 @@ def get_columns():
 
 
 def get_data(filters):
-    columns = get_columns()
-
     if not filters:
         filters = frappe._dict()
 
@@ -188,7 +186,6 @@ def get_data(filters):
     final_data = []
 
     for row in stock_data:
-
         item_code = row.get("item_code")
         warehouse = row.get("warehouse")
         company = row.get("company")
@@ -199,7 +196,6 @@ def get_data(filters):
         # Skip zero closing stock
         if round(float(qty or 0), 3) == 0:
             continue
-
 
         item = frappe.db.get_value(
             "Item",
@@ -216,7 +212,6 @@ def get_data(filters):
             ],
             as_dict=1,
         )
-
 
         image = item.image if item and item.image else None
 
@@ -235,7 +230,6 @@ def get_data(filters):
             {"parent": item_code},
             "barcode",
         ) or item_code
-
 
         supplier = ""
         supplier_name = ""
@@ -317,13 +311,10 @@ def get_data(filters):
                 if city_data:
                     party_city = city_data[0].city or ""
 
-
         if filters.get("supplier") and supplier != filters.get("supplier"):
             continue
 
-
         if filters.get("barcode"):
-
             search_barcode = filters.get("barcode").lower()
 
             if (
@@ -331,7 +322,6 @@ def get_data(filters):
                 and search_barcode not in item_code.lower()
             ):
                 continue
-
 
         division = ""
 
@@ -360,7 +350,6 @@ def get_data(filters):
                 "item_group_name",
             ) or ""
 
-
         prices = frappe.db.sql(
             """
             SELECT
@@ -378,7 +367,6 @@ def get_data(filters):
 
         for p in prices:
             price_map[p.price_list] = p.price_list_rate
-
 
         final_data.append([
             company,
@@ -405,44 +393,5 @@ def get_data(filters):
             round(float(qty or 0), 2),
             last_inward_date,
         ])
-
-    # ---------------------------------------------------------
-    # Total Row
-    # ---------------------------------------------------------
-
-    if final_data:
-
-        field_index = {
-            col["fieldname"]: idx
-            for idx, col in enumerate(columns)
-        }
-
-        total_row = [""] * len(columns)
-        total_row[field_index["party_name"]] = "Total"
-
-        numeric_fields = [
-            "opening_stock_qty",
-            "standard_buying",
-            "wsp",
-            "mrp",
-            "rsp",
-            "std",
-            "standard_selling",
-            "closing_stock_qty",
-        ]
-
-        for field in numeric_fields:
-
-            col_idx = field_index[field]
-
-            total_row[col_idx] = round(
-                sum(
-                    float(row[col_idx] or 0)
-                    for row in final_data
-                ),
-                2,
-            )
-
-        final_data.append(total_row)
 
     return final_data

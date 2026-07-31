@@ -53,9 +53,13 @@ class StockBalanceReport:
 
 	def set_company_currency(self) -> None:
 		if self.filters.get("company"):
-			self.company_currency = erpnext.get_company_currency(self.filters.get("company"))
+			self.company_currency = erpnext.get_company_currency(
+				self.filters.get("company")
+			)
 		else:
-			self.company_currency = frappe.db.get_single_value("Global Defaults", "default_currency")
+			self.company_currency = frappe.db.get_single_value(
+				"Global Defaults", "default_currency"
+			)
 
 	def run(self):
 		self.float_precision = cint(frappe.db.get_default("float_precision")) or 3
@@ -64,49 +68,47 @@ class StockBalanceReport:
 		self.prepare_opening_data_from_closing_balance()
 		self.prepare_stock_ledger_entries()
 		self.prepare_new_data()
-        
+
 		self.set_price_list_rates()
 		self.set_supplier_name()
 
 		if not self.columns:
 			self.columns = self.get_columns()
-			
-		self.add_additional_uom_columns()
 
-		self.add_total_row() 
+		self.add_additional_uom_columns()
 
 		return self.columns, self.data
 
-	def add_total_row(self):
-		if not self.data:
-			return
+	# def add_total_row(self):
+	# 	if not self.data:
+	# 		return
 
-		numeric_fields = [
-			"bal_qty",
-			"bal_val",
-			"opening_qty",
-			"opening_val",
-			"in_qty",
-			"in_val",
-			"out_qty",
-			"out_val",
-			"reserved_stock",
-			"val_rate",
-            "std_rate",
-            "wsp_rate",
-            "mrp_rate",
-		]
+	# 	numeric_fields = [
+	# 		"bal_qty",
+	# 		"bal_val",
+	# 		"opening_qty",
+	# 		"opening_val",
+	# 		"in_qty",
+	# 		"in_val",
+	# 		"out_qty",
+	# 		"out_val",
+	# 		"reserved_stock",
+	# 		"val_rate",
+    #         "std_rate",
+    #         "wsp_rate",
+    #         "mrp_rate",
+	# 	]
 
-		total_row = frappe._dict()
-		total_row["item_name"] = _("Total")
+	# 	total_row = frappe._dict()
+	# 	total_row["item_name"] = _("Total")
 
-		for field in numeric_fields:
-			total_row[field] = flt(
-				sum(flt(row.get(field, 0)) for row in self.data),
-				self.float_precision,
-			)
+	# 	for field in numeric_fields:
+	# 		total_row[field] = flt(
+	# 			sum(flt(row.get(field, 0)) for row in self.data),
+	# 			self.float_precision,
+	# 		)
 
-		self.data.append(total_row)
+	# 	self.data.append(total_row)
 
 
 	def prepare_opening_data_from_closing_balance(self) -> None:
