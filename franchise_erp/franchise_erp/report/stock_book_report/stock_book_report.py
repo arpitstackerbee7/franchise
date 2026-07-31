@@ -200,9 +200,6 @@ def get_data(filters):
         if round(float(qty or 0), 3) == 0:
             continue
 
-        # ---------------------------------------------------------
-        # Item Master
-        # ---------------------------------------------------------
 
         item = frappe.db.get_value(
             "Item",
@@ -220,9 +217,6 @@ def get_data(filters):
             as_dict=1,
         )
 
-        # ---------------------------------------------------------
-        # Image
-        # ---------------------------------------------------------
 
         image = item.image if item and item.image else None
 
@@ -236,19 +230,12 @@ def get_data(filters):
                 "file_url",
             )
 
-        # ---------------------------------------------------------
-        # Barcode
-        # ---------------------------------------------------------
-
         barcode = frappe.db.get_value(
             "Item Barcode",
             {"parent": item_code},
             "barcode",
         ) or item_code
 
-        # ---------------------------------------------------------
-        # Supplier Details
-        # ---------------------------------------------------------
 
         supplier = ""
         supplier_name = ""
@@ -330,16 +317,10 @@ def get_data(filters):
                 if city_data:
                     party_city = city_data[0].city or ""
 
-        # ---------------------------------------------------------
-        # Supplier Filter
-        # ---------------------------------------------------------
 
         if filters.get("supplier") and supplier != filters.get("supplier"):
             continue
 
-        # ---------------------------------------------------------
-        # Barcode Filter
-        # ---------------------------------------------------------
 
         if filters.get("barcode"):
 
@@ -351,9 +332,6 @@ def get_data(filters):
             ):
                 continue
 
-        # ---------------------------------------------------------
-        # Item Groups
-        # ---------------------------------------------------------
 
         division = ""
 
@@ -382,9 +360,6 @@ def get_data(filters):
                 "item_group_name",
             ) or ""
 
-        # ---------------------------------------------------------
-        # Prices
-        # ---------------------------------------------------------
 
         prices = frappe.db.sql(
             """
@@ -404,37 +379,31 @@ def get_data(filters):
         for p in prices:
             price_map[p.price_list] = p.price_list_rate
 
-        # ---------------------------------------------------------
-        # Final Data
-        #
-        # IMPORTANT:
-        # Order must exactly match get_columns()
-        # ---------------------------------------------------------
 
         final_data.append([
-            company,                                  # Company
-            supplier_name,                            # Party Name
-            party_city,                               # Party City
-            item_code,                                # Item Code
-            round(float(opening_qty or 0), 2),        # Opening Stock
-            image or "",                              # Image
-            barcode,                                  # Barcode
-            item.gst_hsn_code if item else "",        # HSN
-            division,                                 # Division
-            silhouette,                               # Silhouette
-            department,                               # Department
-            warehouse,                                # Warehouse
-            item.brand if item else "",               # Brand
-            item.item_name if item else "",           # Item Name
-            price_map.get("Standard Buying", 0),      # Standard Buying
-            price_map.get("WSP", 0),                  # WSP
-            price_map.get("MRP", 0),                  # MRP
-            price_map.get("RSP", 0),                  # RSP
-            price_map.get("STD", 0),                  # STD
-            price_map.get("Standard Selling", 0),     # Standard Selling
-            item.stock_uom if item else "",            # UOM
-            round(float(qty or 0), 2),                # Closing Stock
-            last_inward_date,                         # Last Stock Inward Date
+            company,
+            supplier_name,
+            party_city,
+            item_code,
+            round(float(opening_qty or 0), 2),
+            image or "",
+            barcode,
+            item.gst_hsn_code if item else "",
+            division,
+            silhouette,
+            department,
+            warehouse,
+            item.brand if item else "",
+            item.item_name if item else "",
+            price_map.get("Standard Buying", 0),
+            price_map.get("WSP", 0),
+            price_map.get("MRP", 0),
+            price_map.get("RSP", 0),
+            price_map.get("STD", 0),
+            price_map.get("Standard Selling", 0),
+            item.stock_uom if item else "",
+            round(float(qty or 0), 2),
+            last_inward_date,
         ])
 
     # ---------------------------------------------------------
@@ -470,7 +439,6 @@ def get_data(filters):
                 sum(
                     float(row[col_idx] or 0)
                     for row in final_data
-                    
                 ),
                 2,
             )
