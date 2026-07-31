@@ -365,7 +365,8 @@ override_doctype_class = {
     "Subcontracting Receipt": "franchise_erp.custom.subcontracting_receipt.CustomSubcontractingReceipt",
     "Leave Policy Assignment": "franchise_erp.custom.leave_policy_assignment.CustomLeavePolicyAssignment",
     "Attendance Request": "franchise_erp.overrides.attendance_request.CustomAttendanceRequest",
-    "Leave Encashment": "franchise_erp.overrides.custom_leave_encashment.CustomLeaveEncashment"
+    "Leave Encashment": "franchise_erp.overrides.custom_leave_encashment.CustomLeaveEncashment",
+    "Leave Application": "franchise_erp.overrides.custom_leave_application.CustomLeaveApplication"
 }
 # override_whitelisted_methods = {
 #     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"
