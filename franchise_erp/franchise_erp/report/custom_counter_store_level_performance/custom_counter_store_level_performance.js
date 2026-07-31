@@ -1,9 +1,6 @@
 // Copyright (c) 2026, Franchise Erp and contributors
 // For license information, please see license.txt
 
-// Copyright (c) 2026, Franchise Erp and contributors
-// For license information, please see license.txt
-
 frappe.query_reports["Custom Counter Store-Level Performance"] = {
     filters: [
         {
@@ -57,7 +54,7 @@ frappe.query_reports["Custom Counter Store-Level Performance"] = {
         return value;
     },
 
-    onload: function (report) {
+    onload: function () {
         $(document)
             .off(
                 "click.custom_counter_report",
@@ -121,7 +118,6 @@ function show_counter_dialog(counters) {
         html = `
             <div class="counter-list">
                 ${counters.map((counter, index) => {
-
                     const customer_name =
                         frappe.utils.escape_html(
                             counter.customer_name || counter.name
@@ -150,8 +146,9 @@ function show_counter_dialog(counters) {
                         >
                             <a
                                 href="#"
-                                class="counter-customer-link"
+                                class="counter-dn-link"
                                 data-customer="${customer_id}"
+                                data-company="${company}"
                                 style="
                                     font-weight: 600;
                                     cursor: pointer;
@@ -201,27 +198,67 @@ function show_counter_dialog(counters) {
     dialog.fields_dict.counter_list.$wrapper.html(html);
 
     dialog.fields_dict.counter_list.$wrapper
-        .off("click", ".counter-customer-link")
+        .off("click", ".counter-dn-link")
         .on(
             "click",
-            ".counter-customer-link",
+            ".counter-dn-link",
             function (e) {
                 e.preventDefault();
 
-                const customer = $(this).attr("data-customer");
+                const company = $(this).attr("data-company");
 
-                if (!customer) {
+                if (!company) {
+                    frappe.msgprint(
+                        __("Represented Company is not set for this Counter.")
+                    );
                     return;
                 }
 
-                const route = frappe.utils.get_form_link(
-                    "Customer",
-                    customer
-                );
-
-                window.open(route, "_blank");
+                open_counter_delivery_notes(company);
             }
         );
 
     dialog.show();
+}
+
+
+function open_counter_delivery_notes(company) {
+    const from_date =
+        frappe.query_report.get_filter_value("from_date");
+
+    const to_date =
+        frappe.query_report.get_filter_value("to_date");
+
+    if (!company) {
+        frappe.msgprint(
+            __("Represented Company is not set for this Counter.")
+        );
+        return;
+    }
+
+    if (!from_date || !to_date) {
+        frappe.msgprint(
+            __("Please select From Date and To Date.")
+        );
+        return;
+    }
+
+    const params = new URLSearchParams();
+
+    params.set("company", company);
+    params.set("docstatus", "1");
+
+    params.set(
+        "posting_date",
+        JSON.stringify([
+            "between",
+            [from_date, to_date]
+        ])
+    );
+
+    const url =
+        "/app/delivery-note/view/report?" +
+        params.toString();
+
+    window.open(url, "_blank");
 }

@@ -284,6 +284,7 @@ doc_events = {
 
 "Subcontracting Order": {
     "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+     "before_validate": "franchise_erp.custom.subcontracting_order.set_tax_rows_on_net_total"
 },
     "Supplier": {
         "after_insert": "franchise_erp.custom.supplier.create_supplier_warehouse",
