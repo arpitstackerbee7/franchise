@@ -182,6 +182,7 @@ doc_events = {
         "validate": [
             "franchise_erp.custom.back_date_validation.validate_back_date",
             "franchise_erp.custom.payment_entry.validate_duplicate_cheque_no",
+            "franchise_erp.custom.payment_entry.set_invoice_total"
             ]
     },
     "BOM": {
