@@ -152,6 +152,7 @@
 
 import frappe
 from frappe.utils import getdate
+from franchise_erp.utils.dashboard_permissions import get_allowed_company
 
 
 def execute(filters=None):
@@ -163,7 +164,7 @@ def execute(filters=None):
 
     view_type = filters.get("view_type") or "qty"
 
-    company = filters.get("company")
+    company = get_allowed_company(filters) 
 
     if not from_date or not to_date:
         return [], [], None, empty_chart()
