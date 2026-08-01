@@ -242,6 +242,28 @@ def create_pi_from_gate_entry(gate_entry):
     pi.save()
     return pi.name
 
+def update_gate_entry_purchase_invoice(doc, method=None):
+    updated_gate_entries = set()
+    updated_outgoing_logistics = set()
+
+    for item in doc.items:
+        if item.custom_gate_entry and item.custom_gate_entry not in updated_gate_entries:
+            frappe.db.set_value(
+                "Gate Entry",
+                item.custom_gate_entry,
+                "purchase_invoice",
+                doc.name
+            )
+            updated_gate_entries.add(item.custom_gate_entry)
+
+        if item.custom_outgoing_logistics and item.custom_outgoing_logistics not in updated_outgoing_logistics:
+            frappe.db.set_value(
+                "Outgoing Logistics",
+                item.custom_outgoing_logistics,
+                "purchase_invoice",
+                doc.name
+            )
+            updated_outgoing_logistics.add(item.custom_outgoing_logistics)
 
 import frappe
 from frappe.utils import flt
