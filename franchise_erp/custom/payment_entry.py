@@ -68,12 +68,25 @@ def apply_early_payment_discount(doc, method):
         )
 
         # 📘 Create Debit Note
-        create_discount_debit_note(pi, discount, pi.company)
+        je = create_discount_debit_note(pi, discount, pi.company,doc)
+
+        # Show Discount Amount on Payment Entry
+        doc.db_set(
+            "custom_discount_amount",
+            discount,
+            update_modified=False
+        )
+
+        # Reduce Total Allocated Amount by Discount
+        doc.db_set(
+            "total_allocated_amount",
+            doc.total_allocated_amount - discount,
+            update_modified=False
+        )
 
 
-
-
-def create_discount_debit_note(pi, discount_amount, company):
+def create_discount_debit_note(pi, discount_amount, company, payment_entry):
+    frappe.msgprint(f"Payment Entry: {payment_entry.name}")
 
     template_name = frappe.db.get_value(
         "Journal Entry Template",
@@ -90,6 +103,7 @@ def create_discount_debit_note(pi, discount_amount, company):
     template = frappe.get_doc("Journal Entry Template", template_name)
 
     je = frappe.new_doc("Journal Entry")
+    je.custom_payment_entry = payment_entry.name
     je.voucher_type = "Debit Note"
     je.posting_date = today()
 
@@ -100,7 +114,6 @@ def create_discount_debit_note(pi, discount_amount, company):
             "account": row.account
         }
 
-        # ✅ Supplier Payable line
         if row.account == pi.credit_to:
             supplier_line_found = True
             acc.update({
@@ -111,7 +124,6 @@ def create_discount_debit_note(pi, discount_amount, company):
                 "reference_name": pi.name
             })
 
-        # ✅ Discount / Income line
         else:
             acc.update({
                 "credit_in_account_currency": discount_amount
@@ -126,6 +138,9 @@ def create_discount_debit_note(pi, discount_amount, company):
 
     je.insert()
     je.submit()
+
+
+    return je.name
 
 
 # by mayuri
