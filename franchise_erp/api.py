@@ -2519,6 +2519,7 @@ def get_chart_data(chart_name, from_date, to_date, view_type='qty', company='', 
         return None
 
     from_dt = parse_date(from_date)
+    
 
     # ── Company fallback ──────────────────────────────────────
     resolved_company = (
@@ -2557,7 +2558,7 @@ def get_chart_data(chart_name, from_date, to_date, view_type='qty', company='', 
     elif chart_name in ('Top Selling Items Chart', 'Least Selling Items Chart'):
         filters['metric'] = as_amount(view_type)
 
-    elif chart_name == 'Sale vs Stock':
+    elif chart_name == 'Sales vs Stock':
         filters['metric'] = as_amount(view_type)
         
         filters['month'] = month or (str(from_dt.month) if from_dt else '')

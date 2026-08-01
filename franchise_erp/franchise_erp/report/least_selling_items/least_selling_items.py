@@ -1,4 +1,5 @@
 import frappe
+from franchise_erp.utils.dashboard_permissions import get_allowed_company
 
 
 def execute(filters=None):
@@ -17,10 +18,16 @@ def get_columns(filters):
 
     cols = [
         {
-            "label": "Item Name",
-            "fieldname": "item_name",
+            "label": "Style No.",
+            "fieldname": "style_no",
             "fieldtype": "Data",
-            "width": 250
+            "width": 150
+        },
+        {
+            "label": "Department",
+            "fieldname": "department",
+            "fieldtype": "Data",
+            "width": 150
         }
     ]
 
@@ -31,7 +38,7 @@ def get_columns(filters):
             "fieldtype": "Float",
             "width": 120
         })
-    elif metric == "amt":  
+    else:  # amt
         cols.append({
             "label": "Amount",
             "fieldname": "amount",
@@ -47,7 +54,7 @@ def get_data(filters):
     metric    = filters.get("metric") or "qty"
     from_date = filters.get("from_date")
     to_date   = filters.get("to_date")
-    company   = filters.get("company")
+    company   = get_allowed_company(filters)
 
     if metric == "qty":
         select_field = "SUM(sii.qty) AS qty"
@@ -71,16 +78,24 @@ def get_data(filters):
 
     data = frappe.db.sql(f"""
         SELECT
-            sii.item_name,
+            i.custom_barcode_code AS style_no,
+            i.custom_departments  AS department,
+            i.image,
             {select_field}
         FROM `tabSales Invoice Item` sii
-        JOIN `tabSales Invoice` si
-          ON sii.parent = si.name
+        JOIN `tabSales Invoice` si ON sii.parent = si.name
+        LEFT JOIN `tabItem` i ON i.item_code = sii.item_code
         {conditions}
-        GROUP BY sii.item_name
+        GROUP BY i.custom_barcode_code
         ORDER BY {order_by}
         LIMIT %s
     """, tuple(params), as_dict=1)
+
+    for row in data:
+        img = row.get("image")
+        row["image_url"] = ("/" + img if img and not img.startswith("/") else img) or ""
+        dept = row.get("department") or ""
+        row["department"] = dept.split("-")[-1].strip() if dept else ""
 
     return data
 
@@ -88,7 +103,7 @@ def get_data(filters):
 def get_chart_data(data, filters):
     metric = filters.get("metric") or "qty"
 
-    if not data:  
+    if not data:
         return {
             "data": {
                 "labels": [],
@@ -97,13 +112,13 @@ def get_chart_data(data, filters):
             "type": "bar"
         }
 
-    labels = [d["item_name"] for d in data]
+    labels = [d.get("style_no") or "No Style" for d in data]
 
     if metric == "qty":
-        values = [float(d.get("qty") or 0) for d in data]  
+        values = [float(d.get("qty") or 0) for d in data]
         name   = "Least Sold Quantity"
     else:  # amt
-        values = [float(d.get("amount") or 0) for d in data]  
+        values = [float(d.get("amount") or 0) for d in data]
         name   = "Least Sold Amount"
 
     return {

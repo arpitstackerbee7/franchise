@@ -277,6 +277,7 @@
 
 
 import frappe
+from franchise_erp.utils.dashboard_permissions import get_allowed_company
 
 
 def execute(filters=None):
@@ -305,10 +306,17 @@ def get_columns(filters):
         })
 
     cols.append({
-        "label"    : "Item Name",
-        "fieldname": "item_name",
+        "label"    : "Style No.",
+        "fieldname": "style_no",
         "fieldtype": "Data",
-        "width"    : 250
+        "width"    : 150
+    })
+
+    cols.append({
+        "label"    : "Department",
+        "fieldname": "department",
+        "fieldtype": "Data",
+        "width"    : 150
     })
 
     if metric == "qty":
@@ -335,7 +343,7 @@ def get_data(filters):
     period    = filters.get("period") or "Monthly"
     from_date = filters.get("from_date")
     to_date   = filters.get("to_date")
-    company   = filters.get("company")
+    company   = get_allowed_company(filters)
 
     if period == "Monthly":
         date_group = "DATE_FORMAT(si.posting_date, '%%Y-%%m')"
@@ -346,7 +354,11 @@ def get_data(filters):
     else:
         date_group = None
 
-    select_fields = ["sii.item_name"]
+    select_fields = [
+        "i.custom_barcode_code AS style_no",
+        "i.custom_departments  AS department",
+        "i.image"
+    ]
 
     if metric == "qty":
         select_fields.append("SUM(sii.qty) AS qty")
@@ -356,7 +368,7 @@ def get_data(filters):
     if date_group:
         select_fields.append(f"{date_group} AS period")
 
-    group_by_fields = ["sii.item_name"]
+    group_by_fields = ["i.custom_barcode_code"]
     if date_group:
         group_by_fields.append(date_group)
 
@@ -380,11 +392,19 @@ def get_data(filters):
         FROM `tabSales Invoice Item` AS sii
         JOIN `tabSales Invoice` AS si
           ON sii.parent = si.name
+        LEFT JOIN `tabItem` AS i
+          ON i.item_code = sii.item_code
         {conditions}
         GROUP BY {", ".join(group_by_fields)}
         ORDER BY {order_by}
         LIMIT %s
     """, tuple(params), as_dict=1)
+
+    for row in data:
+        img = row.get("image")
+        row["image_url"] = ("/" + img if img and not img.startswith("/") else img) or ""
+        dept = row.get("department") or ""
+        row["department"] = dept.split("-")[-1].strip() if dept else ""
 
     return data
 
@@ -401,7 +421,7 @@ def get_chart_data(data, filters):
             "type": "bar"
         }
 
-    labels = [d.get("item_name") or "" for d in data]
+    labels = [d.get("style_no") or "No Style" for d in data]
 
     if metric == "qty":
         values       = [float(d.get("qty") or 0) for d in data]
