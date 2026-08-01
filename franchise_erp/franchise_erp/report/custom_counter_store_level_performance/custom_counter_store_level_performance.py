@@ -69,124 +69,163 @@ def get_data(filters):
     if not filters.get("from_date") or not filters.get("to_date"):
         return []
 
-    customer_conditions = [
-        "c.is_internal_customer = 1",
-        "IFNULL(c.represents_company, '') != ''",
-        "IFNULL(c.account_manager, '') != ''",
-    ]
-
-    query_filters = {
-        "from_date": filters.from_date,
-        "to_date": filters.to_date,
-    }
-
-    if filters.get("sales_manager"):
-        customer_conditions.append(
-            "c.account_manager = %(sales_manager)s"
-        )
-        query_filters["sales_manager"] = filters.sales_manager
-
-    managers = frappe.db.sql(
-        f"""
-        SELECT
-            c.account_manager AS sales_manager,
-            COUNT(DISTINCT c.name) AS counter_count
-        FROM `tabCustomer` c
-        WHERE {" AND ".join(customer_conditions)}
-        GROUP BY c.account_manager
-        ORDER BY c.account_manager
-        """,
-        query_filters,
-        as_dict=True,
-    )
-
     incentive_slabs = get_counter_incentive_slabs()
-
     data = []
 
-    for manager in managers:
-        counters = frappe.db.sql(
+    # ==========================================================
+    # SALES MANAGER SELECTED -> Existing Behaviour
+    # ==========================================================
+    if filters.get("sales_manager"):
+
+        managers = frappe.db.sql(
             """
             SELECT
-                c.name,
-                c.customer_name,
-                c.represents_company
+                c.account_manager AS sales_manager
             FROM `tabCustomer` c
             WHERE
                 c.is_internal_customer = 1
-                AND IFNULL(c.represents_company, '') != ''
+                AND IFNULL(c.represents_company,'') != ''
                 AND c.account_manager = %(sales_manager)s
-            ORDER BY
-                c.customer_name,
-                c.name
+            GROUP BY c.account_manager
             """,
             {
-                "sales_manager": manager.sales_manager,
+                "sales_manager": filters.sales_manager
             },
             as_dict=True,
         )
 
-        companies = list({
-            row.represents_company
-            for row in counters
-            if row.represents_company
-        })
+        for manager in managers:
 
-        if not companies:
-            continue
+            counters = frappe.db.sql(
+                """
+                SELECT
+                    c.name,
+                    c.customer_name,
+                    c.represents_company
+                FROM `tabCustomer` c
+                WHERE
+                    c.is_internal_customer = 1
+                    AND IFNULL(c.represents_company,'') != ''
+                    AND c.account_manager=%(sales_manager)s
+                ORDER BY
+                    c.customer_name
+                """,
+                {
+                    "sales_manager": manager.sales_manager
+                },
+                as_dict=True,
+            )
+
+            companies = [
+                d.represents_company
+                for d in counters
+                if d.represents_company
+            ]
+
+            total_sales = get_total_sales(
+                companies,
+                filters.from_date,
+                filters.to_date,
+            )
+
+            incentive = get_incentive_percentage(
+                total_sales,
+                len(counters),
+                incentive_slabs,
+            )
+
+            payout = (
+                total_sales * incentive / 100
+                if incentive
+                else None
+            )
+
+            counter_details = []
+
+            for c in counters:
+                counter_details.append({
+                    "name": c.name,
+                    "customer_name": c.customer_name,
+                    "represents_company": c.represents_company,
+                })
+
+            data.append({
+                "sales_manager": manager.sales_manager,
+                "sales_manager_name": frappe.db.get_value(
+                    "User",
+                    manager.sales_manager,
+                    "full_name",
+                ) or "",
+                "counter_count": len(counters),
+                "counter_details": frappe.as_json(counter_details),
+                "total_sales": total_sales,
+                "incentive_percentage": incentive,
+                "total_incentive_earned": payout,
+            })
+
+        return data
+
+    # ==========================================================
+    # NO SALES MANAGER FILTER -> One Row Per Counter
+    # ==========================================================
+
+    counters = frappe.db.sql(
+        """
+        SELECT
+            c.name,
+            c.customer_name,
+            c.account_manager,
+            c.represents_company
+        FROM `tabCustomer` c
+        WHERE
+            c.is_internal_customer = 1
+            AND IFNULL(c.represents_company,'') != ''
+        ORDER BY
+            c.customer_name
+        """,
+        as_dict=True,
+    )
+
+    for counter in counters:
 
         total_sales = get_total_sales(
-            companies,
+            [counter.represents_company],
             filters.from_date,
             filters.to_date,
         )
 
-        counter_count = len(counters)
-
-        incentive_percentage = get_incentive_percentage(
+        incentive = get_incentive_percentage(
             total_sales,
-            counter_count,
+            1,
             incentive_slabs,
         )
 
-        total_incentive_earned = None
+        payout = (
+            total_sales * incentive / 100
+            if incentive
+            else None
+        )
 
-        if incentive_percentage is not None:
-            total_incentive_earned = (
-                total_sales
-                * incentive_percentage
-                / 100
-            )
-
-        sales_manager_name = frappe.db.get_value(
-            "User",
-            manager.sales_manager,
-            "full_name",
-        ) or ""
-
-        counter_details = []
-
-        for counter in counters:
-            counter_details.append({
+        counter_details = frappe.as_json([
+            {
                 "name": counter.name,
-                "customer_name": (
-                    counter.customer_name
-                    or counter.name
-                ),
-                "represents_company": (
-                    counter.represents_company
-                    or ""
-                ),
-            })
+                "customer_name": counter.customer_name,
+                "represents_company": counter.represents_company,
+            }
+        ])
 
         data.append({
-            "sales_manager": manager.sales_manager,
-            "sales_manager_name": sales_manager_name,
-            "counter_count": counter_count,
-            "counter_details": frappe.as_json(counter_details),
+            "sales_manager": counter.account_manager or "",
+            "sales_manager_name": frappe.db.get_value(
+                "User",
+                counter.account_manager,
+                "full_name",
+            ) if counter.account_manager else "",
+            "counter_count": 1,
+            "counter_details": counter_details,
             "total_sales": total_sales,
-            "incentive_percentage": incentive_percentage,
-            "total_incentive_earned": total_incentive_earned,
+            "incentive_percentage": incentive,
+            "total_incentive_earned": payout,
         })
 
     return data

@@ -70,16 +70,16 @@ def get_data(filters):
     if not filters.get("from_date") or not filters.get("to_date"):
         return []
 
-    conditions = [
-        "dn.docstatus = 1",
-        "dn.posting_date BETWEEN %(from_date)s AND %(to_date)s",
-    ]
-
     query_filters = {
         "from_date": filters.from_date,
         "to_date": filters.to_date,
     }
 
+    company_condition = ""
+    salesman_condition = ""
+    join_type = "LEFT JOIN"
+
+    # Counter Filter
     if filters.get("counter"):
         represents_company = frappe.db.get_value(
             "Customer",
@@ -90,22 +90,50 @@ def get_data(filters):
         if not represents_company:
             return []
 
-        conditions.append("dn.company = %(company)s")
         query_filters["company"] = represents_company
 
+        company_condition = """
+            AND dn.company = %(company)s
+        """
+
+        # Counter selected => only matching employees
+        join_type = "INNER JOIN"
+
+    # Sales Man Filter
     if filters.get("sales_man"):
-        conditions.append("dn.owner = %(sales_man)s")
         query_filters["sales_man"] = filters.sales_man
+
+        salesman_condition = """
+            AND e.user_id = %(sales_man)s
+        """
 
     rows = frappe.db.sql(
         f"""
         SELECT
-            dn.owner AS user,
-            SUM(dn.total) AS monthly_sales
-        FROM `tabDelivery Note` dn
-        WHERE {" AND ".join(conditions)}
-        GROUP BY dn.owner
-        ORDER BY monthly_sales DESC
+            e.user_id AS user,
+            e.name AS employee_id,
+            e.employee_name,
+            COALESCE(SUM(dn.total), 0) AS monthly_sales
+
+        FROM `tabEmployee` e
+
+        {join_type} `tabDelivery Note` dn
+            ON dn.owner = e.user_id
+            AND dn.docstatus = 1
+            AND dn.posting_date BETWEEN %(from_date)s AND %(to_date)s
+            {company_condition}
+
+        WHERE
+            IFNULL(e.user_id, '') != ''
+            {salesman_condition}
+
+        GROUP BY
+            e.user_id,
+            e.name,
+            e.employee_name
+
+        ORDER BY
+            e.employee_name
         """,
         query_filters,
         as_dict=True,
@@ -116,13 +144,6 @@ def get_data(filters):
     data = []
 
     for row in rows:
-        employee = frappe.db.get_value(
-            "Employee",
-            {"user_id": row.user},
-            ["name", "employee_name"],
-            as_dict=True,
-        )
-
         monthly_sales = flt(row.monthly_sales)
 
         incentive_percentage, slab_model = get_incentive_slab(
@@ -130,25 +151,16 @@ def get_data(filters):
             incentive_slabs,
         )
 
-        potential_payout = None
-
-        if incentive_percentage is not None:
-            potential_payout = (
-                monthly_sales * incentive_percentage / 100
-            )
+        potential_payout = (
+            monthly_sales * incentive_percentage / 100
+            if incentive_percentage is not None
+            else None
+        )
 
         data.append({
             "user": row.user,
-            "employee_name": (
-                employee.employee_name
-                if employee
-                else ""
-            ),
-            "employee_id": (
-                employee.name
-                if employee
-                else ""
-            ),
+            "employee_name": row.employee_name,
+            "employee_id": row.employee_id,
             "monthly_sales": monthly_sales,
             "incentive_percentage": incentive_percentage,
             "potential_payout": potential_payout,
@@ -156,7 +168,6 @@ def get_data(filters):
         })
 
     return data
-
 
 def get_incentive_slabs():
     child_table_doctype = frappe.db.get_value(
