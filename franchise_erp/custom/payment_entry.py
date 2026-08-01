@@ -13,12 +13,11 @@ def apply_early_payment_discount(doc, method):
 
         pi = frappe.get_doc("Purchase Invoice", ref.reference_name)
 
-        # ✅ Decide last eligible discount date
+        # Decide last eligible discount date
         discount_upto_date = (
             pi.custom_buffer_due_date or pi.due_date
         )
 
-        # Normalize & compare dates
         if getdate(doc.posting_date) > getdate(discount_upto_date):
             continue
 
@@ -34,7 +33,7 @@ def apply_early_payment_discount(doc, method):
 
         discount_percent = supplier.custom_allow_cash_discount_
 
-        # ✅ Decide discount base
+        # Decide discount base
         if supplier.custom_applied_on == "Taxable Amount":
             invoice_base = pi.net_total
         elif supplier.custom_applied_on == "Grand Total":
@@ -42,7 +41,7 @@ def apply_early_payment_discount(doc, method):
         else:
             continue
 
-        # ✅ Maximum discount allowed per invoice
+        # Maximum discount allowed
         max_discount = invoice_base * discount_percent / 100
 
         already_used = pi.custom_cash_discount_applied or 0
@@ -51,7 +50,7 @@ def apply_early_payment_discount(doc, method):
         if remaining <= 0:
             continue
 
-        # ✅ Proportional discount on this payment
+        # Discount on current payment
         eligible_base = ref.allocated_amount
         discount_on_payment = eligible_base * discount_percent / 100
 
@@ -60,30 +59,59 @@ def apply_early_payment_discount(doc, method):
         if discount <= 0:
             continue
 
-        # 🔒 Track discount usage (one-time, cumulative)
+        # Update PI
         pi.db_set(
             "custom_cash_discount_applied",
             already_used + discount,
             update_modified=False
         )
 
-        # 📘 Create Debit Note
-        je = create_discount_debit_note(pi, discount, pi.company,doc)
+        # Create Discount Journal Entry
+        create_discount_debit_note(pi, discount, pi.company, doc)
 
-        # Show Discount Amount on Payment Entry
+        # Store original values
+        original_invoice_total = doc.total_allocated_amount or 0
+        original_paid_amount = doc.paid_amount or 0
+        original_base_paid_amount = doc.base_paid_amount or 0
+
+        # Store original invoice amount
+        doc.db_set(
+            "custom_invoice_total",
+            original_invoice_total,
+            update_modified=False
+        )
+
+        # Store discount amount
         doc.db_set(
             "custom_discount_amount",
             discount,
             update_modified=False
         )
 
-        # Reduce Total Allocated Amount by Discount
+        # Update Total Allocated Amount
         doc.db_set(
             "total_allocated_amount",
-            doc.total_allocated_amount - discount,
+            original_invoice_total - discount,
             update_modified=False
         )
 
+        # Update Paid Amount
+        doc.db_set(
+            "paid_amount",
+            original_paid_amount - discount,
+            update_modified=False
+        )
+
+        # Update Base Paid Amount
+        doc.db_set(
+            "base_paid_amount",
+            original_base_paid_amount - discount,
+            update_modified=False
+        )
+
+def set_invoice_total(doc, method=None):
+    if not doc.custom_invoice_total:
+        doc.custom_invoice_total = doc.total_allocated_amount
 
 def create_discount_debit_note(pi, discount_amount, company, payment_entry):
     frappe.msgprint(f"Payment Entry: {payment_entry.name}")
