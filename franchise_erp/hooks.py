@@ -53,6 +53,7 @@ doc_events = {
     # },
 
    "Purchase Invoice": {
+        "on_submit": "franchise_erp.custom.purchase_invoice.update_gate_entry_purchase_invoice",
        "autoname": [
            "franchise_erp.utils.fy_naming.company_fy_autoname",
        ],

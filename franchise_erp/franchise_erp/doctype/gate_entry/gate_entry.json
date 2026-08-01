@@ -16,6 +16,7 @@
   "column_break_pqmw",
   "document_nos",
   "no_of_parcels",
+  "purchase_invoice",
   "general_section",
   "owner_site",
   "date",
@@ -226,7 +227,6 @@
   },
   {
    "allow_on_submit": 1,
-   "default": "Submitted",
    "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -344,6 +344,13 @@
    "label": "Doer",
    "options": "User",
    "reqd": 1
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -353,9 +360,13 @@
   {
    "link_doctype": "Purchase Receipt",
    "link_fieldname": "custom_bulk_gate_entry"
+  },
+  {
+   "link_doctype": "Purchase Invoice",
+   "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-07-29 15:22:03.800864",
+ "modified": "2026-08-01 14:54:17.379205",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

@@ -27,6 +27,7 @@
   "barcode_value",
   "barcode_html",
   "is_gate_out",
+  "purchase_invoice",
   "transport_information_section",
   "quantity",
   "station_from",
@@ -364,13 +365,25 @@
    "label": "Transport Service Item",
    "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
    "options": "Item"
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2026-06-03 12:33:31.656162",
+ "links": [
+  {
+   "link_doctype": "Purchase Invoice",
+   "link_fieldname": "custom_outgoing_logistics"
+  }
+ ],
+ "modified": "2026-08-01 14:53:43.580543",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
