@@ -35,6 +35,7 @@ def get_columns():
         {"label": "Reporting Manager", "fieldname": "reporting_manager", "fieldtype": "Data", "width": 160},
         {"label": "DOJ", "fieldname": "date_of_joining", "fieldtype": "Date", "width": 100},
         {"label": "Service Tenure", "fieldname": "service_tenure", "fieldtype": "Data", "width": 120},
+        {"label": "Gross Salary", "fieldname": "gross_salary", "fieldtype": "Currency", "width": 120},
         {"label": "Basic Salary", "fieldname": "basic_salary", "fieldtype": "Currency", "width": 120},
     ]
 
@@ -88,7 +89,9 @@ def get_data(filters):
     data = []
     for idx, emp in enumerate(employees, start=1):
         service_tenure = get_service_tenure(emp.date_of_joining, as_on_date)
-        basic_salary = get_basic_salary(emp.employee, as_on_date)
+        assignment = get_active_salary_structure_assignment(emp.employee, as_on_date)
+        gross_salary = get_computed_gross_salary(assignment.salary_structure, assignment.base) if assignment else 0
+        basic_salary = get_basic_component_amount(assignment.salary_structure) if assignment else 0
 
         data.append({
     
@@ -100,6 +103,7 @@ def get_data(filters):
             "reporting_manager": manager_names.get(emp.reports_to),
             "date_of_joining": emp.date_of_joining,
             "service_tenure": service_tenure,
+            "gross_salary": gross_salary,
             "basic_salary": basic_salary,
         })
 
@@ -135,17 +139,57 @@ def get_service_tenure(doj, as_on_date):
     return f"{years}Y {months}M {days}D"
 
 
-def get_basic_salary(employee, as_on_date):
-    """Fetches Basic (base) from the latest effective Salary Structure Assignment
-    as of the given date."""
+def get_basic_component_amount(salary_structure):
+    if not salary_structure:
+        return 0
+    amount = frappe.db.get_value(
+        "Salary Detail",
+        {"parent": salary_structure, "parentfield": "earnings", "salary_component": "Basic"},
+        "amount",
+    )
+    return amount or 0
+
+
+def get_active_salary_structure_assignment(employee, as_on_date):
     assignment = frappe.db.get_value(
         "Salary Structure Assignment",
-        {
-            "employee": employee,
-            "docstatus": 1,
-            "from_date": ["<=", as_on_date],
-        },
-        ["base"],
+        {"employee": employee, "docstatus": 1, "from_date": ["<=", as_on_date]},
+        ["base", "salary_structure"],
         order_by="from_date desc",
+        as_dict=True,
     )
-    return assignment or 0
+    return assignment
+
+def get_computed_gross_salary(salary_structure, base):
+    """Evaluates every earning component of the Salary Structure in order
+    to compute the true Gross Salary, instead of blindly trusting the
+    assignment's 'base' field (which may be 0/unfilled by mistake).
+    Handles fixed-amount components (Basic, CA, MA, E) as well as
+    formula-based ones (HRA = B * .5, Special Allowance = base - (...))."""
+    if not salary_structure:
+        return 0
+
+    earnings = frappe.get_all(
+        "Salary Detail",
+        filters={"parent": salary_structure, "parentfield": "earnings"},
+        fields=["salary_component", "abbr", "amount", "formula", "amount_based_on_formula"],
+        order_by="idx",
+    )
+
+    context = {"base": base or 0}
+    total = 0
+
+    for row in earnings:
+        if row.amount_based_on_formula and row.formula:
+            try:
+                value = eval(row.formula, {"__builtins__": {}}, context)
+            except Exception:
+                value = 0
+        else:
+            value = row.amount or 0
+
+        value = max(value, 0)  # earnings can't go negative
+        context[row.abbr] = value
+        total += value
+
+    return total
