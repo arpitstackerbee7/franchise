@@ -269,6 +269,7 @@ frappe.query_reports["Custom Stock Report"] = {
 
 					args: {
 						filters: report.get_filter_values(),
+						report_data: report.data,
 					},
 
 					callback: function (r) {
