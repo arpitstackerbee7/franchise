@@ -252,6 +252,13 @@ frappe.query_reports["Custom Stock Report"] = {
 				);
 			}
 		);
+		function get_locked_closing_balance_name() {
+	        let msg = frappe.query_report.message;
+	        if (msg && msg.closing_balance_name) {
+		        return msg.closing_balance_name;
+	        }
+	        return null;
+        }  
 
 		// Export With Images
 		report.page.add_inner_button(
@@ -262,13 +269,19 @@ frappe.query_reports["Custom Stock Report"] = {
 					message: __("Generating Excel with images..."),
 					indicator: "blue",
 				});
+				let filters = report.get_filter_values();
+
+                let locked_name = get_locked_closing_balance_name();
+                if (locked_name) {
+	                filters.closing_balance_name = locked_name;
+                }
 
 				frappe.call({
 					method:
 						"franchise_erp.franchise_erp.report.custom_stock_report.export_with_images.export_custom_stock_report_with_images",
 
 					args: {
-						filters: report.get_filter_values(),
+						filters: filters,
 						report_data: report.data,
 					},
 
