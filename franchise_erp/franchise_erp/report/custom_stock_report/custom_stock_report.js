@@ -283,6 +283,12 @@ frappe.query_reports["Custom Stock Report"] = {
 					args: {
 						filters: filters,
 						report_data: report.data,
+						columns: report.columns.map((c) => ({
+                        fieldname: c.fieldname,
+                        label: c.label,
+                        fieldtype: c.fieldtype,
+                        width: c.width,
+                    })),
 					},
 
 					callback: function (r) {

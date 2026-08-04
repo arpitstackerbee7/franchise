@@ -31,8 +31,10 @@
   "enable_geo_location",
   "enable_whatsapp_notification",
   "enable_whatsapp_group_notification",
+  "enable_po_notification",
   "is_credit_note_account",
-  "enable_pricing_rule"
+  "enable_pricing_rule",
+  "dashboard_company"
  ],
  "fields": [
   {
@@ -204,13 +206,25 @@
    "fieldtype": "Table",
    "label": "Counter Store Level Performance",
    "options": "Counter Store Level Performance"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_po_notification",
+   "fieldtype": "Check",
+   "label": "Enable PO Notification"
+  },
+  {
+   "fieldname": "dashboard_company",
+   "fieldtype": "Link",
+   "label": "Dashboard Company",
+   "options": "Company"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-30 14:37:11.436530",
+ "modified": "2026-08-04 22:12:54.013467",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",

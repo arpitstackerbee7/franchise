@@ -859,6 +859,10 @@ def po_workflow_notification(doc, method=None):
     enabled = frappe.db.get_single_value("TZU Setting", "enable_whatsapp_notification")
     if not enabled:
         return
+
+    po_notification_enabled = frappe.db.get_single_value("TZU Setting", "enable_po_notification")
+    if not po_notification_enabled:
+        return
  
     before = doc.get_doc_before_save()
     if not before:

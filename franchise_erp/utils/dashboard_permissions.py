@@ -2,8 +2,12 @@
 import frappe
 
 def get_allowed_company(filters):
-    user_company = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "company")
-    is_tzu = frappe.session.user == "Administrator" or user_company == "TZU Lifestyle Private Limited"
+    user = frappe.session.user
+    user_company = frappe.db.get_value("User", user, "company")
+    dashboard_company = frappe.db.get_single_value(
+        "TZU Settings", "dashboard_company"
+    )
+    is_tzu = user == "Administrator" or user_company == dashboard_company
     requested = filters.get("company")
 
     if is_tzu:
