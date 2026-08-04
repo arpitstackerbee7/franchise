@@ -5,7 +5,7 @@ def get_allowed_company(filters):
     user = frappe.session.user
     user_company = frappe.db.get_value("User", user, "company")
     dashboard_company = frappe.db.get_single_value(
-        "TZU Settings", "dashboard_company"
+        "TZU Setting", "dashboard_company"
     )
     is_tzu = user == "Administrator" or user_company == dashboard_company
     requested = filters.get("company")
