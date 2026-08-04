@@ -30,6 +30,7 @@ class StockBalanceFilter(TypedDict):
 	include_uom: str | None  # include extra info in converted UOM
 	show_stock_ageing_data: bool
 	show_variant_attributes: bool
+	closing_balance_name: str | None
 
 
 SLEntry = dict[str, Any]
@@ -49,6 +50,7 @@ class StockBalanceReport:
 		self.data = []
 		self.columns = []
 		self.sle_entries: list[SLEntry] = []
+		self.closing_balance_name = None
 		self.set_company_currency()
 
 	def set_company_currency(self) -> None:
@@ -77,7 +79,10 @@ class StockBalanceReport:
 
 		self.add_additional_uom_columns()
 
-		return self.columns, self.data
+		message = {"closing_balance_name": self.closing_balance_name}
+
+
+		return self.columns, self.data, message
 
 	# def add_total_row(self):
 	# 	if not self.data:
@@ -117,6 +122,7 @@ class StockBalanceReport:
 		closing_balance = self.get_closing_balance()
 		if not closing_balance:
 			return
+		self.closing_balance_name = closing_balance[0].name
 
 		self.start_from = add_days(closing_balance[0].to_date, 1)
 		res = frappe.get_doc("Closing Stock Balance", closing_balance[0].name).get_prepared_data()
@@ -397,6 +403,12 @@ class StockBalanceReport:
 		if self.filters.get("ignore_closing_balance"):
 			return []
 
+		if self.filters.get("closing_balance_name"):
+			return frappe.get_all(
+            "Closing Stock Balance",
+            filters={"name": self.filters.get("closing_balance_name"), "docstatus": 1},
+            fields=["name", "to_date"],
+        )
 		table = frappe.qb.DocType("Closing Stock Balance")
 
 		query = (

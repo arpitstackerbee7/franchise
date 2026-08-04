@@ -15,26 +15,27 @@ def export_custom_stock_report_with_images(filters=None, report_data=None):
     if isinstance(filters, str):
         filters = frappe.parse_json(filters)
 
-    columns, fresh_data = execute(filters)
+    columns, fresh_data, _message = execute(filters)
     if report_data:
         data = frappe.parse_json(report_data) if isinstance(report_data, str) else report_data
     else:
         data = fresh_data
- 
     # -----------------------------
     # Add Total Row
     # -----------------------------
     first_field = columns[0].get("fieldname")
-    already_has_total = bool(data) and isinstance(data[-1], dict) and data[-1].get(first_field) == "Total"
- 
+    data = [
+    row for row in data
+    if not (isinstance(row, dict) and row.get(first_field) == "Total")
+] 
     # -----------------------------
     # Add Total Row
     # -----------------------------
-    if data and not already_has_total:
-        total_row = {}
+    if data:
+      
 
         # First visible column
-        first_field = columns[0].get("fieldname")
+        total_row = {}
         total_row[first_field] = "Total"
 
         numeric_types = (
@@ -172,4 +173,6 @@ def export_custom_stock_report_with_images(filters=None, report_data=None):
     os.remove(temp_path)
 
     return file_doc.file_url
+
+
 
