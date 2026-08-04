@@ -821,3 +821,167 @@ def send_daily_counter_sales_group():
             os.remove(filepath)
 
     return f"Successfully Sent to {sent} Group(s)"
+
+PO_ROLE_CHECKER = "PO Check"
+PO_ROLE_APPROVER = "PO approval"
+ 
+# Key = (old_workflow_state, new_workflow_state) -- unique per transition.
+PO_TRANSITION_CONFIG = {
+    ("Draft", "Pending Checker Approval"): {
+        "recipients": ["checker"],
+        "label": "Sent to Checker",
+    },
+    ("Pending Checker Approval", "Pending Final Approval"): {
+        "recipients": ["approver"],
+        "label": "Sent to Approver",
+    },
+    ("Pending Final Approval", "Approved"): {
+        "recipients": ["maker", "checker"],
+        "label": "Approved",
+    },
+    ("Pending Final Approval", "Rejected"): {
+        "recipients": ["maker", "checker"],
+        "label": "Rejected",
+    },
+    ("Pending Final Approval", "Draft"): {
+        "recipients": ["maker", "checker"],
+        "label": "Sent Back for Modification",
+    },
+    # Checker's own Reject (Pending Checker Approval -> Draft) intentionally
+    # NOT included -- add it here the same way if you want it notified too.
+}
+ 
+PO_DESK_ROUTE = "/app/purchase-order/{name}"
+ 
+ 
+def po_workflow_notification(doc, method=None):
+ 
+    enabled = frappe.db.get_single_value("TZU Setting", "enable_whatsapp_notification")
+    if not enabled:
+        return
+ 
+    before = doc.get_doc_before_save()
+    if not before:
+        return
+ 
+    old_state = getattr(before, "workflow_state", None)
+    new_state = getattr(doc, "workflow_state", None)
+ 
+    if not new_state or old_state == new_state:
+        return
+ 
+    config = PO_TRANSITION_CONFIG.get((old_state, new_state))
+    if not config:
+        return
+ 
+    recipients = _po_resolve_recipients(doc, config["recipients"])
+    if not recipients:
+        frappe.log_error(
+            f"No recipients resolved for {old_state} -> {new_state} on {doc.name}",
+            "PO WhatsApp Notify - No Recipients",
+        )
+        return
+ 
+    message = _po_build_message(doc, config["label"])
+ 
+    for user in recipients:
+        mobile = _po_get_mobile_no(user)
+        if not mobile:
+            frappe.log_error(
+                f"No mobile number found for user {user} ({doc.name})",
+                "PO WhatsApp Notify - Missing Mobile",
+            )
+            continue
+        _po_send_whatsapp_text(mobile, message)
+ 
+ 
+def _po_resolve_recipients(doc, recipient_labels):
+    users = []
+ 
+    for label in recipient_labels:
+        if label == "maker":
+            if doc.owner:
+                users.append(doc.owner)
+        elif label == "checker":
+            users.extend(_po_get_users_with_role(PO_ROLE_CHECKER))
+        elif label == "approver":
+            users.extend(_po_get_users_with_role(PO_ROLE_APPROVER))
+ 
+    return list({u for u in users if u})
+ 
+ 
+def _po_get_users_with_role(role_name):
+    rows = frappe.get_all(
+        "Has Role",
+        filters={"role": role_name, "parenttype": "User"},
+        fields=["parent as user"],
+    )
+    user_names = [r.user for r in rows]
+    if not user_names:
+        return []
+ 
+    return frappe.get_all(
+        "User",
+        filters={"name": ["in", user_names], "enabled": 1},
+        pluck="name",
+    )
+ 
+ 
+def _po_get_mobile_no(user):
+    mobile = frappe.db.get_value("User", user, "mobile_no")
+    if mobile:
+        return mobile
+ 
+    employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+    if employee:
+        mobile = frappe.db.get_value("Employee", employee, "cell_number")
+        if mobile:
+            return mobile
+ 
+    return None
+ 
+ 
+def _po_build_message(doc, status_label):
+    total_qty = sum([item.qty for item in doc.items]) if doc.items else 0
+    supplier_name = doc.supplier_name or doc.supplier
+ 
+    link = frappe.utils.get_url() + PO_DESK_ROUTE.format(name=doc.name)
+ 
+    message = f"""Purchase Order Update
+ 
+PO No : {doc.name}
+Supplier : {supplier_name}
+Status : {status_label}
+Qty : {total_qty}
+Amount : {doc.grand_total}
+ 
+Click to view/action:
+{link}"""
+ 
+    return message
+ 
+ 
+def _po_send_whatsapp_text(mobile_no, message):
+    mobile_no = mobile_no.strip()
+    if not mobile_no.startswith("91"):
+        mobile_no = "91" + mobile_no
+ 
+    chat_id = f"{mobile_no}@c.us"
+ 
+    payload = {
+        "chatId": chat_id,
+        "message": message,
+    }
+ 
+    url = "https://7103.api.greenapi.com/waInstance7103539592/sendMessage/9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+ 
+    try:
+        response = requests.post(
+            url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        frappe.logger().info(f"PO WhatsApp sent to {chat_id}: {response.text}")
+    except Exception as e:
+        frappe.log_error(str(e), "PO WhatsApp Notify - Send Error")
+ 
