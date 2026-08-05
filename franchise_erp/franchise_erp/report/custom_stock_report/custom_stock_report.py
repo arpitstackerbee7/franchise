@@ -728,12 +728,12 @@ class StockBalanceReport:
 				"fieldtype": "Data",
 				"width": 210,
 			},
-			{
-				"label": _("Serial Count"),
-				"fieldname": "serial_count",
-				"fieldtype": "Int",
-				"hidden": 1,			
-			},
+			# {
+			# 	"label": _("Serial Count"),
+			# 	"fieldname": "serial_count",
+			# 	"fieldtype": "Int",
+			# 	"hidden": 1,			
+			# },
 			{
 				"label": _("Last Stock In Date"),
 				"fieldname": "last_stock_in_date",
@@ -888,6 +888,8 @@ class StockBalanceReport:
 			]
 
 		return columns
+
+
 
 	def add_additional_uom_columns(self):
 		if not self.filters.get("include_uom"):

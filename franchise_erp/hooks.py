@@ -246,7 +246,10 @@ doc_events = {
         "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_transfer_in_stock_entry"
     ],
 
-    "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
+    "on_submit": [
+            "franchise_erp.custom.stock_entry.on_submit_stock_entry",
+            # "franchise_erp.custom.stock_entry.create_stock_settlement"
+    ]
 },
 "Subcontracting Receipt": {
     "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",

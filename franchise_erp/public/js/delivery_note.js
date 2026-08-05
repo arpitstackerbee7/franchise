@@ -1,9 +1,38 @@
+let is_sis_counter = false;
 frappe.ui.form.on("Delivery Note", {
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
         // set_sales_person(frm);
         frm.__export_button_added = false;
         add_export_button(frm);
+
+        frappe.call({
+            method: "frappe.client.get",
+            args: {
+                doctype: "User",
+                name: frappe.session.user
+            },
+            callback: function(r) {
+                if (!r.message) return;
+
+                is_sis_counter = (r.message.roles || []).some(
+                    d => d.role === "SIS Counter"
+                );
+
+                if (is_sis_counter) {
+                    toggle_sis_counter_ui(frm);
+                } else {
+                    show_all_fields(frm);
+                }
+            }
+        });
+    },
+    customer(frm) {
+        if (is_sis_counter) {
+            setTimeout(() => {
+                toggle_sis_counter_ui(frm);
+            }, 300);
+        }
     },
     validate(frm) {
         frm.doc.items.forEach(row => {
@@ -14,10 +43,7 @@ frappe.ui.form.on("Delivery Note", {
             }
         });
         handle_sis_calculation_on_dn(frm);
-    }
-});
-
-frappe.ui.form.on('Delivery Note', {
+    },
     company: function(frm) {
         if (!frm.doc.company) return;
 
@@ -45,79 +71,212 @@ frappe.ui.form.on('Delivery Note', {
         // if (frm.is_new()) {
         //     set_sales_person(frm);
         // }
-    }
-});
-
-
-frappe.ui.form.on('Delivery Note', {
-    refresh: function(frm) {
-        // SIS Counter Role Check
-        if (frappe.user.has_role('SIS Counter')) {
-            apply_sis_counter_minimal_ui(frm);
-        }
     },
+    onload_post_render(frm) {
 
-   
+        // sirf return DN ke liye
+        if (frm.doc.is_return && frm.doc.custom_bulk_sales_return) {
 
-    // Handle re-rendering when customer is selected
-    customer: function(frm) {
-        if (frappe.user.has_role('SIS Counter')) {
-            setTimeout(() => { apply_sis_counter_minimal_ui(frm); }, 500);
+            // 🔥 wait for ERPNext auto calculations
+            setTimeout(() => {
+
+                // remove dirty state
+                frm.dirty = false;
+                frm.doc.__unsaved = 0;
+
+                // optional (safe)
+                frm.refresh();
+
+            },200); // thoda delay zaroori hai
         }
     }
 });
 
-function apply_sis_counter_minimal_ui(frm) {
-    // 1. Sections to Hide (Internal names from Customize Form JSON)
-    const sections_to_hide = [
-        'currency_and_price_list',
-        'section_break_49',
-        'taxes_section',
-        'accounting_dimensions_section',
-        'gst_section',
-        'section_break_41',
-        'customer_po_details',
-        'sales_team_section_break',
-        'printing_details'
+
+function show_all_fields(frm) {
+
+    const sections = [
+        "currency_and_price_list",
+        "section_break_49",
+        "taxes_section",
+        "accounting_dimensions_section",
+        "gst_section",
+        "section_break_41",
+        "customer_po_details",
+        "sales_team_section_break",
+        "printing_details"
     ];
 
-    // 2. Individual Fields to Hide
-    const fields_to_hide = [
-        'naming_series',
-        'posting_time',
-        'set_posting_time', 'company', 'amended_from',
-        'is_return',
-        'tax_id',
-        'total_taxes_and_charges',
-        'base_total_taxes_and_charges'
+    const fields = [
+        "naming_series",
+        "posting_time",
+        "set_posting_time",
+        "company",
+        "amended_from",
+        "is_return",
+        "tax_id",
+        "total_taxes_and_charges",
+        "base_total_taxes_and_charges"
     ];
 
-    // Apply Hiding for sections
-    sections_to_hide.forEach(sec => {
-        frm.set_df_property(sec, 'hidden', 1);
-        $(frm.wrapper).find(`div[data-fieldname="${sec}"]`).attr('style', 'display: none !important');
+    sections.forEach(f => {
+        $(frm.wrapper)
+            .find(`[data-fieldname="${f}"]`)
+            .show();
     });
 
-    // Apply Hiding for fields
-    fields_to_hide.forEach(field => {
-        frm.set_df_property(field, 'hidden', 1);
-        $(frm.wrapper).find(`div[data-fieldname="${field}"]`).hide();
+    fields.forEach(f => {
+        frm.toggle_display(f, true);
     });
 
-    // 3. Clean Items Table - FIX: Changed get_all_fields to docfields
     let grid = frm.get_field("items").grid;
-    let show_list = ['item_code', 'qty', 'rate', 'discount_amount', 'amount',"custom_style"];
 
     if (grid && grid.docfields) {
         grid.docfields.forEach(df => {
-            grid.set_column_disp(df.fieldname, show_list.includes(df.fieldname));
+            grid.set_column_disp(df.fieldname, true);
         });
         grid.refresh();
     }
 
-    // Set simplified page title
-    frm.page.set_title("SIS Counter Sale");
+    frm.refresh_fields();
 }
+function toggle_sis_counter_ui(frm) {
+
+    const is_sis_counter = frappe.user.has_role("SIS Counter");
+
+    const sections = [
+        "currency_and_price_list",
+        "section_break_49",
+        "taxes_section",
+        "accounting_dimensions_section",
+        "gst_section",
+        "section_break_41",
+        "customer_po_details",
+        "sales_team_section_break",
+        "printing_details"
+    ];
+
+    const fields = [
+        "naming_series",
+        "posting_time",
+        "set_posting_time",
+        "company",
+        "amended_from",
+        "is_return",
+        "tax_id",
+        "total_taxes_and_charges",
+        "base_total_taxes_and_charges"
+    ];
+
+    // Wait until form is rendered
+    setTimeout(() => {
+
+        sections.forEach(f => {
+            $(frm.wrapper)
+                .find(`[data-fieldname="${f}"]`)
+                .toggle(!is_sis_counter);
+        });
+
+        fields.forEach(f => {
+            frm.toggle_display(f, !is_sis_counter);
+        });
+
+        // Grid
+        let grid = frm.get_field("items").grid;
+
+        const show_list = [
+            "item_code",
+            "qty",
+            "rate",
+            "discount_amount",
+            "amount",
+            "custom_style"
+        ];
+
+        if (grid && grid.docfields) {
+            grid.docfields.forEach(df => {
+                grid.set_column_disp(
+                    df.fieldname,
+                    !is_sis_counter || show_list.includes(df.fieldname)
+                );
+            });
+            grid.refresh();
+        }
+
+    }, 100);
+}
+
+// frappe.ui.form.on('Delivery Note', {
+//     refresh: function(frm) {
+//         // SIS Counter Role Check
+//         if (frappe.user.has_role('SIS Counter')) {
+//             apply_sis_counter_minimal_ui(frm);
+//         }
+//     },
+
+   
+
+//     // Handle re-rendering when customer is selected
+//     customer: function(frm) {
+//         if (frappe.user.has_role('SIS Counter')) {
+//             setTimeout(() => { apply_sis_counter_minimal_ui(frm); }, 500);
+//         }
+//     }
+// });
+
+// function apply_sis_counter_minimal_ui(frm) {
+//     // 1. Sections to Hide (Internal names from Customize Form JSON)
+//     const sections_to_hide = [
+//         'currency_and_price_list',
+//         'section_break_49',
+//         'taxes_section',
+//         'accounting_dimensions_section',
+//         'gst_section',
+//         'section_break_41',
+//         'customer_po_details',
+//         'sales_team_section_break',
+//         'printing_details'
+//     ];
+
+//     // 2. Individual Fields to Hide
+//     const fields_to_hide = [
+//         'naming_series',
+//         'posting_time',
+//         'set_posting_time', 'company', 'amended_from',
+//         'is_return',
+//         'tax_id',
+//         'total_taxes_and_charges',
+//         'base_total_taxes_and_charges'
+//     ];
+
+//     // Apply Hiding for sections
+//     sections_to_hide.forEach(sec => {
+//         frm.set_df_property(sec, 'hidden', 1);
+//         $(frm.wrapper).find(`div[data-fieldname="${sec}"]`).attr('style', 'display: none !important');
+//     });
+
+//     // Apply Hiding for fields
+//     fields_to_hide.forEach(field => {
+//         frm.set_df_property(field, 'hidden', 1);
+//         $(frm.wrapper).find(`div[data-fieldname="${field}"]`).hide();
+//     });
+
+//     // 3. Clean Items Table - FIX: Changed get_all_fields to docfields
+//     let grid = frm.get_field("items").grid;
+//     let show_list = ['item_code', 'qty', 'rate', 'discount_amount', 'amount',"custom_style"];
+
+//     if (grid && grid.docfields) {
+//         grid.docfields.forEach(df => {
+//             grid.set_column_disp(df.fieldname, show_list.includes(df.fieldname));
+//         });
+//         grid.refresh();
+//     }
+
+//     // Set simplified page title
+//     frm.page.set_title("SIS Counter Sale");
+// }
+
+
 
 
 frappe.ui.form.on("Delivery Note Item", {
@@ -171,27 +330,7 @@ frappe.ui.form.on("Delivery Note Item", {
 //     }
 // }
 
-frappe.ui.form.on("Delivery Note", {
 
-    onload_post_render(frm) {
-
-        // sirf return DN ke liye
-        if (frm.doc.is_return && frm.doc.custom_bulk_sales_return) {
-
-            // 🔥 wait for ERPNext auto calculations
-            setTimeout(() => {
-
-                // remove dirty state
-                frm.dirty = false;
-                frm.doc.__unsaved = 0;
-
-                // optional (safe)
-                frm.refresh();
-
-            },200); // thoda delay zaroori hai
-        }
-    }
-});
 
 function add_export_button(frm) {
 

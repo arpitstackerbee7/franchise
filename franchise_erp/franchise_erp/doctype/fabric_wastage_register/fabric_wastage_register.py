@@ -30,10 +30,10 @@ class FabricWastageRegister(Document):
                     f"Row {row.idx}: Actual Wastage cannot be negative."
                 )
 
-            if wastage_qty > actual_consumption:
-                frappe.throw(
-                    f"Row {row.idx}: Actual Wastage Qty cannot be greater than Actual Consumption."
-                )
+            # if wastage_qty > actual_consumption:
+            #     frappe.throw(
+            #         f"Row {row.idx}: Actual Wastage Qty cannot be greater than Actual Consumption."
+            #     )
 
             if wastage_qty > 0 and not row.reason:
                 frappe.throw(
@@ -45,7 +45,7 @@ class FabricWastageRegister(Document):
         existing = frappe.db.exists(
             "Fabric Wastage Register",
             {
-                "subcontracting_receipt": self.subcontracting_receipt,
+                "subcontracting_order": self.subcontracting_order,
                 "docstatus": ["!=", 2],
                 "name": ["!=", self.name]
             }
@@ -54,7 +54,7 @@ class FabricWastageRegister(Document):
         if existing:
             frappe.throw(
                 f"Fabric Wastage Register <b>{existing}</b> already exists for "
-                f"Subcontracting Receipt <b>{self.subcontracting_receipt}</b>."
+                f"Subcontracting Order <b>{self.subcontracting_order}</b>."
             )
 
     def on_submit(self):
@@ -86,12 +86,12 @@ class FabricWastageRegister(Document):
         if stock_entry.meta.has_field("custom_fabric_wastage_register"):
             stock_entry.custom_fabric_wastage_register = self.name
 
-        # if stock_entry.meta.has_field("subcontracting_receipt"):
-        #     stock_entry.subcontracting_receipt = self.subcontracting_receipt
+        # if stock_entry.meta.has_field("subcontracting_order"):
+        #     stock_entry.subcontracting_order = self.subcontracting_order
 
         stock_entry.remarks = (
-            f"Fabric Wastage against Subcontracting Receipt "
-            f"{self.subcontracting_receipt} "
+            f"Fabric Wastage against Subcontracting Order "
+            f"{self.subcontracting_order} "
             f"through Fabric Wastage Register {self.name}"
         )
 
@@ -119,9 +119,9 @@ class FabricWastageRegister(Document):
 
 
 @frappe.whitelist()
-def get_subcontracting_receipt_data(subcontracting_receipt):
+def get_subcontracting_order_data(subcontracting_order):
 
-    scr = frappe.get_doc("Subcontracting Receipt", subcontracting_receipt)
+    scr = frappe.get_doc("Subcontracting Order", subcontracting_order)
 
     finished_qty = 0
     if scr.items:
@@ -129,6 +129,7 @@ def get_subcontracting_receipt_data(subcontracting_receipt):
 
     data = {
         "supplier": scr.supplier,
+        "supplier_warehouse": scr.supplier_warehouse,
         "items": []
     }
 
@@ -158,7 +159,9 @@ def get_subcontracting_receipt_data(subcontracting_receipt):
             "finished_qty_received": finished_qty,
             "standard_consumption": standard_consumption,
             "actual_consumption": row.consumed_qty,
-            "uom": row.stock_uom
+            "uom": row.stock_uom,
+            "rate": row.rate,
+            "amount": row.amount
         })
 
     return data

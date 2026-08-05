@@ -175,4 +175,3 @@ def export_custom_stock_report_with_images(filters=None, report_data=None):
     return file_doc.file_url
 
 
-
