@@ -862,5 +862,6 @@ fixtures = [
                 "Date Range"
             ]]
         ]
-    }
+    },
+    {"dt": "Workspace", "filters": [["name", "in", ["Home", "Selling"]]]},
 ]
