@@ -8,12 +8,12 @@
   "section_break_8ur8",
   "amended_from",
   "company",
-  "subcontracting_receipt",
+  "warehouse",
   "posting_date",
   "status",
   "stock_entry",
   "column_break_qnhf",
-  "warehouse",
+  "subcontracting_order",
   "supplier",
   "posting_time",
   "remarks",
@@ -39,15 +39,9 @@
    "fieldname": "company",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Company",
    "options": "Company",
-   "reqd": 1
-  },
-  {
-   "fieldname": "subcontracting_receipt",
-   "fieldtype": "Link",
-   "label": "Subcontracting Receipt",
-   "options": "Subcontracting Receipt",
    "reqd": 1
   },
   {
@@ -72,8 +66,7 @@
    "in_list_view": 1,
    "label": "Warehouse",
    "link_filters": "[\n    [\"Warehouse\", \"company\", \"=\", \"eval:doc.company\"]\n]",
-   "options": "Warehouse",
-   "reqd": 1
+   "options": "Warehouse"
   },
   {
    "fieldname": "supplier",
@@ -109,6 +102,15 @@
    "label": "Stock Entry",
    "options": "Stock Entry",
    "read_only": 1
+  },
+  {
+   "fieldname": "subcontracting_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Subcontracting Order",
+   "options": "Subcontracting Order",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -120,7 +122,7 @@
    "link_fieldname": "custom_fabric_wastage_register"
   }
  ],
- "modified": "2026-07-27 18:44:08.675871",
+ "modified": "2026-08-04 17:20:25.272884",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Fabric Wastage Register",

@@ -508,3 +508,34 @@ def validate_gate_entry_qty_on_transfer_in_stock_entry(doc, method):
             _("Only {0} qty allowed for Gate Entry {1}")
             .format(remaining_qty, gate_entry)
         )
+
+
+# stock take credit/debit note create
+# def create_stock_settlement(doc, method=None):
+
+#     # Sirf Stock Taking se bani Stock Entry par chalega
+#     if not doc.custom_stock_taking:
+#         return
+
+#     if doc.docstatus != 1:
+#         return
+
+#     if doc.stock_entry_type == "Material Issue":
+#         create_debit_note(doc)
+
+#     elif doc.stock_entry_type == "Material Receipt":
+#         create_credit_note(doc)
+        
+        
+# def create_debit_note(doc):
+#     frappe.log_error(
+#         title="Material Issue",
+#         message=f"{doc.name} | {doc.custom_stock_taking}"
+#     )
+
+
+# def create_credit_note(doc):
+#     frappe.log_error(
+#         title="Material Receipt",
+#         message=f"{doc.name} | {doc.custom_stock_taking}"
+#     )

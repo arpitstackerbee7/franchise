@@ -5,14 +5,14 @@ frappe.ui.form.on("Fabric Wastage Register", {
             frm.set_value("posting_time", frappe.datetime.now_time());
         }
     },
-    subcontracting_receipt(frm) {
+    subcontracting_order(frm) {
 
-        if (!frm.doc.subcontracting_receipt) return;
+        if (!frm.doc.subcontracting_order) return;
 
         frappe.call({
-            method: "franchise_erp.franchise_erp.doctype.fabric_wastage_register.fabric_wastage_register.get_subcontracting_receipt_data",
+            method: "franchise_erp.franchise_erp.doctype.fabric_wastage_register.fabric_wastage_register.get_subcontracting_order_data",
             args: {
-                subcontracting_receipt: frm.doc.subcontracting_receipt
+                subcontracting_order: frm.doc.subcontracting_order
             },
             freeze: true,
             callback: function(r) {
@@ -20,6 +20,7 @@ frappe.ui.form.on("Fabric Wastage Register", {
                 if (!r.message) return;
 
                 frm.set_value("supplier", r.message.supplier);
+                frm.set_value("warehouse", r.message.supplier_warehouse);
 
                 frm.clear_table("fabric_wastage_detail");
 
@@ -36,6 +37,8 @@ frappe.ui.form.on("Fabric Wastage Register", {
                     row.standard_consumption = item.standard_consumption;
                     row.actual_consumption = item.actual_consumption;
                     row.uom = item.uom;
+                    row.rate = item.rate;
+                    row.amount = item.amount;
 
                 });
 
