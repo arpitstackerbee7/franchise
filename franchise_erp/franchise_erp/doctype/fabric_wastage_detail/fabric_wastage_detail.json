@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "item_code",
+  "rm_item_code",
   "color",
   "fabric_sent_qty",
   "standard_consumption",
@@ -19,7 +20,8 @@
   "actual_consumption",
   "uom",
   "rate",
-  "amount"
+  "amount",
+  "reserve_warehouse"
  ],
  "fields": [
   {
@@ -106,13 +108,26 @@
    "fieldname": "amount",
    "fieldtype": "Currency",
    "label": "Amount"
+  },
+  {
+   "fieldname": "rm_item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Raw Material Item Code",
+   "options": "Item"
+  },
+  {
+   "fieldname": "reserve_warehouse",
+   "fieldtype": "Link",
+   "label": "Reserve Warehouse",
+   "options": "Warehouse"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-04 17:19:57.768415",
+ "modified": "2026-08-06 17:12:55.808623",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Fabric Wastage Detail",
