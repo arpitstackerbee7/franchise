@@ -297,12 +297,12 @@
    "label": "For Guard"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "transporter",
    "fieldtype": "Link",
    "label": "Transporter",
    "link_filters": "[[\"Supplier\",\"is_transporter\",\"=\",1]]",
-   "options": "Supplier",
-   "reqd": 1
+   "options": "Supplier"
   },
   {
    "fieldname": "invoice_value",
@@ -337,13 +337,13 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "door_no",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Doer",
-   "options": "User",
-   "reqd": 1
+   "options": "User"
   },
   {
    "fieldname": "purchase_invoice",
@@ -366,7 +366,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-08-01 14:54:17.379205",
+ "modified": "2026-08-06 17:51:11.657064",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
