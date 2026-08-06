@@ -10,11 +10,35 @@ frappe.query_reports["Custom Account Payable"] = {
         },
         {
             fieldname: "report_date",
-            label: __("As On Date"),
+            label: __("As On Date (Debit Entry)"),
             fieldtype: "Date",
             default: frappe.datetime.get_today(),
             reqd: 1,
         },
+           {
+            fieldname: "credit_entry_date",
+            label: __("As On Date (Credit Entry)"),
+            fieldtype: "Date",
+            default: "",
+            },
+            {
+            fieldname: "credit_entry_voucher_types",
+            label: __("Credit Entry Voucher Types"),
+            fieldtype: "MultiSelectList",
+            get_data: function(txt) {
+                const options = [
+                    "Payment Entry",
+                    "Purchase Invoice",
+                    "Debit Note",
+                    "Journal Entry",
+                    "Purchase Order",
+                    "OTHERS",
+                ];
+                return options
+                    .filter(o => o.toLowerCase().includes((txt || "").toLowerCase()))
+                    .map(o => ({ value: o, description: "" }));
+            },
+           },
         {
             fieldname: "ageing_based_on",
             label: __("Ageing Based On"),
@@ -48,6 +72,28 @@ frappe.query_reports["Custom Account Payable"] = {
                 return frappe.db.get_link_options("Supplier", txt);
             },
         },
+       {
+            fieldname: "supplier_group",
+            label: __("Supplier Group"),
+            fieldtype: "MultiSelectList",
+            get_data: function(txt) {
+                return frappe.db.get_link_options("Supplier Group", txt);
+            },
+        },
+        {
+            fieldname: "agent",
+            label: __("Agent"),
+            fieldtype: "Link",
+            options: "Supplier",
+            get_query: function() {
+                // Only show suppliers marked as an Agent
+                return {
+                    filters: {
+                        custom_is_agent: 1,
+                    },
+                };
+            },
+        },
         {
             fieldname: "payment_terms_template",
             label: __("Payment Terms Template"),
@@ -77,12 +123,14 @@ frappe.query_reports["Custom Account Payable"] = {
     formatter: function(value, row, column, data, default_formatter) {
         value = default_formatter(value, row, column, data);
 
-        if (data && data.is_subtotal) {
-            value = `<b>${value || ""}</b>`;
+     if (data && data.is_row_break) {
+            // blank vendor-change separator row - render nothing
+            return "";
+        } else if (data && data.is_subtotal) {
+            value = `<b style="background-color:#ffd6d6;">${value || ""}</b>`;
         } else if (data && data.is_group) {
-            value = `<span style="color:#6c757d;">${value || ""}</span>`;
+            value = `<span style="color:#6c757d; background-color:#f5f5f5;">${value || ""}</span>`;
         }
-
         return value;
     },
 };
