@@ -107,7 +107,16 @@ class FabricWastageRegister(Document):
                 "stock_uom": row.uom,
                 "s_warehouse": self.warehouse
             })
+        # for row in self.fabric_wastage_detail:
 
+        #     stock_entry.append("items", {
+        #         "item_code": row.item_code,
+        #         "qty": row.actual_wastage_qty,
+        #         "uom": row.uom,
+        #         "stock_uom": row.uom,
+        #         "s_warehouse": row.reserve_warehouse
+        #     })
+        
         if not stock_entry.items:
             frappe.throw("Please enter Actual Wastage Qty before submitting.")
 
@@ -129,7 +138,7 @@ def get_subcontracting_order_data(subcontracting_order):
 
     data = {
         "supplier": scr.supplier,
-        "supplier_warehouse": scr.supplier_warehouse,
+        "set_warehouse": scr.set_warehouse,
         "items": []
     }
 
@@ -149,9 +158,11 @@ def get_subcontracting_order_data(subcontracting_order):
         standard_consumption = 0
         if finished_qty:
             standard_consumption = row.required_qty / finished_qty
-
+                    
         data["items"].append({
-            "item_code": row.rm_item_code,
+            "item_code": row.rm_item_code,          # ✅ RM Item
+            "rm_item_code": row.rm_item_code,       # ✅
+            "reserve_warehouse": row.reserve_warehouse,   # ✅
             "size": item_details.get("custom_size"),
             "color": item_details.get("custom_colour_name"),
             "top_fabrics": item_details.get("custom_top_fabrics"),
@@ -165,3 +176,7 @@ def get_subcontracting_order_data(subcontracting_order):
         })
 
     return data
+
+
+
+

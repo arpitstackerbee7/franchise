@@ -21,9 +21,10 @@ frappe.ui.form.on("Delivery Note", {
 
                 if (is_sis_counter) {
                     toggle_sis_counter_ui(frm);
-                } else {
-                    show_all_fields(frm);
-                }
+                } 
+                // else {
+                //     show_all_fields(frm);
+                // }
             }
         });
     },

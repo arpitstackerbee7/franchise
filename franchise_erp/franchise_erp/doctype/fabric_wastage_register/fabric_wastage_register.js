@@ -20,7 +20,7 @@ frappe.ui.form.on("Fabric Wastage Register", {
                 if (!r.message) return;
 
                 frm.set_value("supplier", r.message.supplier);
-                frm.set_value("warehouse", r.message.supplier_warehouse);
+                frm.set_value("warehouse", r.message.set_warehouse);
 
                 frm.clear_table("fabric_wastage_detail");
 
@@ -28,7 +28,9 @@ frappe.ui.form.on("Fabric Wastage Register", {
 
                     let row = frm.add_child("fabric_wastage_detail");
 
+                    
                     row.item_code = item.item_code;
+                    row.rm_item_code = item.rm_item_code;
                     row.size = item.size;
                     row.color = item.color;
                     row.top_fabrics = item.top_fabrics;
@@ -39,6 +41,7 @@ frappe.ui.form.on("Fabric Wastage Register", {
                     row.uom = item.uom;
                     row.rate = item.rate;
                     row.amount = item.amount;
+                    row.reserve_warehouse = item.reserve_warehouse;
 
                 });
 
