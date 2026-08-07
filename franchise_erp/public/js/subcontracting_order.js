@@ -1,5 +1,18 @@
 frappe.ui.form.on("Subcontracting Order", {
     refresh(frm) {
+       
+        frm.add_custom_button(
+            __("Fabric Wastage Register"),
+            function () {
+                frappe.new_doc("Fabric Wastage Register", {
+                    subcontracting_order: frm.doc.name,
+                    company: frm.doc.company,
+                    supplier: frm.doc.supplier
+                });
+            },
+            __("Create")
+        );
+        
         if (frm.doc.docstatus !== 0) {
             return;
         }
@@ -15,6 +28,8 @@ frappe.ui.form.on("Subcontracting Order", {
         } else {
             set_tax_rows_on_net_total(frm);
         }
+
+
     },
 
     purchase_order(frm) {
@@ -186,7 +201,7 @@ frappe.ui.form.on('Subcontracting Order', {
 
         // 🧹 3. Prevent duplicate buttons
         frm.remove_custom_button(__('Outgoing Logistics'), __('Create'));
-
+        
         // 🔍 4. Check if submitted Stock Entry exists
         frappe.db.get_value(
             "Stock Entry",
