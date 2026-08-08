@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import flt
+from frappe.utils import flt, getdate
 from collections import defaultdict
 from datetime import date
 
@@ -16,18 +16,25 @@ VOUCHER_TYPE_ORDER = [
     "OTHERS",
 ]
 
+CREDIT_ENTRY_GROUPS = {"Payment Entry", "Debit Note"}
+SUPPLIER_AGENT_FIELD = "custom_agent_supplier"
 
 def execute(filters=None):
-    args = {
-        "account_type": "Payable",
-        "naming_by": ["Buying Settings", "supp_master_name"],
-    }
+    filters = frappe._dict(filters or {})
 
-    result = ReceivablePayableReport(filters).run(args)
+    group_by_party = int(filters.get("group_by_party") or 0)
+    base_filters = dict(filters)
+    base_filters["group_by_party"] = 0
+
+    args = {
+    "account_type": "Payable",
+    "naming_by": ["Buying Settings", "supp_master_name"],
+}
+    result = ReceivablePayableReport(base_filters).run(args)
     columns = list(result[0])
     raw_data = [row for row in result[1] if isinstance(row, dict)]
 
-    supplier_filter = (filters or {}).get("supplier") or []
+    supplier_filter = filters.get("supplier") or []
     if supplier_filter:
         supplier_list = [
             (s if isinstance(s, str) else s.get("value", "")).strip()
@@ -39,6 +46,40 @@ def execute(filters=None):
                 row for row in raw_data
                 if (row.get("party") or "").strip() in supplier_list
             ]
+    # ── Supplier Group filter (multi-select) ───────────────────────────────
+    supplier_group_filter = filters.get("supplier_group") or []
+    if supplier_group_filter:
+        supplier_group_list = [
+            (g if isinstance(g, str) else g.get("value", "")).strip()
+            for g in supplier_group_filter
+        ]
+        supplier_group_list = [g for g in supplier_group_list if g]
+        if supplier_group_list:
+            raw_data = [
+                row for row in raw_data
+                if (row.get("supplier_group") or "").strip() in supplier_group_list
+            ]
+
+    # ── Agent filter ────────────────────────────────────────────────────
+    agent_filter = (filters.get("agent") or "").strip()
+    if agent_filter:
+        parties_in_data = list({
+            (row.get("party") or "").strip() for row in raw_data if row.get("party")
+        })
+        if parties_in_data:
+            agent_map = frappe.db.get_all(
+                "Supplier",
+                filters={"name": ["in", parties_in_data]},
+                fields=["name", SUPPLIER_AGENT_FIELD],
+            )
+            allowed_parties = {
+                a["name"] for a in agent_map if a.get(SUPPLIER_AGENT_FIELD) == agent_filter
+            }
+            raw_data = [
+                row for row in raw_data
+                if (row.get("party") or "").strip() in allowed_parties
+            ]
+
 
     # ── Remove unwanted columns ────────────────────────────────────────────
     REMOVE_FIELDS = {"credit_note", "range1", "range2", "range3", "range4", "range5", "due_date", "cost_center", "project", "currency"}
@@ -140,6 +181,26 @@ def execute(filters=None):
         if vno.startswith("PDC"):     return "Payment Entry"
         if vno.startswith("PV"):      return "Payment Entry"
         return vtype or "OTHERS"
+    # ── Credit Entry date filter ────────────────────────────────────────
+    credit_entry_date = filters.get("credit_entry_date")
+    selected_credit_groups = filters.get("credit_entry_voucher_types") or []
+    selected_credit_groups = [
+        (g if isinstance(g, str) else g.get("value", "")).strip()
+        for g in selected_credit_groups
+    ]
+    selected_credit_groups = [g for g in selected_credit_groups if g] or list(CREDIT_ENTRY_GROUPS)
+
+    if credit_entry_date:
+        credit_entry_date = getdate(credit_entry_date)
+        filtered = []
+        for row in raw_data:
+            vg = get_group(row)
+            if vg in selected_credit_groups:
+                row_date = row.get("posting_date")
+                if row_date and getdate(row_date) > credit_entry_date:
+                    continue  # exclude credit entries posted after the cutoff
+            filtered.append(row)
+        raw_data = filtered
 
     # ── Bucket by party ───────────────────────────────────────────────────
     party_order = []
@@ -150,16 +211,46 @@ def execute(filters=None):
         if party not in party_buckets:
             party_order.append(party)
         party_buckets[party].append(row)
+    # ═══════════════════════════════════════════════════════════════════
+    # RAW MODE (Group By Party unchecked): flat data, no subtotal rows,
+    # no vendor separators, no highlight flags.
+    # ═══════════════════════════════════════════════════════════════════
+    if not group_by_party:
+        output = []
+        for party in party_order:
+            rows = party_buckets[party]
+            rows.sort(key=lambda r: r.get("bill_date") or r.get("posting_date") or date.min)
+            running_balance = 0.0
+            for row in rows:
+                running_balance += flt(row.get("outstanding"))
+                row["running_balance"] = running_balance
+                output.append(row)
 
+        result = list(result)
+        result[0] = columns
+        result[1] = output
+        return result
+
+    # ═══════════════════════════════════════════════════════════════════
+    # GROUPED MODE (Group By Party checked): voucher-type subtotals,
+    # party totals, vendor-change row break, highlight flags.
+    # ═══════════════════════════════════════════════════════════════════
     # ── Build output ──────────────────────────────────────────────────────
     output = []
     
 
-    for party in party_order:
+    for idx, party in enumerate(party_order):
         rows = party_buckets[party]
         if not rows:
             continue
-
+        if idx > 0:
+            output.append({
+        "party": "", "party_type": "", "payable_account": "",
+        "voucher_type": "", "voucher_no": "", "posting_date": None,
+        "bill_date": None, "reference_no": None, "reference_date": None,
+        "invoiced": None, "paid": None, "outstanding": None,
+        "running_balance": None, "is_row_break": 1,
+        })
         running_balance = 0.0 
 
         sample_row = rows[0]
@@ -222,7 +313,7 @@ def execute(filters=None):
                 "invoiced":        vg_invoiced,
                 "paid":            vg_paid,
                 "outstanding":     vg_outstanding,
-                "running_balance": running_balance,
+                "running_balance": None,
                 "is_group":        1,
             })
 
@@ -250,8 +341,7 @@ def execute(filters=None):
             "running_balance": running_balance,
             "is_subtotal":     1,
         })
-    if output and output[-1].get("voucher_no") == "★ Total Total ★":
-        output.pop()
+    
 
     result = list(result)
     result[0] = columns

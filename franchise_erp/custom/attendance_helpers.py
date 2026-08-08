@@ -65,25 +65,49 @@ def get_prev_working_statuses(employee, date, count=SIX_DAY_RULE_COUNT):
     return statuses
 
 
-def mark_absent(employee, date):
+def mark_holiday_status(employee, date, status, leave_type=None, leave_application=None):
     existing = frappe.db.exists("Attendance", {"employee": employee, "attendance_date": date})
     if existing:
         doc = frappe.get_doc("Attendance", existing)
-        if doc.docstatus == 1 and doc.status == "Absent":
+        if doc.docstatus == 1 and doc.status == status :
             return  
         if doc.docstatus == 1:
             doc.cancel()
-        doc.status = "Absent"
+        doc.status = status
         doc.docstatus = 0
     else:
         doc = frappe.new_doc("Attendance")
         doc.employee = employee
         doc.attendance_date = date
-        doc.status = "Absent"
+        doc.status = status
         doc.company = frappe.db.get_value("Employee", employee, "company")
+
+    if status == "On Leave":
+        if leave_type:
+            doc.leave_type = leave_type
+        if leave_application:
+            doc.leave_application = leave_application
 
     doc.save(ignore_permissions=True)
     doc.submit()
+
+def get_leave_details(employee, date):
+    """Us date ko cover karne wali approved Leave Application ka leave_type dhoondhta hai"""
+    leave_app = frappe.db.get_value(
+        "Leave Application",
+        {
+            "employee": employee,
+            "status": "Approved",
+            "docstatus": 1,
+            "from_date": ["<=", date],
+            "to_date": [">=", date],
+        },
+        ["name", "leave_type"],
+        as_dict=True,
+    )
+    if leave_app:
+        return leave_app.leave_type, leave_app.name
+    return None, None
 
 
 def apply_sandwich_rule(employee, from_date, to_date):
@@ -106,8 +130,25 @@ def apply_sandwich_rule(employee, from_date, to_date):
             next_status, _ = get_next_non_holiday_status(employee, date)
  
             if prev_status in LEAVE_STATUSES and next_status in LEAVE_STATUSES:
-                mark_absent(employee, date)
-        date = add_days(date, 1)
+                if prev_status == "On Leave" or next_status == "On Leave":
+                    # EL/leave ne surround kiya hai — Sunday ko bhi On Leave banao,
+                    # taaki leave balance se kate aur salary paid rahe
+                    leave_type, leave_app = get_leave_details(employee, date) \
+                        or get_leave_details(employee, add_days(date, -1)) \
+                        or get_leave_details(employee, add_days(date, 1))
+                    if not leave_type:
+                        # fallback: prev/next date se seedha leave_type nikalo
+                        prev_d = add_days(date, -1)
+                        next_d = add_days(date, 1)
+                        while is_holiday(employee, prev_d):
+                            prev_d = add_days(prev_d, -1)
+                        leave_type, leave_app = get_leave_details(employee, prev_d)
+                        if not leave_type:
+                            leave_type, leave_app = get_leave_details(employee, next_d)
+                    mark_holiday_status(employee, date, "On Leave", leave_type, leave_app)
+                else:
+                    # dono taraf Absent hai — purana behavior
+                    mark_holiday_status(employee, date, "Absent")
  
 
 
@@ -142,3 +183,14 @@ def check_sandwich_on_leave_submit(doc, method=None):
     from_date = add_days(getdate(doc.from_date), -2)
     to_date = add_days(getdate(doc.to_date), 2)
     apply_sandwich_rule(doc.employee, from_date, to_date)
+
+def check_sandwich_on_attendance_submit(doc, method=None):
+    """Jab bhi Absent attendance submit ho (chahe backdated/bulk ho),
+       uske aas-paas ke holidays turant check karo — scheduler ke rolling
+       window pe depend nahi rehna padega"""
+    if doc.status != "Absent":
+        return
+    from_date = add_days(getdate(doc.attendance_date), -2)
+    to_date = add_days(getdate(doc.attendance_date), 2)
+    apply_sandwich_rule(doc.employee, from_date, to_date)
+    
