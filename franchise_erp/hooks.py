@@ -508,7 +508,8 @@ scheduler_events = {
     },
     "daily": [
         "franchise_erp.custom.comp_off.expire_comp_off_allocations",
-        "franchise_erp.custom.attendance.mark_absent_for_missing_checkout"
+        "franchise_erp.custom.attendance.mark_absent_for_missing_checkout",
+        "franchise_erp.overrides.scheduler.mark_absent_for_no_checkin",
     ],
     "all": [
         "franchise_erp.overrides.scheduler.process_auto_attendance_for_all_shifts_all",

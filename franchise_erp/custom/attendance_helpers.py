@@ -87,12 +87,12 @@ def mark_holiday_status(employee, date, status, leave_type=None, leave_applicati
             doc.leave_type = leave_type
         if leave_application:
             doc.leave_application = leave_application
-
+    doc.flags.from_sandwich_rule = True 
     doc.save(ignore_permissions=True)
     doc.submit()
 
 def get_leave_details(employee, date):
-    """Us date ko cover karne wali approved Leave Application ka leave_type dhoondhta hai"""
+    
     leave_app = frappe.db.get_value(
         "Leave Application",
         {
@@ -131,13 +131,11 @@ def apply_sandwich_rule(employee, from_date, to_date):
  
             if prev_status in LEAVE_STATUSES and next_status in LEAVE_STATUSES:
                 if prev_status == "On Leave" or next_status == "On Leave":
-                    # EL/leave ne surround kiya hai — Sunday ko bhi On Leave banao,
-                    # taaki leave balance se kate aur salary paid rahe
                     leave_type, leave_app = get_leave_details(employee, date) \
                         or get_leave_details(employee, add_days(date, -1)) \
                         or get_leave_details(employee, add_days(date, 1))
                     if not leave_type:
-                        # fallback: prev/next date se seedha leave_type nikalo
+                        
                         prev_d = add_days(date, -1)
                         next_d = add_days(date, 1)
                         while is_holiday(employee, prev_d):
@@ -147,8 +145,9 @@ def apply_sandwich_rule(employee, from_date, to_date):
                             leave_type, leave_app = get_leave_details(employee, next_d)
                     mark_holiday_status(employee, date, "On Leave", leave_type, leave_app)
                 else:
-                    # dono taraf Absent hai — purana behavior
+                    
                     mark_holiday_status(employee, date, "Absent")
+        date = add_days(date, 1)
  
 
 
@@ -185,12 +184,15 @@ def check_sandwich_on_leave_submit(doc, method=None):
     apply_sandwich_rule(doc.employee, from_date, to_date)
 
 def check_sandwich_on_attendance_submit(doc, method=None):
-    """Jab bhi Absent attendance submit ho (chahe backdated/bulk ho),
-       uske aas-paas ke holidays turant check karo — scheduler ke rolling
-       window pe depend nahi rehna padega"""
     if doc.status != "Absent":
         return
-    from_date = add_days(getdate(doc.attendance_date), -2)
-    to_date = add_days(getdate(doc.attendance_date), 2)
-    apply_sandwich_rule(doc.employee, from_date, to_date)
-    
+    if doc.flags.get("from_sandwich_rule"):
+        return
+    frappe.enqueue(
+        "franchise_erp.custom.attendance_helpers.apply_sandwich_rule",
+        employee=doc.employee,
+        from_date=add_days(getdate(doc.attendance_date), -2),
+        to_date=add_days(getdate(doc.attendance_date), 2),
+        queue="short",
+        now=frappe.flags.in_test
+    )   
