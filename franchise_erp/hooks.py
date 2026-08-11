@@ -43,6 +43,9 @@ on_session_creation = [
 #     "franchise_erp.custom.attendance_patch.load_patch"
 # ]
 
+before_migrate = ["franchise_erp.overrides.migrate_hooks.pause_jobs_before_migrate"]
+after_migrate = ["franchise_erp.overrides.migrate_hooks.resume_jobs_after_migrate"]
+
 doc_events = {
 
     # apps/franchise_erp/franchise_erp/hooks.py
