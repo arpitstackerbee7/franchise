@@ -8,16 +8,33 @@ MAX_HOLIDAY_CHAIN_LOOKUP = 15
 
 SIX_DAY_RULE_COUNT = 6
 
-def is_holiday(employee, date):
-    holiday_list = frappe.db.get_value("Employee", employee, "holiday_list") \
-        or frappe.get_cached_value(
-            "Company",
-            frappe.db.get_value("Employee", employee, "company"),
-            "default_holiday_list"
+def _resolve_holiday_list(employee, cache):
+    if employee not in cache:
+        holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
+        if not holiday_list:
+            company = frappe.db.get_value("Employee", employee, "company")
+            holiday_list = frappe.get_cached_value("Company", company, "default_holiday_list")
+        cache[employee] = holiday_list
+    return cache[employee]
+
+
+# CHANGED: new helper - loads ALL holiday dates for a holiday_list ONCE
+# (single frappe.get_all call) instead of a separate frappe.db.exists()
+# query for every single date check
+def _resolve_holiday_dates(holiday_list, cache):
+    if holiday_list not in cache:
+        cache[holiday_list] = set(
+            frappe.get_all("Holiday", filters={"parent": holiday_list}, pluck="holiday_date")
         )
+    return cache[holiday_list]
+
+def is_holiday(employee, date, hl_cache=None, hd_cache=None):
+    hl_cache = hl_cache if hl_cache is not None else {}
+    hd_cache = hd_cache if hd_cache is not None else {}
+    holiday_list = _resolve_holiday_list(employee, hl_cache)
     if not holiday_list:
         return False
-    return bool(frappe.db.exists("Holiday", {"parent": holiday_list, "holiday_date": date}))
+    return getdate(date) in _resolve_holiday_dates(holiday_list, hd_cache)
 
 
 def get_status(employee, date):
@@ -28,10 +45,10 @@ def get_status(employee, date):
     )
 
 
-def get_prev_non_holiday_status(employee, date):
+def get_prev_non_holiday_status(employee, date, hl_cache, hd_cache):
     d = add_days(date, -1)
     steps = 0
-    while is_holiday(employee, d):
+    while is_holiday(employee, d, hl_cache, hd_cache):
         d = add_days(d, -1)
         steps += 1
         if steps > MAX_HOLIDAY_CHAIN_LOOKUP:
@@ -40,10 +57,10 @@ def get_prev_non_holiday_status(employee, date):
     return get_status(employee, d), d
 
 
-def get_next_non_holiday_status(employee, date):
+def get_next_non_holiday_status(employee, date, hl_cache, hd_cache):
     d = add_days(date, 1)
     steps = 0
-    while is_holiday(employee, d):
+    while is_holiday(employee, d, hl_cache, hd_cache):
         d = add_days(d, 1)
         steps += 1
         if steps > MAX_HOLIDAY_CHAIN_LOOKUP:
@@ -51,7 +68,7 @@ def get_next_non_holiday_status(employee, date):
     return get_status(employee, d), d
 
 
-def get_prev_working_statuses(employee, date, count=SIX_DAY_RULE_COUNT):
+def get_prev_working_statuses(employee, date, hl_cache, hd_cache, count=SIX_DAY_RULE_COUNT):
     statuses = []
     d = date
     steps = 0
@@ -59,7 +76,7 @@ def get_prev_working_statuses(employee, date, count=SIX_DAY_RULE_COUNT):
     while len(statuses) < count and steps < max_steps:
         d = add_days(d, -1)
         steps += 1
-        if is_holiday(employee, d):
+        if is_holiday(employee, d, hl_cache, hd_cache):
             continue
         statuses.append(get_status(employee, d))
     return statuses
@@ -69,7 +86,7 @@ def mark_holiday_status(employee, date, status, leave_type=None, leave_applicati
     existing = frappe.db.exists("Attendance", {"employee": employee, "attendance_date": date})
     if existing:
         doc = frappe.get_doc("Attendance", existing)
-        if doc.docstatus == 1 and doc.status == status :
+        if doc.docstatus == 1 and doc.status == status:
             return  
         if doc.docstatus == 1:
             doc.cancel()
@@ -111,23 +128,27 @@ def get_leave_details(employee, date):
 
 
 def apply_sandwich_rule(employee, from_date, to_date):
+
+    hl_cache = {}
+    hd_cache = {}
+
     
     date = getdate(from_date)
     end = getdate(to_date)
  
     while date <= end:
-        if is_holiday(employee, date):
+        if is_holiday(employee, date, hl_cache, hd_cache):
             actual_status = get_status(employee, date)
  
             
             if actual_status == "Present":
-                prev_six = get_prev_working_statuses(employee, date, SIX_DAY_RULE_COUNT)
+                prev_six = get_prev_working_statuses(employee, date, hl_cache, hd_cache, SIX_DAY_RULE_COUNT)
                 if len(prev_six) == SIX_DAY_RULE_COUNT and all(s in LEAVE_STATUSES for s in prev_six):
                     date = add_days(date, 1)
                     continue
  
-            prev_status, _ = get_prev_non_holiday_status(employee, date)
-            next_status, _ = get_next_non_holiday_status(employee, date)
+            prev_status, _ = get_prev_non_holiday_status(employee, date, hl_cache, hd_cache)
+            next_status, _ = get_next_non_holiday_status(employee, date, hl_cache, hd_cache)
  
             if prev_status in LEAVE_STATUSES and next_status in LEAVE_STATUSES:
                 if prev_status == "On Leave" or next_status == "On Leave":
@@ -138,7 +159,7 @@ def apply_sandwich_rule(employee, from_date, to_date):
                         
                         prev_d = add_days(date, -1)
                         next_d = add_days(date, 1)
-                        while is_holiday(employee, prev_d):
+                        while is_holiday(employee, prev_d, hl_cache, hd_cache):
                             prev_d = add_days(prev_d, -1)
                         leave_type, leave_app = get_leave_details(employee, prev_d)
                         if not leave_type:
@@ -158,7 +179,17 @@ def run_sandwich_check_for_all():
         frappe.logger().info("Sandwich check already running, skipping this cycle.")
         return
 
-    frappe.cache().set_value(lock_key, True, expires_in_sec=300)
+    frappe.cache().set_value(lock_key, True, expires_in_sec=1500)
+    frappe.enqueue(
+        "franchise_erp.custom.attendance_helpers._run_sandwich_check_for_all_job",
+        queue="long",
+        timeout=1500,
+        job_name="sandwich_check_batch",
+        now=frappe.flags.in_test
+    )
+
+def _run_sandwich_check_for_all_job():
+    lock_key = "sandwich_check_running"
     try:
         to_date = add_days(nowdate(), -1)
         from_date = add_days(to_date, -3)
@@ -167,8 +198,9 @@ def run_sandwich_check_for_all():
         for emp in employees:
             try:
                 apply_sandwich_rule(emp, from_date, to_date)
+                frappe.db.commit()
             except Exception:
-                
+                frappe.db.rollback()
                 frappe.log_error(
                     title=f"Sandwich rule failed for employee {emp}",
                     message=frappe.get_traceback()
