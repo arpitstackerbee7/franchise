@@ -43,7 +43,10 @@
   },
   {
    "role": "Sales User"
-  }
+  },
+  {
+     "role": "Employee"
+  } 
  ],
  "timeout": 0
 }
