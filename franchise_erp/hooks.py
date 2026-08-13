@@ -795,7 +795,7 @@ fixtures = [
         "filters": [
             ["name", "in", [
                 "Compensatory Leave Request Workflow",
-                "Leave Application Workflow"
+                "Leave Application"
             ]]
         ]
     },
@@ -817,7 +817,7 @@ fixtures = [
         "filters": [
             ["parent", "in", [
                 "Compensatory Leave Request Workflow",
-                "Leave Application Workflow"
+                "Leave Application"
             ]]
         ]
     },
