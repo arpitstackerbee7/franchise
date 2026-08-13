@@ -341,6 +341,7 @@ function show_invoice_dialog(frm) {
             <th>Input GST Value</th>
             <th>Collectable</th>
             <th>CD/DN</th>
+            <th>Serial No</th>
         </tr>
     </thead>
     <tbody>`;
@@ -370,6 +371,7 @@ function show_invoice_dialog(frm) {
                 <td>${r.in_put_gst_value}</td> 
                 <td>${(r.invoice_value).toFixed(2)}</td> 
                 <td>${(r.debit_note).toFixed(2)}</td>
+                <td>${(r.serial_no || "").replace(/\n/g, "<br>")}</td>
             </tr>`;
         });
 
@@ -391,6 +393,7 @@ function show_invoice_dialog(frm) {
             <td></td>
             <td>${total_collectable.toFixed(2)}</td>
             <td>${total_cd_dn.toFixed(2)}</td>
+            <td></td>
         </tr>`;
     }
 
@@ -466,6 +469,7 @@ function show_invoice_dialog(frm) {
                 <td>${r.in_put_gst_value}</td> 
                 <td>${(r.invoice_value).toFixed(2)}</td> 
                 <td>${(r.debit_note).toFixed(2)}</td>
+                <td>${(r.serial_no || "").replace(/\n/g, "<br>")}</td>
             </tr>
         `;
     }).join("");
@@ -491,7 +495,7 @@ function show_invoice_dialog(frm) {
                     <th>Discount%</th><th>Realized Sale</th><th>Output GST%</th>
                     <th>Output GST Value</th><th>Taxable Value</th><th>Margin%</th>
                     <th>Margin Value</th><th>INV Base Value</th>
-                    <th>Input GST Value</th><th>Collectable</th><th>CD/DN</th>
+                    <th>Input GST Value</th><th>Collectable</th><th>CD/DN</th><th>Serial No</th>
                 </tr>
             </thead>
             <tbody>
@@ -512,6 +516,7 @@ function show_invoice_dialog(frm) {
                     <td></td>
                     <td>${total_collectable.toFixed(2)}</td>
                     <td>${total_cd_dn.toFixed(2)}</td>
+                    <td></td>
                 </tr>
             </tbody>
         </table>
@@ -535,7 +540,7 @@ function show_invoice_dialog(frm) {
     let csv = `Company,${frm.doc.company}${city ? " - " + city : ""}\n`;
     csv += `Invoice Report ${from_date_ctrl.get_value()} to ${to_date_ctrl.get_value()}\n\n`;
 
-    csv += "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN\n";
+    csv += "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN,Serial No\n";
 
     let total_qty = 0;
     let total_mrp = 0;
@@ -548,10 +553,10 @@ function show_invoice_dialog(frm) {
 
     let total_collectable = 0;
     let total_cd_dn = 0;
-
+    
     current_filtered_data.forEach(r => {
         let row_total = (r.price_list_rate * r.qty);
-
+        let serial_no = (r.serial_no || "").replace(/\r?\n/g, "\n");
         total_qty += flt(r.qty);
         total_mrp += flt(r.price_list_rate);
         total_total += flt(row_total);
@@ -582,6 +587,7 @@ function show_invoice_dialog(frm) {
             r.in_put_gst_value,
             (r.invoice_value).toFixed(2),
             (r.debit_note).toFixed(2),
+             `"${serial_no}"`, 
         ].join(",") + "\n";
     });
 
