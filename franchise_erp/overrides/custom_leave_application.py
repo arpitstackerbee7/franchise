@@ -8,7 +8,7 @@ from hrms.hr.doctype.leave_application.leave_application import LeaveApplication
 class CustomLeaveApplication(LeaveApplication):
 
 	def validate(self):
-		#self.validate_backdated_application()
+		self.validate_backdated_application()
 		super().validate()
 
 	def validate_backdated_application(self):
