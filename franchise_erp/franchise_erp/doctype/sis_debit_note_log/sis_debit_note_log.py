@@ -620,6 +620,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
             dni.name AS sii_name,
             dni.item_code,
             dni.item_name,
+            dni.serial_no,
             dni.qty,
             dni.rate,
             dni.price_list_rate,
@@ -858,6 +859,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
             "in_put_gst_value": float(gst_amount_per_item_1),
             "invoice_value": float(invoice_value1),
             "debit_note": float(debit_note_value),
+            "serial_no": r.serial_no or ""
         })
 
         processed.append(r)
