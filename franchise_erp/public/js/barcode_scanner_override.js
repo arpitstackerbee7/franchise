@@ -230,15 +230,57 @@ frappe.provide("erpnext.utils");
 		// Optimized Prepare Item
 		//----------------------------------------------------------------------
 
-		prepare_item_for_scan(row, item_code, barcode, batch_no, serial_no) {
+		// prepare_item_for_scan(row, item_code, barcode, batch_no, serial_no) {
+
+        //     const values = {
+        //         item_code: item_code,
+        //         has_item_scanned: 1
+        //     };
+
+        //     values[this.qty_field] = flt(row[this.qty_field]) || 1;
+
+
+        //     return frappe.model
+        //         .set_value(
+        //             row.doctype,
+        //             row.name,
+        //             values
+        //         )
+        //         .then(()=>{
+
+        //             return frappe.run_serially([
+        //                 ()=>this.set_batch_no(row,batch_no),
+        //                 ()=>this.set_barcode(row,barcode),
+        //                 ()=>this.set_serial_no(row,serial_no),
+        //             ]);
+
+        //         })
+        //         .finally(()=>{
+
+        //             this.clean_up();
+
+        //         });
+        // }
+
+        prepare_item_for_scan(row, item_code, barcode, batch_no, serial_no) {
+
+            // if (!row) {
+            //     console.error("prepare_item_for_scan: row is undefined", {
+            //         item_code,
+            //         barcode,
+            //         batch_no,
+            //         serial_no
+            //     });
+            //     return Promise.resolve();
+            // }
 
             const values = {
                 item_code: item_code,
                 has_item_scanned: 1
             };
 
-            values[this.qty_field] = flt(row[this.qty_field]) || 1;
-
+            // Every scan should add/set quantity as 1
+            values[this.qty_field] = 1;
 
             return frappe.model
                 .set_value(
@@ -246,16 +288,16 @@ frappe.provide("erpnext.utils");
                     row.name,
                     values
                 )
-                .then(()=>{
+                .then(() => {
 
                     return frappe.run_serially([
-                        ()=>this.set_batch_no(row,batch_no),
-                        ()=>this.set_barcode(row,barcode),
-                        ()=>this.set_serial_no(row,serial_no),
+                        () => this.set_batch_no(row, batch_no),
+                        () => this.set_barcode(row, barcode),
+                        () => this.set_serial_no(row, serial_no),
                     ]);
 
                 })
-                .finally(()=>{
+                .finally(() => {
 
                     this.clean_up();
 
