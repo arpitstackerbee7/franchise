@@ -249,7 +249,7 @@ function fetch_invoice_details(frm) {
                             if (!il_res) return;
 
                             // Step 5: Purchase Invoice me set karo
-                            frm.set_value("bill_no", il_res.invoice_no);
+                            // frm.set_value("bill_no", il_res.invoice_no);
                             frm.set_value("bill_date", il_res.invoice_date);
                         }
                     );
