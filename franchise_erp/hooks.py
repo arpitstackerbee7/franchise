@@ -378,6 +378,14 @@ override_doctype_class = {
     "Leave Encashment": "franchise_erp.overrides.custom_leave_encashment.CustomLeaveEncashment",
     "Leave Application": "franchise_erp.overrides.custom_leave_application.CustomLeaveApplication"
 }
+
+permission_query_conditions = {
+	"Leave Application": "franchise_erp.overrides.custom_leave_application.get_permission_query_conditions"
+}
+
+has_permission = {
+	"Leave Application": "franchise_erp.overrides.custom_leave_application.has_permission"
+}
 # override_whitelisted_methods = {
 #     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"
 # }
