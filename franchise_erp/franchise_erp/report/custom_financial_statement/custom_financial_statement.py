@@ -54,7 +54,20 @@ def get_columns(filters):
         }
     ]
     
-    
+def get_statement_account(statement_type, company=None):
+
+    settings = frappe.get_single("TZU Setting")
+
+    mappings = settings.get("financial_statement_account_mapping") or []
+
+    for row in mappings:
+        if (
+            row.get("statement_type") == statement_type
+            and row.get("enabled")
+        ):
+            return row.get("account")
+
+    return None   
     
 def get_account_balance(account_name, filters):
 
@@ -198,36 +211,109 @@ def get_group_balance(root_account, filters):
     else:  # Income, Liability, Equity
         return credit - debit
 
+
 def get_trading_values(filters):
 
     trading = {}
 
-    # Change these account names according to your COA
-    trading["opening_stock"] = get_group_balance(
-        "Opening Stock - TZUPL", filters
+    # ===========================
+    # OPENING STOCK
+    # ===========================
+
+    opening_stock_account = get_statement_account("Opening Stock")
+
+    trading["opening_stock"] = 0
+
+    if opening_stock_account:
+        trading["opening_stock"] = get_group_balance(
+            opening_stock_account,
+            filters
+        )
+
+    # ===========================
+    # PURCHASES
+    # ===========================
+
+    purchase_account = get_statement_account("Purchases")
+
+    purchase = 0
+
+    if purchase_account:
+        purchase = get_group_balance(
+            purchase_account,
+            filters
+        )
+
+    # ===========================
+    # PURCHASE RETURN
+    # ===========================
+
+    purchase_return_account = get_statement_account(
+        "Purchase Return"
     )
 
-    trading["purchase"] = get_group_balance(
-        "Purchase - TZUPL", filters
+    purchase_return = 0
+
+    if purchase_return_account:
+        purchase_return = get_group_balance(
+            purchase_return_account,
+            filters
+        )
+
+    # Net Purchases
+    trading["purchase"] = (
+        flt(purchase) - flt(purchase_return)
     )
 
-    trading["sales"] = get_group_balance(
-        "Sales - TZUPL", filters
+    # ===========================
+    # SALES
+    # ===========================
+
+    sales_account = get_statement_account("Sales")
+
+    sales = 0
+
+    if sales_account:
+        sales = get_group_balance(
+            sales_account,
+            filters
+        )
+
+    trading["sales"] = abs(flt(sales))
+
+    # ===========================
+    # CLOSING STOCK
+    # ===========================
+
+    closing_stock_account = get_statement_account(
+        "Closing Stock"
     )
 
-    trading["closing_stock"] = get_group_balance(
-        "Closing Stock - TZUPL", filters
-    )
+    trading["closing_stock"] = 0
+
+    if closing_stock_account:
+        trading["closing_stock"] = get_group_balance(
+            closing_stock_account,
+            filters
+        )
+
+    # ===========================
+    # TRADING TOTALS
+    # ===========================
 
     trading["expense_total"] = (
-        trading["opening_stock"]
-        + trading["purchase"]
+        flt(trading["opening_stock"])
+        + flt(trading["purchase"])
     )
 
     trading["income_total"] = (
-        trading["sales"]
-        + trading["closing_stock"]
+        flt(trading["sales"])
+        + flt(trading["closing_stock"])
     )
+
+    # ===========================
+    # GROSS PROFIT
+    # ===========================
 
     trading["gross_profit"] = (
         trading["income_total"]
@@ -241,71 +327,156 @@ def get_trading_values(filters):
 
     return trading
 
+
 def get_profit_loss_values(filters):
 
     pnl = {}
 
     # ===========================
-    # EXPENSES
+    # ADMINISTRATIVE EXPENSES
     # ===========================
 
-    pnl["administrative"] = get_group_balance(
-        "Administrative Expenses - TZUPL",
-        filters
+    account = get_statement_account(
+        "Administrative Expenses"
     )
 
-    pnl["selling"] = get_group_balance(
-        "Selling & Distribution Expenses - TZUPL",
-        filters
+    pnl["administrative"] = 0
+
+    if account:
+        pnl["administrative"] = get_group_balance(
+            account,
+            filters
+        )
+
+    # ===========================
+    # SELLING & DISTRIBUTION
+    # ===========================
+
+    account = get_statement_account(
+        "Selling & Distribution Expenses"
     )
 
-    pnl["finance"] = get_group_balance(
-        "Finance Costs - TZUPL",
-        filters
+    pnl["selling"] = 0
+
+    if account:
+        pnl["selling"] = get_group_balance(
+            account,
+            filters
+        )
+
+    # ===========================
+    # FINANCE COSTS
+    # ===========================
+
+    account = get_statement_account(
+        "Finance Costs"
     )
 
-    pnl["depreciation"] = get_group_balance(
-        "Depreciation - TZUPL",
-        filters
+    pnl["finance"] = 0
+
+    if account:
+        pnl["finance"] = get_group_balance(
+            account,
+            filters
+        )
+
+    # ===========================
+    # DEPRECIATION
+    # ===========================
+
+    account = get_statement_account(
+        "Depreciation"
     )
 
-    pnl["tax"] = get_group_balance(
-        "Provision for Tax - TZUPL",
-        filters
+    pnl["depreciation"] = 0
+
+    if account:
+        pnl["depreciation"] = get_group_balance(
+            account,
+            filters
+        )
+
+    # ===========================
+    # PROVISION FOR TAX
+    # ===========================
+
+    account = get_statement_account(
+        "Provision for Tax"
     )
+
+    pnl["tax"] = 0
+
+    if account:
+        pnl["tax"] = get_group_balance(
+            account,
+            filters
+        )
+
+    # ===========================
+    # EXPENSE TOTAL
+    # ===========================
 
     pnl["expense_total"] = (
-        pnl["administrative"]
-        + pnl["selling"]
-        + pnl["finance"]
-        + pnl["depreciation"]
-        + pnl["tax"]
+        flt(pnl["administrative"])
+        + flt(pnl["selling"])
+        + flt(pnl["finance"])
+        + flt(pnl["depreciation"])
+        + flt(pnl["tax"])
     )
 
     # ===========================
-    # INCOME
+    # OTHER INCOME
     # ===========================
 
-    pnl["other_income"] = abs(
-        get_group_balance(
-            "Other Income - TZUPL",
-            filters
-        )
+    account = get_statement_account(
+        "Other Income"
     )
 
-    pnl["investment_income"] = abs(
-        get_group_balance(
-            "Investment Income - TZUPL",
-            filters
+    pnl["other_income"] = 0
+
+    if account:
+        pnl["other_income"] = abs(
+            get_group_balance(
+                account,
+                filters
+            )
         )
+
+    # ===========================
+    # INVESTMENT INCOME
+    # ===========================
+
+    account = get_statement_account(
+        "Investment Income"
     )
+
+    pnl["investment_income"] = 0
+
+    if account:
+        pnl["investment_income"] = abs(
+            get_group_balance(
+                account,
+                filters
+            )
+        )
+
+    # ===========================
+    # INCOME TOTAL
+    # ===========================
 
     pnl["income_total"] = (
-        pnl["other_income"]
-        + pnl["investment_income"]
+        flt(pnl["other_income"])
+        + flt(pnl["investment_income"])
     )
-    
-    pnl["net_profit"] = pnl["income_total"] - pnl["expense_total"]
+
+    # ===========================
+    # NET PROFIT
+    # ===========================
+
+    pnl["net_profit"] = (
+        pnl["income_total"]
+        - pnl["expense_total"]
+    )
 
     pnl["grand_total"] = max(
         pnl["expense_total"],
@@ -374,9 +545,9 @@ def get_data(filters):
 
     rows.append({
         "expense": "TRADING ACCOUNT",
-        "expense_amount": "",
-        "income": "",
-        "income_amount": ""
+        "expense_amount": None,
+        "income": None,
+        "income_amount": None
     })
 
 
@@ -418,9 +589,9 @@ def get_data(filters):
 
     rows.append({
         "expense": "PROFIT & LOSS ACCOUNT",
-        "expense_amount": "",
-        "income": "",
-        "income_amount": ""
+        "expense_amount": None,
+        "income": None,
+        "income_amount": None
     })
 
 
@@ -482,9 +653,9 @@ def get_data(filters):
 
     rows.append({
         "expense": "KEY PERFORMANCE METRICS",
-        "expense_amount": "",
-        "income": "",
-        "income_amount": ""
+        "expense_amount": None,
+        "income": None,
+        "income_amount": None
     })
 
 

@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-14 11:14:41.165969",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "statement_type",
+  "account",
+  "enabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "statement_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Statement Type",
+   "options": "Opening Stock\nPurchases\nPurchase Return\nSales\nClosing Stock\nAdministrative Expenses\nSelling & Distribution Expenses\nFinance Costs\nDepreciation\nProvision for Tax\nOther Income\nInvestment Income"
+  },
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Account",
+   "options": "Account"
+  },
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-14 11:17:03.326765",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Financial Statement Account Mapping",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -34,7 +34,9 @@
   "enable_po_notification",
   "is_credit_note_account",
   "enable_pricing_rule",
-  "dashboard_company"
+  "dashboard_company",
+  "section_break_eiab",
+  "financial_statement_account_mapping"
  ],
  "fields": [
   {
@@ -218,13 +220,23 @@
    "fieldtype": "Link",
    "label": "Dashboard Company",
    "options": "Company"
+  },
+  {
+   "fieldname": "section_break_eiab",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "financial_statement_account_mapping",
+   "fieldtype": "Table",
+   "label": "Financial Statement Account Mapping",
+   "options": "Financial Statement Account Mapping"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-04 22:12:54.013467",
+ "modified": "2026-08-14 11:16:41.707052",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
