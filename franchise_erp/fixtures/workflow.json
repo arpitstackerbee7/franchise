@@ -3,7 +3,7 @@
   "docstatus": 0,
   "doctype": "Workflow",
   "document_type": "Leave Application",
-  "is_active": 1,
+  "is_active": 0,
   "modified": "2026-08-13 16:36:58.189754",
   "name": "Leave Application",
   "override_status": 0,
