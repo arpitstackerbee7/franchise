@@ -369,3 +369,129 @@ def get_outgoing_logistics_match_from_pi(supplier):
             result.append(row)
 
     return result
+
+
+
+
+
+
+# for dtdc
+@frappe.whitelist()
+def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
+
+    ol = frappe.get_doc("Outgoing Logistics", outgoing_logistics)
+
+    if ol.docstatus != 1:
+        frappe.throw("Outgoing Logistics must be submitted.")
+
+    # ---------------------------------------------------------
+    # SALES INVOICES FROM REFERENCES
+    # ---------------------------------------------------------
+
+    sales_invoices = []
+
+    for row in ol.references or []:
+        if (
+            row.source_doctype == "Sales Invoice"
+            and row.source_name
+        ):
+            if row.source_name not in sales_invoices:
+                sales_invoices.append(row.source_name)
+
+    if not sales_invoices:
+        frappe.throw("No Sales Invoice found in References table.")
+
+    # ---------------------------------------------------------
+    # DELIVERY NOTES FROM SALES INVOICE ITEM
+    # ---------------------------------------------------------
+
+    delivery_notes = []
+
+    for sales_invoice in sales_invoices:
+
+        items = frappe.get_all(
+            "Sales Invoice Item",
+            filters={
+                "parent": sales_invoice,
+                "delivery_note": ["is", "set"]
+            },
+            fields=["delivery_note"]
+        )
+
+        for item in items:
+
+            dn = item.delivery_note
+
+            if dn and dn not in delivery_notes:
+
+                if frappe.db.get_value(
+                    "Delivery Note",
+                    dn,
+                    "docstatus"
+                ) == 1:
+
+                    delivery_notes.append(dn)
+
+    if not delivery_notes:
+        frappe.throw(
+            "No submitted Delivery Note found against "
+            f"Sales Invoice(s): {', '.join(sales_invoices)}"
+        )
+
+    # ---------------------------------------------------------
+    # SALES INVOICE DATA
+    # ---------------------------------------------------------
+
+    si = frappe.get_doc(
+        "Sales Invoice",
+        sales_invoices[0]
+    )
+
+    # ---------------------------------------------------------
+    # DELIVERY ADDRESS
+    # ---------------------------------------------------------
+
+    delivery_address = (
+        si.shipping_address_name
+        or si.customer_address
+    )
+
+    # Prefer Delivery Note address
+    if delivery_notes:
+
+        dn = frappe.get_doc(
+            "Delivery Note",
+            delivery_notes[0]
+        )
+
+        delivery_address = (
+            dn.shipping_address_name
+            or dn.customer_address
+            or delivery_address
+        )
+
+    # ---------------------------------------------------------
+    # RETURN DATA ONLY
+    # ---------------------------------------------------------
+
+    return {
+        "company": si.company,
+        "customer": si.customer,
+
+        "pickup_date": ol.delivery_date or ol.date,
+
+        "delivery_address_name": delivery_address,
+
+        "value_of_goods": si.grand_total or 0,
+
+        "description_of_content": (
+            getattr(ol, "description_of_content", None)
+            or f"Shipment against {si.name}"
+        ),
+
+        "sales_invoices": sales_invoices,
+
+        "delivery_notes": delivery_notes,
+
+        "outgoing_logistics": ol.name
+    }
