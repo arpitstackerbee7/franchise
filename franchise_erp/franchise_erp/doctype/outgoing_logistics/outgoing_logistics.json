@@ -28,6 +28,8 @@
   "barcode_html",
   "is_gate_out",
   "purchase_invoice",
+  "awb_number",
+  "shipment",
   "transport_information_section",
   "quantity",
   "station_from",
@@ -372,6 +374,19 @@
    "label": "Purchase Invoice",
    "options": "Purchase Invoice",
    "read_only": 1
+  },
+  {
+   "fieldname": "awb_number",
+   "fieldtype": "Data",
+   "label": "AWB Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shipment",
+   "fieldtype": "Link",
+   "label": "Shipment",
+   "options": "Shipment",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -381,9 +396,13 @@
   {
    "link_doctype": "Purchase Invoice",
    "link_fieldname": "custom_outgoing_logistics"
+  },
+  {
+   "link_doctype": "Shipment",
+   "link_fieldname": "custom_outgoing_logistics"
   }
  ],
- "modified": "2026-08-01 14:53:43.580543",
+ "modified": "2026-08-14 15:30:19.351639",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",

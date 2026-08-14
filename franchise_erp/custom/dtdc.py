@@ -3,13 +3,19 @@ import requests
 
 
 # 🔹 1. PINCODE CHECK
+# 1. PINCODE CHECK
 @frappe.whitelist()
 def check_pincode(org_pincode=None, des_pincode=None):
 
     if not org_pincode or not des_pincode:
         frappe.throw("Pincode missing")
 
-    url = "http://smarttrack.ctbsplus.dtdc.com/ratecalapi/PincodeApiCall"
+    settings = frappe.get_single("DTDC Settings")
+
+    if not settings.pincode_api:
+        frappe.throw("Pincode API is not configured in DTDC Settings")
+
+    url = settings.pincode_api
 
     payload = {
         "orgPincode": org_pincode,
@@ -20,10 +26,19 @@ def check_pincode(org_pincode=None, des_pincode=None):
         "Content-Type": "application/json"
     }
 
-    res = requests.post(url, json=payload, headers=headers)
-    return res.json()
+    res = requests.post(
+        url,
+        json=payload,
+        headers=headers,
+        timeout=60
+    )
 
-
+    try:
+        return res.json()
+    except Exception:
+        frappe.throw(
+            f"DTDC Pincode API Error: HTTP {res.status_code}"
+        )
 #for single box
 # @frappe.whitelist()
 # def create_shipment(shipment_name):
@@ -196,6 +211,23 @@ def update_delivery_notes_awb(doc, awb):
                     }
                 )
 
+def update_outgoing_logistics_awb(outgoing_logistics, awb, shipment_name):
+
+    if not outgoing_logistics:
+        frappe.log_error(
+            f"Shipment {shipment_name} me custom_outgoing_logistics set nahi hai.",
+            "DTDC Outgoing Logistics Update"
+        )
+        return
+
+    frappe.db.set_value(
+        "Outgoing Logistics",
+        outgoing_logistics,
+        {
+            "awb_number": awb,
+            "shipment": shipment_name
+        }
+    )
 
 # 🔹 1. CREATE SHIPMENT for multiple boxes
 @frappe.whitelist()
@@ -252,7 +284,10 @@ def create_shipment(shipment_name):
     if not settings.service_type_id:
         frappe.throw("Service Type missing in DTDC Settings")
 
-    url = "https://alphademodashboardapi.shipsy.io/api/customer/integration/consignment/softdata"
+    if not settings.create_shipment_api:
+        frappe.throw("Create Shipment API is not configured in DTDC Settings")
+
+    url = settings.create_shipment_api
 
     payload = {
         "consignments": [
@@ -322,10 +357,27 @@ def create_shipment(shipment_name):
         frappe.throw("AWB not generated")
 
     # ✅ SAVE (SAFE WAY)
+   # ---------------------------------------
+    # SAVE AWB IN SHIPMENT
+    # ---------------------------------------
+
     doc.db_set("awb_number", awb)
 
+    # ---------------------------------------
+    # UPDATE SHIPMENT STATUS
+    # ---------------------------------------
+
     update_status(doc, "Created")
-    update_delivery_notes_awb(doc, awb)
+
+    # ---------------------------------------
+    # UPDATE SAME OUTGOING LOGISTICS
+    # ---------------------------------------
+
+    update_outgoing_logistics_awb(
+        doc.custom_outgoing_logistics,
+        awb,
+        shipment_name
+    )
 
     frappe.db.commit()
 
@@ -338,7 +390,10 @@ def track(awb):
 
     settings = frappe.get_single("DTDC Settings")
 
-    url = "https://dtdcstagingapi.dtdc.com/dtdc-tracking-api/dtdc-api/rest/JSONCnTrk/getTrackDetails"
+    if not settings.track_api:
+        frappe.throw("Track API is not configured in DTDC Settings")
+
+    url = settings.track_api
 
     payload = {
         "trkType": "cnno",
@@ -382,27 +437,188 @@ def track(awb):
     return data
 
 
-# 🔹 3. DOWNLOAD LABEL
 @frappe.whitelist()
-def download_label(awb):
+def download_label(awb=None):
+
+    if not awb:
+        frappe.throw("AWB number missing")
 
     settings = frappe.get_single("DTDC Settings")
 
-    url = f"https://alphademodashboardapi.shipsy.io/api/customer/integration/consignment/shippinglabel/stream?reference_number={awb}&label_code=SHIP_LABEL_4X6&label_format=pdf"
+    if not settings.download_label_api:
+        frappe.throw(
+            "Download Label API is not configured in DTDC Settings"
+        )
 
-    headers = {"api-key": settings.api_key}
+    # ---------------------------------------
+    # API URL
+    # ---------------------------------------
 
-    res = requests.get(url, headers=headers)
+    url = settings.download_label_api
+
+    # ---------------------------------------
+    # Query Parameters
+    # ---------------------------------------
+
+    params = {
+        "reference_number": awb,
+        "label_code": "SHIP_LABEL_4X6",
+        "label_format": "pdf"
+    }
+
+    headers = {
+        "api-key": settings.api_key,
+        "Accept": "application/pdf"
+    }
+
+    # ---------------------------------------
+    # API REQUEST
+    # ---------------------------------------
+
+    try:
+        res = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=60
+        )
+
+    except requests.RequestException as e:
+
+        frappe.log_error(
+            f"""
+AWB:
+{awb}
+
+URL:
+{url}
+
+ERROR:
+{str(e)}
+""",
+            "DTDC LABEL REQUEST ERROR"
+        )
+
+        frappe.throw(
+            f"DTDC Label Request Error: {str(e)}"
+        )
+
+    # ---------------------------------------
+    # DEBUG ERROR
+    # ---------------------------------------
 
     if res.status_code != 200:
-        frappe.throw("Failed to download label")
+
+        response_text = res.text
+
+        frappe.log_error(
+            f"""
+AWB:
+{awb}
+
+REQUEST URL:
+{res.url}
+
+STATUS:
+{res.status_code}
+
+RESPONSE HEADERS:
+{dict(res.headers)}
+
+RESPONSE:
+{response_text}
+""",
+            "DTDC LABEL ERROR"
+        )
+
+        frappe.throw(
+            f"DTDC Label API Error: HTTP {res.status_code}"
+        )
+
+    # ---------------------------------------
+    # EMPTY RESPONSE CHECK
+    # ---------------------------------------
+
+    if not res.content:
+        frappe.throw(
+            "DTDC returned empty label response"
+        )
+
+    # ---------------------------------------
+    # CONTENT TYPE CHECK
+    # ---------------------------------------
+
+    content_type = (
+        res.headers.get("Content-Type", "")
+        .lower()
+    )
+
+    if "application/json" in content_type:
+
+        frappe.log_error(
+            res.text,
+            "DTDC LABEL JSON RESPONSE"
+        )
+
+        frappe.throw(
+            f"DTDC returned JSON instead of PDF: {res.text}"
+        )
+
+    # ---------------------------------------
+    # PDF DOWNLOAD
+    # ---------------------------------------
 
     frappe.local.response.filename = f"{awb}.pdf"
     frappe.local.response.filecontent = res.content
     frappe.local.response.type = "download"
-
-
+    
 # 🔹 4. CANCEL SHIPMENT
+# @frappe.whitelist()
+# def cancel_shipment(shipment_name):
+
+#     doc = frappe.get_doc("Shipment", shipment_name)
+#     settings = frappe.get_single("DTDC Settings")
+
+#     if not doc.awb_number:
+#         frappe.throw("No AWB found")
+
+#     url = "https://alphademodashboardapi.shipsy.io/api/customer/integration/consignment/cancel"
+
+#     payload = {
+#         "AWBNo": [doc.awb_number],
+#         "customerCode": settings.customer_code
+#     }
+
+#     headers = {
+#         "api-key": settings.api_key,
+#         "Content-Type": "application/json"
+#     }
+
+#     res = requests.post(url, json=payload, headers=headers)
+#     data = res.json()
+
+#     if not data.get("success"):
+#         frappe.throw("Cancel failed")
+
+#     update_status(doc, "Cancelled")
+
+#     # Clear AWB from DN
+#     if doc.shipment_delivery_note:
+#         for row in doc.shipment_delivery_note:
+#             if row.delivery_note:
+#                 frappe.db.set_value(
+#                     "Delivery Note",
+#                     row.delivery_note,
+#                     {
+#                         "custom_awb_number": "",
+#                         "custom_courier": ""
+#                     }
+#                 )
+
+#     frappe.db.commit()
+
+#     return "Cancelled Successfully"
+
 @frappe.whitelist()
 def cancel_shipment(shipment_name):
 
@@ -412,7 +628,10 @@ def cancel_shipment(shipment_name):
     if not doc.awb_number:
         frappe.throw("No AWB found")
 
-    url = "https://alphademodashboardapi.shipsy.io/api/customer/integration/consignment/cancel"
+    if not settings.cancel_shipment_api:
+        frappe.throw("Cancel Shipment API is not configured in DTDC Settings")
+
+    url = settings.cancel_shipment_api
 
     payload = {
         "AWBNo": [doc.awb_number],
@@ -424,26 +643,56 @@ def cancel_shipment(shipment_name):
         "Content-Type": "application/json"
     }
 
-    res = requests.post(url, json=payload, headers=headers)
-    data = res.json()
+    res = requests.post(
+        url,
+        json=payload,
+        headers=headers,
+        timeout=60
+    )
 
-    if not data.get("success"):
-        frappe.throw("Cancel failed")
+    try:
+        data = res.json()
+    except Exception:
+        frappe.throw(
+            f"DTDC Cancel API Error: HTTP {res.status_code}"
+        )
+
+    if res.status_code != 200 or not data.get("success"):
+        frappe.throw(
+            f"DTDC Cancel Failed: {data}"
+        )
+
+    # ---------------------------------------
+    # UPDATE SHIPMENT STATUS
+    # ---------------------------------------
 
     update_status(doc, "Cancelled")
 
-    # Clear AWB from DN
-    if doc.shipment_delivery_note:
-        for row in doc.shipment_delivery_note:
-            if row.delivery_note:
-                frappe.db.set_value(
-                    "Delivery Note",
-                    row.delivery_note,
-                    {
-                        "custom_awb_number": "",
-                        "custom_courier": ""
-                    }
-                )
+    # ---------------------------------------
+    # CLEAR SAME OUTGOING LOGISTICS
+    # ---------------------------------------
+
+    outgoing_logistics = getattr(
+        doc,
+        "custom_outgoing_logistics",
+        None
+    )
+
+    if outgoing_logistics:
+
+        frappe.db.set_value(
+            "Outgoing Logistics",
+            outgoing_logistics,
+            {
+                "awb_number": "",
+                "shipment": ""
+            }
+        )
+
+    # Optional: Shipment ka AWB bhi clear karna hai
+    # to ye uncomment kar sakte ho:
+    #
+    # doc.db_set("awb_number", "")
 
     frappe.db.commit()
 

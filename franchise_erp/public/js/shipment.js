@@ -77,10 +77,6 @@ frappe.ui.form.on("Shipment", {
 
                 try {
 
-                    if (frm.is_new()) {
-                        await frm.save();
-                    }
-
                     let res = await frappe.call({
                         method: "franchise_erp.custom.dtdc.create_shipment",
                         args: {
@@ -89,18 +85,33 @@ frappe.ui.form.on("Shipment", {
                     });
 
                     if (res.message) {
-                        await frm.set_value("awb_number", res.message);
-                        await frm.save();
 
-                        frappe.msgprint("✅ AWB Generated Successfully");
+                        frappe.msgprint({
+                            title: __("Success"),
+                            message: __("AWB {0} generated successfully.", [
+                                res.message
+                            ]),
+                            indicator: "green"
+                        });
+
+                        // 🔥 Backend already saved AWB
+                        // Refresh form from database
+                        await frm.reload_doc();
                     }
 
                 } catch (e) {
-                    console.error(e);
-                    frappe.msgprint("❌ Failed to create shipment");
-                }
 
-                frappe.dom.unfreeze();
+                    console.error(e);
+
+                    frappe.msgprint({
+                        title: __("Error"),
+                        message: __("Failed to create DTDC shipment"),
+                        indicator: "red"
+                    });
+
+                } finally {
+                    frappe.dom.unfreeze();
+                }
             });
         }
 
@@ -189,11 +200,13 @@ frappe.ui.form.on("Shipment", {
 
         if (frm.doc.docstatus === 1 && frm.doc.awb_number) {
 
-            frm.add_custom_button("Download Label", () => {
+            frm.add_custom_button(__("Download Label"), function () {
 
-                window.open(
-                    `/api/method/franchise_erp.custom.dtdc.download_label?awb=${frm.doc.awb_number}`
-                );
+                const url =
+                    `/api/method/franchise_erp.custom.dtdc.download_label` +
+                    `?awb=${encodeURIComponent(frm.doc.awb_number)}`;
+
+                window.open(url, "_blank");
 
             });
         }
