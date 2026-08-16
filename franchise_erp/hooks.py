@@ -844,8 +844,10 @@ fixtures = [
     "filters": [
         ["name", "in", [
             "Employee",
+            "Leave Approver",
             "Report Manager",
             "HR Manager",
+            "HR Head",
             "Back Date Privilege Manager",
             "Employee Self Service"
         ]]
