@@ -815,4 +815,10 @@ fixtures = [
         ]
     },
     {"dt": "Workspace", "filters": [["name", "in", ["Home", "Selling"]]]},
+    {
+        "dt": "Workflow",
+        "filters": [
+            ["name", "in", ["Leave Application"]]
+        ]
+    },
 ]
