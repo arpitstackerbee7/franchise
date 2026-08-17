@@ -1,4 +1,7 @@
 import frappe
+import json
+from frappe import _
+from frappe.utils import flt, today
 
 from erpnext.subcontracting.doctype.subcontracting_receipt.subcontracting_receipt import (
     SubcontractingReceipt
@@ -9,13 +12,10 @@ class CustomSubcontractingReceipt(SubcontractingReceipt):
     def validate_items_qty(self):
         for item in self.items:
 
-            # Agar qty aur rejected_qty dono 0 hain
-            # to qty ko received_qty se set kar do
 
             if not item.qty and item.received_qty:
                 item.qty = item.received_qty
 
-        # Ab original validation call karo
         super().validate_items_qty()
 
         
@@ -348,11 +348,44 @@ def get_available_gate_entries(doctype, txt, searchfield, start, page_len, filte
         LIMIT %s, %s
     """, ("%{}%".format(txt), start, page_len))
 
-import json
-from frappe.utils import flt
+@frappe.whitelist()
+def get_purchase_order_taxes(subcontracting_order=None, purchase_order=None):
+    if not purchase_order and subcontracting_order:
+        purchase_order = frappe.db.get_value(
+            "Subcontracting Order", subcontracting_order, "purchase_order"
+        )
 
+    if not purchase_order:
+        return None
+
+    po = frappe.get_doc("Purchase Order", purchase_order)
+
+    rows = []
+    for row in po.taxes:
+        charge_type = row.charge_type
+        if charge_type in ("Actual", "On Previous Row Total"):
+            charge_type = "On Net Total"
+
+        rows.append({
+            "charge_type": charge_type,
+            "account_head": row.account_head,
+            "description": row.description,
+            "rate": row.rate,
+            "cost_center": row.cost_center
+        })
+
+    return {
+        "template": po.taxes_and_charges,
+        "rows": rows
+    }
 
 def recalculate_tax_on_service_cost(doc, method=None):
+
+    # 🔥 FIX: agar taxes wipe ho chuke hain (core validate ke baad),
+    # to save hone se theek pehle SCO/PO se dobara populate karo
+    if not doc.taxes:
+        _repopulate_taxes_from_source(doc)
+
     total_service_cost = sum(
         flt(row.service_cost_per_qty) * flt(row.qty)
         for row in (doc.items or [])
@@ -408,7 +441,6 @@ def recalculate_tax_on_service_cost(doc, method=None):
         total_taxes += tax_amount
         running_total += tax_amount
 
-        # THIS controls Estimated Taxes -> Total column
         tax.base_total = running_total
 
         if tax.meta.has_field("total"):
@@ -419,6 +451,59 @@ def recalculate_tax_on_service_cost(doc, method=None):
     if doc.meta.has_field("base_total_taxes"):
         doc.base_total_taxes = total_taxes
 
-    # Grand Total = Service Cost + GST
     doc.grand_total = total_service_cost + total_taxes
     doc.base_grand_total = total_service_cost + total_taxes
+
+def _repopulate_taxes_from_source(doc):
+    """Rebuild taxes + taxes_and_charges from the linked
+    Subcontracting Order's Purchase Order, in case core
+    validate() logic wiped them out."""
+
+    import frappe
+
+    sco = None
+    for item in (doc.items or []):
+        if item.get("subcontracting_order"):
+            sco = item.subcontracting_order
+            break
+
+    if not sco:
+        return
+
+    purchase_order = frappe.db.get_value(
+        "Subcontracting Order", sco, "purchase_order"
+    )
+
+    if not purchase_order:
+        return
+
+    po_doc = frappe.get_doc("Purchase Order", purchase_order)
+
+    if not po_doc.taxes:
+        return
+
+    doc.set("taxes", [])
+    for row in po_doc.taxes:
+        charge_type = row.charge_type
+        if charge_type in ("Actual", "On Previous Row Total"):
+            charge_type = "On Net Total"
+
+        doc.append("taxes", {
+            "charge_type": charge_type,
+            "account_head": row.account_head,
+            "description": row.description,
+            "rate": row.rate,
+            "cost_center": row.cost_center
+        })
+
+    if not doc.taxes_and_charges:
+        from franchise_erp.custom.subcontracting_order import (
+            get_job_work_order_taxes_and_charges
+        )
+
+        template = get_job_work_order_taxes_and_charges(
+            purchase_order, doc.company
+        )
+
+        if template:
+            doc.taxes_and_charges = template
