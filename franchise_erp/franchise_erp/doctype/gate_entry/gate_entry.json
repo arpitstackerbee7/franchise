@@ -347,9 +347,8 @@
   },
   {
    "fieldname": "purchase_invoice",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Purchase Invoice",
-   "options": "Purchase Invoice",
    "read_only": 1
   }
  ],
@@ -366,7 +365,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-08-06 17:51:11.657064",
+ "modified": "2026-08-17 13:21:24.072397",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

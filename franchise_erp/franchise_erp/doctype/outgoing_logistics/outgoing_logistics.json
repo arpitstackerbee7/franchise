@@ -370,9 +370,8 @@
   },
   {
    "fieldname": "purchase_invoice",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Purchase Invoice",
-   "options": "Purchase Invoice",
    "read_only": 1
   },
   {
@@ -402,7 +401,7 @@
    "link_fieldname": "custom_outgoing_logistics"
   }
  ],
- "modified": "2026-08-14 15:30:19.351639",
+ "modified": "2026-08-17 13:22:34.024868",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
