@@ -3,6 +3,15 @@
   "docstatus": 0,
   "doctype": "Workflow State",
   "icon": "",
+  "modified": "2026-08-16 16:10:47.584088",
+  "name": "Pending Leave Approver",
+  "style": "",
+  "workflow_state_name": "Pending Leave Approver"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Workflow State",
+  "icon": "",
   "modified": "2026-06-01 16:54:32.809647",
   "name": "Pending Reporting Manager",
   "style": "",

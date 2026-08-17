@@ -812,6 +812,7 @@ fixtures = [
         "filters": [
             ["name", "in", [
                 "Draft",
+                "Pending Leave Approver",
                 "Pending Reporting Manager",
                 "Pending Report Manager",
                 "Pending HR Approval",
