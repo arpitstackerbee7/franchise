@@ -280,28 +280,98 @@ function toggle_sis_counter_ui(frm) {
 
 
 
+// frappe.ui.form.on("Delivery Note Item", {
+//     item_code: function(frm, cdt, cdn) {
+//         let row = locals[cdt][cdn];
+
+//         if (row.item_code) {
+//             frappe.db.get_value("Item", row.item_code, [
+//                 "custom_barcode_code",
+//                 "custom_colour_name",
+//                 "custom_size"
+//             ]).then(r => {
+
+//                 if (r.message) {
+//                     frappe.model.set_value(cdt, cdn, "custom_style", r.message.custom_barcode_code);
+//                     frappe.model.set_value(cdt, cdn, "custom_color", r.message.custom_colour_name);
+//                     frappe.model.set_value(cdt, cdn, "custom_size", r.message.custom_size);
+//                 }
+
+//             });
+//         }
+//     }
+// });
 frappe.ui.form.on("Delivery Note Item", {
     item_code: function(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
 
-        if (row.item_code) {
-            frappe.db.get_value("Item", row.item_code, [
-                "custom_barcode_code",
-                "custom_colour_name",
-                "custom_size"
-            ]).then(r => {
-
-                if (r.message) {
-                    frappe.model.set_value(cdt, cdn, "custom_style", r.message.custom_barcode_code);
-                    frappe.model.set_value(cdt, cdn, "custom_color", r.message.custom_colour_name);
-                    frappe.model.set_value(cdt, cdn, "custom_size", r.message.custom_size);
-                }
-
-            });
+        if (!row.item_code) {
+            return;
         }
+
+        // Item Master se values
+        frappe.db.get_value("Item", row.item_code, [
+            "custom_barcode_code",
+            "custom_colour_name",
+            "custom_size",
+            "custom_top_fabrics"
+        ]).then(r => {
+
+            if (r.message) {
+                frappe.model.set_value(
+                    cdt,
+                    cdn,
+                    "custom_style",
+                    r.message.custom_barcode_code || ""
+                );
+
+                frappe.model.set_value(
+                    cdt,
+                    cdn,
+                    "custom_color",
+                    r.message.custom_colour_name || ""
+                );
+
+                frappe.model.set_value(
+                    cdt,
+                    cdn,
+                    "custom_size",
+                    r.message.custom_size || ""
+                );
+
+                frappe.model.set_value(
+                    cdt,
+                    cdn,
+                    "custom_top_fabrics",
+                    r.message.custom_top_fabrics || ""
+                );
+            }
+        });
+
+        // Item Price se MRP
+        frappe.db.get_value("Item Price", {
+            item_code: row.item_code,
+            price_list: "MRP"
+        }, "price_list_rate").then(r => {
+
+            if (r.message) {
+                frappe.model.set_value(
+                    cdt,
+                    cdn,
+                    "custom_mrp",
+                    r.message.price_list_rate || 0
+                );
+            } else {
+                frappe.model.set_value(
+                    cdt,
+                    cdn,
+                    "custom_mrp",
+                    0
+                );
+            }
+        });
     }
 });
-
 // async function set_sales_person(frm) {
 //     if (!frm.doc.company) return;
 
@@ -385,7 +455,7 @@ async function get_items_in_chunks(item_codes) {
                 fields: [
                     "name",
                     "custom_group_collection",
-                    "custom_top_fabrics",
+                    "custom_top_fabricss",
                     "custom_colour_name",
                     "custom_size",
                     "custom_barcode_code"
@@ -424,7 +494,7 @@ function generate_fixed_excel(frm, item_map) {
                 <td>${item.gst_hsn_code || ''}</td>
                 <td>${m.custom_barcode_code || ''}</td>
                 <td>${m.custom_group_collection || ''}</td>
-                <td>${m.custom_top_fabrics || ''}</td>
+                <td>${m.custom_top_fabricss || ''}</td>
                 <td>${m.custom_colour_name || ''}</td>
                 <td>${m.custom_size || ''}</td>
                 <td align="center">${qty}</td>
