@@ -1,6 +1,50 @@
 frappe.ui.form.on("Subcontracting Order", {
     refresh(frm) {
-       
+          if (frm.is_new()) return;
+
+        if (frm.doc.docstatus !== 0 || !frm.doc.supplier) return;
+
+        frm.remove_custom_button(__('Outgoing Logistics'), __('Create'));
+        
+        frappe.db.get_value(
+            "Stock Entry",
+            {
+                subcontracting_order: frm.doc.name,
+                docstatus: 1
+            },
+            "name"
+        ).then(se => {
+
+            if (!se.message) return;
+
+            frappe.db.get_value(
+                "Supplier",
+                frm.doc.supplier,
+                "custom_gate_out_applicable"
+            ).then(r => {
+
+                if (!r.message || !r.message.custom_gate_out_applicable) return;
+
+                frm.add_custom_button(
+                    __('Outgoing Logistics'),
+                    () => {
+                        frappe.call({
+                            method: "franchise_erp.custom.subcontracting_order.get_outgoing_logistics_data",
+                            args: {
+                                subcontracting_order: frm.doc.name
+                            },
+                            freeze: true,
+                            callback(res) {
+                                if (res.message) {
+                                    frappe.new_doc("Outgoing Logistics", res.message);
+                                }
+                            }
+                        });
+                    },
+                    __('Create')
+                );
+            });
+        });
         frm.add_custom_button(
             __("Fabric Wastage Register"),
             function () {
@@ -189,65 +233,6 @@ function set_tax_rows_on_net_total(frm) {
         frm.refresh_field("taxes");
     }
 }
-
-frappe.ui.form.on('Subcontracting Order', {
-    refresh(frm) {
-
-        // 🛑 1. Unsaved / New document guard
-        if (frm.is_new()) return;
-
-        // 🛑 2. Only Draft documents with Supplier
-        if (frm.doc.docstatus !== 0 || !frm.doc.supplier) return;
-
-        // 🧹 3. Prevent duplicate buttons
-        frm.remove_custom_button(__('Outgoing Logistics'), __('Create'));
-        
-        // 🔍 4. Check if submitted Stock Entry exists
-        frappe.db.get_value(
-            "Stock Entry",
-            {
-                subcontracting_order: frm.doc.name,
-                docstatus: 1
-            },
-            "name"
-        ).then(se => {
-
-            // ❌ No Stock Entry → no button
-            if (!se.message) return;
-
-            // 🔍 5. Check Supplier flag
-            frappe.db.get_value(
-                "Supplier",
-                frm.doc.supplier,
-                "custom_gate_out_applicable"
-            ).then(r => {
-
-                if (!r.message || !r.message.custom_gate_out_applicable) return;
-
-                // ➕ 6. Add Create → Outgoing Logistics button
-                frm.add_custom_button(
-                    __('Outgoing Logistics'),
-                    () => {
-                        frappe.call({
-                            method: "franchise_erp.custom.subcontracting_order.get_outgoing_logistics_data",
-                            args: {
-                                subcontracting_order: frm.doc.name
-                            },
-                            freeze: true,
-                            callback(res) {
-                                if (res.message) {
-                                    frappe.new_doc("Outgoing Logistics", res.message);
-                                }
-                            }
-                        });
-                    },
-                    __('Create')
-                );
-            });
-        });
-    }
-});
-
 
 
 
