@@ -1122,11 +1122,38 @@ def create_debit_note(company, period_type=None, invoices=None):
         )
 
     # Summary row
+    # je.append("accounts", {
+    #     "account": creditors_account,
+    #     "credit_in_account_currency": total_penalty,
+    #     "party_type": "Customer",
+    #     "party": company,
+    #     "custom_penalty_invoice": "Summary",
+    #     "remarks": "Total Penalty Summary"
+    # })
+    # ---------------------------------------------------------
+    # FIND CUSTOMER AGAINST SIS DEBIT NOTE LOG COMPANY
+    # ---------------------------------------------------------
+    customer = frappe.db.get_value(
+        "Customer",
+        {
+            "represents_company": company
+        },
+        "name"
+    )
+
+    if not customer:
+        frappe.throw(
+            f"No Customer found where Represents Company = {company}"
+        )
+
+    # ---------------------------------------------------------
+    # SUMMARY ROW
+    # ---------------------------------------------------------
     je.append("accounts", {
         "account": creditors_account,
         "credit_in_account_currency": total_penalty,
         "party_type": "Customer",
-        "party": company,
+        "party": customer,
         "custom_penalty_invoice": "Summary",
         "remarks": "Total Penalty Summary"
     })
