@@ -303,4 +303,8 @@ def _is_holiday(employee, holiday_list, company, date):
 	if not holiday_list:
 		return False
 	return bool(frappe.db.exists("Holiday", {"parent": holiday_list, "holiday_date": date}))
- 
+
+def force_enable_scheduler():
+	if frappe.utils.scheduler.is_scheduler_disabled():
+		frappe.utils.scheduler.enable_scheduler()
+		frappe.db.commit()
