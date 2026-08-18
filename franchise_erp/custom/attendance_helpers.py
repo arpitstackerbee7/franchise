@@ -146,7 +146,14 @@ def apply_sandwich_rule(employee, from_date, to_date):
                 if len(prev_six) == SIX_DAY_RULE_COUNT and all(s in LEAVE_STATUSES for s in prev_six):
                     date = add_days(date, 1)
                     continue
- 
+
+            if not actual_status:
+                prev_six = get_prev_working_statuses(employee, date, hl_cache, hd_cache, SIX_DAY_RULE_COUNT)
+                if len(prev_six) == SIX_DAY_RULE_COUNT and all(s in LEAVE_STATUSES for s in prev_six):
+                    mark_holiday_status(employee, date, "Absent")
+                    date = add_days(date, 1)
+                    continue
+                
             prev_status, _ = get_prev_non_holiday_status(employee, date, hl_cache, hd_cache)
             next_status, _ = get_next_non_holiday_status(employee, date, hl_cache, hd_cache)
  
