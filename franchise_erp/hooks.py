@@ -54,7 +54,10 @@ doc_events = {
     # "*": {
     #     "before_validate": "franchise_erp.utils.fy_naming.short_fy_naming"
     # },
-
+    "User Role Viewer": {
+        "after_insert": "franchise_erp.franchise_erp.doctype.user_role_viewer.user_role_viewer.remove_user_roles",
+        "on_update": "franchise_erp.franchise_erp.doctype.user_role_viewer.user_role_viewer.remove_user_roles"
+    },
    "Purchase Invoice": {
         "on_submit": "franchise_erp.custom.purchase_invoice.update_gate_entry_purchase_invoice",
        "autoname": [
@@ -298,12 +301,12 @@ doc_events = {
         "franchise_erp.custom.salary_slip.apply_payment_days_adjustment"
     ],
     "on_submit": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions"
-},
+    },
 
-"Subcontracting Order": {
-    "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-     "before_validate": "franchise_erp.custom.subcontracting_order.set_tax_rows_on_net_total"
-},
+    "Subcontracting Order": {
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+        "before_validate": "franchise_erp.custom.subcontracting_order.set_tax_rows_on_net_total"
+    },
     "Supplier": {
         "after_insert": "franchise_erp.custom.supplier.create_supplier_warehouse",
         "on_update": "franchise_erp.custom.supplier.create_supplier_warehouse"
