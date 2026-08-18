@@ -323,7 +323,7 @@ doc_events = {
         "on_submit": "franchise_erp.custom.comp_off.set_comp_off_expiry"
     },
     "Attendance": {
-        "on_update": "franchise_erp.custom.working_hours.fix_working_hours",
+        # "on_update": "franchise_erp.custom.working_hours.fix_working_hours",
         "on_submit": "franchise_erp.custom.attendance_helpers.check_sandwich_on_attendance_submit"
     },
     "Attendance Request": {
@@ -434,7 +434,7 @@ app_include_js = [
     "/assets/franchise_erp/js/uploader_patch.js",
     "/assets/franchise_erp/js/barcode_scanner_override.js",
     "/assets/franchise_erp/js/list_settings_permission.js",
-    "/assets/franchise_erp/js/journal_entry_filter.js"
+    "/assets/franchise_erp/js/journal_entry_filter.js",
 ]
 
 
@@ -523,8 +523,9 @@ scheduler_events = {
             "franchise_erp.send_whatsapp_notification.send_daily_counter_sales_group",
         ],
         "* * * * *": [
-            "franchise_erp.custom.serial_no.update_serial_custom_style"
-        ]
+            "franchise_erp.custom.serial_no.update_serial_custom_style",
+            "franchise_erp.overrides.scheduler.update_attendance_working_hours",
+        ],
     },
     "daily": [
         "franchise_erp.custom.comp_off.expire_comp_off_allocations",
