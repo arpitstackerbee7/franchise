@@ -44,7 +44,6 @@ on_session_creation = [
 # ]
 
 before_migrate = ["franchise_erp.overrides.migrate_hooks.pause_jobs_before_migrate"]
-after_migrate = ["franchise_erp.overrides.migrate_hooks.resume_jobs_after_migrate"]
 
 doc_events = {
 
@@ -414,8 +413,10 @@ has_permission = {
 # after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
 
 after_migrate = [
+    "franchise_erp.overrides.migrate_hooks.resume_jobs_after_migrate",
     "franchise_erp.overrides.scheduler.disable_core_hourly_job",
     "franchise_erp.overrides.scheduler.enable_create_log_for_all_shifts_job",
+    "franchise_erp.overrides.scheduler.force_enable_scheduler",
 ]
 
 # app_include_js = "public/js/back_date_disabled.js"
