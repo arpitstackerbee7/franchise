@@ -308,3 +308,72 @@ def force_enable_scheduler():
 	if frappe.utils.scheduler.is_scheduler_disabled():
 		frappe.utils.scheduler.enable_scheduler()
 		frappe.db.commit()
+  
+
+import frappe
+from frappe.utils import get_datetime
+
+
+def update_attendance_working_hours():
+
+	attendances = frappe.get_all(
+		"Attendance",
+		filters={
+			"in_time": ["is", "set"],
+			"out_time": ["is", "set"],
+		},
+		fields=[
+			"name",
+			"in_time",
+			"out_time",
+		],
+	)
+
+	updated = 0
+
+	for row in attendances:
+
+		try:
+
+			in_time = get_datetime(row.in_time)
+			out_time = get_datetime(row.out_time)
+
+			if out_time <= in_time:
+				continue
+
+			# Total difference in minutes
+			total_minutes = int(
+				(out_time - in_time).total_seconds() // 60
+			)
+
+			# Hours and minutes
+			hours = total_minutes // 60
+			minutes = total_minutes % 60
+
+			# YOUR REQUIRED FORMAT
+			# 9 hours 57 minutes -> 9.57
+			working_hours = float(
+				f"{hours}.{minutes:02d}"
+			)
+
+			frappe.db.set_value(
+				"Attendance",
+				row.name,
+				"working_hours",
+				working_hours,
+				update_modified=False
+			)
+
+			updated += 1
+
+		except Exception:
+			frappe.log_error(
+				frappe.get_traceback(),
+				"Attendance Working Hours Scheduler"
+			)
+
+	frappe.db.commit()
+
+	print(
+		f"Attendance Working Hours Updated: {updated}"
+	)

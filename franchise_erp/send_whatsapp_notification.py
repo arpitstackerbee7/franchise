@@ -823,14 +823,11 @@ def send_daily_counter_sales_group():
     return f"Successfully Sent to {sent} Group(s)"
 
 
-
 # PO workflow according notification
+
 import frappe
 import requests
 
-
-PO_ROLE_CHECKER = "PO Check"
-PO_ROLE_APPROVER = "PO approval"
 
 PO_DESK_ROUTE = "/app/purchase-order/{name}"
 
@@ -838,6 +835,7 @@ PO_DESK_ROUTE = "/app/purchase-order/{name}"
 # ============================================================
 # WORKFLOW TRANSITIONS
 # ============================================================
+
 PO_TRANSITION_CONFIG = {
 
     # Draft -> Pending Checker Approval
@@ -870,6 +868,11 @@ PO_TRANSITION_CONFIG = {
         "label": "Modify",
     },
 }
+
+
+# ============================================================
+# CAPTURE WORKFLOW STATE
+# ============================================================
 
 def po_capture_workflow_state(doc, method=None):
 
@@ -918,9 +921,12 @@ CHANGED:
             frappe.get_traceback(),
             "PO WhatsApp - State Capture Error"
         )
+
+
 # ============================================================
 # MAIN WORKFLOW NOTIFICATION
 # ============================================================
+
 def po_workflow_notification(doc, method=None):
 
     try:
@@ -932,6 +938,7 @@ def po_workflow_notification(doc, method=None):
         old_doc = doc.get_doc_before_save()
 
         old_state = None
+
         if old_doc:
             old_state = old_doc.get("workflow_state")
 
@@ -956,15 +963,12 @@ OLD DOC EXISTS:
             "PO WhatsApp - WORKFLOW DEBUG"
         )
 
-
-
         # ====================================================
         # DRAFT KO IGNORE
         # ====================================================
 
-        # Draft me notification nahi
-        # Lekin Draft -> Pending Checker Approval
-        # ko allow karna hai
+        # New Draft me notification nahi
+        # Draft -> Pending Checker Approval allowed hai
         if new_state == "Draft" and not old_state:
             return
 
@@ -1091,6 +1095,8 @@ Mobile:
             frappe.get_traceback(),
             "PO WhatsApp - Workflow Error"
         )
+
+
 # ============================================================
 # RESOLVE RECIPIENTS
 # ============================================================
@@ -1124,50 +1130,6 @@ def _po_resolve_recipients(
                 _po_get_agent_supplier_recipients(doc)
             )
 
-        # ----------------------------------------------------
-        # MAKER
-        # ----------------------------------------------------
-
-        elif label == "maker":
-
-            if doc.owner:
-
-                mobile = _po_get_user_mobile(
-                    doc.owner
-                )
-
-                if mobile:
-
-                    recipients.append({
-                        "name": doc.owner,
-                        "mobile": mobile
-                    })
-
-        # ----------------------------------------------------
-        # CHECKER
-        # ----------------------------------------------------
-
-        elif label == "checker":
-
-            checker_users = (
-                _po_get_users_with_role(
-                    PO_ROLE_CHECKER
-                )
-            )
-
-            for user in checker_users:
-
-                mobile = _po_get_user_mobile(
-                    user
-                )
-
-                if mobile:
-
-                    recipients.append({
-                        "name": user,
-                        "mobile": mobile
-                    })
-
     # --------------------------------------------------------
     # REMOVE DUPLICATES
     # --------------------------------------------------------
@@ -1198,6 +1160,7 @@ def _po_resolve_recipients(
 # ============================================================
 # MERCHANT RECIPIENTS
 # ============================================================
+
 def _po_get_merchant_recipients(doc):
 
     recipients = []
@@ -1205,10 +1168,19 @@ def _po_get_merchant_recipients(doc):
     if not doc.supplier:
         return recipients
 
+    # --------------------------------------------------------
+    # PO Supplier
+    # --------------------------------------------------------
+
     supplier_doc = frappe.get_doc(
         "Supplier",
         doc.supplier
     )
+
+    # --------------------------------------------------------
+    # Merchant Child Table
+    # custom_po_notification_for_merchant
+    # --------------------------------------------------------
 
     merchant_rows = (
         supplier_doc.get(
@@ -1219,28 +1191,40 @@ def _po_get_merchant_recipients(doc):
 
     for row in merchant_rows:
 
-        merchant_supplier = row.get(
+        # ----------------------------------------------------
+        # merchant is User Link
+        # ----------------------------------------------------
+
+        merchant_user = row.get(
             "merchant"
         )
 
-        if not merchant_supplier:
+        if not merchant_user:
             continue
 
-        phone = _po_get_supplier_address_phone(
-            merchant_supplier
+        # ----------------------------------------------------
+        # User -> mobile_no
+        # ----------------------------------------------------
+
+        mobile = frappe.db.get_value(
+            "User",
+            merchant_user,
+            "mobile_no"
         )
 
-        if phone:
-            recipients.append({
-                "name": merchant_supplier,
-                "mobile": phone
-            })
+        if not mobile:
+            continue
+
+        recipients.append({
+            "name": merchant_user,
+            "mobile": mobile
+        })
 
     return recipients
 
 
 # ============================================================
-# AGENT SUPPLIER
+# AGENT SUPPLIER RECIPIENTS
 # ============================================================
 
 def _po_get_agent_supplier_recipients(doc):
@@ -1260,150 +1244,53 @@ def _po_get_agent_supplier_recipients(doc):
     )
 
     # --------------------------------------------------------
-    # custom_agent_supplier
+    # Supplier -> Supplier Group
     # --------------------------------------------------------
 
-    agent_supplier = supplier_doc.get(
-        "custom_agent_supplier"
+    supplier_group = supplier_doc.get(
+        "supplier_group"
     )
 
-    if not agent_supplier:
+    if not supplier_group:
         return recipients
 
     # --------------------------------------------------------
-    # Agent Supplier -> Address -> phone
+    # Supplier Group -> custom_user_email
     # --------------------------------------------------------
 
-    phone = _po_get_supplier_address_phone(
-        agent_supplier
+    user_email = frappe.db.get_value(
+        "Supplier Group",
+        supplier_group,
+        "custom_user_email"
     )
 
-    if phone:
+    if not user_email:
+        return recipients
 
-        recipients.append({
-            "name": agent_supplier,
-            "mobile": phone
-        })
+    # --------------------------------------------------------
+    # User -> mobile_no
+    # custom_user_email is User Link
+    # --------------------------------------------------------
 
-    return recipients
-
-
-# ============================================================
-# SUPPLIER ADDRESS -> PHONE
-# ============================================================
-
-def _po_get_supplier_address_phone(
-    supplier_name
-):
-
-    if not supplier_name:
-        return None
-
-    address_links = frappe.get_all(
-        "Dynamic Link",
-        filters={
-            "link_doctype": "Supplier",
-            "link_name": supplier_name,
-            "parenttype": "Address",
-        },
-        fields=["parent"],
-        limit=20
-    )
-
-    if not address_links:
-        return None
-
-    # Find address having phone
-
-    for address_link in address_links:
-
-        phone = frappe.db.get_value(
-            "Address",
-            address_link.parent,
-            "phone"
-        )
-
-        if phone:
-            return phone
-
-    return None
-
-
-# ============================================================
-# USERS WITH ROLE
-# ============================================================
-
-def _po_get_users_with_role(
-    role_name
-):
-
-    rows = frappe.get_all(
-        "Has Role",
-        filters={
-            "role": role_name,
-            "parenttype": "User"
-        },
-        fields=[
-            "parent as user"
-        ]
-    )
-
-    user_names = [
-        row.user
-        for row in rows
-        if row.user
-    ]
-
-    if not user_names:
-        return []
-
-    return frappe.get_all(
+    user_mobile = frappe.db.get_value(
         "User",
-        filters={
-            "name": ["in", user_names],
-            "enabled": 1
-        },
-        pluck="name"
-    )
-
-
-# ============================================================
-# USER MOBILE
-# ============================================================
-
-def _po_get_user_mobile(
-    user
-):
-
-    mobile = frappe.db.get_value(
-        "User",
-        user,
+        user_email,
         "mobile_no"
     )
 
-    if mobile:
-        return mobile
+    if not user_mobile:
+        return recipients
 
-    employee = frappe.db.get_value(
-        "Employee",
-        {
-            "user_id": user
-        },
-        "name"
-    )
+    # --------------------------------------------------------
+    # Add Recipient
+    # --------------------------------------------------------
 
-    if employee:
+    recipients.append({
+        "name": user_email,
+        "mobile": user_mobile
+    })
 
-        mobile = frappe.db.get_value(
-            "Employee",
-            employee,
-            "cell_number"
-        )
-
-        if mobile:
-            return mobile
-
-    return None
+    return recipients
 
 
 # ============================================================
@@ -1544,4 +1431,3 @@ Response: {response.text}
             frappe.get_traceback(),
             "PO WhatsApp - Send Error"
         )
-  

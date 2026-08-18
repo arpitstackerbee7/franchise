@@ -45,17 +45,17 @@ frappe.ui.form.on("Subcontracting Order", {
                 );
             });
         });
-        // frm.add_custom_button(
-        //     __("Fabric Wastage Register"),
-        //     function () {
-        //         frappe.new_doc("Fabric Wastage Register", {
-        //             subcontracting_order: frm.doc.name,
-        //             company: frm.doc.company,
-        //             supplier: frm.doc.supplier
-        //         });
-        //     },
-        //     __("Create")
-        // );
+        frm.add_custom_button(
+            __("Fabric Wastage Register"),
+            function () {
+                frappe.new_doc("Fabric Wastage Register", {
+                    subcontracting_order: frm.doc.name,
+                    company: frm.doc.company,
+                    supplier: frm.doc.supplier
+                });
+            },
+            __("Create")
+        );
         
         if (frm.doc.docstatus !== 0) {
             return;

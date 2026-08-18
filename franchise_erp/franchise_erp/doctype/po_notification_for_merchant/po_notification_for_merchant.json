@@ -14,7 +14,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Merchant",
-   "options": "Supplier",
+   "options": "User",
    "reqd": 1
   }
  ],
@@ -22,7 +22,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-17 16:58:39.821566",
+ "modified": "2026-08-18 22:01:12.731343",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "PO Notification For Merchant",
