@@ -286,6 +286,7 @@ doc_events = {
         "after_insert": [
         "franchise_erp.custom.employee_checkin.process_late_entry",
         "franchise_erp.custom.attendance.update_last_sync",
+        "franchise_erp.custom.leave_application.update_attendance_on_checkin",
     ],
     "validate": "franchise_erp.overrides.employee_checkin.fix_shift_for_paired_checkin",
     },
@@ -529,6 +530,7 @@ scheduler_events = {
         "franchise_erp.custom.comp_off.expire_comp_off_allocations",
         "franchise_erp.custom.attendance.mark_absent_for_missing_checkout",
         "franchise_erp.overrides.scheduler.mark_absent_for_no_checkin",
+        "franchise_erp.custom.leave_application.scheduled_fix_short_leave_attendance", 
     ],
     "all": [
         "franchise_erp.overrides.scheduler.process_auto_attendance_for_all_shifts_all",
