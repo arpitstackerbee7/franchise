@@ -833,4 +833,7 @@ fixtures = [
             ["name", "in", ["Leave Application"]]
         ]
     },
+    {
+    "dt": "Property Setter"
+},
 ]
