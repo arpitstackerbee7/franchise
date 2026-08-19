@@ -383,7 +383,8 @@ override_doctype_class = {
     "Leave Policy Assignment": "franchise_erp.custom.leave_policy_assignment.CustomLeavePolicyAssignment",
     "Attendance Request": "franchise_erp.overrides.attendance_request.CustomAttendanceRequest",
     "Leave Encashment": "franchise_erp.overrides.custom_leave_encashment.CustomLeaveEncashment",
-    "Leave Application": "franchise_erp.overrides.custom_leave_application.CustomLeaveApplication"
+    "Leave Application": "franchise_erp.overrides.custom_leave_application.CustomLeaveApplication",
+    "Auto Repeat": "franchise_erp.overrides.auto_repeat.CustomAutoRepeat"
 }
 
 permission_query_conditions = {
