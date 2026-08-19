@@ -1,13 +1,9 @@
-# Copyright (c) 2026, Franchise Erp and contributors
-# For license information, please see license.txt
-
-
-
-
 import frappe
 
-# Month order for Bonus Year (Oct to Sept)
 MONTH_ORDER = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+BONUS_COMPONENT = "Bonus"
 
 
 def execute(filters=None):
@@ -26,7 +22,6 @@ def get_columns(filters):
     selected_month = filters.get("month")
     months_to_show = [selected_month] if selected_month else MONTH_ORDER
 
-    # Month-wise PD and Bonus columns
     for month in months_to_show:
         columns.append({
             "label": f"{month}-PD",
@@ -50,47 +45,57 @@ def get_columns(filters):
 
 
 def get_data(filters):
-    conditions = ["be.docstatus = 1"]
-    values = {}
-
-    if filters.get("bonus_year"):
-        conditions.append("be.bonus_year = %(bonus_year)s")
-        values["bonus_year"] = filters.get("bonus_year")
+    conditions = ["ss.docstatus = 1"]
+    values = {"bonus_component": BONUS_COMPONENT}
 
     if filters.get("employee"):
-        conditions.append("be.employee = %(employee)s")
+        conditions.append("ss.employee = %(employee)s")
         values["employee"] = filters.get("employee")
 
     if filters.get("salary_structure"):
-        conditions.append("be.salary_structure = %(salary_structure)s")
+        conditions.append("ss.salary_structure = %(salary_structure)s")
         values["salary_structure"] = filters.get("salary_structure")
 
     if filters.get("department"):
         conditions.append("emp.department = %(department)s")
         values["department"] = filters.get("department")
+
     if filters.get("month"):
-        conditions.append("be.month = %(month)s")
+        conditions.append("DATE_FORMAT(ss.start_date, '%%b') = %(month)s")
         values["month"] = filters.get("month")
 
     condition_str = " AND ".join(conditions)
 
     query = f"""
         SELECT
-            be.employee,
-            be.employee_name,
-            be.salary_structure,
-            be.month,
-            be.present_days,
-            be.monthly_bonus_amount
-        FROM `tabBonus Entry` be
-        LEFT JOIN `tabEmployee` emp ON emp.name = be.employee
+            ss.employee,
+            ss.employee_name,
+            ss.salary_structure,
+            ss.payment_days AS present_days,
+            DATE_FORMAT(ss.start_date, '%%b') AS month,
+            COALESCE(sd.amount, 0) AS monthly_bonus_amount,
+            CASE
+                WHEN MONTH(ss.start_date) >= 4 THEN YEAR(ss.start_date)
+                ELSE YEAR(ss.start_date) - 1
+            END AS bonus_year
+        FROM `tabSalary Slip` ss
+        LEFT JOIN `tabEmployee` emp ON emp.name = ss.employee
+        LEFT JOIN `tabSalary Detail` sd
+            ON sd.parent = ss.name
+            AND sd.parenttype = 'Salary Slip'
+            AND sd.parentfield IN ('earnings', 'deductions')
+            AND sd.salary_component = %(bonus_component)s
         WHERE {condition_str}
-        ORDER BY be.employee_name
+        ORDER BY ss.employee_name
     """
 
     raw_data = frappe.db.sql(query, values, as_dict=True)
 
-    # Pivot: group by employee
+    if filters.get("bonus_year"):
+        raw_value = str(filters.get("bonus_year"))
+        target_year = int(raw_value.split("-")[0])
+        raw_data = [row for row in raw_data if row.bonus_year == target_year]
+
     employee_map = {}
 
     for row in raw_data:
@@ -103,7 +108,6 @@ def get_data(filters):
                 "total_pd": 0,
                 "total_bonus": 0,
             }
-            # Initialize all month columns as 0
             for month in MONTH_ORDER:
                 employee_map[emp][f"{month.lower()}_pd"] = 0
                 employee_map[emp][f"{month.lower()}_bonus"] = 0
