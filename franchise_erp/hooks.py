@@ -277,7 +277,10 @@ doc_events = {
     "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel",
 },
     "Leave Application":{
-        "on_submit": "franchise_erp.custom.leave_application.update_late_log_on_short_leave"
+        "on_submit":[
+        "franchise_erp.custom.leave_application.update_late_log_on_short_leave",
+        "franchise_erp.custom.attendance_helpers.check_sandwich_on_leave_submit"
+        ]
     },
     "Leave Type":{
         "validate": "franchise_erp.custom.leave_type.validate_only_one_short_leave"
