@@ -41,13 +41,26 @@ def override_leave_encashment_calculation(doc, method):
     doc.custom_total_leaves_taken = total_leaves_taken
     doc.custom_encashment_deduction = deduction
 
-    old_days = remaining_paid_leaves
-    old_amount = flt(doc.encashment_amount)
-    per_day_rate = (old_amount / old_days) if old_days else 0
+    per_day_salary = get_per_day_salary(doc.employee, to_date)
+
+    doc.custom_per_day_salary = per_day_salary
+
 
     doc.encashment_days = final_encashment_days
-    doc.encashment_amount = round(final_encashment_days * per_day_rate, 2)
+    doc.encashment_amount = round(final_encashment_days * per_day_salary, 2)
 
+def get_per_day_salary(employee, on_date):
+    per_day_amount = frappe.db.get_value(
+        "Salary Structure Assignment",
+        {
+            "employee": employee,
+            "docstatus": 1,
+            "from_date": ["<=", on_date],
+        },
+        "leave_encashment_amount_per_day",
+        order_by="from_date desc",
+    )
+    return flt(per_day_amount)
 
 def get_lwp_days(employee, from_date, to_date):
     leave_types = frappe.get_all("Leave Type", filters={"is_lwp": 1}, pluck="name")
