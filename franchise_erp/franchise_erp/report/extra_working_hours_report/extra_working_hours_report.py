@@ -15,15 +15,66 @@ def execute(filters=None):
 
 def get_columns():
     return [
-        {"label": "Employee", "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "width": 120},
-        {"label": "Employee Name", "fieldname": "employee_name", "fieldtype": "Data", "width": 150},
-        {"label": "Attendance Date", "fieldname": "attendance_date", "fieldtype": "Date", "width": 110},
-        {"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 150},
-        {"label": "Shift", "fieldname": "shift", "fieldtype": "Link", "options": "Shift Type", "width": 100},
-        {"label": "Standard Hours", "fieldname": "standard_hours", "fieldtype": "Float", "width": 110},
-        {"label": "Actual Hours", "fieldname": "working_hours", "fieldtype": "Float", "width": 110},
-        {"label": "Extra Hours", "fieldname": "extra_hours", "fieldtype": "Float", "width": 110},
-        {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 90},
+        {
+            "label": "Employee",
+            "fieldname": "employee",
+            "fieldtype": "Link",
+            "options": "Employee",
+            "width": 120
+        },
+        {
+            "label": "Employee Name",
+            "fieldname": "employee_name",
+            "fieldtype": "Data",
+            "width": 150
+        },
+        {
+            "label": "Attendance Date",
+            "fieldname": "attendance_date",
+            "fieldtype": "Date",
+            "width": 110
+        },
+        {
+            "label": "Company",
+            "fieldname": "company",
+            "fieldtype": "Link",
+            "options": "Company",
+            "width": 150
+        },
+        {
+            "label": "Shift",
+            "fieldname": "shift",
+            "fieldtype": "Link",
+            "options": "Shift Type",
+            "width": 100
+        },
+        {
+            "label": "Standard Hours",
+            "fieldname": "standard_hours",
+            "fieldtype": "Float",
+            "precision": 2,
+            "width": 110
+        },
+        {
+            "label": "Actual Hours",
+            "fieldname": "working_hours",
+            "fieldtype": "Float",
+            "precision": 2,
+            "width": 110
+        },
+        {
+            "label": "Extra Hours",
+            "fieldname": "extra_hours",
+            "fieldtype": "Float",
+            "precision": 2,
+            "width": 110
+        },
+        {
+            "label": "Status",
+            "fieldname": "status",
+            "fieldtype": "Data",
+            "width": 90
+        },
     ]
 
 
