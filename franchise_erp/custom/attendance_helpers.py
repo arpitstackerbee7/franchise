@@ -235,3 +235,31 @@ def check_sandwich_on_attendance_submit(doc, method=None):
         queue="short",
         now=frappe.flags.in_test
     )   
+
+@frappe.whitelist()
+def run_sandwich_check_manual(employee=None, from_date=None, to_date=None):
+    if not from_date or not to_date:
+        frappe.throw("from_date aur to_date required hai")
+
+    from_date = getdate(from_date)
+    to_date = getdate(to_date)
+
+    if employee:
+        employees = [employee]
+    else:
+        employees = frappe.get_all("Employee", filters={"status": "Active"}, pluck="name")
+
+    results = []
+    for emp in employees:
+        try:
+            apply_sandwich_rule(emp, from_date, to_date)
+            frappe.db.commit()
+            results.append({"employee": emp, "status": "success"})
+        except Exception:
+            frappe.db.rollback()
+            frappe.log_error(
+                title=f"Manual sandwich check failed for {emp}",
+                message=frappe.get_traceback()
+            )
+            results.append({"employee": emp, "status": "failed"})
+    return results
