@@ -835,7 +835,6 @@ PO_DESK_ROUTE = "/app/purchase-order/{name}"
 # ============================================================
 # WORKFLOW TRANSITIONS
 # ============================================================
-
 PO_TRANSITION_CONFIG = {
 
     # Draft -> Pending Checker Approval
@@ -852,23 +851,20 @@ PO_TRANSITION_CONFIG = {
 
     # Pending Final Approval -> Approved
     ("Pending Final Approval", "Approved"): {
-        "recipients": ["merchant", "agent_supplier"],
+        "recipients": ["merchant", "agent_supplier", "maker"],
         "label": "Approved",
     },
 
-    # Pending Final Approval -> Rejected
     ("Pending Final Approval", "Rejected"): {
-        "recipients": ["merchant", "agent_supplier"],
+        "recipients": ["merchant", "agent_supplier", "maker"],
         "label": "Rejected",
     },
 
-    # Pending Final Approval -> Draft (Modify)
     ("Pending Final Approval", "Draft"): {
-        "recipients": ["merchant", "agent_supplier"],
+        "recipients": ["merchant", "agent_supplier", "maker"],
         "label": "Modify",
     },
 }
-
 
 # ============================================================
 # CAPTURE WORKFLOW STATE
@@ -1100,7 +1096,6 @@ Mobile:
 # ============================================================
 # RESOLVE RECIPIENTS
 # ============================================================
-
 def _po_resolve_recipients(
     doc,
     recipient_labels
@@ -1129,6 +1124,30 @@ def _po_resolve_recipients(
             recipients.extend(
                 _po_get_agent_supplier_recipients(doc)
             )
+
+        # ----------------------------------------------------
+        # MAKER / CREATED BY
+        # ----------------------------------------------------
+
+        elif label == "maker":
+
+            created_by = doc.get("created_by")
+
+            if not created_by:
+                return
+
+            user = frappe.db.get_value(
+                "User",
+                created_by,
+                ["name", "mobile_no"],
+                as_dict=True
+            )
+
+            if user and user.mobile_no:
+                recipients.append({
+                    "name": user.name,
+                    "mobile": user.mobile_no
+                })
 
     # --------------------------------------------------------
     # REMOVE DUPLICATES
