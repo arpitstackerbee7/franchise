@@ -387,7 +387,8 @@ override_doctype_class = {
     "Attendance Request": "franchise_erp.overrides.attendance_request.CustomAttendanceRequest",
     "Leave Encashment": "franchise_erp.overrides.custom_leave_encashment.CustomLeaveEncashment",
     "Leave Application": "franchise_erp.overrides.custom_leave_application.CustomLeaveApplication",
-    "Auto Repeat": "franchise_erp.overrides.auto_repeat.CustomAutoRepeat"
+    "Auto Repeat": "franchise_erp.overrides.auto_repeat.CustomAutoRepeat",
+    "Payment Entry": "franchise_erp.custom.payment_entry.CustomPaymentEntry"
 }
 
 permission_query_conditions = {

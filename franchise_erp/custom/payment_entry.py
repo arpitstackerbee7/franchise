@@ -227,3 +227,33 @@ def validate_duplicate_cheque_no(doc, method=None):
                 frappe.bold(doc.reference_no),
                 frappe.bold(duplicate)
             ))
+            
+            
+from erpnext.accounts.doctype.payment_entry.payment_entry import PaymentEntry
+
+
+class CustomPaymentEntry(PaymentEntry):
+
+    def validate(self):
+        super().validate()
+
+        # -----------------------------------------
+        # YOUR EXISTING CUSTOM VALIDATION CODE
+        # -----------------------------------------
+
+        # jo bhi aapka existing code hai,
+        # wo yahin rahega
+
+
+    def validate_transaction_reference(self):
+        # RTGS + specific ICICI account
+        # Reference No and Reference Date not mandatory
+
+        if (
+            self.mode_of_payment == "RTGS"
+            and self.paid_from == "ICICI BANK RTGS (TZULPL) - TZUPL"
+        ):
+            return
+
+        # Other cases -> ERPNext core validation
+        super().validate_transaction_reference()

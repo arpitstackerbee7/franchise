@@ -837,34 +837,32 @@ PO_DESK_ROUTE = "/app/purchase-order/{name}"
 # ============================================================
 PO_TRANSITION_CONFIG = {
 
-    # Draft -> Pending Checker Approval
     ("Draft", "Pending Checker Approval"): {
         "recipients": ["merchant"],
         "label": "Sent to Checker",
     },
 
-    # Pending Checker Approval -> Pending Final Approval
     ("Pending Checker Approval", "Pending Final Approval"): {
         "recipients": ["agent_supplier"],
         "label": "Sent to Approver",
     },
 
-    # Pending Final Approval -> Approved
     ("Pending Final Approval", "Approved"): {
-        "recipients": ["merchant", "agent_supplier", "maker"],
-        "label": "Approved",
+    "recipients": ["maker", "merchant", "agent_supplier"],
+    "label": "Approved",
     },
 
     ("Pending Final Approval", "Rejected"): {
-        "recipients": ["merchant", "agent_supplier", "maker"],
+        "recipients": ["maker", "merchant", "agent_supplier"],
         "label": "Rejected",
     },
 
     ("Pending Final Approval", "Draft"): {
-        "recipients": ["merchant", "agent_supplier", "maker"],
+        "recipients": ["maker", "merchant", "agent_supplier"],
         "label": "Modify",
     },
 }
+
 
 # ============================================================
 # CAPTURE WORKFLOW STATE
@@ -1106,7 +1104,7 @@ def _po_resolve_recipients(
     for label in recipient_labels:
 
         # ----------------------------------------------------
-        # MERCHANT
+        # MERCHANT / CHECKER
         # ----------------------------------------------------
 
         if label == "merchant":
@@ -1116,7 +1114,7 @@ def _po_resolve_recipients(
             )
 
         # ----------------------------------------------------
-        # AGENT SUPPLIER
+        # AGENT SUPPLIER / APPROVER
         # ----------------------------------------------------
 
         elif label == "agent_supplier":
@@ -1126,28 +1124,14 @@ def _po_resolve_recipients(
             )
 
         # ----------------------------------------------------
-        # MAKER / CREATED BY
+        # MAKER / PO CREATOR
         # ----------------------------------------------------
 
         elif label == "maker":
 
-            created_by = doc.get("created_by")
-
-            if not created_by:
-                return
-
-            user = frappe.db.get_value(
-                "User",
-                created_by,
-                ["name", "mobile_no"],
-                as_dict=True
+            recipients.extend(
+                _po_get_maker_recipients(doc)
             )
-
-            if user and user.mobile_no:
-                recipients.append({
-                    "name": user.name,
-                    "mobile": user.mobile_no
-                })
 
     # --------------------------------------------------------
     # REMOVE DUPLICATES
@@ -1175,6 +1159,37 @@ def _po_resolve_recipients(
 
     return list(unique.values())
 
+# ============================================================
+# Maker RECIPIENTS
+# ============================================================
+def _po_get_maker_recipients(doc):
+
+    recipients = []
+
+    owner = doc.get("owner")
+
+    if not owner:
+        return recipients
+
+    user = frappe.db.get_value(
+        "User",
+        owner,
+        ["name", "full_name", "mobile_no"],
+        as_dict=True
+    )
+
+    if not user:
+        return recipients
+
+    if not user.mobile_no:
+        return recipients
+
+    recipients.append({
+        "name": user.full_name or user.name,
+        "mobile": user.mobile_no
+    })
+
+    return recipients
 
 # ============================================================
 # MERCHANT RECIPIENTS
