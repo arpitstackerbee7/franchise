@@ -1,6 +1,7 @@
 
 import frappe
 from frappe.utils import get_datetime, time_diff_in_hours, getdate, now_datetime, add_days, nowdate
+from franchise_erp.custom.attendance import get_or_create_lwp_leave_application
 
 MAX_PAIR_GAP_HOURS = 24
 
@@ -284,6 +285,7 @@ def _mark_absent_if_no_checkin(emp, attendance_date):
 			att.working_hours = 0
 			att.save(ignore_permissions=True)
 			att.submit()
+		_apply_lwp(att.name, emp.name, attendance_date)
 		return
  
 	att = frappe.new_doc("Attendance")
@@ -296,7 +298,19 @@ def _mark_absent_if_no_checkin(emp, attendance_date):
 	att.insert(ignore_permissions=True)
 	att.submit()
 	frappe.db.commit()
- 
+
+	_apply_lwp(att.name, emp.name, attendance_date)
+
+
+def _apply_lwp(attendance_name, employee, attendance_date):
+	la_name = get_or_create_lwp_leave_application(employee, attendance_date)
+	if la_name:
+		frappe.db.set_value("Attendance", attendance_name, {
+			"status": "On Leave",
+			"leave_type": "Leave Without Pay",
+			"leave_application": la_name,
+		}, update_modified=False)
+		frappe.db.commit()
  
 def _is_holiday(employee, holiday_list, company, date):
 	holiday_list = holiday_list or frappe.get_cached_value("Company", company, "default_holiday_list")
@@ -377,3 +391,8 @@ def update_attendance_working_hours():
 	print(
 		f"Attendance Working Hours Updated: {updated}"
 	)
+
+def on_attendance_submit(doc, method):
+	"""Har Attendance submit hone par: agar status Absent hai aur LWP nahi lagi, to lagao."""
+	if doc.status == "Absent" and not doc.leave_application:
+		_apply_lwp(doc.name, doc.employee, doc.attendance_date)

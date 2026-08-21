@@ -327,7 +327,10 @@ doc_events = {
     },
     "Attendance": {
         # "on_update": "franchise_erp.custom.working_hours.fix_working_hours",
-        "on_submit": "franchise_erp.custom.attendance_helpers.check_sandwich_on_attendance_submit"
+        "on_submit": [
+        "franchise_erp.custom.attendance_helpers.check_sandwich_on_attendance_submit",
+        "franchise_erp.overrides.scheduler.on_attendance_submit",
+    ]
     },
     "Attendance Request": {
     "validate": "franchise_erp.custom.attendance.validate_attendance_request",
