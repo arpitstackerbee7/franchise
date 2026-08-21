@@ -38,6 +38,39 @@ class CustomLeaveApplication(LeaveApplication):
         share_doc_with_approver(self, self.leave_approver)
         self.publish_update()
         self.notify_approval_status()
+        
+    def before_cancel(self):
+        self.validate_cancel_permission()
+
+    def on_cancel(self):
+        super().on_cancel()
+        self.db_set("workflow_state", "Cancelled", update_modified=False)
+
+    def validate_cancel_permission(self):
+        if frappe.session.user == "Administrator":
+            return
+
+        user_roles = set(frappe.get_roles(frappe.session.user))
+
+        if self.is_backdated():
+            if BACKDATE_PRIVILEGED_ROLES & user_roles:
+                return
+            frappe.throw(
+                _(
+                    "Only HR Manager, HR Head or System Manager can "
+                    "cancel a backdated Leave Application."
+                ),
+                frappe.PermissionError,
+            )
+        else:
+            if self.leave_approver != frappe.session.user:
+                frappe.throw(
+                    _(
+                        "Only {0} is authorized to cancel this "
+                        "Leave Application."
+                    ).format(frappe.bold(self.leave_approver)),
+                    frappe.PermissionError,
+                )
 	
     # -------------------------------------------------------------------------
     # CREATION PERMISSION
