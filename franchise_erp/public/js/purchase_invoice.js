@@ -261,7 +261,7 @@ function fetch_invoice_details(frm) {
 
 // Fetch default warehouse from SIS Configuration for new Purchase Invoices
 frappe.ui.form.on("Purchase Invoice", {
-    company: function(frm) {
+    company: function (frm) {
         // Run only for new documents when a company is selected
         if (frm.is_new() && frm.doc.company) {
             frappe.db.get_value("SIS Configuration", { company: frm.doc.company }, "warehouse")
@@ -357,13 +357,13 @@ function make_items_negative_pi(frm) {
 // multiple tag gate entry to one purchase invoice for service transport invoice
 frappe.ui.form.on('Purchase Invoice', {
 
-    refresh: function(frm) {
+    refresh: function (frm) {
 
         // for gate entry remove duplicate button
         frm.remove_custom_button("Gate Entry", __("Get Items From"));
 
         // for gate entry  add button in correct group
-        frm.add_custom_button(__("Gate Entry"), function() {
+        frm.add_custom_button(__("Gate Entry"), function () {
             frm.events.open_gate_entry_dialog(frm);
         }, __("Get Items From"));
 
@@ -371,25 +371,25 @@ frappe.ui.form.on('Purchase Invoice', {
         frm.remove_custom_button("Outgoing Logistics", __("Get Items From"));
 
         // for outgoing logistcis add button in correct group
-        frm.add_custom_button(__("Outgoing Logistics"), function() {
+        frm.add_custom_button(__("Outgoing Logistics"), function () {
             frm.events.open_outgoing_logistics_dialog(frm);
         }, __("Get Items From"));
     },
 
     //for  gate entry OPEN DIALOG
-    open_gate_entry_dialog: function(frm) {
+    open_gate_entry_dialog: function (frm) {
 
         if (!frm.doc.supplier) {
             frappe.msgprint("Please select Supplier first");
             return;
         }
-        
+
         frappe.call({
             method: "franchise_erp.franchise_erp.doctype.gate_entry.gate_entry.get_gate_entries_match_from_pi",
             args: {
                 supplier: frm.doc.supplier
             },
-            callback: function(r) {
+            callback: function (r) {
 
                 if (!r.message || !r.message.length) {
                     frappe.msgprint("No Gate Entry available");
@@ -413,14 +413,14 @@ frappe.ui.form.on('Purchase Invoice', {
                             fieldtype: "Data",
                             label: "Search Gate Entry",
                             placeholder: "Type Gate Entry ID...",
-                            change: function() {
+                            change: function () {
 
                                 let value = dialog.get_value("search_gate_entry");
 
                                 let filtered = original_data;
 
                                 if (value) {
-                                    filtered = original_data.filter(d => 
+                                    filtered = original_data.filter(d =>
                                         d.name.toLowerCase().includes(value.toLowerCase())
                                     );
                                 }
@@ -446,7 +446,6 @@ frappe.ui.form.on('Purchase Invoice', {
                             data: original_data,
                             fields: [
 
-                                // 🔢 Serial No (small)
                                 {
                                     fieldname: "idx",
                                     fieldtype: "Int",
@@ -456,7 +455,6 @@ frappe.ui.form.on('Purchase Invoice', {
                                     columns: 1
                                 },
 
-                                // 🔥 Gate Entry (wide)
                                 {
                                     fieldname: "name",
                                     fieldtype: "Link",
@@ -468,6 +466,15 @@ frappe.ui.form.on('Purchase Invoice', {
                                 },
 
                                 {
+                                    fieldname: "document_nos",
+                                    fieldtype: "Data",
+                                    label: "Document No",
+                                    in_list_view: 1,
+                                    read_only: 1,
+                                    columns: 2
+                                },
+
+                                {
                                     fieldname: "consignor",
                                     fieldtype: "Link",
                                     options: "Supplier",
@@ -475,6 +482,7 @@ frappe.ui.form.on('Purchase Invoice', {
                                     in_list_view: 1,
                                     read_only: 1
                                 },
+
                                 {
                                     fieldname: "transporter",
                                     fieldtype: "Link",
@@ -489,7 +497,7 @@ frappe.ui.form.on('Purchase Invoice', {
 
                     // ✅ ACTION BUTTON
                     primary_action_label: "Get Items",
-                    primary_action: function() {
+                    primary_action: function () {
 
                         let selected = dialog.fields_dict.gate_entry_table.grid.get_selected_children();
 
@@ -533,7 +541,7 @@ frappe.ui.form.on('Purchase Invoice', {
     },
 
     //for  gate entry  PROCESS ITEMS
-    process_gate_entries: function(frm, selected_rows) {
+    process_gate_entries: function (frm, selected_rows) {
 
         // ✅ Validate single transporter
         let transporters = [...new Set(selected_rows.map(d => d.transporter))];
@@ -573,7 +581,7 @@ frappe.ui.form.on('Purchase Invoice', {
     },
 
     //for outgoing logistcis
-    open_outgoing_logistics_dialog: function(frm) {
+    open_outgoing_logistics_dialog: function (frm) {
 
         if (!frm.doc.supplier) {
             frappe.msgprint("Please select Supplier first");
@@ -585,7 +593,7 @@ frappe.ui.form.on('Purchase Invoice', {
             args: {
                 supplier: frm.doc.supplier
             },
-            callback: function(r) {
+            callback: function (r) {
 
                 if (!r.message || !r.message.length) {
                     frappe.msgprint("No Outgoing Logistics available");
@@ -607,7 +615,7 @@ frappe.ui.form.on('Purchase Invoice', {
                             fieldtype: "Data",
                             label: "Search Outgoing Logistics",
                             placeholder: "Type Outgoing Logistics ID...",
-                            change: function() {
+                            change: function () {
 
                                 let value = dialog.get_value("search_ol");
 
@@ -656,7 +664,14 @@ frappe.ui.form.on('Purchase Invoice', {
                                     read_only: 1,
                                     columns: 3
                                 },
-
+                                {
+                                    fieldname: "document_no",
+                                    fieldtype: "Data",
+                                    label: "Document No/LR No",
+                                    in_list_view: 1,
+                                    read_only: 1,
+                                    columns: 2
+                                },
                                 {
                                     fieldname: "type",
                                     fieldtype: "Link",
@@ -687,7 +702,7 @@ frappe.ui.form.on('Purchase Invoice', {
 
                     primary_action_label: "Get Items",
 
-                    primary_action: function() {
+                    primary_action: function () {
 
                         let selected =
                             dialog.fields_dict.outgoing_table.grid.get_selected_children();
@@ -717,7 +732,7 @@ frappe.ui.form.on('Purchase Invoice', {
             }
         });
     },
-    process_outgoing_logistics: function(frm, selected_rows) {
+    process_outgoing_logistics: function (frm, selected_rows) {
 
         // Remove blank item rows
         frm.doc.items = (frm.doc.items || []).filter(row => row.item_code);
@@ -725,28 +740,28 @@ frappe.ui.form.on('Purchase Invoice', {
         // Parent Fields
         frm.set_value("bill_no", "0");
         frm.set_value("bill_date", frappe.datetime.get_today());
-            let existing_ol = (frm.doc.items || [])
+        let existing_ol = (frm.doc.items || [])
             .map(d => d.custom_outgoing_logistics)
             .filter(Boolean);
-            selected_rows.forEach(d => {
-                if (existing_ol.includes(d.name)) {
-                    return;
-                }     
-                let row = frm.add_child("items");
+        selected_rows.forEach(d => {
+            if (existing_ol.includes(d.name)) {
+                return;
+            }
+            let row = frm.add_child("items");
 
-                row.item_code = d.transport_service_item;
-                row.item_name = d.transport_service_item;
-                row.uom = "Nos";
-                row.qty = 1;
+            row.item_code = d.transport_service_item;
+            row.item_name = d.transport_service_item;
+            row.uom = "Nos";
+            row.qty = 1;
 
-                row.rate = flt(d.total_amount || 0);
-                row.base_rate = flt(d.total_amount || 0);
+            row.rate = flt(d.total_amount || 0);
+            row.base_rate = flt(d.total_amount || 0);
 
-                row.amount = flt(d.total_amount || 0);
-                row.base_amount = flt(d.total_amount || 0);
+            row.amount = flt(d.total_amount || 0);
+            row.base_amount = flt(d.total_amount || 0);
 
-                row.custom_outgoing_logistics = d.name;
-            });
+            row.custom_outgoing_logistics = d.name;
+        });
 
         frm.refresh_field("items");
 
@@ -806,11 +821,11 @@ frappe.ui.form.on("Purchase Invoice", {
         if (!existing_row) {
             let row = frm.add_child("taxes");
             row.charge_type = "Actual";
-            row.account_head = dynamic_account; 
+            row.account_head = dynamic_account;
             row.description = "GRN Adjustment";
-            row.tax_amount = 0; 
+            row.tax_amount = 0;
             row.cost_center = dynamic_cost_center || frm.doc.cost_center;
-            
+
             frm.refresh_field("taxes");
             frappe.show_alert(__("Adjustment row added with 0 amount. Please update manually."), 5);
         }

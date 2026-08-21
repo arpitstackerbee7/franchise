@@ -640,20 +640,10 @@ def get_pending_gate_entries(supplier):
 
     return result
 
-
 @frappe.whitelist()
 def get_gate_entries_match_from_pi(supplier):
 
-    # 🔥 Step 1: Incoming Logistics filter (MAIN FIX HERE)
-    # incoming = frappe.get_all(
-    #     "Incoming Logistics",
-    #     filters={
-    #         "to_pay": "Yes",
-    #         "transporter": supplier,
-    #         "gate_entry_no": ["!=", ""]   # ✅ FIX APPLIED HERE
-    #     },
-    #     fields=["name", "transporter", "total_amount"]
-    # )
+    # Step 1: Incoming Logistics filter
     incoming = frappe.get_all(
         "Incoming Logistics",
         filters=[
@@ -664,19 +654,26 @@ def get_gate_entries_match_from_pi(supplier):
             ["Incoming Logistics", "transporter", "=", supplier],
             ["Incoming Logistics", "c_transporter", "=", supplier]
         ],
-        fields=["name", "transporter", "c_transporter", "total_amount"]
+        fields=[
+            "name",
+            "transporter",
+            "c_transporter",
+            "total_amount"
+        ]
     )
+
     if not incoming:
         return []
 
     logistics_map = {d.name: d for d in incoming}
     valid_logistics = list(logistics_map.keys())
 
-    # 🔥 Step 2: Already used Gate Entries
+    # Step 2: Already used Gate Entries
     used_gate_entries = frappe.db.sql("""
         SELECT DISTINCT pii.custom_gate_entry
         FROM `tabPurchase Invoice Item` pii
-        INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+        INNER JOIN `tabPurchase Invoice` pi
+            ON pi.name = pii.parent
         WHERE pi.docstatus = 1
         AND pi.supplier = %s
         AND pii.custom_gate_entry IS NOT NULL
@@ -685,7 +682,7 @@ def get_gate_entries_match_from_pi(supplier):
 
     used_list = [d.custom_gate_entry for d in used_gate_entries]
 
-    # 🔥 Step 3: Gate Entry filter
+    # Step 3: Gate Entry filter
     filters = {
         "docstatus": 1,
         "incoming_logistics": ["in", valid_logistics]
@@ -699,6 +696,7 @@ def get_gate_entries_match_from_pi(supplier):
         filters=filters,
         fields=[
             "name",
+            "document_nos",
             "incoming_logistics",
             "transport_service_item",
             "consignor",
@@ -706,22 +704,35 @@ def get_gate_entries_match_from_pi(supplier):
         ]
     )
 
-    # 🔥 Attach transporter + total_amount
+    # Step 4: Attach Incoming Logistics data
     for d in gate_entries:
+
         logistics = logistics_map.get(d["incoming_logistics"])
 
+        # Consignor
         consignor = d.get("consignor")
         consignor_customer = d.get("consignor_customer")
 
         if consignor not in (None, "", 0, "0"):
             d["consignor"] = consignor
+
         elif consignor_customer not in (None, "", 0, "0"):
             d["consignor"] = consignor_customer
-        else:
-            d["consignor"] = None  # better fallback
 
-        d["transporter"] = logistics.transporter or logistics.c_transporter
-        d["total_amount"] = logistics.total_amount if logistics else 0
+        else:
+            d["consignor"] = None
+
+        # Transporter
+        d["transporter"] = (
+            logistics.transporter or logistics.c_transporter
+            if logistics else None
+        )
+
+        # Total Amount
+        d["total_amount"] = (
+            logistics.total_amount
+            if logistics else 0
+        )
 
     return gate_entries
 
