@@ -837,6 +837,12 @@ fixtures = [
         ]
     },
     {
+        "dt": "Server Script",
+        "filters": [
+            ["name", "in", ["Sync Mobile No from Employee"]]
+        ]
+    },
+    {
     "dt": "Property Setter"
 },
 ]
