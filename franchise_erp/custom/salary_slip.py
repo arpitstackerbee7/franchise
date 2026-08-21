@@ -16,34 +16,30 @@ def apply_leave_rule_deductions(doc, method):
         fields=["name", "leave_type"]
     )
 
-    if not late_logs:
-        return
-
     # -----------------------------
-    # 2. Calculate Total Deduction Days
+    # 2. Calculate Total Deduction Days (from Late Logs)
     # -----------------------------
     total_days = 0.0
     valid_logs = []
 
-    for log in late_logs:
+    if late_logs:
+        for log in late_logs:
+            if not log.leave_type:
+                continue
 
-        if not log.leave_type:
-            continue
+            leave_type = frappe.db.get_value(
+                "Leave Type",
+                log.leave_type,
+                ["custom_is_short_leave", "custom_deduction_unit"],
+                as_dict=True
+            )
 
-        leave_type = frappe.db.get_value(
-            "Leave Type",
-            log.leave_type,
-            ["custom_is_short_leave", "custom_deduction_unit"],
-            as_dict=True
-        )
+            if not leave_type or not leave_type.custom_is_short_leave:
+                continue
 
-        if not leave_type or not leave_type.custom_is_short_leave:
-            continue
-
-        unit = flt(leave_type.custom_deduction_unit or 0)
-        total_days += unit
-
-        valid_logs.append(log.name)   # ✅ store valid logs
+            unit = flt(leave_type.custom_deduction_unit or 0)
+            total_days += unit
+            valid_logs.append(log.name)
 
     # -----------------------------
     # 1. Get Short Leave Type
@@ -56,37 +52,38 @@ def apply_leave_rule_deductions(doc, method):
     )
 
     if not short_leave:
+        doc.flags.short_leave_deduction_days = total_days
         return
 
     leave_type_name = short_leave.name
     unit = flt(short_leave.custom_deduction_unit or 0)
 
-    if not unit:
-        return
-
     # -----------------------------
     # 2. Fetch Leave Applications
     # -----------------------------
-    short_leaves = frappe.get_all(
-        "Leave Application",
-        filters={
-            "employee": doc.employee,
-            "leave_type": leave_type_name,
-            "custom_is_late_adjustment": 0,
-            "docstatus": 1,
-            "status": "Approved",
-            "from_date": ["<=", doc.end_date],
-            "to_date": [">=", doc.start_date]
-        },
-        fields=["from_date", "to_date"]
-    )
+    if unit:
+        short_leaves = frappe.get_all(
+            "Leave Application",
+            filters={
+                "employee": doc.employee,
+                "leave_type": leave_type_name,
+                "custom_is_late_adjustment": 0,
+                "docstatus": 1,
+                "status": "Approved",
+                "from_date": ["<=", doc.end_date],
+                "to_date": [">=", doc.start_date]
+            },
+            fields=["from_date", "to_date"]
+        )
+
+        for sl in short_leaves:
+            days = date_diff(sl.to_date, sl.from_date) + 1
+            total_days += unit * days
 
     # -----------------------------
-    # 3. Calculate Deduction
+    # 4. Stash for payment-days adjustment (runtime only)
     # -----------------------------
-    for sl in short_leaves:
-        days = date_diff(sl.to_date, sl.from_date) + 1
-        total_days += unit * days
+    doc.flags.short_leave_deduction_days = total_days
 
     # -----------------------------
     # 4. Nothing to Deduct
@@ -166,30 +163,31 @@ from frappe.utils import flt
 
 def apply_payment_days_adjustment(doc, method):
     adjustment = flt(doc.payment_days_adjustment or 0)
- 
+    short_leave_days = flt(doc.flags.short_leave_deduction_days or 0)
+
     # Store ERPNext's original Payment Days only once
     if not doc.original_payment_days:
         doc.original_payment_days = flt(doc.payment_days)
- 
+
     # Recalculate from original value, not the already-adjusted one
-    doc.payment_days = flt(doc.original_payment_days) + adjustment
- 
+    doc.payment_days = flt(doc.original_payment_days) + adjustment - short_leave_days
+
     # Payment Days cannot go below 0 ...
     if doc.payment_days < 0:
         doc.payment_days = 0
- 
+
     # ... or above Total Working Days
     if doc.payment_days > flt(doc.total_working_days):
         doc.payment_days = flt(doc.total_working_days)
- 
+
     # Absent Days = remainder, so totals still add up to Working Days
     doc.absent_days = (
         flt(doc.total_working_days)
         - doc.payment_days
         - flt(doc.leave_without_pay)
     )
- 
+
     if doc.absent_days < 0:
         doc.absent_days = 0
- 
+
     doc.calculate_net_pay()
