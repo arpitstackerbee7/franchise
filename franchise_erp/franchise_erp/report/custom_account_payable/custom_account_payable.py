@@ -46,7 +46,7 @@ def execute(filters=None):
                 row for row in raw_data
                 if (row.get("party") or "").strip() in supplier_list
             ]
-    # ── Supplier Group filter (multi-select) ───────────────────────────────
+    #Supplier Group filter (multi-select) 
     supplier_group_filter = filters.get("supplier_group") or []
     if supplier_group_filter:
         supplier_group_list = [
@@ -59,8 +59,44 @@ def execute(filters=None):
                 row for row in raw_data
                 if (row.get("supplier_group") or "").strip() in supplier_group_list
             ]
+    # Party filter (generic — works for any party_type: Supplier/Customer/etc.)
+    party_filter = filters.get("party") or []
+    if isinstance(party_filter, str):
+        party_filter = [party_filter]
+    party_list = [
+        (p if isinstance(p, str) else p.get("value", "")).strip()
+        for p in party_filter
+    ]
+    party_list = [p for p in party_list if p]
+    if party_list:
+        raw_data = [
+            row for row in raw_data
+            if (row.get("party") or "").strip() in party_list
+        ]
+    #Party Type filter 
+    party_type_filter = (filters.get("party_type") or "").strip()
+    if party_type_filter:
+        raw_data = [
+            row for row in raw_data
+            if (row.get("party_type") or "").strip() == party_type_filter
+        ]
 
-    # ── Agent filter ────────────────────────────────────────────────────
+    #Payable Account filter (multi-select)
+    payable_account_filter = filters.get("payable_account") or []
+    if isinstance(payable_account_filter, str):
+        payable_account_filter = [payable_account_filter]
+    payable_account_list = [
+        (a if isinstance(a, str) else a.get("value", "")).strip()
+        for a in payable_account_filter
+    ]
+    payable_account_list = [a for a in payable_account_list if a]
+    if payable_account_list:
+        raw_data = [
+            row for row in raw_data
+            if (row.get("payable_account") or "").strip() in payable_account_list
+        ]
+
+    #Agent filter 
     agent_filter = (filters.get("agent") or "").strip()
     if agent_filter:
         parties_in_data = list({
@@ -81,7 +117,7 @@ def execute(filters=None):
             ]
 
 
-    # ── Remove unwanted columns ────────────────────────────────────────────
+    #Remove unwanted columns 
     REMOVE_FIELDS = {"credit_note", "range1", "range2", "range3", "range4", "range5", "due_date", "cost_center", "project", "currency"}
     columns = [c for c in columns if c.get("fieldname") not in REMOVE_FIELDS]
 
@@ -119,7 +155,7 @@ def execute(filters=None):
     columns.insert(voucher_no_idx + 1, reference_no_col)
     columns.insert(voucher_no_idx + 2, reference_date_col)
 
-    # ── Batch fetch all is_return Purchase Invoices ────────────────────────
+    #Batch fetch all is_return Purchase Invoices 
     all_pinv_nos = [
         row.get("voucher_no")
         for row in raw_data
@@ -136,7 +172,7 @@ def execute(filters=None):
         )
         return_set = set(returns)
 
-    # ── Batch fetch reference_no / reference_date for Payment Entry rows ──
+    #Batch fetch reference_no / reference_date for Payment Entry rows
     all_pe_nos = [
         row.get("voucher_no")
         for row in raw_data
@@ -156,7 +192,7 @@ def execute(filters=None):
             for pe in pe_records
         }
 
-    # ── Patch voucher_type for Debit Notes + attach reference fields ──────
+    #Patch voucher_type for Debit Notes + attach reference fields
     for row in raw_data:
         vno   = (row.get("voucher_no")   or "").strip()
         vtype = (row.get("voucher_type") or "").strip()
@@ -181,7 +217,7 @@ def execute(filters=None):
         if vno.startswith("PDC"):     return "Payment Entry"
         if vno.startswith("PV"):      return "Payment Entry"
         return vtype or "OTHERS"
-    # ── Credit Entry date filter ────────────────────────────────────────
+    #Credit Entry date filter 
     credit_entry_date = filters.get("credit_entry_date")
     selected_credit_groups = filters.get("credit_entry_voucher_types") or []
     selected_credit_groups = [
@@ -202,7 +238,7 @@ def execute(filters=None):
             filtered.append(row)
         raw_data = filtered
 
-    # ── Bucket by party ───────────────────────────────────────────────────
+    # Bucket by party
     party_order = []
     party_buckets = defaultdict(list)
 

@@ -101,6 +101,17 @@ frappe.query_reports["Custom Account Payable"] = {
             options: "Payment Terms Template",
         },
         {
+            fieldname: "payable_account",
+            label: __("Payable Account"),
+            fieldtype: "MultiSelectList",
+            get_data: function(txt) {
+                return frappe.db.get_link_options("Account", txt, {
+                    account_type: "Payable",
+                    company: frappe.query_report.get_filter_value("company"),
+                });
+            },
+        },
+        {
             fieldname: "group_by_party",
             label: __("Group By Party"),
             fieldtype: "Check",
@@ -121,16 +132,16 @@ frappe.query_reports["Custom Account Payable"] = {
     ],
 
     formatter: function(value, row, column, data, default_formatter) {
-        value = default_formatter(value, row, column, data);
+    value = default_formatter(value, row, column, data);
+    if (!value) value = "&nbsp;";
 
-     if (data && data.is_row_break) {
-            // blank vendor-change separator row - render nothing
-            return "";
-        } else if (data && data.is_subtotal) {
-            value = `<b style="background-color:#ffd6d6;">${value || ""}</b>`;
-        } else if (data && data.is_group) {
-            value = `<span style="color:#6c757d; background-color:#f5f5f5;">${value || ""}</span>`;
-        }
-        return value;
-    },
+    if (data && data.is_row_break) {
+        return "";
+    } else if (data && data.is_subtotal) {
+        value = `<b style="display:block; background-color:#ffd6d6;">${value}</b>`;
+    } else if (data && data.is_group) {
+        value = `<span style="display:block; background-color:#e6e6e6; color:#555;">${value}</span>`;
+    }
+    return value;
+},
 };
