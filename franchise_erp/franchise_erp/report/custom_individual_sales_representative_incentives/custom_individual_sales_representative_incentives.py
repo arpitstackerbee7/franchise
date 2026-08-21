@@ -113,7 +113,7 @@ def get_data(filters):
             e.user_id AS user,
             e.name AS employee_id,
             e.employee_name,
-            COALESCE(SUM(dn.total), 0) AS monthly_sales
+            COALESCE(SUM(dn.net_total), 0) AS monthly_sales
 
         FROM `tabEmployee` e
 

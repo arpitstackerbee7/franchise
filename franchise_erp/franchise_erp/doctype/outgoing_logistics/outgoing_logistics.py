@@ -332,7 +332,8 @@ def get_outgoing_logistics_match_from_pi(supplier):
             "s_transporter",
             "transfer_out_transport",
             "transport_service_item",
-            "total_amount"
+            "total_amount",
+            "document_no"
         ]
     )
 
