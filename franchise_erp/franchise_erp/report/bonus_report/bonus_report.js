@@ -4,19 +4,15 @@
 frappe.query_reports["Bonus Report"] = {
     "filters": [
         {
-            "fieldname": "bonus_year",
-            "label": __("Bonus Year"),
-            "fieldtype": "Select",
-            "options": ["2025-2026", "2026-2027"],
-            "reqd": 1,
-            "default": "2026-2027"
+            "fieldname": "from_date",
+            "label": __("From Date"),
+            "fieldtype": "Date"
         },
-		{
-            "fieldname": "month",
-            "label": "Month",
-            "fieldtype": "Select",
-            "options": ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].join("\n"),
-		},
+        {
+            "fieldname": "to_date",
+            "label": __("To Date"),
+            "fieldtype": "Date"
+        },
         {
             "fieldname": "employee",
             "label": __("Employee"),
