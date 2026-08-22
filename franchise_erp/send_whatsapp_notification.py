@@ -1389,7 +1389,7 @@ PO No : {doc.name}
 Supplier : {supplier_name}
 Status : {status_label}
 Qty : {total_qty}
-Amount : {doc.rounded_total}
+Amount : ₹ {doc.rounded_total:.2f}
 
 Click to view/action:
 {link}"""
