@@ -1389,7 +1389,7 @@ PO No : {doc.name}
 Supplier : {supplier_name}
 Status : {status_label}
 Qty : {total_qty}
-Amount : {doc.grand_total}
+Amount : {doc.rounded_total}
 
 Click to view/action:
 {link}"""
