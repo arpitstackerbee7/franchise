@@ -26,27 +26,58 @@ class CustomLeaveEncashment(LeaveEncashment):
     def set_leave_balance(self):
         self.leave_balance = sum(self.get_leave_type_balance(lt) for lt in ENCASHABLE_LEAVE_TYPES)
 
+    # def set_actual_encashable_days(self):
+    #     self.actual_encashable_days = self.leave_balance
     def set_actual_encashable_days(self):
-        self.actual_encashable_days = self.leave_balance
+       self.actual_encashable_days = self.leave_balance
 
+    # def get_lwp_days(self):
+    #     leave_period = frappe.get_doc("Leave Period", self.leave_period)
+    #     lwp_types = frappe.get_all("Leave Type", filters={"is_lwp": 1}, pluck="name")
+    #     if not lwp_types:
+    #         return 0
+
+    #     applications = frappe.get_all(
+    #         "Leave Application",
+    #         filters={
+    #             "employee": self.employee,
+    #             "status": "Approved",
+    #             "leave_type": ["in", lwp_types],
+    #             "from_date": [">=", leave_period.from_date],
+    #             "to_date": ["<=", leave_period.to_date],
+    #         },
+    #         fields=["total_leave_days"],
+    #     )
+    #     return sum(flt(a.total_leave_days) for a in applications)
     def get_lwp_days(self):
         leave_period = frappe.get_doc("Leave Period", self.leave_period)
-        lwp_types = frappe.get_all("Leave Type", filters={"is_lwp": 1}, pluck="name")
-        if not lwp_types:
-            return 0
 
-        applications = frappe.get_all(
-            "Leave Application",
+        attendance_records = frappe.get_all(
+            "Attendance",
             filters={
                 "employee": self.employee,
-                "status": "Approved",
-                "leave_type": ["in", lwp_types],
-                "from_date": [">=", leave_period.from_date],
-                "to_date": ["<=", leave_period.to_date],
+                "attendance_date": [
+                    "between",
+                    [
+                        leave_period.from_date,
+                        leave_period.to_date
+                    ]
+                ],
             },
-            fields=["total_leave_days"],
+            or_filters=[
+                {
+                    "status": "On Leave",
+                    "leave_type": "Leave Without Pay",
+                },
+                {
+                    "status": "Absent",
+                    "leave_type": ["is", "not set"],
+                },
+            ],
+            fields=["name"],
         )
-        return sum(flt(a.total_leave_days) for a in applications)
+
+        return len(attendance_records)
 
     def calculate_total_leaves_taken(self):
         leave_period = frappe.get_doc("Leave Period", self.leave_period)
@@ -69,16 +100,41 @@ class CustomLeaveEncashment(LeaveEncashment):
         self.custom_lwp_days = lwp_days
         self.custom_total_leaves_taken = paid_leaves_availed + lwp_days
 
+    # def calculate_slab_deduction(self):
+    #     total_taken = flt(self.custom_total_leaves_taken)
+    #     if total_taken <= 30:
+    #         deduction = 0
+    #     else:
+    #         slab_count = min(math.ceil((total_taken - 30) / 10), 6)
+    #         deduction = round(slab_count * 1.13, 2)
+
+    #     self.custom_encashment_deduction = deduction
+    #     self.encashment_days = max(flt(self.actual_encashable_days) - flt(deduction), 0)
+    
     def calculate_slab_deduction(self):
         total_taken = flt(self.custom_total_leaves_taken)
+
         if total_taken <= 30:
             deduction = 0
         else:
-            slab_count = min(math.ceil((total_taken - 30) / 10), 6)
+            slab_count = min(
+                math.ceil((total_taken - 30) / 10),
+                6
+            )
             deduction = round(slab_count * 1.13, 2)
 
         self.custom_encashment_deduction = deduction
-        self.encashment_days = max(flt(self.actual_encashable_days) - flt(deduction), 0)
+
+        # System calculated value
+        self.actual_encashable_days = max(
+            flt(self.leave_balance) - flt(deduction),
+            0
+        )
+
+        # Set manual encashment days only when user
+        # has not already entered a value.
+        if not self.encashment_days:
+            self.encashment_days = self.actual_encashable_days
 
     def set_per_day_salary(self):
         salary_structure = frappe.db.get_value(
