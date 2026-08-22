@@ -58,6 +58,7 @@ class CustomLeaveEncashment(LeaveEncashment):
             FROM `tabAttendance`
             WHERE employee = %s
             AND attendance_date BETWEEN %s AND %s
+            AND docstatus = 1
             AND (
                     (
                         status = 'On Leave'
