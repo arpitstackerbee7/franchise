@@ -217,6 +217,9 @@ def _run_sandwich_check_for_all_job():
 
 
 def check_sandwich_on_leave_submit(doc, method=None):
+    is_short_leave = frappe.db.get_value("Leave Type", doc.leave_type, "custom_is_short_leave")
+    if is_short_leave:
+        return
 
     from_date = add_days(getdate(doc.from_date), -2)
     to_date = add_days(getdate(doc.to_date), 2)
