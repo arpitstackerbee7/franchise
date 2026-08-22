@@ -52,29 +52,31 @@ class CustomLeaveEncashment(LeaveEncashment):
     def get_lwp_days(self):
         leave_period = frappe.get_doc("Leave Period", self.leave_period)
 
-        attendance_records = frappe.get_all(
-            "Attendance",
-            filters={
-                "employee": self.employee,
-                "attendance_date": [
-                    "between",
-                    [
-                        leave_period.from_date,
-                        leave_period.to_date
-                    ]
-                ],
-            },
-            or_filters=[
-                {
-                    "status": "On Leave",
-                    "leave_type": "Leave Without Pay",
-                },
-                {
-                    "status": "Absent",
-                    "leave_type": ["is", "not set"],
-                },
-            ],
-            fields=["name"],
+        attendance_records = frappe.db.sql(
+            """
+            SELECT name
+            FROM `tabAttendance`
+            WHERE employee = %s
+            AND attendance_date BETWEEN %s AND %s
+            AND (
+                    (
+                        status = 'On Leave'
+                        AND leave_type = 'Leave Without Pay'
+                    )
+                    OR
+                    (
+                        status = 'Absent'
+                        AND (leave_type IS NULL OR leave_type = '')
+                    )
+                )
+            ORDER BY attendance_date ASC
+            """,
+            (
+                self.employee,
+                leave_period.from_date,
+                leave_period.to_date,
+            ),
+            as_dict=True,
         )
 
         return len(attendance_records)
