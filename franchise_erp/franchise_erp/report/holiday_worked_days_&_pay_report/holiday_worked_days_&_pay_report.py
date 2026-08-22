@@ -39,39 +39,27 @@ def execute(filters=None):
 
 def validate_filters(filters):
 
-    # -----------------------------------------------------
-    # Holiday List
-    # -----------------------------------------------------
-
-    if not filters.get("holiday_list"):
-
-        frappe.throw(
-            _("Please select Holiday List.")
-        )
-
-    # -----------------------------------------------------
-    # From Date
-    # -----------------------------------------------------
+    # =====================================================
+    # FROM DATE
+    # =====================================================
 
     if not filters.get("from_date"):
-
         frappe.throw(
             _("Please select From Date.")
         )
 
-    # -----------------------------------------------------
-    # To Date
-    # -----------------------------------------------------
+    # =====================================================
+    # TO DATE
+    # =====================================================
 
     if not filters.get("to_date"):
-
         frappe.throw(
             _("Please select To Date.")
         )
 
-    # -----------------------------------------------------
-    # Convert Dates
-    # -----------------------------------------------------
+    # =====================================================
+    # CONVERT DATES
+    # =====================================================
 
     from_date = getdate(
         filters.from_date
@@ -81,9 +69,9 @@ def validate_filters(filters):
         filters.to_date
     )
 
-    # -----------------------------------------------------
-    # Validate Date Range
-    # -----------------------------------------------------
+    # =====================================================
+    # VALIDATE DATE RANGE
+    # =====================================================
 
     if from_date > to_date:
 
@@ -91,12 +79,36 @@ def validate_filters(filters):
             _("From Date cannot be greater than To Date.")
         )
 
-    # -----------------------------------------------------
-    # Keep dates selected by user
-    # -----------------------------------------------------
+    # =====================================================
+    # SAVE DATE VALUES
+    # =====================================================
 
     filters.from_date = from_date
     filters.to_date = to_date
+
+    # =====================================================
+    # HOLIDAY LIST OPTIONAL
+    # =====================================================
+
+    holiday_list = (
+        filters.get("holiday_list") or ""
+    )
+
+    filters.holiday_list = str(
+        holiday_list
+    ).strip()
+
+    # =====================================================
+    # EMPLOYEE OPTIONAL
+    # =====================================================
+
+    employee = (
+        filters.get("employee") or ""
+    )
+
+    filters.employee = str(
+        employee
+    ).strip()
 
 
 # =========================================================
@@ -148,10 +160,6 @@ def get_columns():
             "options": "Shift Type",
             "width": 150,
         },
-
-        # -------------------------------------------------
-        # Shift Time
-        # -------------------------------------------------
 
         {
             "label": _("Shift Start Time"),
@@ -262,84 +270,33 @@ def get_columns():
 def get_data(filters):
 
     # =====================================================
-    # GET HOLIDAY LIST
-    # =====================================================
-
-    holiday_list = frappe.get_doc(
-        "Holiday List",
-        filters.holiday_list
-    )
-
-    # =====================================================
-    # HOLIDAY DATE MAP
-    # =====================================================
-
-    holiday_dates = {}
-
-    for holiday in holiday_list.holidays:
-
-        if not holiday.holiday_date:
-            continue
-
-        holiday_date = getdate(
-            holiday.holiday_date
-        )
-
-        # -------------------------------------------------
-        # Only selected date range
-        # -------------------------------------------------
-
-        if (
-            holiday_date >= getdate(filters.from_date)
-            and
-            holiday_date <= getdate(filters.to_date)
-        ):
-
-            holiday_name = (
-                holiday.description
-                or holiday_list.name
-            )
-
-            holiday_dates[
-                holiday_date
-            ] = holiday_name
-
-    # -----------------------------------------------------
-    # No holidays
-    # -----------------------------------------------------
-
-    if not holiday_dates:
-        return []
-
-    # =====================================================
     # EMPLOYEE FILTERS
     # =====================================================
 
     employee_filters = {
-
-        "holiday_list":
-            filters.holiday_list,
-
-        "status":
-            "Active",
+        "status": "Active",
     }
 
     # -----------------------------------------------------
-    # Employee selected
+    # If Employee selected
     # -----------------------------------------------------
 
-    employee_filter_value = (
-        filters.get("employee") or ""
-    )
-
-    employee_filter_value = (
-        str(employee_filter_value).strip()
-    )
-
-    if employee_filter_value:
+    if filters.employee:
 
         employee_filters["name"] = (
-            employee_filter_value
+            filters.employee
+        )
+
+    # -----------------------------------------------------
+    # If Holiday List selected
+    # -----------------------------------------------------
+    # Only employees belonging to that Holiday List
+    # -----------------------------------------------------
+
+    if filters.holiday_list:
+
+        employee_filters["holiday_list"] = (
+            filters.holiday_list
         )
 
     # =====================================================
@@ -357,10 +314,12 @@ def get_data(filters):
             "employee_name",
             "holiday_list",
         ],
+
+        order_by="name asc",
     )
 
     # -----------------------------------------------------
-    # No employees
+    # No Employees
     # -----------------------------------------------------
 
     if not employees:
@@ -385,10 +344,141 @@ def get_data(filters):
             employee
 
         for employee in employees
+
     }
 
     # =====================================================
-    # ATTENDANCE FILTERS
+    # HOLIDAY DATE MAP
+    # =====================================================
+    #
+    # IMPORTANT:
+    #
+    # If Holiday List selected:
+    #     Use selected Holiday List.
+    #
+    # If Holiday List blank:
+    #     Use each employee's own Holiday List.
+    #
+    # Structure:
+    #
+    # {
+    #     employee_name: {
+    #         date: holiday_name
+    #     }
+    # }
+    #
+    # =====================================================
+
+    holiday_dates_by_employee = {}
+
+    # =====================================================
+    # HOLIDAY LIST CACHE
+    # =====================================================
+
+    holiday_cache = {}
+
+    # =====================================================
+    # BUILD HOLIDAY MAP
+    # =====================================================
+
+    for employee in employees:
+
+        # -------------------------------------------------
+        # Determine Holiday List
+        # -------------------------------------------------
+
+        if filters.holiday_list:
+
+            employee_holiday_list = (
+                filters.holiday_list
+            )
+
+        else:
+
+            employee_holiday_list = (
+                employee.holiday_list
+            )
+
+        # -------------------------------------------------
+        # No Holiday List
+        # -------------------------------------------------
+
+        if not employee_holiday_list:
+
+            holiday_dates_by_employee[
+                employee.name
+            ] = {}
+
+            continue
+
+        # -------------------------------------------------
+        # Cache Holiday List
+        # -------------------------------------------------
+
+        if (
+            employee_holiday_list
+            not in holiday_cache
+        ):
+
+            holiday_doc = frappe.get_doc(
+                "Holiday List",
+                employee_holiday_list
+            )
+
+            holiday_map = {}
+
+            for holiday in holiday_doc.holidays:
+
+                if not holiday.holiday_date:
+                    continue
+
+                holiday_date = getdate(
+                    holiday.holiday_date
+                )
+
+                # -----------------------------------------
+                # Selected Date Range
+                # -----------------------------------------
+
+                if (
+
+                    holiday_date
+                    >= getdate(filters.from_date)
+
+                    and
+
+                    holiday_date
+                    <= getdate(filters.to_date)
+
+                ):
+
+                    holiday_name = (
+
+                        holiday.description
+
+                        or holiday_doc.name
+                    )
+
+                    holiday_map[
+                        holiday_date
+                    ] = holiday_name
+
+            holiday_cache[
+                employee_holiday_list
+            ] = holiday_map
+
+        # -------------------------------------------------
+        # Assign employee holiday map
+        # -------------------------------------------------
+
+        holiday_dates_by_employee[
+            employee.name
+        ] = holiday_cache[
+            employee_holiday_list
+        ]
+
+    # =====================================================
+    # GET ATTENDANCE
     # =====================================================
 
     attendance_filters = {
@@ -412,7 +502,7 @@ def get_data(filters):
     }
 
     # =====================================================
-    # GET ATTENDANCE
+    # GET ATTENDANCE RECORDS
     # =====================================================
 
     attendance_records = frappe.get_all(
@@ -436,7 +526,7 @@ def get_data(filters):
     )
 
     # -----------------------------------------------------
-    # No attendance
+    # No Attendance
     # -----------------------------------------------------
 
     if not attendance_records:
@@ -475,14 +565,6 @@ def get_data(filters):
         )
 
         # -------------------------------------------------
-        # Only Holiday Attendance
-        # -------------------------------------------------
-
-        if attendance_date not in holiday_dates:
-
-            continue
-
-        # -------------------------------------------------
         # Employee
         # -------------------------------------------------
 
@@ -491,6 +573,24 @@ def get_data(filters):
         )
 
         if not employee:
+            continue
+
+        # =================================================
+        # CHECK HOLIDAY
+        # =================================================
+
+        employee_holidays = (
+            holiday_dates_by_employee.get(
+                attendance.employee,
+                {}
+            )
+        )
+
+        # -------------------------------------------------
+        # Only show attendance on holiday
+        # -------------------------------------------------
+
+        if attendance_date not in employee_holidays:
 
             continue
 
@@ -498,10 +598,13 @@ def get_data(filters):
         # SHIFT INFORMATION
         # =================================================
 
-        shift_type = attendance.shift
+        shift_type = (
+            attendance.shift
+        )
 
         shift_start_time = None
         shift_end_time = None
+
         standard_working_hours = 0
 
         # -------------------------------------------------
@@ -551,39 +654,60 @@ def get_data(filters):
 
         # =================================================
         # ACTUAL HOURS
+        # =================================================
         #
-        # Attendance.working_hours
+        # ERPNext Attendance.working_hours
+        # is decimal hours.
+        #
+        # Example:
+        #
+        # 10.166666
+        #
+        # means:
+        #
+        # 10 hours 10 minutes
+        #
+        # Convert it to:
+        #
+        # 10.10
+        #
         # =================================================
 
-        actual_hours = flt(
-            attendance.working_hours
+        actual_minutes = (
+            decimal_hours_to_minutes(
+                attendance.working_hours
+            )
         )
 
-        # -------------------------------------------------
-        # Round Actual Hours
-        # -------------------------------------------------
-
-        actual_hours = round(
-            actual_hours,
-            2
+        actual_hours = (
+            minutes_to_hhmm_decimal(
+                actual_minutes
+            )
         )
 
         # =================================================
         # EXTRA WORKING HOURS
         # =================================================
 
-        extra_working_hours = max(
+        standard_minutes = (
+            hhmm_decimal_to_minutes(
+                standard_working_hours
+            )
+        )
 
-            actual_hours
+        extra_minutes = max(
+
+            actual_minutes
             -
-            standard_working_hours,
+            standard_minutes,
 
             0
         )
 
-        extra_working_hours = round(
-            extra_working_hours,
-            2
+        extra_working_hours = (
+            minutes_to_hhmm_decimal(
+                extra_minutes
+            )
         )
 
         # =================================================
@@ -636,7 +760,7 @@ def get_data(filters):
                 employee.employee_name,
 
             # ---------------------------------------------
-            # Attendance
+            # Date
             # ---------------------------------------------
 
             "attendance_date":
@@ -690,7 +814,7 @@ def get_data(filters):
             # ---------------------------------------------
 
             "holiday_name":
-                holiday_dates[
+                employee_holidays[
                     attendance_date
                 ],
 
@@ -706,7 +830,7 @@ def get_data(filters):
         })
 
     # =====================================================
-    # RETURN
+    # RETURN DATA
     # =====================================================
 
     return data
@@ -715,78 +839,202 @@ def get_data(filters):
 # =========================================================
 # CALCULATE SHIFT HOURS
 # =========================================================
-# =========================================================
-# CALCULATE SHIFT HOURS
+#
+# 09:30 -> 19:40
+#
+# Total:
+# 10 hours 10 minutes
+#
+# Return:
+# 10.10
+#
+# NOT:
+# 10.166
+#
 # =========================================================
 
-def calculate_shift_hours(start_time, end_time):
+def calculate_shift_hours(
+    start_time,
+    end_time
+):
 
     if not start_time or not end_time:
         return 0
 
-    # -----------------------------------------------------
-    # Convert to time objects
-    # -----------------------------------------------------
+    start = get_time(
+        start_time
+    )
 
-    start = get_time(start_time)
-    end = get_time(end_time)
+    end = get_time(
+        end_time
+    )
 
     # -----------------------------------------------------
-    # Convert both times into minutes
+    # Start minutes
     # -----------------------------------------------------
 
     start_minutes = (
+
         start.hour * 60
-        + start.minute
-        + (start.second / 60)
+
+        +
+
+        start.minute
     )
 
+    # -----------------------------------------------------
+    # End minutes
+    # -----------------------------------------------------
+
     end_minutes = (
+
         end.hour * 60
-        + end.minute
-        + (end.second / 60)
+
+        +
+
+        end.minute
     )
 
     # -----------------------------------------------------
     # Night Shift
-    #
-    # Example:
-    # 22:00 -> 06:00
     # -----------------------------------------------------
 
     if end_minutes < start_minutes:
-        end_minutes += 24 * 60
+
+        end_minutes += (
+            24 * 60
+        )
 
     # -----------------------------------------------------
     # Total Minutes
     # -----------------------------------------------------
 
     total_minutes = (
-        end_minutes - start_minutes
+
+        end_minutes
+        -
+        start_minutes
     )
 
     # -----------------------------------------------------
-    # Convert to HH.MM format
-    #
-    # 610 minutes
-    # = 10 hours 10 minutes
-    # = 10.10
+    # Convert Minutes -> HH.MM
     # -----------------------------------------------------
 
-    hours = int(total_minutes // 60)
+    return minutes_to_hhmm_decimal(
+        total_minutes
+    )
 
-    minutes = int(total_minutes % 60)
 
-    # -----------------------------------------------------
-    # IMPORTANT:
-    # Do NOT use normal decimal conversion.
-    #
-    # 10 hours 10 minutes
-    # must remain 10.10
-    # -----------------------------------------------------
+# =========================================================
+# DECIMAL HOURS -> MINUTES
+# =========================================================
+#
+# Example:
+#
+# 10.166666 hours
+#
+# = 610 minutes
+#
+# =========================================================
+
+def decimal_hours_to_minutes(
+    decimal_hours
+):
+
+    decimal_hours = flt(
+        decimal_hours
+    )
+
+    return int(
+        round(
+            decimal_hours * 60
+        )
+    )
+
+
+# =========================================================
+# MINUTES -> HH.MM
+# =========================================================
+#
+# Example:
+#
+# 610 minutes
+#
+# = 10 hours
+# = 10 minutes
+#
+# Return:
+# 10.10
+#
+# =========================================================
+
+def minutes_to_hhmm_decimal(
+    total_minutes
+):
+
+    total_minutes = int(
+        round(total_minutes)
+    )
+
+    hours = (
+        total_minutes // 60
+    )
+
+    minutes = (
+        total_minutes % 60
+    )
 
     return float(
         f"{hours}.{minutes:02d}"
+    )
+
+
+# =========================================================
+# HH.MM -> MINUTES
+# =========================================================
+#
+# IMPORTANT:
+#
+# 10.10 is NOT decimal 10.10 hours.
+#
+# It means:
+#
+# 10 hours 10 minutes.
+#
+# =========================================================
+
+def hhmm_decimal_to_minutes(
+    value
+):
+
+    value = flt(value)
+
+    hours = int(value)
+
+    minutes = int(
+        round(
+            (value - hours) * 100
+        )
+    )
+
+    # -----------------------------------------------------
+    # Safety
+    # -----------------------------------------------------
+
+    if minutes >= 60:
+
+        hours += (
+            minutes // 60
+        )
+
+        minutes = (
+            minutes % 60
+        )
+
+    return (
+        hours * 60
+        +
+        minutes
     )
 
 
@@ -809,7 +1057,7 @@ def get_employee_salary(
     )
 
     # -----------------------------------------------------
-    # Return cached
+    # Return cached result
     # -----------------------------------------------------
 
     if cache_key in salary_cache:
@@ -819,7 +1067,7 @@ def get_employee_salary(
         ]
 
     # =====================================================
-    # SALARY STRUCTURE ASSIGNMENT
+    # GET SALARY STRUCTURE ASSIGNMENT
     # =====================================================
 
     assignment = frappe.get_all(
@@ -858,7 +1106,6 @@ def get_employee_salary(
     if not assignment:
 
         result = {
-
             "per_day_salary": 0,
         }
 
@@ -879,7 +1126,6 @@ def get_employee_salary(
     if not salary_structure_name:
 
         result = {
-
             "per_day_salary": 0,
         }
 
@@ -906,7 +1152,9 @@ def get_employee_salary(
 
     total_earnings = 0
 
-    for earning in salary_structure.earnings:
+    for earning in (
+        salary_structure.earnings
+    ):
 
         total_earnings += flt(
             earning.amount
@@ -918,7 +1166,9 @@ def get_employee_salary(
 
     total_deductions = 0
 
-    for deduction in salary_structure.deductions:
+    for deduction in (
+        salary_structure.deductions
+    ):
 
         total_deductions += flt(
             deduction.amount
@@ -929,6 +1179,7 @@ def get_employee_salary(
     # =====================================================
 
     net_salary = (
+
         total_earnings
         -
         total_deductions
@@ -939,7 +1190,10 @@ def get_employee_salary(
     # =====================================================
 
     per_day_salary = (
-        net_salary / 30
+
+        net_salary
+        /
+        30
     )
 
     # =====================================================

@@ -82,27 +82,125 @@ class CustomLeaveEncashment(LeaveEncashment):
 
         return len(attendance_records)
 
+    # def calculate_total_leaves_taken(self):
+    #     leave_period = frappe.get_doc("Leave Period", self.leave_period)
+
+    #     paid_applications = frappe.get_all(
+    #         "Leave Application",
+    #         filters={
+    #             "employee": self.employee,
+    #             "status": "Approved",
+    #             "leave_type": ["in", ENCASHABLE_LEAVE_TYPES],
+    #             "from_date": [">=", leave_period.from_date],
+    #             "to_date": ["<=", leave_period.to_date],
+    #         },
+    #         fields=["total_leave_days"],
+    #     )
+    #     paid_leaves_availed = sum(flt(a.total_leave_days) for a in paid_applications)
+
+    #     lwp_days = self.get_lwp_days()
+
+    #     self.custom_lwp_days = lwp_days
+    #     self.custom_total_leaves_taken = paid_leaves_availed + lwp_days
     def calculate_total_leaves_taken(self):
         leave_period = frappe.get_doc("Leave Period", self.leave_period)
 
-        paid_applications = frappe.get_all(
-            "Leave Application",
+        # Leave Period ke andar employee ke saare encashable leave types
+        leave_types = frappe.get_all(
+            "Leave Allocation",
             filters={
                 "employee": self.employee,
-                "status": "Approved",
+                "docstatus": 1,
+                "from_date": ["<=", leave_period.to_date],
+                "to_date": [">=", leave_period.from_date],
                 "leave_type": ["in", ENCASHABLE_LEAVE_TYPES],
-                "from_date": [">=", leave_period.from_date],
-                "to_date": ["<=", leave_period.to_date],
             },
-            fields=["total_leave_days"],
+            pluck="leave_type",
         )
-        paid_leaves_availed = sum(flt(a.total_leave_days) for a in paid_applications)
+
+        leave_types = list(set(leave_types))
+
+        total_allocated = 0
+        total_balance = 0
+
+        for leave_type in leave_types:
+
+            # ---------------------------------------------------------
+            # Total Allocation for this Leave Type
+            # ---------------------------------------------------------
+
+            allocated = frappe.db.sql(
+                """
+                SELECT COALESCE(SUM(total_leaves_allocated), 0)
+                FROM `tabLeave Allocation`
+                WHERE employee = %s
+                AND leave_type = %s
+                AND docstatus = 1
+                AND from_date <= %s
+                AND to_date >= %s
+                """,
+                (
+                    self.employee,
+                    leave_type,
+                    leave_period.to_date,
+                    leave_period.from_date,
+                ),
+            )[0][0] or 0
+
+            allocated = flt(allocated)
+
+            # ---------------------------------------------------------
+            # Current Balance
+            # ---------------------------------------------------------
+
+            balance = frappe.db.sql(
+                """
+                SELECT COALESCE(SUM(leaves), 0)
+                FROM `tabLeave Ledger Entry`
+                WHERE employee = %s
+                AND leave_type = %s
+                AND docstatus = 1
+                AND from_date <= %s
+                AND to_date >= %s
+                AND is_expired = 0
+                """,
+                (
+                    self.employee,
+                    leave_type,
+                    leave_period.to_date,
+                    leave_period.from_date,
+                ),
+            )[0][0] or 0
+
+            balance = flt(balance)
+
+            total_allocated += allocated
+            total_balance += balance
+
+        # ---------------------------------------------------------
+        # Paid Leave Taken
+        # ---------------------------------------------------------
+
+        paid_leaves_availed = max(
+            total_allocated - total_balance,
+            0
+        )
+
+        # ---------------------------------------------------------
+        # LWP
+        # ---------------------------------------------------------
 
         lwp_days = self.get_lwp_days()
 
         self.custom_lwp_days = lwp_days
-        self.custom_total_leaves_taken = paid_leaves_availed + lwp_days
 
+        # ---------------------------------------------------------
+        # Final Total
+        # ---------------------------------------------------------
+
+        self.custom_total_leaves_taken = (
+            paid_leaves_availed + lwp_days
+        )
     # def calculate_slab_deduction(self):
     #     total_taken = flt(self.custom_total_leaves_taken)
     #     if total_taken <= 30:
