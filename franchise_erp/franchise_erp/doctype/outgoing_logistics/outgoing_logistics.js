@@ -40,105 +40,127 @@ frappe.ui.form.on("Outgoing Logistics", {
         }
        if (frm.doc.docstatus === 1) {
 
-    frm.add_custom_button(
-        __("Create Shipment"),
-        async function () {
+  frm.add_custom_button(
+            __("Create Shipment"),
+            async function () {
 
-            frappe.dom.freeze(__("Preparing Shipment..."));
+                frappe.dom.freeze(__("Preparing Shipment..."));
 
-            try {
+                try {
 
-                const r = await frappe.call({
-                    method: "franchise_erp.franchise_erp.doctype.outgoing_logistics.outgoing_logistics.get_shipment_data_from_outgoing_logistics",
-                    args: {
-                        outgoing_logistics: frm.doc.name
-                    }
-                });
+                    const r = await frappe.call({
+                        method: "franchise_erp.franchise_erp.doctype.outgoing_logistics.outgoing_logistics.get_shipment_data_from_outgoing_logistics",
+                        args: {
+                            outgoing_logistics: frm.doc.name
+                        }
+                    });
 
-                if (!r.message) {
-                    return;
-                }
-
-                const data = r.message;
-
-                // -------------------------------------------------
-                // OPEN NEW SHIPMENT FORM
-                // -------------------------------------------------
-
-                frappe.new_doc("Shipment", {
-                    custom_outgoing_logistics : frm.doc.name,
-                    company: data.company,
-                    delivery_customer: data.customer,
-
-                    delivery_address_name:
-                        data.delivery_address_name,
-
-                    value_of_goods:
-                        data.value_of_goods,
-
-                    description_of_content:
-                        data.description_of_content,
-
-                    pickup_date:
-                        data.pickup_date,
-
-                    custom_outgoing_logistics:
-                        data.outgoing_logistics
-                });
-
-                // -------------------------------------------------
-                // AFTER FORM LOAD → CHILD TABLE
-                // -------------------------------------------------
-
-                frappe.after_ajax(() => {
-
-                    const shipment_frm =
-                        frappe.get_route()[0] === "Form"
-                            ? cur_frm
-                            : null;
-
-                    if (!shipment_frm) {
+                    if (!r.message) {
                         return;
                     }
 
-                    // Delivery Notes
-                    (data.delivery_notes || []).forEach(dn => {
+                    const data = r.message;
 
-                        let row =
-                            shipment_frm.add_child(
-                                "shipment_delivery_note"
-                            );
-
-                        row.delivery_note = dn;
-
-                    });
-
-                    shipment_frm.refresh_field(
-                        "shipment_delivery_note"
+                    console.log("Shipment Data:", data);
+                    console.log(
+                        "Delivery Address:",
+                        data.delivery_address_name
                     );
 
-                    shipment_frm.refresh_fields();
+                    // -------------------------------------------------
+                    // OPEN NEW SHIPMENT
+                    // -------------------------------------------------
 
-                });
+                    frappe.new_doc(
+                        "Shipment",
+                        {
+                            custom_outgoing_logistics: data.outgoing_logistics,
+                            company: data.company,
+                            delivery_customer: data.customer,
 
-            } catch (e) {
+                            delivery_address_name:
+                                data.delivery_address_name || "",
 
-                console.error(e);
+                            value_of_goods:
+                                data.value_of_goods || 0,
 
-                frappe.msgprint({
-                    title: __("Error"),
-                    message: __("Unable to prepare Shipment."),
-                    indicator: "red"
-                });
+                            description_of_content:
+                                data.description_of_content || "",
 
-            } finally {
+                            pickup_date:
+                                data.pickup_date || ""
+                        },
+                        function (doc) {
 
-                frappe.dom.unfreeze();
+                            console.log(
+                                "New Shipment Doc:",
+                                doc
+                            );
 
-            }
-        },
-        __("Create")
-    );
+                            // -------------------------------------------------
+                            // ADD DELIVERY NOTES
+                            // -------------------------------------------------
+
+                            (data.delivery_notes || []).forEach(dn => {
+
+                                let row = frappe.model.add_child(
+                                    doc,
+                                    "Shipment Delivery Note",
+                                    "shipment_delivery_note"
+                                );
+
+                                row.delivery_note = dn;
+
+                            });
+
+                            // -------------------------------------------------
+                            // SET DELIVERY ADDRESS AGAIN
+                            // -------------------------------------------------
+
+                            doc.delivery_address_name =
+                                data.delivery_address_name || "";
+
+                            // -------------------------------------------------
+                            // REFRESH
+                            // -------------------------------------------------
+
+                            if (cur_frm && cur_frm.doctype === "Shipment") {
+
+                                cur_frm.refresh_field(
+                                    "delivery_address_name"
+                                );
+
+                                cur_frm.refresh_field(
+                                    "shipment_delivery_note"
+                                );
+
+                                cur_frm.refresh_fields();
+
+                            }
+
+                        }
+                    );
+
+                } catch (e) {
+
+                    console.error("Create Shipment Error:", e);
+
+                    frappe.msgprint({
+                        title: __("Error"),
+                        message: __(
+                            "Unable to prepare Shipment."
+                        ),
+                        indicator: "red"
+                    });
+
+                } finally {
+
+                    frappe.dom.unfreeze();
+
+                }
+            },
+            __("Create")
+        );
 }
 	},
 });
