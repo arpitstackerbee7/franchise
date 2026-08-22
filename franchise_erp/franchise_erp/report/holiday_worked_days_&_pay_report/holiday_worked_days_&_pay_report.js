@@ -14,25 +14,28 @@ frappe.query_reports["Holiday Worked Days & Pay Report"] = {
             reqd: 1,
             default: "TZU Holiday List (26-27)",
 
-            on_change: function (query_report) {
+            onchange: function () {
 
-                // -------------------------------------------------
-                // Clear Employee completely
-                // -------------------------------------------------
+                // -----------------------------------------
+                // Clear Employee
+                // -----------------------------------------
 
-                clear_employee_filter();
+                frappe.query_report.set_filter_value(
+                    "employee",
+                    ""
+                );
 
-                // -------------------------------------------------
+                // -----------------------------------------
                 // Update Employee Query
-                // -------------------------------------------------
+                // -----------------------------------------
 
                 set_employee_query();
 
-                // -------------------------------------------------
-                // Get Holiday List Dates
-                // -------------------------------------------------
+                // -----------------------------------------
+                // Set Holiday List Dates
+                // -----------------------------------------
 
-                set_holiday_list_dates(query_report, true);
+                set_holiday_list_dates();
             }
         },
 
@@ -54,10 +57,6 @@ frappe.query_reports["Holiday Worked Days & Pay Report"] = {
                         "holiday_list"
                     );
 
-                // -------------------------------------------------
-                // No Holiday List
-                // -------------------------------------------------
-
                 if (!holiday_list) {
 
                     return {
@@ -67,10 +66,6 @@ frappe.query_reports["Holiday Worked Days & Pay Report"] = {
                     };
                 }
 
-                // -------------------------------------------------
-                // Only Active Employees of Holiday List
-                // -------------------------------------------------
-
                 return {
                     filters: {
                         holiday_list: holiday_list,
@@ -79,39 +74,19 @@ frappe.query_reports["Holiday Worked Days & Pay Report"] = {
                 };
             },
 
-            on_change: function (query_report) {
+            onchange: function () {
 
-                let employee =
-                    frappe.query_report.get_filter_value(
-                        "employee"
-                    );
+                // -----------------------------------------
+                // Employee select / clear
+                // -----------------------------------------
+                // Always refresh report
+                // -----------------------------------------
 
-                console.log(
-                    "Employee filter changed:",
-                    employee
-                );
+                setTimeout(function () {
 
-                // -------------------------------------------------
-                // IMPORTANT
-                //
-                // If employee is cleared, explicitly remove
-                // it from query report filter state.
-                // -------------------------------------------------
+                    frappe.query_report.refresh();
 
-                if (!employee) {
-
-                    clear_employee_filter();
-
-                    console.log(
-                        "Employee cleared - loading all employees"
-                    );
-                }
-
-                // -------------------------------------------------
-                // Refresh report
-                // -------------------------------------------------
-
-                query_report.refresh();
+                }, 100);
             }
         },
 
@@ -124,8 +99,20 @@ frappe.query_reports["Holiday Worked Days & Pay Report"] = {
             fieldname: "from_date",
             label: __("From Date"),
             fieldtype: "Date",
-            read_only: 1,
-            reqd: 1
+            reqd: 1,
+
+            onchange: function () {
+
+                // -----------------------------------------
+                // User changed From Date
+                // -----------------------------------------
+
+                setTimeout(function () {
+
+                    frappe.query_report.refresh();
+
+                }, 100);
+            }
         },
 
 
@@ -137,8 +124,20 @@ frappe.query_reports["Holiday Worked Days & Pay Report"] = {
             fieldname: "to_date",
             label: __("To Date"),
             fieldtype: "Date",
-            read_only: 1,
-            reqd: 1
+            reqd: 1,
+
+            onchange: function () {
+
+                // -----------------------------------------
+                // User changed To Date
+                // -----------------------------------------
+
+                setTimeout(function () {
+
+                    frappe.query_report.refresh();
+
+                }, 100);
+            }
         }
     ],
 
@@ -147,133 +146,35 @@ frappe.query_reports["Holiday Worked Days & Pay Report"] = {
     // ONLOAD
     // =====================================================
 
-    onload: function (query_report) {
+    onload: function () {
 
         setTimeout(function () {
 
-            // -------------------------------------------------
-            // Employee Query
-            // -------------------------------------------------
-
             set_employee_query();
 
-            // -------------------------------------------------
-            // Holiday List Dates
-            // -------------------------------------------------
+            set_holiday_list_dates();
 
-            set_holiday_list_dates(
-                query_report,
-                false
-            );
-
-        }, 500);
+        }, 300);
     }
 };
 
 
 // =========================================================
-// CLEAR EMPLOYEE FILTER COMPLETELY
+// GET HOLIDAY LIST DATES
 // =========================================================
 
-function clear_employee_filter() {
-
-    let employee_filter =
-        frappe.query_report.get_filter(
-            "employee"
-        );
-
-    if (!employee_filter) {
-        return;
-    }
-
-    // -----------------------------------------------------
-    // Set Frappe filter value to blank
-    // -----------------------------------------------------
-
-    employee_filter.set_value("");
-
-    // -----------------------------------------------------
-    // Explicitly clear input
-    // -----------------------------------------------------
-
-    if (employee_filter.$input) {
-
-        employee_filter.$input
-            .val("")
-            .trigger("change");
-    }
-
-    // -----------------------------------------------------
-    // IMPORTANT:
-    // Clear internal query report filter state
-    // -----------------------------------------------------
-
-    if (
-        frappe.query_report
-        &&
-        frappe.query_report.filters_by_name
-        &&
-        frappe.query_report.filters_by_name.employee
-    ) {
-
-        frappe.query_report
-            .filters_by_name
-            .employee
-            .value = "";
-    }
-
-    // -----------------------------------------------------
-    // Also clear report filters object if available
-    // -----------------------------------------------------
-
-    if (
-        frappe.query_report
-        &&
-        frappe.query_report.get_values
-    ) {
-
-        // Nothing else required here.
-        // set_value("") above updates the report filter.
-    }
-}
-
-
-// =========================================================
-// SET HOLIDAY LIST DATES
-// =========================================================
-
-function set_holiday_list_dates(
-    query_report,
-    refresh_report
-) {
+function set_holiday_list_dates() {
 
     let holiday_list =
         frappe.query_report.get_filter_value(
             "holiday_list"
         );
 
-    // -----------------------------------------------------
-    // No Holiday List
-    // -----------------------------------------------------
-
     if (!holiday_list) {
-
-        set_report_filter_value(
-            "from_date",
-            ""
-        );
-
-        set_report_filter_value(
-            "to_date",
-            ""
-        );
 
         return;
     }
 
-    // -----------------------------------------------------
-    // Fetch Holiday List Dates
-    // -----------------------------------------------------
 
     frappe.db.get_value(
         "Holiday List",
@@ -291,79 +192,59 @@ function set_holiday_list_dates(
             return;
         }
 
+
         let from_date =
             response.message.from_date;
 
         let to_date =
             response.message.to_date;
 
-        // -------------------------------------------------
+
+        // =================================================
         // Set From Date
-        // -------------------------------------------------
+        // =================================================
 
-        set_report_filter_value(
-            "from_date",
-            from_date
-        );
+        let from_filter =
+            frappe.query_report.get_filter(
+                "from_date"
+            );
 
-        // -------------------------------------------------
-        // Set To Date
-        // -------------------------------------------------
+        if (from_filter) {
 
-        set_report_filter_value(
-            "to_date",
-            to_date
-        );
-
-        // -------------------------------------------------
-        // Refresh Report
-        // -------------------------------------------------
-
-        if (refresh_report) {
-
-            query_report.refresh();
+            from_filter.set_value(
+                from_date || ""
+            );
         }
 
+
+        // =================================================
+        // Set To Date
+        // =================================================
+
+        let to_filter =
+            frappe.query_report.get_filter(
+                "to_date"
+            );
+
+        if (to_filter) {
+
+            to_filter.set_value(
+                to_date || ""
+            );
+        }
+
+
+        // =================================================
+        // Refresh after Holiday List change
+        // =================================================
+
+        setTimeout(function () {
+
+            frappe.query_report.refresh();
+
+        }, 150);
+
     });
-}
-
-
-// =========================================================
-// SET REPORT FILTER VALUE
-// =========================================================
-
-function set_report_filter_value(
-    fieldname,
-    value
-) {
-
-    let filter =
-        frappe.query_report.get_filter(
-            fieldname
-        );
-
-    if (!filter) {
-        return;
-    }
-
-    // -----------------------------------------------------
-    // Set value through Frappe
-    // -----------------------------------------------------
-
-    filter.set_value(
-        value || ""
-    );
-
-    // -----------------------------------------------------
-    // Update UI
-    // -----------------------------------------------------
-
-    if (filter.$input) {
-
-        filter.$input.val(
-            value || ""
-        );
-    }
 }
 
 
@@ -382,6 +263,7 @@ function set_employee_query() {
         return;
     }
 
+
     employee_filter.get_query = function () {
 
         let holiday_list =
@@ -389,9 +271,6 @@ function set_employee_query() {
                 "holiday_list"
             );
 
-        // -------------------------------------------------
-        // No Holiday List
-        // -------------------------------------------------
 
         if (!holiday_list) {
 
@@ -402,9 +281,6 @@ function set_employee_query() {
             };
         }
 
-        // -------------------------------------------------
-        // Holiday List Employees
-        // -------------------------------------------------
 
         return {
             filters: {
