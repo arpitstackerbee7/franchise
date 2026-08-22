@@ -1,4 +1,5 @@
 import frappe
+
 from frappe import _
 from frappe.utils import flt, getdate
 
@@ -46,22 +47,19 @@ def validate_filters(filters):
             _("Invalid Holiday List.")
         )
 
-    # -----------------------------------------------------
-    # Always take dates from Holiday List
-    # -----------------------------------------------------
-
-    filters.from_date = holiday_list.from_date
-    filters.to_date = holiday_list.to_date
-
-    if not filters.from_date:
+    if not holiday_list.from_date:
         frappe.throw(
             _("From Date is missing in Holiday List.")
         )
 
-    if not filters.to_date:
+    if not holiday_list.to_date:
         frappe.throw(
             _("To Date is missing in Holiday List.")
         )
+
+    # Always use Holiday List dates
+    filters.from_date = holiday_list.from_date
+    filters.to_date = holiday_list.to_date
 
 
 # =========================================================
@@ -144,20 +142,6 @@ def get_columns():
         },
 
         {
-            "label": _("Total Earnings"),
-            "fieldname": "total_earnings",
-            "fieldtype": "Currency",
-            "width": 130,
-        },
-
-        {
-            "label": _("Total Deductions"),
-            "fieldname": "total_deductions",
-            "fieldtype": "Currency",
-            "width": 140,
-        },
-
-        {
             "label": _("Per Day Salary"),
             "fieldname": "per_day_salary",
             "fieldtype": "Currency",
@@ -180,7 +164,7 @@ def get_columns():
 def get_data(filters):
 
     # =====================================================
-    # Get Holiday List
+    # GET HOLIDAY LIST
     # =====================================================
 
     holiday_list = frappe.get_doc(
@@ -189,12 +173,15 @@ def get_data(filters):
     )
 
     # =====================================================
-    # Create Holiday Date Map
+    # CREATE HOLIDAY DATE MAP
     # =====================================================
 
     holiday_dates = {}
 
     for holiday in holiday_list.holidays:
+
+        if not holiday.holiday_date:
+            continue
 
         holiday_date = getdate(
             holiday.holiday_date
@@ -206,19 +193,16 @@ def get_data(filters):
             holiday_date <= getdate(filters.to_date)
         ):
 
-            holiday_name = (
+            holiday_dates[holiday_date] = (
                 holiday.description
                 or holiday_list.name
             )
 
-            holiday_dates[holiday_date] = holiday_name
-
-    # No holidays found
     if not holiday_dates:
         return []
 
     # =====================================================
-    # Get Employees
+    # EMPLOYEE FILTERS
     # =====================================================
 
     employee_filters = {
@@ -226,13 +210,25 @@ def get_data(filters):
         "status": "Active",
     }
 
-    # -----------------------------------------------------
-    # If Employee filter is selected
-    # only that employee will be processed
-    # -----------------------------------------------------
+    # =====================================================
+    # IMPORTANT
+    # Only apply employee filter when value exists
+    # =====================================================
 
-    if filters.get("employee"):
-        employee_filters["name"] = filters.employee
+    selected_employee = (
+        filters.get("employee") or ""
+    )
+
+    selected_employee = str(
+        selected_employee
+    ).strip()
+
+    if selected_employee:
+        employee_filters["name"] = selected_employee
+
+    # =====================================================
+    # GET EMPLOYEES
+    # =====================================================
 
     employees = frappe.get_all(
         "Employee",
@@ -244,30 +240,29 @@ def get_data(filters):
         ],
     )
 
-    # No employees found
     if not employees:
         return []
 
     # =====================================================
-    # Employee Names
+    # EMPLOYEE NAMES
     # =====================================================
 
     employee_names = [
-        employee.name
-        for employee in employees
+        emp.name
+        for emp in employees
     ]
 
     # =====================================================
-    # Employee Map
+    # EMPLOYEE MAP
     # =====================================================
 
     employee_map = {
-        employee.name: employee
-        for employee in employees
+        emp.name: emp
+        for emp in employees
     }
 
     # =====================================================
-    # Attendance Filters
+    # ATTENDANCE FILTERS
     # =====================================================
 
     attendance_filters = {
@@ -291,15 +286,14 @@ def get_data(filters):
     }
 
     # =====================================================
-    # Get Attendance
-    #
-    # Attendance.working_hours
-    # will be displayed as Actual Hours
+    # GET ATTENDANCE
     # =====================================================
 
     attendance_records = frappe.get_all(
         "Attendance",
+
         filters=attendance_filters,
+
         fields=[
             "name",
             "employee",
@@ -309,27 +303,23 @@ def get_data(filters):
             "working_hours",
             "status",
         ],
+
         order_by="attendance_date asc",
     )
 
-    # No attendance
     if not attendance_records:
         return []
 
     # =====================================================
-    # Salary Cache
+    # SALARY CACHE
     # =====================================================
 
     salary_cache = {}
 
-    # =====================================================
-    # Report Data
-    # =====================================================
-
     data = []
 
     # =====================================================
-    # Process Attendance
+    # PROCESS ATTENDANCE
     # =====================================================
 
     for attendance in attendance_records:
@@ -339,14 +329,14 @@ def get_data(filters):
         )
 
         # -------------------------------------------------
-        # Check Whether Attendance Date Is Holiday
+        # Only Holiday Attendance
         # -------------------------------------------------
 
         if attendance_date not in holiday_dates:
             continue
 
         # -------------------------------------------------
-        # Get Employee
+        # Employee
         # -------------------------------------------------
 
         employee = employee_map.get(
@@ -356,34 +346,33 @@ def get_data(filters):
         if not employee:
             continue
 
-        # -------------------------------------------------
-        # Standard Working Hours
-        # -------------------------------------------------
+        # =================================================
+        # STANDARD WORKING HOURS
+        # =================================================
 
         standard_working_hours = 8
 
-        # -------------------------------------------------
-        # Actual Hours
-        #
-        # Attendance working_hours
-        # -------------------------------------------------
+        # =================================================
+        # ACTUAL HOURS
+        # From Attendance.working_hours
+        # =================================================
 
         actual_hours = flt(
             attendance.working_hours
         )
 
-        # -------------------------------------------------
-        # Extra Working Hours
-        # -------------------------------------------------
+        # =================================================
+        # EXTRA WORKING HOURS
+        # =================================================
 
         extra_working_hours = max(
             actual_hours - standard_working_hours,
             0
         )
 
-        # -------------------------------------------------
-        # Get Employee Salary
-        # -------------------------------------------------
+        # =================================================
+        # GET SALARY
+        # =================================================
 
         salary_details = get_employee_salary(
             employee=attendance.employee,
@@ -391,31 +380,28 @@ def get_data(filters):
             salary_cache=salary_cache,
         )
 
-        # -------------------------------------------------
-        # Salary Values
-        # -------------------------------------------------
-
-        total_earnings = flt(
-            salary_details.get("earnings", 0)
-        )
-
-        total_deductions = flt(
-            salary_details.get("deductions", 0)
-        )
+        # =================================================
+        # PER DAY SALARY
+        # =================================================
 
         per_day_salary = flt(
-            salary_details.get("per_day_salary", 0)
+            salary_details.get(
+                "per_day_salary",
+                0
+            )
         )
 
-        # -------------------------------------------------
-        # Double Holiday Pay
-        # -------------------------------------------------
+        # =================================================
+        # HOLIDAY PAY
+        # =================================================
 
-        holiday_pay = per_day_salary * 2
+        holiday_pay = (
+            per_day_salary * 2
+        )
 
-        # -------------------------------------------------
-        # Add Report Row
-        # -------------------------------------------------
+        # =================================================
+        # ADD ROW
+        # =================================================
 
         data.append({
 
@@ -447,13 +433,9 @@ def get_data(filters):
                 attendance.status,
 
             "holiday_name":
-                holiday_dates[attendance_date],
-
-            "total_earnings":
-                total_earnings,
-
-            "total_deductions":
-                total_deductions,
+                holiday_dates[
+                    attendance_date
+                ],
 
             "per_day_salary":
                 per_day_salary,
@@ -461,10 +443,6 @@ def get_data(filters):
             "holiday_pay":
                 holiday_pay,
         })
-
-    # =====================================================
-    # Return Data
-    # =====================================================
 
     return data
 
@@ -480,30 +458,24 @@ def get_employee_salary(
 ):
 
     # =====================================================
-    # Cache Key
+    # CACHE KEY
     # =====================================================
 
     cache_key = (
         f"{employee}:{attendance_date}"
     )
 
-    # -----------------------------------------------------
-    # Return Cached Result
-    # -----------------------------------------------------
-
     if cache_key in salary_cache:
-
         return salary_cache[cache_key]
 
     # =====================================================
-    # Get Applicable Salary Structure Assignment
+    # SALARY STRUCTURE ASSIGNMENT
     # =====================================================
 
     assignment = frappe.get_all(
         "Salary Structure Assignment",
 
         filters={
-
             "employee": employee,
 
             "from_date": [
@@ -526,7 +498,7 @@ def get_employee_salary(
     )
 
     # =====================================================
-    # No Salary Assignment
+    # NO ASSIGNMENT
     # =====================================================
 
     if not assignment:
@@ -542,7 +514,7 @@ def get_employee_salary(
         return result
 
     # =====================================================
-    # Get Salary Structure Name
+    # SALARY STRUCTURE
     # =====================================================
 
     salary_structure_name = (
@@ -562,7 +534,7 @@ def get_employee_salary(
         return result
 
     # =====================================================
-    # Get Salary Structure
+    # GET SALARY STRUCTURE
     # =====================================================
 
     salary_structure = frappe.get_doc(
@@ -571,7 +543,7 @@ def get_employee_salary(
     )
 
     # =====================================================
-    # Calculate Total Earnings
+    # EARNINGS
     # =====================================================
 
     total_earnings = 0
@@ -583,7 +555,7 @@ def get_employee_salary(
         )
 
     # =====================================================
-    # Calculate Total Deductions
+    # DEDUCTIONS
     # =====================================================
 
     total_deductions = 0
@@ -595,17 +567,16 @@ def get_employee_salary(
         )
 
     # =====================================================
-    # Net Salary
+    # NET SALARY
     # =====================================================
 
     net_salary = (
         total_earnings
-        -
-        total_deductions
+        - total_deductions
     )
 
     # =====================================================
-    # Per Day Salary
+    # PER DAY SALARY
     # =====================================================
 
     per_day_salary = (
@@ -613,23 +584,17 @@ def get_employee_salary(
     )
 
     # =====================================================
-    # Result
+    # RESULT
     # =====================================================
 
     result = {
-
-        "earnings":
-            total_earnings,
-
-        "deductions":
-            total_deductions,
-
-        "per_day_salary":
-            per_day_salary,
+        "earnings": total_earnings,
+        "deductions": total_deductions,
+        "per_day_salary": per_day_salary,
     }
 
     # =====================================================
-    # Save In Cache
+    # CACHE
     # =====================================================
 
     salary_cache[cache_key] = result
