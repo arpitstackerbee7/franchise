@@ -198,14 +198,22 @@ def get_data(filters):
             ss.salary_structure,
             ss.payment_days AS present_days,
             DATE_FORMAT(ss.start_date, '%%b') AS month,
-            COALESCE(sd.amount, 0) AS monthly_bonus_amount
+            COALESCE(earn.total_earnings, 0) AS additional_total,
+            COALESCE(ded.total_deductions, 0) AS deduction_total
         FROM `tabSalary Slip` ss
         LEFT JOIN `tabEmployee` emp ON emp.name = ss.employee
-        LEFT JOIN `tabSalary Detail` sd
-            ON sd.parent = ss.name
-            AND sd.parenttype = 'Salary Slip'
-            AND sd.parentfield IN ('earnings', 'deductions')
-            AND sd.salary_component = %(bonus_component)s
+        LEFT JOIN (
+            SELECT parent, SUM(amount) AS total_earnings
+            FROM `tabSalary Detail`
+            WHERE parentfield = 'earnings' AND parenttype = 'Salary Slip'
+            GROUP BY parent
+        ) earn ON earn.parent = ss.name
+        LEFT JOIN (
+            SELECT parent, SUM(amount) AS total_deductions
+            FROM `tabSalary Detail`
+            WHERE parentfield = 'deductions' AND parenttype = 'Salary Slip'
+            GROUP BY parent
+        ) ded ON ded.parent = ss.name
         WHERE {condition_str}
         ORDER BY ss.employee_name
     """
@@ -230,10 +238,12 @@ def get_data(filters):
                 employee_map[emp][f"{month.lower()}_bonus"] = 0
 
         month_key = row.month.lower()
+        per_day_salary = (row.additional_total - row.deduction_total) / 30
+        pda = (row.present_days or 0) * per_day_salary
         employee_map[emp][f"{month_key}_pd"] = row.present_days or 0
-        employee_map[emp][f"{month_key}_bonus"] = row.monthly_bonus_amount or 0
+        employee_map[emp][f"{month_key}_bonus"] = pda
         employee_map[emp]["total_pd"] += (row.present_days or 0)
-        employee_map[emp]["tpda"] += (row.monthly_bonus_amount or 0)
+        employee_map[emp]["tpda"] += pda
         employee_map[emp]["total_bonus"] = employee_map[emp]["tpda"] * 0.085
 
     return list(employee_map.values())
