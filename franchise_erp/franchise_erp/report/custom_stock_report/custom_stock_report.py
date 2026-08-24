@@ -557,9 +557,89 @@ class StockBalanceReport:
 			row.wsp_rate = price_map.get(row.item_code, {}).get("WSP", 0)
 			row.mrp_rate = price_map.get(row.item_code, {}).get("MRP", 0)
 
+	# def set_supplier_name(self):
+	# 	item_warehouse_pairs = {
+	# 		(row.item_code, row.warehouse) for row in self.data if row.item_code
+	# 	}
+
+	# 	if not item_warehouse_pairs:
+	# 		return
+
+	# 	item_codes = list({item for item, _ in item_warehouse_pairs})
+
+	# 	pr_data = frappe.db.sql(
+	# 		"""
+	# 		SELECT
+	# 			pri.item_code,
+	# 			pri.warehouse,
+	# 			pr.supplier,
+	# 			pr.posting_date
+	# 		FROM `tabPurchase Receipt Item` pri
+	# 		INNER JOIN `tabPurchase Receipt` pr
+	# 			ON pr.name = pri.parent
+	# 		WHERE
+	# 			pr.docstatus = 1
+	# 			AND pri.item_code IN %(items)s
+	# 		ORDER BY
+	# 			pri.item_code,
+	# 			pri.warehouse,
+	# 			pr.posting_date DESC,
+	# 			pr.creation DESC
+	# 		""",
+	# 		{"items": item_codes},
+	# 		as_dict=True,
+	# 	)
+
+	# 	pi_data = frappe.db.sql(
+	# 		"""
+	# 		SELECT
+	# 			pii.item_code,
+	# 			pii.warehouse,
+	# 			pi.supplier,
+	# 			pi.posting_date
+	# 		FROM `tabPurchase Invoice Item` pii
+	# 		INNER JOIN `tabPurchase Invoice` pi
+	# 			ON pi.name = pii.parent
+	# 		WHERE
+	# 			pi.docstatus = 1
+	# 			AND pi.update_stock = 1
+	# 			AND pii.item_code IN %(items)s
+	# 		ORDER BY
+	# 			pii.item_code,
+	# 			pii.warehouse,
+	# 			pi.posting_date DESC,
+	# 			pi.creation DESC
+	# 		""",
+	# 		{"items": item_codes},
+	# 		as_dict=True,
+	# 	)
+
+	# 	item_map = {}
+
+	# 	# Pehle fallback (PI) se bharo
+	# 	for d in pi_data:
+	# 		key = (d.item_code, d.warehouse)
+	# 		if key not in item_map:
+	# 			item_map[key] = {"supplier": d.supplier, "last_stock_in_date": d.posting_date}
+
+	# 	# Fir PR se overwrite (PR ko priority)
+	# 	for d in pr_data:
+	# 		key = (d.item_code, d.warehouse)
+	# 		item_map[key] = {"supplier": d.supplier, "last_stock_in_date": d.posting_date}
+
+	# 	for row in self.data:
+	# 		info = item_map.get((row.item_code, row.warehouse), {})
+	# 		row.party_name = info.get("supplier")
+	# 		row.last_stock_in_date = info.get("last_stock_in_date")
 	def set_supplier_name(self):
+		# =========================================================
+		# ITEM + WAREHOUSE PAIRS FROM REPORT
+		# =========================================================
+
 		item_warehouse_pairs = {
-			(row.item_code, row.warehouse) for row in self.data if row.item_code
+			(row.item_code, row.warehouse)
+			for row in self.data
+			if row.item_code and row.warehouse
 		}
 
 		if not item_warehouse_pairs:
@@ -567,28 +647,9 @@ class StockBalanceReport:
 
 		item_codes = list({item for item, _ in item_warehouse_pairs})
 
-		pr_data = frappe.db.sql(
-			"""
-			SELECT
-				pri.item_code,
-				pri.warehouse,
-				pr.supplier,
-				pr.posting_date
-			FROM `tabPurchase Receipt Item` pri
-			INNER JOIN `tabPurchase Receipt` pr
-				ON pr.name = pri.parent
-			WHERE
-				pr.docstatus = 1
-				AND pri.item_code IN %(items)s
-			ORDER BY
-				pri.item_code,
-				pri.warehouse,
-				pr.posting_date DESC,
-				pr.creation DESC
-			""",
-			{"items": item_codes},
-			as_dict=True,
-		)
+		# =========================================================
+		# 1. PURCHASE INVOICE
+		# =========================================================
 
 		pi_data = frappe.db.sql(
 			"""
@@ -596,7 +657,8 @@ class StockBalanceReport:
 				pii.item_code,
 				pii.warehouse,
 				pi.supplier,
-				pi.posting_date
+				pi.posting_date,
+				pi.creation
 			FROM `tabPurchase Invoice Item` pii
 			INNER JOIN `tabPurchase Invoice` pi
 				ON pi.name = pii.parent
@@ -614,23 +676,209 @@ class StockBalanceReport:
 			as_dict=True,
 		)
 
+		# =========================================================
+		# 2. PURCHASE RECEIPT
+		# =========================================================
+
+		pr_data = frappe.db.sql(
+			"""
+			SELECT
+				pri.item_code,
+				pri.warehouse,
+				pr.supplier,
+				pr.posting_date,
+				pr.creation
+			FROM `tabPurchase Receipt Item` pri
+			INNER JOIN `tabPurchase Receipt` pr
+				ON pr.name = pri.parent
+			WHERE
+				pr.docstatus = 1
+				AND pri.item_code IN %(items)s
+			ORDER BY
+				pri.item_code,
+				pri.warehouse,
+				pr.posting_date DESC,
+				pr.creation DESC
+			""",
+			{"items": item_codes},
+			as_dict=True,
+		)
+
+		# =========================================================
+		# 3. NORMAL PURCHASE ITEM MAP
+		# =========================================================
+
 		item_map = {}
 
-		# Pehle fallback (PI) se bharo
+		# Purchase Invoice = fallback
 		for d in pi_data:
 			key = (d.item_code, d.warehouse)
-			if key not in item_map:
-				item_map[key] = {"supplier": d.supplier, "last_stock_in_date": d.posting_date}
 
-		# Fir PR se overwrite (PR ko priority)
+			if key not in item_map:
+				item_map[key] = {
+					"supplier": d.supplier,
+					"last_stock_in_date": d.posting_date,
+				}
+
+		# Purchase Receipt = priority
 		for d in pr_data:
 			key = (d.item_code, d.warehouse)
-			item_map[key] = {"supplier": d.supplier, "last_stock_in_date": d.posting_date}
+
+			item_map[key] = {
+				"supplier": d.supplier,
+				"last_stock_in_date": d.posting_date,
+			}
+
+		# =========================================================
+		# 4. SUBCONTRACTING / JOB WORK
+		#
+		# IMPORTANT:
+		# DO NOT USE scr.set_warehouse HERE.
+		#
+		# Serial No warehouse can be different from
+		# Subcontracting Receipt set_warehouse.
+		#
+		# We therefore map using:
+		#
+		# Serial No warehouse
+		#      +
+		# Serial No purchase_document_no
+		#
+		# =========================================================
+
+		serial_scr_data = frappe.db.sql(
+			"""
+			SELECT
+				sn.name AS serial_no,
+				sn.item_code,
+				sn.warehouse,
+
+				sn.purchase_document_no,
+
+				scr.name AS subcontracting_receipt,
+
+				scri.subcontracting_order,
+
+				sco.name AS subcontracting_order_name,
+				sco.purchase_order,
+
+				COALESCE(
+					sco.supplier_name,
+					sco.supplier,
+					po.supplier_name,
+					po.supplier
+				) AS supplier,
+
+				scr.posting_date,
+				scr.creation
+
+			FROM `tabSerial No` sn
+
+			INNER JOIN `tabSubcontracting Receipt` scr
+				ON scr.name = sn.purchase_document_no
+				AND scr.docstatus = 1
+
+			INNER JOIN `tabSubcontracting Receipt Item` scri
+				ON scri.parent = scr.name
+				AND scri.item_code = sn.item_code
+
+			LEFT JOIN `tabSubcontracting Order` sco
+				ON sco.name = scri.subcontracting_order
+				AND sco.docstatus < 2
+
+			LEFT JOIN `tabPurchase Order` po
+				ON po.name = sco.purchase_order
+				AND po.docstatus < 2
+
+			WHERE
+				sn.status = 'Active'
+				AND sn.item_code IN %(items)s
+
+			ORDER BY
+				sn.item_code,
+				sn.warehouse,
+				scr.posting_date DESC,
+				scr.creation DESC
+			""",
+			{"items": item_codes},
+			as_dict=True,
+		)
+
+		# =========================================================
+		# 5. JOB WORK SUPPLIER MAP
+		#
+		# KEY = Serial No item + warehouse
+		#
+		# Example:
+		#
+		# FTKDST127MLFR
+		# Finished Goods - TZUPL
+		#
+		# => Sample For Merchant Internal Jobber
+		# =========================================================
+
+		serial_supplier_map = {}
+
+		for d in serial_scr_data:
+
+			if not d.supplier:
+				continue
+
+			key = (
+				d.item_code,
+				d.warehouse,
+			)
+
+			if key not in serial_supplier_map:
+				serial_supplier_map[key] = {
+					"supplier": d.supplier,
+					"last_stock_in_date": d.posting_date,
+				}
+
+		# =========================================================
+		# 6. APPLY SUPPLIER TO REPORT
+		#
+		# JOB WORK SERIAL SUPPLIER GETS PRIORITY
+		# =========================================================
 
 		for row in self.data:
-			info = item_map.get((row.item_code, row.warehouse), {})
+
+			key = (
+				row.item_code,
+				row.warehouse,
+			)
+
+			# -----------------------------------------------------
+			# First priority:
+			# Active Serial -> Subcontracting Receipt -> SCO -> PO
+			# -----------------------------------------------------
+
+			if key in serial_supplier_map:
+
+				info = serial_supplier_map[key]
+
+				row.party_name = info.get("supplier")
+
+				# Use SCR posting date if available
+				row.last_stock_in_date = info.get(
+					"last_stock_in_date"
+				)
+
+				continue
+
+			# -----------------------------------------------------
+			# Second priority:
+			# Purchase Receipt / Purchase Invoice
+			# -----------------------------------------------------
+
+			info = item_map.get(key, {})
+
 			row.party_name = info.get("supplier")
-			row.last_stock_in_date = info.get("last_stock_in_date")
+
+			if not row.get("last_stock_in_date"):
+				row.last_stock_in_date = info.get(
+					"last_stock_in_date"
+				)
 	
 	def set_last_stock_in_date(self):
 		items = {(row.item_code, row.warehouse) for row in self.data if row.item_code and row.warehouse}
