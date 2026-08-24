@@ -3,13 +3,14 @@ from frappe.model.document import Document
 from frappe.model.naming import make_autoname
 from erpnext.accounts.utils import get_fiscal_year
 
+
 class FabricWastageRegister(Document):
-	
+
     def autoname(self):
         fy = get_fiscal_year(self.posting_date)[0]
         fy_short = f"{fy[:4][-2:]}-{fy[-4:][-2:]}"
         self.name = make_autoname(f"FWR/{fy_short}/.#####")
-        
+
     def before_save(self):
         if self.docstatus == 0:
             self.status = "Draft"
@@ -23,17 +24,11 @@ class FabricWastageRegister(Document):
         for row in self.fabric_wastage_detail:
 
             wastage_qty = row.actual_wastage_qty or 0
-            actual_consumption = row.actual_consumption or 0
 
             if wastage_qty < 0:
                 frappe.throw(
                     f"Row {row.idx}: Actual Wastage cannot be negative."
                 )
-
-            # if wastage_qty > actual_consumption:
-            #     frappe.throw(
-            #         f"Row {row.idx}: Actual Wastage Qty cannot be greater than Actual Consumption."
-            #     )
 
             if wastage_qty > 0 and not row.reason:
                 frappe.throw(
@@ -57,93 +52,116 @@ class FabricWastageRegister(Document):
                 f"Subcontracting Order <b>{self.subcontracting_order}</b>."
             )
 
+    # =========================================================
+    # SUBMIT
+    # =========================================================
+
     def on_submit(self):
+
         self.create_stock_entry()
-        self.db_set("status", "Submitted", update_modified=False)
+
+        self.db_set(
+            "status",
+            "Submitted",
+            update_modified=False
+        )
+
+    # =========================================================
+    # CANCEL
+    # =========================================================
 
     def on_cancel(self):
 
         if self.stock_entry:
-            se = frappe.get_doc("Stock Entry", self.stock_entry)
-    
+
+            se = frappe.get_doc(
+                "Stock Entry",
+                self.stock_entry
+            )
+
+            # Cancel only if submitted
             if se.docstatus == 1:
+
                 se.flags.ignore_links = True
                 se.cancel()
-                
-        self.db_set("status", "Cancelled", update_modified=False)     
-            
 
-    # def create_stock_entry(self):
+        self.db_set(
+            "status",
+            "Cancelled",
+            update_modified=False
+        )
 
-    #     stock_entry = frappe.new_doc("Stock Entry")
+    # =========================================================
+    # CREATE MATERIAL ISSUE
+    # =========================================================
 
-    #     stock_entry.stock_entry_type = "Material Issue"
-    #     stock_entry.company = self.company
-    #     stock_entry.posting_date = self.posting_date
-    #     stock_entry.posting_time = self.posting_time
-
-    #     # Optional Custom Reference Fields
-    #     if stock_entry.meta.has_field("custom_fabric_wastage_register"):
-    #         stock_entry.custom_fabric_wastage_register = self.name
-
-    #     # if stock_entry.meta.has_field("subcontracting_order"):
-    #     #     stock_entry.subcontracting_order = self.subcontracting_order
-
-    #     stock_entry.remarks = (
-    #         f"Fabric Wastage against Subcontracting Order "
-    #         f"{self.subcontracting_order} "
-    #         f"through Fabric Wastage Register {self.name}"
-    #     )
-
-    #     for row in self.fabric_wastage_detail:
-
-    #         if not row.actual_wastage_qty:
-    #             continue
-
-    #         stock_entry.append("items", {
-    #             "item_code": row.item_code,
-    #             "qty": row.actual_wastage_qty,
-    #             "uom": row.uom,
-    #             "stock_uom": row.uom,
-    #             "s_warehouse": self.warehouse
-    #         })
-    #     # for row in self.fabric_wastage_detail:
-
-    #     #     stock_entry.append("items", {
-    #     #         "item_code": row.item_code,
-    #     #         "qty": row.actual_wastage_qty,
-    #     #         "uom": row.uom,
-    #     #         "stock_uom": row.uom,
-    #     #         "s_warehouse": row.reserve_warehouse
-    #     #     })
-        
-    #     if not stock_entry.items:
-    #         frappe.throw("Please enter Actual Wastage Qty before submitting.")
-
-    #     stock_entry.insert()
-    #     stock_entry.submit()
-
-    #     if self.meta.has_field("stock_entry"):
-    #         self.db_set("stock_entry", stock_entry.name)
     def create_stock_entry(self):
+
+        # -----------------------------------------------------
+        # Prevent duplicate Stock Entry
+        # -----------------------------------------------------
+
+        if self.stock_entry:
+
+            existing_se = frappe.db.get_value(
+                "Stock Entry",
+                self.stock_entry,
+                "docstatus"
+            )
+
+            if existing_se is not None:
+                frappe.throw(
+                    f"Stock Entry <b>{self.stock_entry}</b> already exists "
+                    f"for Fabric Wastage Register <b>{self.name}</b>."
+                )
+
+        # -----------------------------------------------------
+        # Get Subcontracting Order
+        # -----------------------------------------------------
+
+        subcontracting_order = frappe.get_doc(
+            "Subcontracting Order",
+            self.subcontracting_order
+        )
+
+        # -----------------------------------------------------
+        # ACTUAL JOBBER WAREHOUSE
+        #
+        # Example:
+        # Amjad Textiles - TZUPL
+        # -----------------------------------------------------
+
+        source_warehouse = subcontracting_order.supplier_warehouse
+
+        if not source_warehouse:
+            frappe.throw(
+                f"Jobber Warehouse is not set in "
+                f"Subcontracting Order <b>{self.subcontracting_order}</b>."
+            )
+
+        # -----------------------------------------------------
+        # Create Stock Entry
+        # -----------------------------------------------------
 
         stock_entry = frappe.new_doc("Stock Entry")
 
-        # =========================================================
-        # STOCK ENTRY SETTINGS
-        # =========================================================
-
-        stock_entry.stock_entry_type = "Material Receipt"
+        stock_entry.stock_entry_type = "Material Issue"
         stock_entry.company = self.company
         stock_entry.posting_date = self.posting_date
         stock_entry.posting_time = self.posting_time
 
-        # =========================================================
-        # LINK TO FABRIC WASTAGE REGISTER
-        # =========================================================
+        # -----------------------------------------------------
+        # Link Fabric Wastage Register
+        # -----------------------------------------------------
 
-        if stock_entry.meta.has_field("custom_fabric_wastage_register"):
+        if stock_entry.meta.has_field(
+            "custom_fabric_wastage_register"
+        ):
             stock_entry.custom_fabric_wastage_register = self.name
+
+        # -----------------------------------------------------
+        # Remarks
+        # -----------------------------------------------------
 
         stock_entry.remarks = (
             f"Fabric Wastage against Subcontracting Order "
@@ -151,59 +169,72 @@ class FabricWastageRegister(Document):
             f"through Fabric Wastage Register {self.name}"
         )
 
-        # =========================================================
-        # ADD ITEMS
-        # =========================================================
+        # -----------------------------------------------------
+        # Add Wastage Items
+        # -----------------------------------------------------
 
         for row in self.fabric_wastage_detail:
 
             wastage_qty = row.actual_wastage_qty or 0
 
-            # Skip zero wastage
             if wastage_qty <= 0:
                 continue
 
-            # Target warehouse
-            target_warehouse = row.reserve_warehouse or self.warehouse
+            item_code = row.rm_item_code or row.item_code
 
-            if not target_warehouse:
+            if not item_code:
                 frappe.throw(
-                    f"Row {row.idx}: Please select Warehouse."
+                    f"Row {row.idx}: Item is required."
                 )
 
-            stock_entry.append("items", {
-                "item_code": row.item_code,
-                "qty": wastage_qty,
-                "uom": row.uom,
-                "stock_uom": row.uom,
-                "t_warehouse": target_warehouse
-            })
+            # -------------------------------------------------
+            # Material Issue
+            #
+            # Only source warehouse.
+            # NO target warehouse.
+            # NO In Transit.
+            # -------------------------------------------------
 
-        # =========================================================
-        # VALIDATION
-        # =========================================================
+            stock_entry.append(
+                "items",
+                {
+                    "item_code": item_code,
+                    "qty": wastage_qty,
+                    "uom": row.uom,
+                    "stock_uom": row.uom,
+                    "s_warehouse": source_warehouse
+                }
+            )
+
+        # -----------------------------------------------------
+        # Validate Items
+        # -----------------------------------------------------
 
         if not stock_entry.items:
             frappe.throw(
                 "Please enter Actual Wastage Qty before submitting."
             )
 
-        # =========================================================
-        # CREATE STOCK ENTRY AS DRAFT
-        # =========================================================
+        # -----------------------------------------------------
+        # Insert
+        # -----------------------------------------------------
 
         stock_entry.insert()
 
-        # IMPORTANT:
-        # Do NOT submit here.
+        # -----------------------------------------------------
+        # Submit
         #
-        # stock_entry.submit()
+        # This removes stock from Jobber Warehouse.
+        # -----------------------------------------------------
 
-        # =========================================================
-        # SAVE REFERENCE
-        # =========================================================
+        stock_entry.submit()
+
+        # -----------------------------------------------------
+        # Save Reference
+        # -----------------------------------------------------
 
         if self.meta.has_field("stock_entry"):
+
             self.db_set(
                 "stock_entry",
                 stock_entry.name,
@@ -213,20 +244,44 @@ class FabricWastageRegister(Document):
         return stock_entry.name
 
 
+# =============================================================
+# GET SUBCONTRACTING ORDER DATA
+# =============================================================
+
 @frappe.whitelist()
 def get_subcontracting_order_data(subcontracting_order):
 
-    scr = frappe.get_doc("Subcontracting Order", subcontracting_order)
+    scr = frappe.get_doc(
+        "Subcontracting Order",
+        subcontracting_order
+    )
+
+    # ---------------------------------------------------------
+    # Finished Qty
+    # ---------------------------------------------------------
 
     finished_qty = 0
+
     if scr.items:
-        finished_qty = scr.items[0].received_qty or scr.items[0].qty or 0
+        finished_qty = (
+            scr.items[0].received_qty
+            or scr.items[0].qty
+            or 0
+        )
+
+    # ---------------------------------------------------------
+    # Basic Data
+    # ---------------------------------------------------------
 
     data = {
         "supplier": scr.supplier,
         "set_warehouse": scr.set_warehouse,
         "items": []
     }
+
+    # ---------------------------------------------------------
+    # Supplied Items
+    # ---------------------------------------------------------
 
     for row in scr.supplied_items:
 
@@ -241,28 +296,39 @@ def get_subcontracting_order_data(subcontracting_order):
             as_dict=True
         ) or {}
 
+        # -----------------------------------------------------
+        # Standard Consumption
+        # -----------------------------------------------------
+
         standard_consumption = 0
+
         if finished_qty:
-            standard_consumption = row.required_qty / finished_qty
-                    
-        data["items"].append({
-            "item_code": row.rm_item_code,          # ✅ RM Item
-            "rm_item_code": row.rm_item_code,       # ✅
-            "reserve_warehouse": row.reserve_warehouse,   # ✅
-            "size": item_details.get("custom_size"),
-            "color": item_details.get("custom_colour_name"),
-            "top_fabrics": item_details.get("custom_top_fabrics"),
-            "fabric_sent_qty": row.required_qty,
-            "finished_qty_received": finished_qty,
-            "standard_consumption": standard_consumption,
-            "actual_consumption": row.consumed_qty,
-            "uom": row.stock_uom,
-            "rate": row.rate,
-            "amount": row.amount
-        })
+            standard_consumption = (
+                row.required_qty / finished_qty
+            )
+
+        # -----------------------------------------------------
+        # Append Item
+        # -----------------------------------------------------
+
+        data["items"].append(
+            {
+                "item_code": row.rm_item_code,
+                "rm_item_code": row.rm_item_code,
+                "reserve_warehouse": row.reserve_warehouse,
+                "size": item_details.get("custom_size"),
+                "color": item_details.get("custom_colour_name"),
+                "top_fabrics": item_details.get(
+                    "custom_top_fabrics"
+                ),
+                "fabric_sent_qty": row.required_qty,
+                "finished_qty_received": finished_qty,
+                "standard_consumption": standard_consumption,
+                "actual_consumption": row.consumed_qty,
+                "uom": row.stock_uom,
+                "rate": row.rate,
+                "amount": row.amount
+            }
+        )
 
     return data
-
-
-
-
