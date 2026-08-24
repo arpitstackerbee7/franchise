@@ -159,6 +159,7 @@ def get_columns(filters):
 
     # Totals
     columns.append({"label": "Total PD", "fieldname": "total_pd", "fieldtype": "Float", "width": 90, "precision": 2})
+    columns.append({"label": "TPDA", "fieldname": "tpda", "fieldtype": "Currency", "width": 110})
     columns.append({"label": "Total Bonus", "fieldname": "total_bonus", "fieldtype": "Currency", "width": 110})
 
     return columns
@@ -222,6 +223,7 @@ def get_data(filters):
                 "salary_structure": row.salary_structure,
                 "total_pd": 0,
                 "total_bonus": 0,
+                "tpda": 0,
             }
             for month in MONTH_ORDER:
                 employee_map[emp][f"{month.lower()}_pd"] = 0
@@ -231,6 +233,7 @@ def get_data(filters):
         employee_map[emp][f"{month_key}_pd"] = row.present_days or 0
         employee_map[emp][f"{month_key}_bonus"] = row.monthly_bonus_amount or 0
         employee_map[emp]["total_pd"] += (row.present_days or 0)
-        employee_map[emp]["total_bonus"] += (row.monthly_bonus_amount or 0)
+        employee_map[emp]["tpda"] += (row.monthly_bonus_amount or 0)
+        employee_map[emp]["total_bonus"] = employee_map[emp]["tpda"] * 0.085
 
     return list(employee_map.values())
