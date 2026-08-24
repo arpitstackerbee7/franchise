@@ -270,11 +270,45 @@ def get_sales_by_owner(owner, from_date, to_date):
     return flt(result[0].total_sales)
 
 
+# def get_total_sales(companies, from_date, to_date):
+#     """
+#     Calculate total submitted Delivery Note sales
+#     for one or more companies.
+#     """
+
+#     companies = tuple(
+#         company
+#         for company in companies
+#         if company
+#     )
+
+#     if not companies:
+#         return 0
+
+#     result = frappe.db.sql(
+#         """
+#         SELECT
+#             COALESCE(SUM(dn.net_total), 0) AS total_sales
+#         FROM `tabDelivery Note` dn
+#         WHERE
+#             dn.docstatus = 1
+#             AND dn.company IN %(companies)s
+#             AND dn.posting_date BETWEEN %(from_date)s AND %(to_date)s
+#         """,
+#         {
+#             "companies": companies,
+#             "from_date": from_date,
+#             "to_date": to_date,
+#         },
+#         as_dict=True,
+#     )
+
+#     if not result:
+#         return 0
+
+#     return flt(result[0].total_sales)
 def get_total_sales(companies, from_date, to_date):
-    """
-    Calculate total submitted Delivery Note sales
-    for one or more companies.
-    """
+    
 
     companies = tuple(
         company
@@ -282,12 +316,16 @@ def get_total_sales(companies, from_date, to_date):
         if company
     )
 
+    print("companies after tuple:", companies)
+
     if not companies:
+        print("NO COMPANIES")
         return 0
 
     result = frappe.db.sql(
         """
         SELECT
+            COUNT(dn.name) AS total_delivery_notes,
             COALESCE(SUM(dn.net_total), 0) AS total_sales
         FROM `tabDelivery Note` dn
         WHERE
@@ -303,8 +341,13 @@ def get_total_sales(companies, from_date, to_date):
         as_dict=True,
     )
 
+    print("SQL RESULT:", result)
+
     if not result:
+        print("NO RESULT")
         return 0
+
+    print("FINAL TOTAL:", result[0].total_sales)
 
     return flt(result[0].total_sales)
 

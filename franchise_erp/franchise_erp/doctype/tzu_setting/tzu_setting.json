@@ -35,6 +35,7 @@
   "is_credit_note_account",
   "enable_pricing_rule",
   "dashboard_company",
+  "employee_payable_account",
   "section_break_eiab",
   "financial_statement_account_mapping"
  ],
@@ -230,13 +231,19 @@
    "fieldtype": "Table",
    "label": "Financial Statement Account Mapping",
    "options": "Financial Statement Account Mapping"
+  },
+  {
+   "fieldname": "employee_payable_account",
+   "fieldtype": "Link",
+   "label": "Employee Payable Account",
+   "options": "Account"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-17 10:30:22.668316",
+ "modified": "2026-08-24 17:04:07.664445",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
