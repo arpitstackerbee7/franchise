@@ -205,15 +205,15 @@ def get_data(filters):
         LEFT JOIN (
             SELECT parent, SUM(amount) AS total_earnings
             FROM `tabSalary Detail`
-            WHERE parentfield = 'earnings' AND parenttype = 'Salary Slip'
+            WHERE parentfield = 'earnings' AND parenttype = 'Salary Structure'
             GROUP BY parent
-        ) earn ON earn.parent = ss.name
+        ) earn ON earn.parent = ss.salary_structure
         LEFT JOIN (
             SELECT parent, SUM(amount) AS total_deductions
             FROM `tabSalary Detail`
-            WHERE parentfield = 'deductions' AND parenttype = 'Salary Slip'
+            WHERE parentfield = 'deductions' AND parenttype = 'Salary Structure'
             GROUP BY parent
-        ) ded ON ded.parent = ss.name
+        ) ded ON ded.parent = ss.salary_structure
         WHERE {condition_str}
         ORDER BY ss.employee_name
     """
