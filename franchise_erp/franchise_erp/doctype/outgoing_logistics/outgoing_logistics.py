@@ -403,10 +403,11 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
         frappe.throw("No Sales Invoice found in References table.")
 
     # ---------------------------------------------------------
-    # DELIVERY NOTES FROM SALES INVOICE ITEM
+    # DELIVERY NOTES FROM SALES INVOICE ITEMS
     # ---------------------------------------------------------
 
     delivery_notes = []
+    delivery_note_values = {}
 
     for sales_invoice in sales_invoices:
 
@@ -423,21 +424,44 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
 
             dn = item.delivery_note
 
-            if dn and dn not in delivery_notes:
+            if not dn:
+                continue
 
-                if frappe.db.get_value(
+            # Only submitted Delivery Note
+            if frappe.db.get_value(
+                "Delivery Note",
+                dn,
+                "docstatus"
+            ) != 1:
+                continue
+
+            # Avoid duplicate DN
+            if dn not in delivery_notes:
+                delivery_notes.append(dn)
+
+                # Get Delivery Note Grand Total
+                grand_total = frappe.db.get_value(
                     "Delivery Note",
                     dn,
-                    "docstatus"
-                ) == 1:
+                    "grand_total"
+                ) or 0
 
-                    delivery_notes.append(dn)
+                delivery_note_values[dn] = grand_total
 
     if not delivery_notes:
         frappe.throw(
             "No submitted Delivery Note found against "
             f"Sales Invoice(s): {', '.join(sales_invoices)}"
         )
+
+    # ---------------------------------------------------------
+    # TOTAL VALUE OF GOODS
+    # ---------------------------------------------------------
+
+    value_of_goods = sum(
+        delivery_note_values.get(dn, 0)
+        for dn in delivery_notes
+    )
 
     # ---------------------------------------------------------
     # SALES INVOICE DATA
@@ -457,7 +481,6 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
         or si.customer_address
     )
 
-    # Prefer Delivery Note address
     if delivery_notes:
 
         dn = frappe.get_doc(
@@ -472,7 +495,7 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
         )
 
     # ---------------------------------------------------------
-    # RETURN DATA ONLY
+    # RETURN DATA
     # ---------------------------------------------------------
 
     return {
@@ -483,7 +506,8 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
 
         "delivery_address_name": delivery_address,
 
-        "value_of_goods": si.grand_total or 0,
+        # Sum of all Delivery Note Grand Totals
+        "value_of_goods": value_of_goods,
 
         "description_of_content": (
             getattr(ol, "description_of_content", None)
@@ -493,6 +517,9 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
         "sales_invoices": sales_invoices,
 
         "delivery_notes": delivery_notes,
+
+        # DN-wise Grand Total
+        "delivery_note_values": delivery_note_values,
 
         "outgoing_logistics": ol.name
     }

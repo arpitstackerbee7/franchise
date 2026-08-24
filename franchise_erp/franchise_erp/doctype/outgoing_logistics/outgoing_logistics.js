@@ -38,130 +38,135 @@ frappe.ui.form.on("Outgoing Logistics", {
                 __("Get Items From")
             );
         }
-       if (frm.doc.docstatus === 1) {
+    //    if (frm.doc.docstatus === 1) {
 
-  frm.add_custom_button(
-            __("Create Shipment"),
-            async function () {
+    //         frm.add_custom_button(
+    //                     __("Create Shipment"),
+    //                     async function () {
 
-                frappe.dom.freeze(__("Preparing Shipment..."));
+    //                         frappe.dom.freeze(__("Preparing Shipment..."));
 
-                try {
+    //                         try {
 
-                    const r = await frappe.call({
-                        method: "franchise_erp.franchise_erp.doctype.outgoing_logistics.outgoing_logistics.get_shipment_data_from_outgoing_logistics",
-                        args: {
-                            outgoing_logistics: frm.doc.name
-                        }
-                    });
+    //                             const r = await frappe.call({
+    //                                 method: "franchise_erp.franchise_erp.doctype.outgoing_logistics.outgoing_logistics.get_shipment_data_from_outgoing_logistics",
+    //                                 args: {
+    //                                     outgoing_logistics: frm.doc.name
+    //                                 }
+    //                             });
 
-                    if (!r.message) {
-                        return;
-                    }
+    //                             if (!r.message) {
+    //                                 return;
+    //                             }
 
-                    const data = r.message;
+    //                             const data = r.message;
 
-                    console.log("Shipment Data:", data);
-                    console.log(
-                        "Delivery Address:",
-                        data.delivery_address_name
-                    );
+    //                             console.log("Shipment Data:", data);
+    //                             console.log(
+    //                                 "Delivery Address:",
+    //                                 data.delivery_address_name
+    //                             );
 
-                    // -------------------------------------------------
-                    // OPEN NEW SHIPMENT
-                    // -------------------------------------------------
+    //                             // -------------------------------------------------
+    //                             // OPEN NEW SHIPMENT
+    //                             // -------------------------------------------------
 
-                    frappe.new_doc(
-                        "Shipment",
-                        {
-                            custom_outgoing_logistics: data.outgoing_logistics,
-                            company: data.company,
-                            delivery_customer: data.customer,
+    //                             frappe.new_doc(
+    //                                 "Shipment",
+    //                                 {
+    //                                     custom_outgoing_logistics: data.outgoing_logistics,
+    //                                     company: data.company,
+    //                                     delivery_customer: data.customer,
 
-                            delivery_address_name:
-                                data.delivery_address_name || "",
+    //                                     delivery_address_name:
+    //                                         data.delivery_address_name || "",
 
-                            value_of_goods:
-                                data.value_of_goods || 0,
+    //                                     value_of_goods:
+    //                                         data.value_of_goods || 0,
 
-                            description_of_content:
-                                data.description_of_content || "",
+    //                                     description_of_content:
+    //                                         data.description_of_content || "",
 
-                            pickup_date:
-                                data.pickup_date || ""
-                        },
-                        function (doc) {
+    //                                     pickup_date:
+    //                                         data.pickup_date || ""
+    //                                 },
+    //                                 function (doc) {
 
-                            console.log(
-                                "New Shipment Doc:",
-                                doc
-                            );
+    //                                     console.log(
+    //                                         "New Shipment Doc:",
+    //                                         doc
+    //                                     );
 
-                            // -------------------------------------------------
-                            // ADD DELIVERY NOTES
-                            // -------------------------------------------------
+    //                                     // -------------------------------------------------
+    //                                     // ADD DELIVERY NOTES
+    //                                     // -------------------------------------------------
 
-                            (data.delivery_notes || []).forEach(dn => {
+    //                                    (data.delivery_notes || []).forEach(dn => {
 
-                                let row = frappe.model.add_child(
-                                    doc,
-                                    "Shipment Delivery Note",
-                                    "shipment_delivery_note"
-                                );
+    //                                         let row = frappe.model.add_child(
+    //                                             doc,
+    //                                             "Shipment Delivery Note",
+    //                                             "shipment_delivery_note"
+    //                                         );
 
-                                row.delivery_note = dn;
+    //                                         // Delivery Note ID
+    //                                         row.delivery_note = dn;
 
-                            });
+    //                                         // Delivery Note Grand Total
+    //                                         row.grand_total =
+    //                                             (data.delivery_note_values || {})[dn] || 0;
 
-                            // -------------------------------------------------
-                            // SET DELIVERY ADDRESS AGAIN
-                            // -------------------------------------------------
+    //                                     });
 
-                            doc.delivery_address_name =
-                                data.delivery_address_name || "";
+    //                                     // -------------------------------------------------
+    //                                     // SET DELIVERY ADDRESS AGAIN
+    //                                     // -------------------------------------------------
 
-                            // -------------------------------------------------
-                            // REFRESH
-                            // -------------------------------------------------
+    //                                     doc.delivery_address_name =
+    //                                         data.delivery_address_name || "";
 
-                            if (cur_frm && cur_frm.doctype === "Shipment") {
+    //                                     // -------------------------------------------------
+    //                                     // REFRESH
+    //                                     // -------------------------------------------------
 
-                                cur_frm.refresh_field(
-                                    "delivery_address_name"
-                                );
+    //                                     if (cur_frm && cur_frm.doctype === "Shipment") {
 
-                                cur_frm.refresh_field(
-                                    "shipment_delivery_note"
-                                );
+    //                                         cur_frm.refresh_field(
+    //                                             "delivery_address_name"
+    //                                         );
 
-                                cur_frm.refresh_fields();
+    //                                         cur_frm.refresh_field(
+    //                                             "shipment_delivery_note"
+    //                                         );
 
-                            }
+    //                                         cur_frm.refresh_fields();
 
-                        }
-                    );
+    //                                     }
 
-                } catch (e) {
+    //                                 }
+    //                             );
 
-                    console.error("Create Shipment Error:", e);
+    //                         } catch (e) {
 
-                    frappe.msgprint({
-                        title: __("Error"),
-                        message: __(
-                            "Unable to prepare Shipment."
-                        ),
-                        indicator: "red"
-                    });
+    //                             console.error("Create Shipment Error:", e);
 
-                } finally {
+    //                             frappe.msgprint({
+    //                                 title: __("Error"),
+    //                                 message: __(
+    //                                     "Unable to prepare Shipment."
+    //                                 ),
+    //                                 indicator: "red"
+    //                             });
 
-                    frappe.dom.unfreeze();
+    //                         } finally {
 
-                }
-            },
-            __("Create")
-        );
-}
+    //                             frappe.dom.unfreeze();
+
+    //                         }
+    //                     },
+    //                     __("Create")
+    //                 );
+    //     }
 	},
 });
 

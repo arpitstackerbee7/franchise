@@ -395,13 +395,9 @@
   {
    "link_doctype": "Purchase Invoice",
    "link_fieldname": "custom_outgoing_logistics"
-  },
-  {
-   "link_doctype": "Shipment",
-   "link_fieldname": "custom_outgoing_logistics"
   }
  ],
- "modified": "2026-08-17 13:22:34.024868",
+ "modified": "2026-08-24 21:54:59.145342",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",
