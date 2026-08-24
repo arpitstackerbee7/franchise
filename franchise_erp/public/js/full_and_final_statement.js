@@ -50,6 +50,11 @@ frappe.ui.form.on("Full and Final Statement", {
                         let journal_entry = r.message;
 
                         // -------------------------------------------------
+                        // Set Voucher Type
+                        // -------------------------------------------------
+                        journal_entry.voucher_type = "Journal Entry";
+
+                        // -------------------------------------------------
                         // Set Employee Payable Account on CREDIT rows
                         // -------------------------------------------------
                         (journal_entry.accounts || []).forEach(row => {
