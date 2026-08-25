@@ -115,88 +115,88 @@ frappe.ui.form.on("Shipment", {
             });
         }
 
-        // if (frm.doc.awb_number) {
+        if (frm.doc.awb_number) {
 
-        // frm.add_custom_button("Track Shipment", async () => {
+        frm.add_custom_button("Track Shipment", async () => {
 
-        //         let res = await frappe.call({
-        //             method: "franchise_erp.custom.dtdc.track",
-        //             args: {
-        //                 awb: frm.doc.awb_number
-        //             }
-        //         });
+                let res = await frappe.call({
+                    method: "franchise_erp.custom.dtdc.track",
+                    args: {
+                        awb: frm.doc.awb_number
+                    }
+                });
 
-        //         let data = res.message;
+                let data = res.message;
 
-        //         if (!data || !data.trackHeader) {
-        //             frappe.msgprint("❌ No tracking data found");
-        //             return;
-        //         }
+                if (!data || !data.trackHeader) {
+                    frappe.msgprint("❌ No tracking data found");
+                    return;
+                }
 
-        //         let header = data.trackHeader;
-        //         let details = data.trackDetails || [];
+                let header = data.trackHeader;
+                let details = data.trackDetails || [];
 
-        //         // 🔹 HEADER HTML
-        //         let html = `
-        //             <div style="padding:10px">
+                // 🔹 HEADER HTML
+                let html = `
+                    <div style="padding:10px">
 
-        //                 <b>AWB No:</b> ${header.strShipmentNo || "-"}<br>
-        //                 <b>Status:</b> <span style="color:green;font-weight:bold">
-        //                     ${header.strStatus || "-"}
-        //                 </span><br>
-        //                 <b>Origin:</b> ${header.strOrigin || "-"}<br>
-        //                 <b>Booking Date:</b> ${formatDTDCDate(header.strBookedDate)} ${header.strBookedTime || ""}<br>
-        //                 <b>Weight:</b> ${header.strWeight || "-"} ${header.strWeightUnit || ""}<br>
+                        <b>AWB No:</b> ${header.strShipmentNo || "-"}<br>
+                        <b>Status:</b> <span style="color:green;font-weight:bold">
+                            ${header.strStatus || "-"}
+                        </span><br>
+                        <b>Origin:</b> ${header.strOrigin || "-"}<br>
+                        <b>Booking Date:</b> ${formatDTDCDate(header.strBookedDate)} ${header.strBookedTime || ""}<br>
+                        <b>Weight:</b> ${header.strWeight || "-"} ${header.strWeightUnit || ""}<br>
 
-        //                 <hr>
-        //                 <h4>📍 Tracking Timeline</h4>
+                        <hr>
+                        <h4>📍 Tracking Timeline</h4>
 
-        //                 <table style="width:100%; border-collapse: collapse;">
-        //                     <thead>
-        //                         <tr style="background:#f5f5f5">
-        //                             <th style="padding:8px; border:1px solid #ddd;">Date</th>
-        //                             <th style="padding:8px; border:1px solid #ddd;">Time</th>
-        //                             <th style="padding:8px; border:1px solid #ddd;">Location</th>
-        //                             <th style="padding:8px; border:1px solid #ddd;">Status</th>
-        //                         </tr>
-        //                     </thead>
-        //                     <tbody>
-        //         `;
+                        <table style="width:100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background:#f5f5f5">
+                                    <th style="padding:8px; border:1px solid #ddd;">Date</th>
+                                    <th style="padding:8px; border:1px solid #ddd;">Time</th>
+                                    <th style="padding:8px; border:1px solid #ddd;">Location</th>
+                                    <th style="padding:8px; border:1px solid #ddd;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
 
-        //         // 🔹 LOOP DETAILS
-        //         details.forEach(d => {
-        //             html += `
-        //                 <tr>
-        //                     <td style="padding:8px; border:1px solid #ddd;">${d.strActionDate || "-"}</td>
-        //                     <td style="padding:8px; border:1px solid #ddd;">${d.strActionTime || "-"}</td>
-        //                     <td style="padding:8px; border:1px solid #ddd;">${d.strOrigin || "-"}</td>
-        //                     <td style="padding:8px; border:1px solid #ddd;">${d.strAction || "-"}</td>
-        //                 </tr>
-        //             `;
-        //         });
+                // 🔹 LOOP DETAILS
+                details.forEach(d => {
+                    html += `
+                        <tr>
+                            <td style="padding:8px; border:1px solid #ddd;">${d.strActionDate || "-"}</td>
+                            <td style="padding:8px; border:1px solid #ddd;">${d.strActionTime || "-"}</td>
+                            <td style="padding:8px; border:1px solid #ddd;">${d.strOrigin || "-"}</td>
+                            <td style="padding:8px; border:1px solid #ddd;">${d.strAction || "-"}</td>
+                        </tr>
+                    `;
+                });
 
-        //         html += `
-        //                     </tbody>
-        //                 </table>
-        //             </div>
-        //         `;
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
 
-        //         // 🔹 SHOW DIALOG
-        //         let d = new frappe.ui.Dialog({
-        //             title: "📦 Shipment Tracking",
-        //             size: "large",
-        //             fields: [
-        //                 {
-        //                     fieldtype: "HTML",
-        //                     fieldname: "tracking_html"
-        //                 }
-        //             ]
-        //         });
+                // 🔹 SHOW DIALOG
+                let d = new frappe.ui.Dialog({
+                    title: "📦 Shipment Tracking",
+                    size: "large",
+                    fields: [
+                        {
+                            fieldtype: "HTML",
+                            fieldname: "tracking_html"
+                        }
+                    ]
+                });
 
-        //         d.fields_dict.tracking_html.$wrapper.html(html);
-        //         d.show();
-        //     });
-        // }
+                d.fields_dict.tracking_html.$wrapper.html(html);
+                d.show();
+            });
+        }
 
         if (frm.doc.docstatus === 1 && frm.doc.awb_number) {
 
