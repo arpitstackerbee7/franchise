@@ -25,6 +25,8 @@ def execute(filters=None):
     group_by_party = int(filters.get("group_by_party") or 0)
     base_filters = dict(filters)
     base_filters["group_by_party"] = 0
+    base_filters.pop("supplier_group", None)
+    base_filters.pop("payable_account", None)
 
     args = {
     "account_type": "Payable",
@@ -93,7 +95,7 @@ def execute(filters=None):
     if payable_account_list:
         raw_data = [
             row for row in raw_data
-            if (row.get("payable_account") or "").strip() in payable_account_list
+            if (row.get("party_account") or "").strip() in payable_account_list 
         ]
 
     #Agent filter 
@@ -336,7 +338,7 @@ def execute(filters=None):
             output.append({
                 "party":           party,
                 "party_type":      party_type,
-                "payable_account": sample_row.get("payable_account", ""),
+                "payable_account": sample_row.get("party_account", ""), 
                 "cost_center":     sample_row.get("cost_center", ""),
                 "voucher_type":    vg,
                 "currency":        currency,
@@ -361,7 +363,7 @@ def execute(filters=None):
         output.append({
             "party":           party,
             "party_type":      party_type,
-            "payable_account": sample_row.get("payable_account", ""),
+            "payable_account": sample_row.get("party_account", ""), 
             "cost_center":     sample_row.get("cost_center", ""),
             "voucher_type":    "",
             "currency":        currency,

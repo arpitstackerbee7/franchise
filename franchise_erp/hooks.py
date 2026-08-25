@@ -395,13 +395,6 @@ override_doctype_class = {
     "Payment Entry": "franchise_erp.custom.payment_entry.CustomPaymentEntry"
 }
 
-permission_query_conditions = {
-	"Leave Application": "franchise_erp.overrides.custom_leave_application.get_permission_query_conditions"
-}
-
-has_permission = {
-	"Leave Application": "franchise_erp.overrides.custom_leave_application.has_permission"
-}
 # override_whitelisted_methods = {
 #     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"
 # }
@@ -588,12 +581,14 @@ scheduler_events = {
 permission_query_conditions = {
     "Daily Checklist": "franchise_erp.franchise_erp.doctype.daily_checklist.daily_checklist.get_permission_query_conditions",
     "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.get_permission_query_conditions",
+    "Leave Application": "franchise_erp.overrides.custom_leave_application.get_permission_query_conditions"
 
 }
 
 has_permission = {
     "Daily Checklist": "franchise_erp.franchise_erp.doctype.daily_checklist.daily_checklist.has_permission",
-    "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.has_permission"
+    "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.has_permission",
+    "Leave Application": "franchise_erp.overrides.custom_leave_application.has_permission"
 }
 
 # DocType Class
