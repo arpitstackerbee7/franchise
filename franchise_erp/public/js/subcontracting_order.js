@@ -1,7 +1,17 @@
 frappe.ui.form.on("Subcontracting Order", {
     refresh(frm) {
-          if (frm.is_new()) return;
+        if (frm.is_new()) return;
 
+        if (frm.doc.docstatus === 1) {
+
+            frm.add_custom_button(
+                __("Update Wastage Qty"),
+                function () {
+                    show_wastage_qty_dialog(frm);
+                },
+                __("Actions")
+            );
+        }
         if (frm.doc.docstatus !== 0 || !frm.doc.supplier) return;
 
         frm.remove_custom_button(__('Outgoing Logistics'), __('Create'));
@@ -72,7 +82,6 @@ frappe.ui.form.on("Subcontracting Order", {
         } else {
             set_tax_rows_on_net_total(frm);
         }
-
 
     },
 
@@ -236,3 +245,119 @@ function set_tax_rows_on_net_total(frm) {
 
 
 
+
+function show_wastage_qty_dialog(frm) {
+
+    const items = (frm.doc.items || []).map(row => ({
+        item_code: row.item_code,
+        item_name: row.item_name,
+        qty: row.qty,
+        received_qty: row.received_qty || 0,
+        custom_wastage_qty: row.custom_wastage_qty || 0
+    }));
+
+    if (!items.length) {
+        frappe.msgprint({
+            title: __("No Items"),
+            message: __("No items found in this Job Work Order."),
+            indicator: "orange"
+        });
+
+        return;
+    }
+
+    const dialog = new frappe.ui.Dialog({
+        title: __("Update Wastage Qty"),
+        size: "large",
+
+        fields: [
+            {
+                fieldname: "wastage_table",
+                fieldtype: "Table",
+                label: __("Wastage Details"),
+
+                cannot_add_rows: true,
+                cannot_delete_rows: true,
+
+                data: items,
+
+                fields: [
+                    {
+                        fieldname: "item_code",
+                        fieldtype: "Data",
+                        label: __("Item Code"),
+                        read_only: 1,
+                        in_list_view: 1,
+                        columns: 2
+                    },
+                    {
+                        fieldname: "item_name",
+                        fieldtype: "Data",
+                        label: __("Item Name"),
+                        read_only: 1,
+                        in_list_view: 1,
+                        columns: 2
+                    },
+                    {
+                        fieldname: "qty",
+                        fieldtype: "Float",
+                        label: __("Qty"),
+                        read_only: 1,
+                        in_list_view: 1,
+                        columns: 1
+                    },
+                    {
+                        fieldname: "received_qty",
+                        fieldtype: "Float",
+                        label: __("Received Qty"),
+                        read_only: 1,
+                        in_list_view: 1,
+                        columns: 1
+                    },
+                    {
+                        fieldname: "custom_wastage_qty",
+                        fieldtype: "Float",
+                        label: __("Wastage Qty"),
+                        in_list_view: 1,
+                        columns: 2
+                    }
+                ]
+            }
+        ],
+
+        primary_action_label: __("Update"),
+
+        primary_action(values) {
+
+            const rows = values.wastage_table || [];
+
+            frappe.call({
+                method: "franchise_erp.custom.subcontracting_order.update_wastage_qty",
+                args: {
+                    subcontracting_order: frm.doc.name,
+                    wastage_data: JSON.stringify(rows)
+                },
+
+                freeze: true,
+                freeze_message: __("Updating Wastage Qty..."),
+
+                callback: function (r) {
+
+                    if (r.message) {
+
+                        dialog.hide();
+
+                        frappe.show_alert({
+                            message: __("Wastage Qty updated successfully."),
+                            indicator: "green"
+                        });
+
+                        frm.reload_doc();
+                    }
+                }
+            });
+        }
+    });
+
+    dialog.show();
+}
