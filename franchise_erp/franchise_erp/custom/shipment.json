@@ -173,7 +173,7 @@
    "name": "Shipment-custom_dtdc_status",
    "no_copy": 0,
    "non_negative": 0,
-   "options": "Draft\nCreated\nCancelled\nDelivered\nIn Transit",
+   "options": "Draft\nCreated\nIn Transit\nDelivered\nCancelled",
    "owner": "Administrator",
    "permlevel": 0,
    "placeholder": null,
