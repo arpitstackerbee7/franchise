@@ -443,7 +443,7 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
                 grand_total = frappe.db.get_value(
                     "Delivery Note",
                     dn,
-                    "grand_total"
+                    "rounded_total"
                 ) or 0
 
                 delivery_note_values[dn] = grand_total

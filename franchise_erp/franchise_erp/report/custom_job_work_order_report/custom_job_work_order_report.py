@@ -92,12 +92,19 @@ def get_columns(filters):
 			"fieldtype": "Float",
 			"width": 120,
 		},
+  {
+			"label": _("Wastage Quantity"),
+			"fieldname": "wastage_qty",
+			"fieldtype": "Float",
+			"width": 120,
+		},
 		{
 			"label": _("Pending Quantity"),
 			"fieldname": "pending_qty",
 			"fieldtype": "Float",
 			"width": 120,
 		},
+  
 		{
 			"label": _("Status"),
 			"fieldname": "status",
@@ -131,9 +138,16 @@ def get_data(data, filters):
 					"fg_item_code": item.item_code,
 					"item_name": item.item_name,
 					"custom_sup_design_no": sup_design_map.get(item.item_code),
-					"required_qty": item.qty,
-					"received_qty": item.received_qty,
-					"pending_qty": item.qty - item.received_qty,
+					"required_qty": item.qty or 0,
+					"received_qty": item.received_qty or 0,
+					"wastage_qty": item.custom_wastage_qty or 0,
+					"pending_qty": max(
+						0,
+						(item.qty or 0)
+						- (item.received_qty or 0)
+						- (item.custom_wastage_qty or 0)
+					),
+     
 				}
 
 				data.append(row)
@@ -189,5 +203,6 @@ def get_subcontract_order_supplied_item(order_type, orders):
 			"item_name",
 			"qty",
 			"received_qty",
+   "custom_wastage_qty"
 		],
 	)
