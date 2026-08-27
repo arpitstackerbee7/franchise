@@ -109,7 +109,12 @@ frappe.ui.form.on("Outgoing Logistics", {
                                     "shipment_delivery_note"
                                 );
 
+                                // Delivery Note ID
                                 row.delivery_note = dn;
+
+                                // Delivery Note rounded_total
+                                row.grand_total =
+                                    (data.delivery_note_values || {})[dn] || 0;
 
                             });
 
