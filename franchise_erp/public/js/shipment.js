@@ -245,7 +245,9 @@ frappe.ui.form.on("Shipment", {
 
             });
         }
-    }
+    },
+
+    
 });
 
 function formatDTDCDate(dateStr) {
@@ -275,3 +277,148 @@ function formatDTDCTime(timeStr) {
 
     return `${hour}:${min} ${ampm}`;
 }
+
+
+frappe.ui.form.on("Shipment", {
+
+    // =====================================================
+    // DELIVERY TO TYPE
+    // =====================================================
+
+    delivery_to_type: function(frm) {
+
+        frm.set_value(
+            "delivery_customer",
+            ""
+        );
+
+        frm.set_value(
+            "delivery_address_name",
+            ""
+        );
+
+        frm.set_value(
+            "delivery_contact_name",
+            ""
+        );
+
+    },
+
+
+    // =====================================================
+    // CUSTOMER / SUPPLIER CHANGE
+    // =====================================================
+
+    delivery_customer: function(frm) {
+
+        if (!frm.doc.delivery_customer) {
+
+            frm.set_value(
+                "delivery_address_name",
+                ""
+            );
+
+            frm.set_value(
+                "delivery_contact_name",
+                ""
+            );
+
+            return;
+        }
+
+        // -------------------------------------------------
+        // DETERMINE PARTY TYPE
+        // -------------------------------------------------
+
+        let party_type = "";
+
+        if (frm.doc.delivery_to_type === "Customer") {
+
+            party_type = "Customer";
+
+        }
+        else if (frm.doc.delivery_to_type === "Supplier") {
+
+            party_type = "Supplier";
+
+        }
+        else {
+
+            frappe.msgprint(
+                __("Please select Delivery To Type first.")
+            );
+
+            return;
+        }
+
+
+        // -------------------------------------------------
+        // FETCH ADDRESS + CONTACT
+        // -------------------------------------------------
+
+        frappe.call({
+
+            method:
+                "franchise_erp.custom.shipment.get_delivery_address_contact",
+
+            args: {
+                party_type: party_type,
+                party_name: frm.doc.delivery_customer
+            },
+
+            callback: function(r) {
+
+                if (!r.message) {
+                    return;
+                }
+
+                // -----------------------------------------
+                // ADDRESS
+                // -----------------------------------------
+
+                if (r.message.address) {
+
+                    frm.set_value(
+                        "delivery_address_name",
+                        r.message.address
+                    );
+
+                }
+                else {
+
+                    frm.set_value(
+                        "delivery_address_name",
+                        ""
+                    );
+
+                }
+
+
+                // -----------------------------------------
+                // CONTACT
+                // -----------------------------------------
+
+                if (r.message.contact) {
+
+                    frm.set_value(
+                        "delivery_contact_name",
+                        r.message.contact
+                    );
+
+                }
+                else {
+
+                    frm.set_value(
+                        "delivery_contact_name",
+                        ""
+                    );
+
+                }
+
+            }
+
+        });
+
+    }
+
+});
