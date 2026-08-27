@@ -392,7 +392,8 @@ override_doctype_class = {
     "Leave Encashment": "franchise_erp.overrides.custom_leave_encashment.CustomLeaveEncashment",
     "Leave Application": "franchise_erp.overrides.custom_leave_application.CustomLeaveApplication",
     "Auto Repeat": "franchise_erp.overrides.auto_repeat.CustomAutoRepeat",
-    "Payment Entry": "franchise_erp.custom.payment_entry.CustomPaymentEntry"
+    "Payment Entry": "franchise_erp.custom.payment_entry.CustomPaymentEntry",
+    "Full and Final Statement": "franchise_erp.overrides.full_and_final_statement.CustomFullandFinalStatement"
 }
 
 # override_whitelisted_methods = {
