@@ -2,7 +2,8 @@ frappe.ui.form.on('Stock Entry', {
 
     refresh(frm) {
         toggle_fetch_button(frm);
-         calculate_total_qty(frm);
+        calculate_total_qty(frm);
+        setup_ewaybill(frm);
     },
 
     stock_entry_type(frm) {
@@ -391,4 +392,532 @@ function calculate_total_qty(frm) {
         // ✅ RESET DIRTY STATE
         frm.doc.__unsaved = 0;
     }
+}
+
+
+
+
+function setup_ewaybill(frm) {
+
+    if (!frm.doc.supplier) {
+        return;
+    }
+
+    frappe.db.get_value(
+        "Supplier",
+        frm.doc.supplier,
+        "custom_transporter"
+    ).then(r => {
+
+        const supplier_transporter =
+            r.message?.custom_transporter || "";
+
+        if (!supplier_transporter) {
+            return;
+        }
+
+        const observer = new MutationObserver(() => {
+
+            document.querySelectorAll(".modal").forEach(dialog => {
+
+                if (dialog.dataset.ewaybillReady === "1") {
+                    return;
+                }
+
+                const title =
+                    dialog.querySelector(".modal-title");
+
+                if (!title) {
+                    return;
+                }
+
+                const title_text =
+                    title.innerText.trim().toLowerCase();
+
+                if (
+                    title_text.includes("e-way") ||
+                    title_text.includes("eway") ||
+                    title_text.includes("e way")
+                ) {
+
+                    dialog.dataset.ewaybillReady = "1";
+
+                    setTimeout(() => {
+
+                        initialize_ewaybill(
+                            frm,
+                            dialog,
+                            supplier_transporter
+                        );
+
+                    }, 300);
+                }
+            });
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        setTimeout(() => {
+            observer.disconnect();
+        }, 60000);
+    });
+}
+
+
+function initialize_ewaybill(
+    frm,
+    dialog,
+    supplier_transporter
+) {
+
+    /*
+     * Transporter field
+     */
+    const transporter_wrapper =
+        dialog.querySelector(
+            '[data-fieldname="transporter"]'
+        ) ||
+        dialog.querySelector(
+            '[data-fieldname="custom_transporter"]'
+        );
+
+    if (!transporter_wrapper) {
+        console.log(
+            "Transporter field not found"
+        );
+        return;
+    }
+
+
+    const transporter_input =
+        transporter_wrapper.querySelector("input") ||
+        transporter_wrapper.querySelector("select");
+
+    if (!transporter_input) {
+        return;
+    }
+
+
+    /*
+     * Supplier Master transporter
+     */
+    transporter_input.value =
+        supplier_transporter;
+
+    transporter_input.dispatchEvent(
+        new Event("input", {
+            bubbles: true
+        })
+    );
+
+    transporter_input.dispatchEvent(
+        new Event("change", {
+            bubbles: true
+        })
+    );
+
+
+    /*
+     * Existing Vehicle Number field
+     */
+    let vehicle_wrapper =
+        dialog.querySelector(
+            "#custom-vehicle-number-wrapper"
+        );
+
+
+    if (!vehicle_wrapper) {
+
+        vehicle_wrapper =
+            document.createElement("div");
+
+        vehicle_wrapper.id =
+            "custom-vehicle-number-wrapper";
+
+        vehicle_wrapper.className =
+            "form-group";
+
+        vehicle_wrapper.innerHTML = `
+            <label class="control-label">
+                Vehicle Number
+                <span
+                    id="vehicle-number-required"
+                    class="text-danger"
+                >
+                    *
+                </span>
+            </label>
+
+            <input
+                type="text"
+                id="custom-vehicle-number"
+                class="form-control"
+                placeholder="Enter Vehicle Number"
+            />
+        `;
+
+
+        transporter_wrapper.insertAdjacentElement(
+            "afterend",
+            vehicle_wrapper
+        );
+    }
+
+
+    const vehicle_input =
+        dialog.querySelector(
+            "#custom-vehicle-number"
+        );
+
+
+    /*
+     * Existing value load
+     */
+    if (vehicle_input) {
+
+        vehicle_input.value =
+            frm.doc.custom_vehicle_number || "";
+
+
+        /*
+         * Stock Entry me value update
+         */
+        vehicle_input.addEventListener(
+            "input",
+            function () {
+
+                frm.set_value(
+                    "custom_vehicle_number",
+                    this.value
+                );
+            }
+        );
+    }
+
+
+    /*
+     * Initial state
+     */
+    update_vehicle_field(
+        frm,
+        dialog,
+        transporter_input.value
+    );
+
+
+    /*
+     * Transporter monitor
+     */
+    let last_transporter =
+        transporter_input.value || "";
+
+
+    const transporter_checker =
+        setInterval(() => {
+
+            if (!document.body.contains(dialog)) {
+                clearInterval(transporter_checker);
+                return;
+            }
+
+
+            const current_transporter =
+                transporter_input.value || "";
+
+
+            if (
+                current_transporter !==
+                last_transporter
+            ) {
+
+                last_transporter =
+                    current_transporter;
+
+
+                update_vehicle_field(
+                    frm,
+                    dialog,
+                    current_transporter
+                );
+            }
+
+        }, 200);
+
+
+    /*
+     * Generate (Part A) validation
+     */
+    setup_generate_validation(
+        frm,
+        dialog,
+        transporter_input
+    );
+}
+
+
+function update_vehicle_field(
+    frm,
+    dialog,
+    transporter
+) {
+
+    const vehicle_wrapper =
+        dialog.querySelector(
+            "#custom-vehicle-number-wrapper"
+        );
+
+    const vehicle_input =
+        dialog.querySelector(
+            "#custom-vehicle-number"
+        );
+
+    const required_star =
+        dialog.querySelector(
+            "#vehicle-number-required"
+        );
+
+
+    if (
+        !vehicle_wrapper ||
+        !vehicle_input
+    ) {
+        return;
+    }
+
+
+    const is_by_hand =
+        (transporter || "")
+            .trim()
+            .toLowerCase() === "by hand";
+
+
+    if (is_by_hand) {
+
+        /*
+         * SHOW
+         */
+        vehicle_wrapper.style.display =
+            "block";
+
+
+        /*
+         * REQUIRED
+         */
+        vehicle_input.required = true;
+
+        vehicle_input.setAttribute(
+            "required",
+            "required"
+        );
+
+
+        if (required_star) {
+            required_star.style.display =
+                "inline";
+        }
+
+
+    } else {
+
+        /*
+         * HIDE
+         */
+        vehicle_wrapper.style.display =
+            "none";
+
+
+        /*
+         * NOT REQUIRED
+         */
+        vehicle_input.required = false;
+
+        vehicle_input.removeAttribute(
+            "required"
+        );
+
+
+        if (required_star) {
+            required_star.style.display =
+                "none";
+        }
+
+
+        /*
+         * Clear
+         */
+        vehicle_input.value = "";
+
+        frm.set_value(
+            "custom_vehicle_number",
+            ""
+        );
+    }
+}
+
+
+/*
+ * ==========================================
+ * Generate (Part A) Validation
+ * ==========================================
+ */
+
+function setup_generate_validation(
+    frm,
+    dialog,
+    transporter_input
+) {
+
+    /*
+     * Dialog ke buttons check karo
+     */
+    const check_button = setInterval(() => {
+
+        if (!document.body.contains(dialog)) {
+            clearInterval(check_button);
+            return;
+        }
+
+
+        const buttons =
+            dialog.querySelectorAll(
+                ".modal-footer button"
+            );
+
+
+        buttons.forEach(button => {
+
+            const button_text =
+                button.innerText
+                    .trim()
+                    .toLowerCase();
+
+
+            if (
+                button_text.includes(
+                    "generate"
+                ) &&
+                button.dataset.vehicleValidation !== "1"
+            ) {
+
+                button.dataset.vehicleValidation =
+                    "1";
+
+
+                /*
+                 * Generate button click
+                 */
+                button.addEventListener(
+                    "click",
+                    function (e) {
+
+                        const transporter =
+                            transporter_input.value || "";
+
+
+                        const is_by_hand =
+                            transporter
+                                .trim()
+                                .toLowerCase() ===
+                            "by hand";
+
+
+                        /*
+                         * ONLY By Hand me mandatory
+                         */
+                        if (is_by_hand) {
+
+                            const vehicle_input =
+                                dialog.querySelector(
+                                    "#custom-vehicle-number"
+                                );
+
+
+                            const vehicle_number =
+                                vehicle_input?.value
+                                    ?.trim() || "";
+
+
+                            if (!vehicle_number) {
+
+                                /*
+                                 * Stop Generate
+                                 */
+                                e.preventDefault();
+                                e.stopPropagation();
+                                e.stopImmediatePropagation();
+
+
+                                /*
+                                 * Error message
+                                 */
+                                frappe.msgprint({
+                                    title:
+                                        __("Vehicle Number Required"),
+
+                                    message:
+                                        __(
+                                            "Vehicle Number is mandatory. Please enter a valid Vehicle Number before generating the e-way bill."
+                                        ),
+
+                                    indicator:
+                                        "red"
+                                });
+
+
+                                /*
+                                 * Focus
+                                 */
+                                if (vehicle_input) {
+
+                                    setTimeout(() => {
+
+                                        vehicle_input.focus();
+
+                                    }, 100);
+                                }
+
+
+                                return false;
+                            }
+
+
+                            /*
+                             * Stock Entry me value set
+                             */
+                            frm.set_value(
+                                "custom_vehicle_number",
+                                vehicle_number
+                            );
+
+                            /*
+                             * Save before Generate
+                             */
+                            frm.save()
+                                .then(() => {
+
+                                    console.log(
+                                        "Vehicle Number saved:",
+                                        vehicle_number
+                                    );
+
+                                });
+                        }
+                    },
+                    true
+                );
+            }
+        });
+
+    }, 200);
+
+
+    /*
+     * 60 sec baad stop
+     */
+    setTimeout(() => {
+        clearInterval(check_button);
+    }, 60000);
 }
