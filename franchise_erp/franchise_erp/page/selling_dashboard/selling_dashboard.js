@@ -778,79 +778,73 @@ class SellingDashboard {
        SALES VS STOCK
     ===================================================== */
 
-    run_sales_vs_stock(filters) {
+   run_sales_vs_stock(filters) {
 
-        const target =
-            document.getElementById(
-                "sale-vs-stock-block"
+    const target =
+        document.getElementById(
+            "sale-vs-stock-block"
+        );
+
+    if (!target) {
+        return;
+    }
+
+    this.show_loading(target);
+
+    this.call_report(
+
+        "Sales vs Stock",
+
+        {
+            from_date:
+                filters.from_date,
+
+            to_date:
+                filters.to_date,
+
+            company:
+                filters.company,
+
+            metric:
+                filters.view === "amt"
+                    ? "amt"
+                    : "qty"
+        },
+
+        (result) => {
+
+            /*
+             * Render chart
+             */
+
+            this.render_chart(
+                target,
+                result,
+                "Sales vs Stock"
             );
 
-        if (!target) {
-            return;
-        }
 
+            /*
+             * SAME API RESPONSE
+             * table ko bhejo.
+             */
 
-        this.show_loading(target);
+            document.dispatchEvent(
 
-
-        this.call_report(
-
-            "Sales vs Stock",
-
-            {
-
-                from_date:
-                    filters.from_date,
-
-                to_date:
-                    filters.to_date,
-
-                company:
-                    filters.company,
-
-                metric:
-                    filters.view === "amt"
-                        ? "amt"
-                        : "qty"
-            },
-
-            (result) => {
-
-                /*
-                 * Render chart
-                 */
-
-                this.render_chart(
-                    target,
-                    result,
-                    "Sales vs Stock"
-                );
-
-
-                /*
-                 * IMPORTANT:
-                 *
-                 * Same API response goes to
-                 * Sales vs Stock table.
-                 *
-                 * No second API call.
-                 */
-
-                document.dispatchEvent(
-
-                    new CustomEvent(
-                        "sellingDashboardSalesVsStockData",
-                        {
-                            detail: {
-                                result: result,
-                                filters: filters
-                            }
+                new CustomEvent(
+                    "sellingDashboardSalesVsStockData",
+                    {
+                        detail: {
+                            result: result,
+                            filters: filters
                         }
-                    )
-                );
-            }
-        );
-    }
+                    }
+                )
+
+            );
+        }
+    );
+}
 
 
     /* =====================================================
