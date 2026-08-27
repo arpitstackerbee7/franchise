@@ -400,7 +400,9 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
                 sales_invoices.append(row.source_name)
 
     if not sales_invoices:
-        frappe.throw("No Sales Invoice found in References table.")
+        frappe.throw(
+            "No Sales Invoice found in References table."
+        )
 
     # ---------------------------------------------------------
     # DELIVERY NOTES FROM SALES INVOICE ITEMS
@@ -435,18 +437,22 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
             ) != 1:
                 continue
 
-            # Avoid duplicate DN
+            # Avoid duplicate Delivery Note
             if dn not in delivery_notes:
+
                 delivery_notes.append(dn)
 
-                # Get Delivery Note Grand Total
-                grand_total = frappe.db.get_value(
+                # -------------------------------------------------
+                # GET DELIVERY NOTE ROUNDED TOTAL
+                # -------------------------------------------------
+
+                rounded_total = frappe.db.get_value(
                     "Delivery Note",
                     dn,
                     "rounded_total"
                 ) or 0
 
-                delivery_note_values[dn] = grand_total
+                delivery_note_values[dn] = rounded_total
 
     if not delivery_notes:
         frappe.throw(
@@ -481,6 +487,7 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
         or si.customer_address
     )
 
+    # Prefer Delivery Note address
     if delivery_notes:
 
         dn = frappe.get_doc(
@@ -502,15 +509,22 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
         "company": si.company,
         "customer": si.customer,
 
-        "pickup_date": ol.delivery_date or ol.date,
+        "pickup_date": (
+            ol.delivery_date
+            or ol.date
+        ),
 
         "delivery_address_name": delivery_address,
 
-        # Sum of all Delivery Note Grand Totals
+        # Sum of all Delivery Note rounded_total
         "value_of_goods": value_of_goods,
 
         "description_of_content": (
-            getattr(ol, "description_of_content", None)
+            getattr(
+                ol,
+                "description_of_content",
+                None
+            )
             or f"Shipment against {si.name}"
         ),
 
@@ -518,7 +532,7 @@ def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
 
         "delivery_notes": delivery_notes,
 
-        # DN-wise Grand Total
+        # Delivery Note wise rounded_total
         "delivery_note_values": delivery_note_values,
 
         "outgoing_logistics": ol.name
