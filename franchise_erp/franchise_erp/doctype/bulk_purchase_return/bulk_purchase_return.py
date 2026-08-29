@@ -144,14 +144,12 @@ class BulkPurchaseReturn(Document):
         )
 
 
-
 def process_bulk_purchase_return(docname):
 
     doc = frappe.get_doc(
         "Bulk Purchase Return",
         docname
     )
-
 
     try:
 
@@ -163,12 +161,8 @@ def process_bulk_purchase_return(docname):
         frappe.db.commit()
 
 
-        # --------------------------------------------------
-        # GROUP ITEMS BY ORIGINAL PURCHASE RECEIPT
-        # --------------------------------------------------
 
         grouped = {}
-
 
         for row in doc.items:
 
@@ -181,12 +175,9 @@ def process_bulk_purchase_return(docname):
         combined_doc = None
 
 
-        # --------------------------------------------------
-        # CREATE ONE COMBINED RETURN PURCHASE RECEIPT
-        # --------------------------------------------------
+
 
         for purchase_receipt, rows in grouped.items():
-
 
             return_doc = make_return_doc(
                 "Purchase Receipt",
@@ -197,12 +188,8 @@ def process_bulk_purchase_return(docname):
             return_doc.items = []
 
 
-            # --------------------------------------------------
-            # ADD SELECTED ITEMS OF THIS GRN
-            # --------------------------------------------------
 
             for row in rows:
-
 
                 pr_item = frappe.get_doc(
                     "Purchase Receipt Item",
@@ -217,9 +204,7 @@ def process_bulk_purchase_return(docname):
                 )
 
 
-                original_wh = (
-                    pr_item.warehouse
-                )
+                original_wh = pr_item.warehouse
 
 
                 warehouse_company = frappe.db.get_value(
@@ -229,10 +214,7 @@ def process_bulk_purchase_return(docname):
                 )
 
 
-                if (
-                    warehouse_company !=
-                    return_doc.company
-                ):
+                if warehouse_company != return_doc.company:
 
                     frappe.throw(
                         f"Warehouse {original_wh} belongs to "
@@ -245,32 +227,24 @@ def process_bulk_purchase_return(docname):
                     "items",
                     {
 
-                        "item_code":
-                            row.item_code,
+                        "item_code": row.item_code,
 
-                        "item_name":
-                            row.item_name,
+                        "item_name": row.item_name,
 
-                        "qty":
-                            -abs(flt(row.qty)),
+                        "qty": -abs(flt(row.qty)),
 
-                        "warehouse":
-                            original_wh,
+                        "warehouse": original_wh,
 
-                        "rate":
-                            row.rate,
+                        "rate": row.rate,
 
-                        "uom":
-                            row.uom,
+                        "uom": row.uom,
 
-                        "stock_uom":
-                            row.stock_uom,
+                        "stock_uom": row.stock_uom,
 
                         "conversion_factor":
                             row.conversion_factor,
 
-                        "serial_no":
-                            serials,
+                        "serial_no": serials,
 
                         "purchase_order":
                             pr_item.purchase_order,
@@ -284,25 +258,17 @@ def process_bulk_purchase_return(docname):
                 )
 
 
-            # --------------------------------------------------
-            # FIRST GRN → BASE RETURN DOCUMENT
-            # --------------------------------------------------
+
 
             if combined_doc is None:
-
 
                 combined_doc = return_doc
 
 
-            # --------------------------------------------------
-            # OTHER GRNs → APPEND ITEMS TO SAME DOCUMENT
-            # --------------------------------------------------
 
             else:
 
-
                 for item in return_doc.items:
-
 
                     item_dict = item.as_dict()
 
@@ -332,30 +298,22 @@ def process_bulk_purchase_return(docname):
                     )
 
 
-        # --------------------------------------------------
-        # VALIDATE DOCUMENT
-        # --------------------------------------------------
 
-        if (
-            not combined_doc or
-            not combined_doc.items
-        ):
+        if not combined_doc or not combined_doc.items:
 
             frappe.throw(
                 "No return items found."
             )
 
 
-        # --------------------------------------------------
-        # LINK WITH BULK PURCHASE RETURN
-        # --------------------------------------------------
+
+        combined_doc.return_against = None
+
+
 
         combined_doc.custom_bulk_purchase_return = doc.name
 
 
-        # --------------------------------------------------
-        # RESET ITEM INDEX
-        # --------------------------------------------------
 
         for idx, item in enumerate(
             combined_doc.items,
@@ -365,23 +323,21 @@ def process_bulk_purchase_return(docname):
             item.idx = idx
 
 
-        # --------------------------------------------------
-        # RE-CALCULATE VALUES
-        # --------------------------------------------------
 
         combined_doc.set_missing_values()
 
         combined_doc.calculate_taxes_and_totals()
 
 
-        # --------------------------------------------------
-        # CREATE ONLY ONE RETURN PURCHASE RECEIPT
-        # --------------------------------------------------
 
         combined_doc.insert(
             ignore_permissions=True
         )
 
+
+        # --------------------------------------------------
+        # SUCCESS
+        # --------------------------------------------------
 
         doc.db_set(
             "status",
@@ -409,7 +365,6 @@ def process_bulk_purchase_return(docname):
         )
 
         frappe.db.commit()
-
 
 
 @frappe.whitelist()
