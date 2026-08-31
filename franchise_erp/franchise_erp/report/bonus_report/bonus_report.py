@@ -622,8 +622,7 @@ def get_columns(filters):
             "label": f"{month}-PD",
             "fieldname": f"{month.lower()}_pd",
             "fieldtype": "Float",
-            "width": 80,
-            "precision": 2
+            "width": 80
         })
 
         columns.append({
@@ -631,7 +630,7 @@ def get_columns(filters):
             "fieldname": f"{month.lower()}_bonus",
             "fieldtype": "Currency",
             "width": 90,
-            "precision": 0
+            "precision": 2
         })
 
     # ---------------------------------------------------------
@@ -642,8 +641,7 @@ def get_columns(filters):
         "label": "Total PD",
         "fieldname": "total_pd",
         "fieldtype": "Float",
-        "width": 90,
-        "precision": 2
+        "width": 90
     })
 
     columns.append({
@@ -651,7 +649,7 @@ def get_columns(filters):
         "fieldname": "tpda",
         "fieldtype": "Currency",
         "width": 110,
-        "precision": 0
+        "precision": 2
     })
 
     columns.append({
@@ -659,7 +657,7 @@ def get_columns(filters):
         "fieldname": "total_bonus",
         "fieldtype": "Currency",
         "width": 110,
-        "precision": 0
+        "precision": 2
     })
 
     return columns
@@ -687,7 +685,10 @@ def get_data(filters):
         conditions.append(
             "ss.employee = %(employee)s"
         )
-        values["employee"] = filters.get("employee")
+
+        values["employee"] = filters.get(
+            "employee"
+        )
 
     # ---------------------------------------------------------
     # SALARY STRUCTURE FILTER
@@ -697,6 +698,7 @@ def get_data(filters):
         conditions.append(
             "ss.salary_structure = %(salary_structure)s"
         )
+
         values["salary_structure"] = filters.get(
             "salary_structure"
         )
@@ -709,6 +711,7 @@ def get_data(filters):
         conditions.append(
             "emp.department = %(department)s"
         )
+
         values["department"] = filters.get(
             "department"
         )
@@ -721,6 +724,7 @@ def get_data(filters):
         conditions.append(
             "ss.start_date >= %(from_date)s"
         )
+
         values["from_date"] = filters.get(
             "from_date"
         )
@@ -733,11 +737,14 @@ def get_data(filters):
         conditions.append(
             "ss.start_date <= %(to_date)s"
         )
+
         values["to_date"] = filters.get(
             "to_date"
         )
 
-    condition_str = " AND ".join(conditions)
+    condition_str = " AND ".join(
+        conditions
+    )
 
     # ---------------------------------------------------------
     # SALARY SLIP DATA
@@ -796,6 +803,7 @@ def get_data(filters):
                 "total_bonus": 0,
             }
 
+            # Initialize all months
             for month in MONTH_ORDER:
 
                 month_key = month.lower()
@@ -815,12 +823,13 @@ def get_data(filters):
         month_key = row.month.lower()
 
         # -----------------------------------------------------
-        # GET DATE
+        # GET START DATE
         # -----------------------------------------------------
 
         start_date = row.start_date
 
         if isinstance(start_date, str):
+
             start_date = datetime.strptime(
                 start_date,
                 "%Y-%m-%d"
@@ -847,13 +856,23 @@ def get_data(filters):
         )
 
         # -----------------------------------------------------
-        # MONTHLY BONUS
+        # MONTHLY BONUS CALCULATION
         #
         # Full Month:
-        # 7000
+        #     ₹7,000
         #
         # Partial Month:
-        # 7000 / actual days × PD
+        #     ₹7,000 / actual days × PD
+        #
+        # Example:
+        # Jan 31 PD = ₹7,000
+        # Jan 30 PD = ₹6,774.19
+        #
+        # Feb 28 PD = ₹7,000
+        # Feb 27 PD = ₹6,750
+        #
+        # Apr 30 PD = ₹7,000
+        # Apr 29 PD = ₹6,766.67
         # -----------------------------------------------------
 
         if payment_days >= days_in_month:
@@ -868,23 +887,18 @@ def get_data(filters):
             ) * payment_days
 
         # -----------------------------------------------------
-        # ROUND MONTHLY BONUS TO WHOLE NUMBER
+        # ROUND MONTHLY BONUS ONLY
         # -----------------------------------------------------
 
         monthly_bonus = round(
-            monthly_bonus
-        )
-
-        # -----------------------------------------------------
-        # ROUND PAYMENT DAYS
-        # -----------------------------------------------------
-
-        payment_days = round(
-            payment_days
+            monthly_bonus,
+            2
         )
 
         # -----------------------------------------------------
         # MONTH PD
+        #
+        # NO ROUNDING
         # -----------------------------------------------------
 
         employee_map[emp][
@@ -901,6 +915,8 @@ def get_data(filters):
 
         # -----------------------------------------------------
         # TOTAL PD
+        #
+        # NO ROUNDING
         # -----------------------------------------------------
 
         employee_map[emp][
@@ -916,14 +932,13 @@ def get_data(filters):
         ] += monthly_bonus
 
     # =========================================================
-    # FINAL ROUNDING
+    # FINAL CALCULATIONS
     # =========================================================
 
     for emp in employee_map:
 
         # -----------------------------------------------------
-        # ROUND ONLY MONTHLY BONUS
-        # PD WILL NOT BE ROUNDED
+        # ROUND MONTHLY BONUS ONLY
         # -----------------------------------------------------
 
         for month in MONTH_ORDER:
@@ -935,37 +950,50 @@ def get_data(filters):
             ] = round(
                 employee_map[emp][
                     f"{month_key}_bonus"
-                ]
+                ],
+                2
             )
 
         # -----------------------------------------------------
         # TOTAL PD
-        # DO NOT ROUND
+        #
+        # NO ROUNDING
         # -----------------------------------------------------
 
-        # total_pd remains as actual payment days
+        # Intentionally left unrounded
 
         # -----------------------------------------------------
         # TOTAL PDA
-        # ROUND
+        #
+        # Sum of all monthly bonuses
         # -----------------------------------------------------
 
-        employee_map[emp]["tpda"] = round(
-            employee_map[emp]["tpda"]
+        employee_map[emp][
+            "tpda"
+        ] = round(
+            employee_map[emp][
+                "tpda"
+            ],
+            2
         )
 
         # -----------------------------------------------------
-        # TOTAL BONUS = TOTAL PDA × 8.5%
-        # ROUND
+        # TOTAL BONUS
+        #
+        # Total PDA × 8.5%
         # -----------------------------------------------------
 
-        employee_map[emp]["total_bonus"] = round(
-            employee_map[emp]["tpda"]
-            * BONUS_PERCENTAGE
+        employee_map[emp][
+            "total_bonus"
+        ] = round(
+            employee_map[emp][
+                "tpda"
+            ] * BONUS_PERCENTAGE,
+            2
         )
 
     # =========================================================
-    # RETURN
+    # RETURN DATA
     # =========================================================
 
     return list(
