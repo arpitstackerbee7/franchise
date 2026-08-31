@@ -623,7 +623,7 @@ def get_columns(filters):
             "fieldname": f"{month.lower()}_pd",
             "fieldtype": "Float",
             "width": 80,
-            "precision": 0
+            "precision": 2
         })
 
         columns.append({
@@ -643,7 +643,7 @@ def get_columns(filters):
         "fieldname": "total_pd",
         "fieldtype": "Float",
         "width": 90,
-        "precision": 0
+        "precision": 2
     })
 
     columns.append({
@@ -916,26 +916,19 @@ def get_data(filters):
         ] += monthly_bonus
 
     # =========================================================
-    # FINAL ROUNDING & TOTAL BONUS
+    # FINAL ROUNDING
     # =========================================================
 
     for emp in employee_map:
 
         # -----------------------------------------------------
-        # ROUND ALL MONTHLY VALUES
+        # ROUND ONLY MONTHLY BONUS
+        # PD WILL NOT BE ROUNDED
         # -----------------------------------------------------
 
         for month in MONTH_ORDER:
 
             month_key = month.lower()
-
-            employee_map[emp][
-                f"{month_key}_pd"
-            ] = round(
-                employee_map[emp][
-                    f"{month_key}_pd"
-                ]
-            )
 
             employee_map[emp][
                 f"{month_key}_bonus"
@@ -947,14 +940,14 @@ def get_data(filters):
 
         # -----------------------------------------------------
         # TOTAL PD
+        # DO NOT ROUND
         # -----------------------------------------------------
 
-        employee_map[emp]["total_pd"] = round(
-            employee_map[emp]["total_pd"]
-        )
+        # total_pd remains as actual payment days
 
         # -----------------------------------------------------
         # TOTAL PDA
+        # ROUND
         # -----------------------------------------------------
 
         employee_map[emp]["tpda"] = round(
@@ -963,6 +956,7 @@ def get_data(filters):
 
         # -----------------------------------------------------
         # TOTAL BONUS = TOTAL PDA × 8.5%
+        # ROUND
         # -----------------------------------------------------
 
         employee_map[emp]["total_bonus"] = round(
