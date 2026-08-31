@@ -130,6 +130,7 @@ MONTH_ORDER = [
 
 BONUS_COMPONENT = "Bonus"
 MONTHLY_BONUS = 7000
+BONUS_PERCENTAGE = 0.085
 
 
 def execute(filters=None):
@@ -191,7 +192,7 @@ def get_columns(filters):
     })
 
     columns.append({
-        "label": "TPDA",
+        "label": "Total PDA",
         "fieldname": "tpda",
         "fieldtype": "Currency",
         "width": 110
@@ -220,7 +221,9 @@ def get_data(filters):
     # ---------------------------------------------------------
 
     if filters.get("employee"):
-        conditions.append("ss.employee = %(employee)s")
+        conditions.append(
+            "ss.employee = %(employee)s"
+        )
         values["employee"] = filters.get("employee")
 
     # ---------------------------------------------------------
@@ -367,13 +370,13 @@ def get_data(filters):
         )
 
         # -----------------------------------------------------
-        # BONUS CALCULATION
+        # MONTHLY BONUS
         #
-        # Full Month:
-        #     7000
+        # Full month:
+        #     ₹7,000
         #
-        # Partial Month:
-        #     7000 / days_in_month * payment_days
+        # Partial month:
+        #     ₹7,000 / actual days in month × PD
         # -----------------------------------------------------
 
         if payment_days >= days_in_month:
@@ -388,7 +391,7 @@ def get_data(filters):
             ) * payment_days
 
         # -----------------------------------------------------
-        # ROUND BONUS
+        # ROUND MONTHLY BONUS
         # -----------------------------------------------------
 
         monthly_bonus = round(
@@ -417,26 +420,40 @@ def get_data(filters):
         ] += payment_days
 
         # -----------------------------------------------------
-        # TOTAL BONUS
+        # TOTAL PDA
+        #
+        # Sum of all monthly bonuses
         # -----------------------------------------------------
 
         employee_map[emp][
-            "total_bonus"
+            "tpda"
         ] += monthly_bonus
 
     # ---------------------------------------------------------
-    # TPDA
+    # FINAL CALCULATION
+    #
+    # Total PDA = Sum of Jan-Bonus to Dec-Bonus
+    #
+    # Total Bonus = Total PDA × 8.5%
     # ---------------------------------------------------------
 
     for emp in employee_map:
 
+        # Round Total PDA
         employee_map[emp]["tpda"] = round(
-            employee_map[emp]["total_bonus"],
+            employee_map[emp]["tpda"],
             2
         )
 
+        # Total Bonus = 8.5% of Total PDA
         employee_map[emp]["total_bonus"] = round(
-            employee_map[emp]["total_bonus"],
+            employee_map[emp]["tpda"] * BONUS_PERCENTAGE,
+            2
+        )
+
+        # Round Total PD
+        employee_map[emp]["total_pd"] = round(
+            employee_map[emp]["total_pd"],
             2
         )
 
