@@ -46,6 +46,28 @@ frappe.query_reports["Collection Report"] = {
 			label: __("Customer"),
 			fieldtype: "Link",
 			options: "Customer"
+		},
+
+		{
+			fieldname: "asm",
+			label: __("ASM"),
+			fieldtype: "Link",
+			options: "User",
+			get_query: function() {
+				return {
+					filters: {
+						enabled: 1
+					}
+				};
+			}
+		},
+
+		{
+			fieldname: "agent",
+			label: __("Agent Name"),
+			fieldtype: "Link",
+			options: "Supplier",
+			width: 200
 		}
 
 	],
@@ -73,7 +95,6 @@ frappe.query_reports["Collection Report"] = {
 
 
 function get_report_title(filters) {
-
 	let from_date = filters.from_date || "";
 	let to_date = filters.to_date || "";
 
@@ -81,9 +102,7 @@ function get_report_title(filters) {
 
 	if (from_date && to_date) {
 		title = `Collection Report ${from_date} to ${to_date}`;
-	}
-
-	else if (to_date) {
+	} else if (to_date) {
 		title = `Collection Report Till ${to_date}`;
 	}
 
@@ -92,7 +111,6 @@ function get_report_title(filters) {
 
 
 function set_report_title() {
-
 	let filters = frappe.query_report.get_filter_values();
 
 	frappe.query_report.page.set_title(

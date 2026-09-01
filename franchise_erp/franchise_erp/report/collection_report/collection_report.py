@@ -8,6 +8,7 @@ from frappe.utils import add_days, getdate
 
 def execute(filters=None):
 	filters = filters or {}
+
 	validate_filters(filters)
 
 	companies = get_counter_companies(filters)
@@ -32,6 +33,7 @@ def validate_filters(filters):
 
 def get_counter_companies(filters):
 	company = filters.get("company")
+
 	company_filters = {}
 
 	if company:
@@ -44,12 +46,28 @@ def get_counter_companies(filters):
 	)
 
 
-def get_customer_extra_fields(customers):
+def get_customer_extra_fields(customers, filters=None):
 	if not customers:
 		return {}
 
+	filters = filters or {}
+
+	conditions = "c.name IN %(customers)s"
+
+	values = {
+		"customers": customers
+	}
+
+	if filters.get("agent"):
+		conditions += " AND c.custom_agent = %(agent)s"
+		values["agent"] = filters.get("agent")
+
+	if filters.get("asm"):
+		conditions += " AND c.account_manager = %(asm)s"
+		values["asm"] = filters.get("asm")
+
 	rows = frappe.db.sql(
-		"""
+		f"""
 		SELECT
 			c.name,
 			c.custom_agent,
@@ -57,130 +75,153 @@ def get_customer_extra_fields(customers):
 		FROM `tabCustomer` c
 		LEFT JOIN `tabUser` u
 			ON u.name = c.account_manager
-		WHERE c.name IN %(customers)s
+		WHERE {conditions}
 		""",
-		{"customers": customers},
+		values,
 		as_dict=True
 	)
 
-	return {r.name: r for r in rows}
+	return {
+		r.name: r
+		for r in rows
+	}
 
 
 def get_columns():
 	return [
+
 		{
 			"label": _("Customer Name"),
 			"fieldname": "customer_name",
 			"fieldtype": "Link",
 			"options": "Customer",
-			"width": 200,
+			"width": 200
 		},
+
 		{
 			"label": _("Agent"),
 			"fieldname": "agent",
 			"fieldtype": "Data",
-			"width": 150,
+			"width": 150
 		},
+
 		{
 			"label": _("ASM"),
 			"fieldname": "asm",
 			"fieldtype": "Data",
-			"width": 150,
+			"width": 150
 		},
+
 		{
 			"label": _("Opening Amount"),
 			"fieldname": "opening_stock",
 			"fieldtype": "Currency",
-			"width": 140,
+			"width": 140
 		},
+
 		{
 			"label": _("Credit Note"),
 			"fieldname": "credit_note",
 			"fieldtype": "Currency",
-			"width": 130,
+			"width": 130
 		},
+
 		{
 			"label": _("Debit Note"),
 			"fieldname": "debit_note",
 			"fieldtype": "Currency",
-			"width": 130,
+			"width": 130
 		},
+
 		{
 			"label": _("Previous Sale Qty"),
 			"fieldname": "sale_qty_ytd",
 			"fieldtype": "Float",
-			"width": 140,
+			"width": 140
 		},
+
 		{
 			"label": _("Previous Sale Amount"),
 			"fieldname": "amount_ytd",
 			"fieldtype": "Currency",
-			"width": 170,
+			"width": 170
 		},
+
 		{
 			"label": _("Payment Rec"),
 			"fieldname": "payment_received",
 			"fieldtype": "Currency",
-			"width": 140,
+			"width": 140
 		},
+
 		{
 			"label": _("Previous Collection Amount"),
 			"fieldname": "previous_collection_amount",
 			"fieldtype": "Currency",
-			"width": 180,
+			"width": 180
 		},
+
 		{
 			"label": _("Last 15 Days Sale Qty"),
 			"fieldname": "sale_qty_15",
 			"fieldtype": "Float",
-			"width": 160,
+			"width": 160
 		},
+
 		{
 			"label": _("Last 15 Days Sale Amount"),
 			"fieldname": "amount_15",
 			"fieldtype": "Currency",
-			"width": 180,
+			"width": 180
 		},
+
 		{
 			"label": _("Last 15 Days Collection Amount"),
 			"fieldname": "collection_15",
 			"fieldtype": "Currency",
-			"width": 190,
+			"width": 190
 		},
+
 		{
 			"label": _("Credit Note (Last 15 Days)"),
 			"fieldname": "credit_note_15",
 			"fieldtype": "Currency",
-			"width": 170,
+			"width": 170
 		},
+
 		{
 			"label": _("Debit Note (Last 15 Days)"),
 			"fieldname": "debit_note_15",
 			"fieldtype": "Currency",
-			"width": 170,
+			"width": 170
 		},
+
 		{
 			"label": _("Collectable Amount Last 15 Days"),
 			"fieldname": "collectable_amount_15",
 			"fieldtype": "Currency",
-			"width": 210,
+			"width": 210
 		},
+
 		{
 			"label": _("Total Collectable Amount"),
 			"fieldname": "total_collectable_amount",
 			"fieldtype": "Currency",
-			"width": 190,
+			"width": 190
 		},
+
 		{
 			"label": _("Pending"),
 			"fieldname": "pending",
 			"fieldtype": "Currency",
-			"width": 130,
-		},
+			"width": 130
+		}
+
 	]
 
 
 def get_data(filters, companies):
+
 	from_date = getdate(filters.get("from_date"))
 	to_date = getdate(filters.get("to_date"))
 	last_15_start = add_days(to_date, -14)
@@ -191,7 +232,7 @@ def get_data(filters, companies):
 		"companies": companies,
 		"from_date": from_date,
 		"to_date": to_date,
-		"last_15_start": last_15_start,
+		"last_15_start": last_15_start
 	}
 
 	customer_condition = ""
@@ -200,7 +241,12 @@ def get_data(filters, companies):
 		customer_condition = " AND si.customer = %(customer)s"
 		sales_values["customer"] = customer_filter
 
-	
+
+	# =====================================================
+	# OPENING AMOUNT
+	# Balance before selected From Date
+	# =====================================================
+
 	opening_sales_data = frappe.db.sql(
 		f"""
 		SELECT
@@ -238,10 +284,15 @@ def get_data(filters, companies):
 		as_dict=True
 	)
 
+	opening_sales_map = {
+		d.customer: d
+		for d in opening_sales_data
+	}
+
 
 	opening_payment_values = {
 		"companies": companies,
-		"from_date": from_date,
+		"from_date": from_date
 	}
 
 	opening_payment_customer_condition = ""
@@ -273,12 +324,6 @@ def get_data(filters, companies):
 		as_dict=True
 	)
 
-
-	opening_sales_map = {
-		d.customer: d
-		for d in opening_sales_data
-	}
-
 	opening_payment_map = {
 		d.customer: d
 		for d in opening_payment_data
@@ -294,8 +339,15 @@ def get_data(filters, companies):
 
 	for customer in opening_customers:
 
-		sales = opening_sales_map.get(customer, frappe._dict())
-		payment = opening_payment_map.get(customer, frappe._dict())
+		sales = opening_sales_map.get(
+			customer,
+			frappe._dict()
+		)
+
+		payment = opening_payment_map.get(
+			customer,
+			frappe._dict()
+		)
 
 		total_sales = sales.get("total_sales") or 0
 		credit_note = sales.get("credit_note") or 0
@@ -311,7 +363,11 @@ def get_data(filters, companies):
 			"opening_stock": opening_stock
 		})
 
-	
+
+	# =====================================================
+	# SALE QUANTITY
+	# =====================================================
+
 	qty_data = frappe.db.sql(
 		f"""
 		SELECT
@@ -352,9 +408,16 @@ def get_data(filters, companies):
 		as_dict=True
 	)
 
-	qty_map = {d.customer: d for d in qty_data}
+	qty_map = {
+		d.customer: d
+		for d in qty_data
+	}
 
-	
+
+	# =====================================================
+	# SALE AMOUNT
+	# =====================================================
+
 	amount_data = frappe.db.sql(
 		f"""
 		SELECT
@@ -392,9 +455,16 @@ def get_data(filters, companies):
 		as_dict=True
 	)
 
-	amount_map = {d.customer: d for d in amount_data}
+	amount_map = {
+		d.customer: d
+		for d in amount_data
+	}
 
-	
+
+	# =====================================================
+	# CREDIT NOTES
+	# =====================================================
+
 	credit_note_data = frappe.db.sql(
 		f"""
 		SELECT
@@ -436,7 +506,21 @@ def get_data(filters, companies):
 		as_dict=True
 	)
 
-	credit_note_map = {d.customer: d for d in credit_note_data}
+	credit_note_map = {
+		d.customer: d
+		for d in credit_note_data
+	}
+
+
+	# =====================================================
+	# DEBIT NOTES
+	# Journal Entry Customer Debit
+	# =====================================================
+
+	debit_customer_condition = ""
+
+	if customer_filter:
+		debit_customer_condition = " AND jea.party = %(customer)s"
 
 	debit_note_data = frappe.db.sql(
 		f"""
@@ -454,7 +538,7 @@ def get_data(filters, companies):
 			SUM(
 				CASE
 					WHEN je.posting_date >= %(last_15_start)s
-				THEN jea.debit_in_account_currency
+					THEN jea.debit_in_account_currency
 					ELSE 0
 				END
 			) AS debit_note_15
@@ -472,7 +556,7 @@ def get_data(filters, companies):
 			AND jea.party_type = 'Customer'
 			AND IFNULL(jea.party, '') != ''
 			AND jea.debit_in_account_currency > 0
-			{customer_condition.replace("si.customer", "jea.party")}
+			{debit_customer_condition}
 
 		GROUP BY jea.party
 		""",
@@ -485,11 +569,16 @@ def get_data(filters, companies):
 		for d in debit_note_data
 	}
 
+
+	# =====================================================
+	# PAYMENT / COLLECTION
+	# =====================================================
+
 	payment_values = {
 		"companies": companies,
 		"from_date": from_date,
 		"to_date": to_date,
-		"last_15_start": last_15_start,
+		"last_15_start": last_15_start
 	}
 
 	payment_customer_condition = ""
@@ -497,6 +586,7 @@ def get_data(filters, companies):
 	if customer_filter:
 		payment_customer_condition = " AND pe.party = %(customer)s"
 		payment_values["customer"] = customer_filter
+
 
 	payment_data = frappe.db.sql(
 		f"""
@@ -536,15 +626,23 @@ def get_data(filters, companies):
 		as_dict=True
 	)
 
-	payment_map = {d.customer: d for d in payment_data}
+	payment_map = {
+		d.customer: d
+		for d in payment_data
+	}
 
-	# All Customers
+
+	# =====================================================
+	# ALL CUSTOMERS
+	# =====================================================
+
 	customers = sorted(
 		set(
 			list(opening_map)
 			+ list(qty_map)
 			+ list(amount_map)
 			+ list(credit_note_map)
+			+ list(debit_note_map)
 			+ list(payment_map)
 		)
 	)
@@ -552,18 +650,68 @@ def get_data(filters, companies):
 	if not customers:
 		return []
 
-	customer_map = get_customer_extra_fields(customers)
+
+	# =====================================================
+	# AGENT AND ASM FILTERING
+	# =====================================================
+
+	customer_map = get_customer_extra_fields(
+		customers,
+		filters
+	)
+
+	if filters.get("agent") or filters.get("asm"):
+
+		customers = [
+			customer
+			for customer in customers
+			if customer in customer_map
+		]
+
+
+	# =====================================================
+	# FINAL DATA
+	# =====================================================
 
 	data = []
 
 	for customer in customers:
-		cust = customer_map.get(customer, frappe._dict())
-		opening = opening_map.get(customer, frappe._dict())
-		qty = qty_map.get(customer, frappe._dict())
-		amt = amount_map.get(customer, frappe._dict())
-		credit = credit_note_map.get(customer, frappe._dict())
-		debit = debit_note_map.get(customer, frappe._dict())
-		payment = payment_map.get(customer, frappe._dict())
+
+		cust = customer_map.get(
+			customer,
+			frappe._dict()
+		)
+
+		opening = opening_map.get(
+			customer,
+			frappe._dict()
+		)
+
+		qty = qty_map.get(
+			customer,
+			frappe._dict()
+		)
+
+		amt = amount_map.get(
+			customer,
+			frappe._dict()
+		)
+
+		credit = credit_note_map.get(
+			customer,
+			frappe._dict()
+		)
+
+		debit = debit_note_map.get(
+			customer,
+			frappe._dict()
+		)
+
+		payment = payment_map.get(
+			customer,
+			frappe._dict()
+		)
+
 
 		opening_stock = opening.get("opening_stock") or 0
 
@@ -583,18 +731,23 @@ def get_data(filters, companies):
 			payment.get("previous_collection_amount") or 0
 		)
 
-		collection_15 = payment.get("collection_15") or 0
+		collection_15 = (
+			payment.get("collection_15") or 0
+		)
+
 
 		payment_received = (
 			previous_collection_amount
 			+ collection_15
 		)
 
+
 		collectable_amount_15 = (
 			amount_15
 			- credit_note_15
 			+ debit_note_15
 		)
+
 
 		total_collectable_amount = (
 			opening_stock
@@ -604,30 +757,43 @@ def get_data(filters, companies):
 			+ collectable_amount_15
 		)
 
+
 		pending = (
 			total_collectable_amount
 			- payment_received
 		)
 
+
 		data.append({
 			"customer_name": customer,
 			"agent": cust.get("custom_agent"),
 			"asm": cust.get("asm_name"),
+
 			"opening_stock": opening_stock,
+
 			"credit_note": credit_note,
 			"debit_note": debit_note,
+
 			"sale_qty_ytd": sale_qty_ytd,
 			"amount_ytd": amount_ytd,
+
 			"payment_received": payment_received,
 			"previous_collection_amount": previous_collection_amount,
+
 			"sale_qty_15": sale_qty_15,
 			"amount_15": amount_15,
+
 			"collection_15": collection_15,
+
 			"credit_note_15": credit_note_15,
 			"debit_note_15": debit_note_15,
+
 			"collectable_amount_15": collectable_amount_15,
+
 			"total_collectable_amount": total_collectable_amount,
-			"pending": pending,
+
+			"pending": pending
 		})
+
 
 	return data
