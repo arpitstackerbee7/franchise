@@ -13,11 +13,90 @@ VOUCHER_TYPE_ORDER = [
     "Debit Note",
     "Journal Entry",
     "Purchase Order",
+    "Purchase Receipt Return",
     "OTHERS",
 ]
 
 CREDIT_ENTRY_GROUPS = {"Payment Entry", "Debit Note"}
 SUPPLIER_AGENT_FIELD = "custom_agent_supplier"
+
+
+def get_purchase_receipt_returns(filters):
+    """Fetch submitted Purchase Receipt returns as informational rows.
+    These have no Payable GL impact, so Invoiced/Paid/Outstanding are kept at 0.
+    """
+    company = filters.get("company")
+    if not company:
+        return []
+
+    conditions = {"company": company, "is_return": 1, "docstatus": 1}
+    report_date = filters.get("report_date")
+    if report_date:
+        conditions["posting_date"] = ["<=", getdate(report_date)]
+
+    pr_returns = frappe.db.get_all(
+        "Purchase Receipt",
+        filters=conditions,
+        fields=["name", "supplier", "posting_date", "return_against"],
+    )
+    if not pr_returns:
+        return []
+
+    # Case 2: return_against ke original PR se supplier resolve karo
+    # (jab return doc me supplier field khali ho)
+    missing_against = [
+        pr["return_against"] for pr in pr_returns
+        if not pr.get("supplier") and pr.get("return_against")
+    ]
+    original_supplier_map = {}
+    if missing_against:
+        originals = frappe.db.get_all(
+            "Purchase Receipt",
+            filters={"name": ["in", missing_against]},
+            fields=["name", "supplier"],
+        )
+        original_supplier_map = {o["name"]: o["supplier"] for o in originals}
+
+    supplier_names = list({
+        (pr.get("supplier") or original_supplier_map.get(pr.get("return_against")))
+        for pr in pr_returns
+    } - {None})
+
+    supplier_info_map = {}
+    if supplier_names:
+        sup_records = frappe.db.get_all(
+            "Supplier",
+            filters={"name": ["in", supplier_names]},
+            fields=["name", "supplier_group", SUPPLIER_AGENT_FIELD],
+        )
+        supplier_info_map = {s["name"]: s for s in sup_records}
+
+    rows = []
+    for pr in pr_returns:
+        party = pr.get("supplier") or original_supplier_map.get(pr.get("return_against"))
+        if not party:
+            continue
+        sup_info = supplier_info_map.get(party, {})
+        rows.append({
+            "party": party,
+            "party_type": "Supplier",
+            "party_account": None,
+            "supplier_group": sup_info.get("supplier_group"),
+            "voucher_type": "Purchase Receipt Return",
+            "voucher_no": pr["name"],
+            "posting_date": pr.get("posting_date"),
+            "bill_date": pr.get("posting_date"),
+            "reference_no": None,
+            "reference_date": None,
+            "invoiced": 0,
+            "paid": 0,
+            "outstanding": 0,
+            "currency": None,
+            "cost_center": None,
+            "_agent": sup_info.get(SUPPLIER_AGENT_FIELD),
+        })
+    return rows
+
 
 def execute(filters=None):
     filters = frappe._dict(filters or {})
@@ -37,6 +116,7 @@ def execute(filters=None):
     raw_data = [row for row in result[1] if isinstance(row, dict)]
 
     supplier_filter = filters.get("supplier") or []
+    supplier_list = []
     if supplier_filter:
         supplier_list = [
             (s if isinstance(s, str) else s.get("value", "")).strip()
@@ -48,8 +128,8 @@ def execute(filters=None):
                 row for row in raw_data
                 if (row.get("party") or "").strip() in supplier_list
             ]
-    #Supplier Group filter (multi-select) 
     supplier_group_filter = filters.get("supplier_group") or []
+    supplier_group_list = []
     if supplier_group_filter:
         supplier_group_list = [
             (g if isinstance(g, str) else g.get("value", "")).strip()
@@ -61,7 +141,6 @@ def execute(filters=None):
                 row for row in raw_data
                 if (row.get("supplier_group") or "").strip() in supplier_group_list
             ]
-    # Party filter (generic — works for any party_type: Supplier/Customer/etc.)
     party_filter = filters.get("party") or []
     if isinstance(party_filter, str):
         party_filter = [party_filter]
@@ -83,7 +162,6 @@ def execute(filters=None):
             if (row.get("party_type") or "").strip() == party_type_filter
         ]
 
-    #Payable Account filter (multi-select)
     payable_account_filter = filters.get("payable_account") or []
     if isinstance(payable_account_filter, str):
         payable_account_filter = [payable_account_filter]
@@ -98,7 +176,6 @@ def execute(filters=None):
             if (row.get("party_account") or "").strip() in payable_account_list 
         ]
 
-    #Agent filter 
     agent_filter = (filters.get("agent") or "").strip()
     if agent_filter:
         parties_in_data = list({
@@ -118,8 +195,21 @@ def execute(filters=None):
                 if (row.get("party") or "").strip() in allowed_parties
             ]
 
+    pr_return_rows = get_purchase_receipt_returns(filters)
 
-    #Remove unwanted columns 
+    if supplier_list:
+        pr_return_rows = [r for r in pr_return_rows if r["party"] in supplier_list]
+    if supplier_group_list:
+        pr_return_rows = [r for r in pr_return_rows if (r.get("supplier_group") or "") in supplier_group_list]
+    if party_list:
+        pr_return_rows = [r for r in pr_return_rows if r["party"] in party_list]
+    if party_type_filter:
+        pr_return_rows = [r for r in pr_return_rows if r["party_type"] == party_type_filter]
+    if agent_filter:
+        pr_return_rows = [r for r in pr_return_rows if r.get("_agent") == agent_filter]
+
+    raw_data.extend(pr_return_rows)
+
     REMOVE_FIELDS = {"credit_note", "range1", "range2", "range3", "range4", "range5", "due_date", "cost_center", "project", "currency"}
     columns = [c for c in columns if c.get("fieldname") not in REMOVE_FIELDS]
 
@@ -137,7 +227,6 @@ def execute(filters=None):
     )
     columns.insert(outstanding_idx + 1, running_balance_col)
 
-    # ── Add Reference No / Reference Date columns (right after Voucher No) ─
     reference_no_col = {
         "label": "Cheque/Reference No",
         "fieldname": "reference_no",
@@ -157,7 +246,6 @@ def execute(filters=None):
     columns.insert(voucher_no_idx + 1, reference_no_col)
     columns.insert(voucher_no_idx + 2, reference_date_col)
 
-    #Batch fetch all is_return Purchase Invoices 
     all_pinv_nos = [
         row.get("voucher_no")
         for row in raw_data
@@ -174,7 +262,6 @@ def execute(filters=None):
         )
         return_set = set(returns)
 
-    #Batch fetch reference_no / reference_date for Payment Entry rows
     all_pe_nos = [
         row.get("voucher_no")
         for row in raw_data
@@ -194,7 +281,6 @@ def execute(filters=None):
             for pe in pe_records
         }
 
-    #Patch voucher_type for Debit Notes + attach reference fields
     for row in raw_data:
         vno   = (row.get("voucher_no")   or "").strip()
         vtype = (row.get("voucher_type") or "").strip()
@@ -206,8 +292,8 @@ def execute(filters=None):
             row["reference_no"] = ref_no
             row["reference_date"] = ref_date
         else:
-            row["reference_no"] = None
-            row["reference_date"] = None
+            row.setdefault("reference_no", None)
+            row.setdefault("reference_date", None)
 
     def get_group(row):
         vtype = (row.get("voucher_type") or "").strip()
@@ -236,11 +322,10 @@ def execute(filters=None):
             if vg in selected_credit_groups:
                 row_date = row.get("posting_date")
                 if row_date and getdate(row_date) > credit_entry_date:
-                    continue  # exclude credit entries posted after the cutoff
+                    continue
             filtered.append(row)
         raw_data = filtered
 
-    # Bucket by party
     party_order = []
     party_buckets = defaultdict(list)
 
@@ -249,10 +334,7 @@ def execute(filters=None):
         if party not in party_buckets:
             party_order.append(party)
         party_buckets[party].append(row)
-    # ═══════════════════════════════════════════════════════════════════
-    # RAW MODE (Group By Party unchecked): flat data, no subtotal rows,
-    # no vendor separators, no highlight flags.
-    # ═══════════════════════════════════════════════════════════════════
+
     if not group_by_party:
         output = []
         for party in party_order:
@@ -269,11 +351,6 @@ def execute(filters=None):
         result[1] = output
         return result
 
-    # ═══════════════════════════════════════════════════════════════════
-    # GROUPED MODE (Group By Party checked): voucher-type subtotals,
-    # party totals, vendor-change row break, highlight flags.
-    # ═══════════════════════════════════════════════════════════════════
-    # ── Build output ──────────────────────────────────────────────────────
     output = []
     
 
@@ -316,7 +393,6 @@ def execute(filters=None):
         for vg in vtype_order_seen:
             vg_rows = vtype_buckets[vg]
 
-            # ── Sort by bill_date ascending, fallback to posting_date ─────
             vg_rows.sort(
                 key=lambda r: r.get("bill_date") or r.get("posting_date") or date.min
             )
@@ -334,7 +410,6 @@ def execute(filters=None):
                 row["running_balance"] = running_balance
                 output.append(row)
 
-            # Voucher type subtotal
             output.append({
                 "party":           party,
                 "party_type":      party_type,
