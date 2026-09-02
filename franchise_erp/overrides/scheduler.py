@@ -1,7 +1,7 @@
 
 import frappe
 from frappe.utils import get_datetime, time_diff_in_hours, getdate, now_datetime, add_days, nowdate
-from franchise_erp.custom.attendance import get_or_create_lwp_leave_application
+# from franchise_erp.custom.attendance import get_or_create_lwp_leave_application
 
 MAX_PAIR_GAP_HOURS = 24
 
@@ -303,14 +303,38 @@ def _mark_absent_if_no_checkin(emp, attendance_date):
 
 
 def _apply_lwp(attendance_name, employee, attendance_date):
-	la_name = get_or_create_lwp_leave_application(employee, attendance_date)
-	if la_name:
-		frappe.db.set_value("Attendance", attendance_name, {
+	"""
+	No Checkin / Checkout case:
+	Attendance ko directly On Leave + Leave Without Pay mark kare.
+	Leave Application create nahi hogi.
+	"""
+
+	lwp_leave_type = frappe.db.get_value(
+		"Leave Type",
+		{"is_lwp": 1},
+		"name"
+	)
+
+	if not lwp_leave_type:
+		frappe.log_error(
+			f"Leave Without Pay type not found for employee {employee}",
+			"LWP Application Error"
+		)
+		return
+
+	frappe.db.set_value(
+		"Attendance",
+		attendance_name,
+		{
 			"status": "On Leave",
-			"leave_type": "Leave Without Pay",
-			"leave_application": la_name,
-		}, update_modified=False)
-		frappe.db.commit()
+			"leave_type": lwp_leave_type,
+			"leave_application": None,
+			"working_hours": 0,
+		},
+		update_modified=False
+	)
+
+	frappe.db.commit()
  
 def _is_holiday(employee, holiday_list, company, date):
 	holiday_list = holiday_list or frappe.get_cached_value("Company", company, "default_holiday_list")

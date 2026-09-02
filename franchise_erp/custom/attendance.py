@@ -132,32 +132,6 @@ def on_attendance_request_submit(doc, method):
 
 def get_or_create_lwp_leave_application(employee, attendance_date):
     """
-    Creates (or reuses) a Leave Without Pay Leave Application for a single
-    absent day, so leave balance and payroll deduction happen automatically.
+    LWP Attendance ke liye Leave Application automatically create nahi hogi.
     """
-    lwp_leave_type = frappe.db.get_value("Leave Type", {"is_lwp": 1}, "name")
-    if not lwp_leave_type:
-        return None
-
-    existing = frappe.db.exists("Leave Application", {
-        "employee": employee,
-        "leave_type": lwp_leave_type,
-        "docstatus": 1,
-        "from_date": ["<=", attendance_date],
-        "to_date": [">=", attendance_date],
-    })
-    if existing:
-        return existing
-
-    la = frappe.new_doc("Leave Application")
-    la.employee = employee
-    la.leave_type = lwp_leave_type
-    la.from_date = attendance_date
-    la.to_date = attendance_date
-    la.reason = "Auto-applied: no checkin recorded"
-    la.description = "Auto-applied: no checkin recorded"
-    la.status = "Approved"  
-    la.leave_approver = frappe.db.get_value("Employee", employee, "leave_approver")
-    la.insert(ignore_permissions=True)
-    la.submit()
-    return la.name
+    return None
