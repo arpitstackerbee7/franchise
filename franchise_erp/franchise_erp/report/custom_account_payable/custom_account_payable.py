@@ -37,7 +37,7 @@ def get_purchase_receipt_returns(filters):
     pr_returns = frappe.db.get_all(
         "Purchase Receipt",
         filters=conditions,
-        fields=["name", "supplier", "posting_date", "return_against"],
+        fields=["name", "supplier", "posting_date", "return_against", "per_billed"],
     )
     if not pr_returns:
         return []
@@ -73,6 +73,8 @@ def get_purchase_receipt_returns(filters):
 
     rows = []
     for pr in pr_returns:
+        if flt(pr.get("per_billed")) >= 100:
+            continue
         party = pr.get("supplier") or original_supplier_map.get(pr.get("return_against"))
         if not party:
             continue
