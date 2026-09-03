@@ -3,6 +3,7 @@ from frappe import _
 import json
 
 
+
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
 
@@ -12,12 +13,10 @@ def execute(filters=None):
 	return columns, data
 
 
+
 def get_columns():
 	return [
 
-		# =========================
-		# SALES INVOICE DETAILS
-		# =========================
 
 		{
 			"label": _("Sales Invoice"),
@@ -59,10 +58,6 @@ def get_columns():
 			"width": 150,
 		},
 
-		# =========================
-		# ITEM DETAILS
-		# =========================
-
 		{
 			"label": _("Item Code"),
 			"fieldname": "item_code",
@@ -80,7 +75,7 @@ def get_columns():
 			"label": _("Serial No"),
 			"fieldname": "serial_no",
 			"fieldtype": "Data",
-			"width": 160,
+			"width": 180,
 		},
 		{
 			"label": _("Quantity"),
@@ -116,9 +111,6 @@ def get_columns():
 			"width": 90,
 		},
 
-		# =========================
-		# ORIGINAL CUSTOM FIELDS
-		# =========================
 
 		{
 			"label": _("Bottom Fabric"),
@@ -152,9 +144,6 @@ def get_columns():
 			"width": 120,
 		},
 
-		# =========================
-		# SUPPLIER DETAILS
-		# =========================
 
 		{
 			"label": _("Supplier Name"),
@@ -185,16 +174,6 @@ def get_data(filters):
 	sii = frappe.qb.DocType("Sales Invoice Item")
 	item = frappe.qb.DocType("Item")
 
-	# =========================
-	# MAIN QUERY
-	#
-	# Sales Invoice Item
-	#       ↓
-	# Item Master
-	#       ↓
-	# custom_sup_design_no
-	# =========================
-
 	query = (
 		frappe.qb.from_(si)
 		.inner_join(sii)
@@ -205,10 +184,7 @@ def get_data(filters):
 
 		.select(
 
-			# =========================
-			# SALES INVOICE FIELDS
-			# =========================
-
+			# SALES INVOICE
 			si.name,
 			si.posting_date,
 			si.customer,
@@ -218,10 +194,7 @@ def get_data(filters):
 			si.grand_total,
 			si.currency,
 
-			# =========================
-			# SALES INVOICE ITEM FIELDS
-			# =========================
-
+			# SALES INVOICE ITEM
 			sii.name.as_("sales_invoice_item"),
 			sii.item_code,
 			sii.item_name,
@@ -230,29 +203,20 @@ def get_data(filters):
 			sii.rate,
 			sii.amount,
 
-			# =========================
-			# CUSTOM FIELDS FROM SI ITEM
-			# =========================
-
+			# CUSTOM FIELDS
 			sii.custom_bottom_fabric,
 			sii.custom_dupatta_fabric,
 			sii.custom_top_fabric,
 			sii.custom_mrp,
 			sii.custom_count_of_pcs,
 
-			# =========================
-			# SUP DESIGN NO FROM ITEM MASTER
-			# =========================
-
+			# ITEM MASTER
 			item.custom_sup_design_no.as_("sup_design_no"),
 		)
 
 		.where(si.docstatus == 1)
 	)
 
-	# =========================
-	# DATE FILTER
-	# =========================
 
 	if filters.get("from_date"):
 		query = query.where(
@@ -264,22 +228,14 @@ def get_data(filters):
 			si.posting_date <= filters.get("to_date")
 		)
 
-	# =========================
-	# CUSTOMER FILTER
-	# =========================
 
-	customers = get_filter_list(
-		filters.get("customer")
-	)
+	customers = get_filter_list(filters.get("customer"))
 
 	if customers:
 		query = query.where(
 			si.customer.isin(customers)
 		)
 
-	# =========================
-	# CLASS NAME FILTER
-	# =========================
 
 	class_names = get_filter_list(
 		filters.get("class_name")
@@ -290,9 +246,6 @@ def get_data(filters):
 			si.custom_class_name.isin(class_names)
 		)
 
-	# =========================
-	# SALES INVOICE / ID FILTER
-	# =========================
 
 	invoice_ids = get_filter_list(
 		filters.get("sales_invoice")
@@ -304,104 +257,31 @@ def get_data(filters):
 			si.name.isin(invoice_ids)
 		)
 
-	# =========================
-	# RUN MAIN QUERY
-	# =========================
 
 	data = query.orderby(
 		si.posting_date,
 		order=frappe.qb.desc
 	).run(as_dict=True)
 
-	# =====================================================
-	# SUPPLIER + AGENT SUPPLIER
-	#
-	# Sales Invoice Item Serial No
-	#            ↓
-	# Purchase Receipt Item
-	#            ↓
-	# Purchase Receipt Supplier
-	#            ↓
-	# Supplier.custom_agent_supplier
-	# =====================================================
 
 	for row in data:
 
-		row["supplier_name"] = None
-		row["agent_supplier"] = None
-
-		# Serial No nahi hai to GRN se supplier nahi milega
-		if not row.get("serial_no"):
-			continue
-
-		supplier_data = frappe.db.sql(
-			"""
-			SELECT
-				pr.supplier AS supplier_name,
-				s.custom_agent_supplier AS agent_supplier
-
-			FROM
-				`tabPurchase Receipt Item` pri
-
-			INNER JOIN
-				`tabPurchase Receipt` pr
-				ON pr.name = pri.parent
-
-			LEFT JOIN
-				`tabSupplier` s
-				ON s.name = pr.supplier
-
-			WHERE
-				pr.docstatus = 1
-
-				AND pri.item_code = %(item_code)s
-
-				AND (
-					pri.serial_no = %(serial_no)s
-
-					OR FIND_IN_SET(
-						%(serial_no)s,
-
-						REPLACE(
-							REPLACE(
-								pri.serial_no,
-								'\\n',
-								','
-							),
-							'\\r',
-							''
-						)
-					) > 0
-				)
-
-			ORDER BY
-				pr.posting_date DESC
-
-			LIMIT 1
-			""",
-			{
-				"item_code": row.get("item_code"),
-				"serial_no": row.get("serial_no"),
-			},
-			as_dict=True,
+		supplier = get_supplier_for_item(
+			item_code=row.get("item_code"),
+			serial_no=row.get("serial_no"),
 		)
 
-		if supplier_data:
+		row["supplier_name"] = supplier
 
-			row["supplier_name"] = supplier_data[0].get(
-				"supplier_name"
+		if supplier:
+			row["agent_supplier"] = frappe.db.get_value(
+				"Supplier",
+				supplier,
+				"custom_agent_supplier"
 			)
+		else:
+			row["agent_supplier"] = None
 
-			row["agent_supplier"] = supplier_data[0].get(
-				"agent_supplier"
-			)
-
-	# =========================
-	# AGENT FILTER
-	#
-	# Filter based on Supplier's
-	# custom_agent_supplier
-	# =========================
 
 	agents = get_filter_list(
 		filters.get("agent_supplier")
@@ -418,20 +298,647 @@ def get_data(filters):
 	return data
 
 
+def get_supplier_for_item(item_code, serial_no):
+
+
+	serial_numbers = split_serial_numbers(serial_no)
+
+
+	for serial in serial_numbers:
+
+		supplier = get_supplier_from_purchase_receipt_serial(
+			item_code,
+			serial
+		)
+
+		if supplier:
+			return supplier
+
+
+	for serial in serial_numbers:
+
+		supplier = get_supplier_from_serial_document_field(
+			serial,
+			"purchase_document_no"
+		)
+
+		if supplier:
+			return supplier
+
+
+	for serial in serial_numbers:
+
+		supplier = get_supplier_from_serial_document_field(
+			serial,
+			"creation_document_no"
+		)
+
+		if supplier:
+			return supplier
+
+	for serial in serial_numbers:
+
+		supplier = get_supplier_from_subcontracting_serial(
+			item_code,
+			serial
+		)
+
+		if supplier:
+			return supplier
+
+
+	for serial in serial_numbers:
+
+		supplier = get_supplier_from_purchase_invoice_serial(
+			item_code,
+			serial
+		)
+
+		if supplier:
+			return supplier
+
+
+	for serial in serial_numbers:
+
+		supplier = get_supplier_from_stock_ledger(
+			item_code,
+			serial
+		)
+
+		if supplier:
+			return supplier
+
+
+	supplier = get_supplier_from_item_supplier(item_code)
+
+	if supplier:
+		return supplier
+
+	supplier = get_supplier_from_purchase_history(item_code)
+
+	if supplier:
+		return supplier
+
+	return None
+
+
+def get_supplier_from_purchase_receipt_serial(item_code, serial_no):
+
+	if not serial_no:
+		return None
+
+	result = frappe.db.sql(
+		"""
+		SELECT
+			pr.supplier
+
+		FROM
+			`tabPurchase Receipt Item` pri
+
+		INNER JOIN
+			`tabPurchase Receipt` pr
+			ON pr.name = pri.parent
+
+		WHERE
+			pr.docstatus = 1
+			AND pri.item_code = %(item_code)s
+
+			AND (
+				pri.serial_no = %(serial_no)s
+
+				OR FIND_IN_SET(
+					%(serial_no)s,
+
+					REPLACE(
+						REPLACE(
+							pri.serial_no,
+							'\\n',
+							','
+						),
+						'\\r',
+						''
+					)
+				) > 0
+			)
+
+		ORDER BY
+			pr.posting_date ASC
+
+		LIMIT 1
+		""",
+		{
+			"item_code": item_code,
+			"serial_no": serial_no,
+		},
+		as_dict=True,
+	)
+
+	if result:
+		return result[0].get("supplier")
+
+	return None
+
+
+
+def get_supplier_from_serial_document_field(
+	serial_no,
+	fieldname
+):
+
+	if not serial_no:
+		return None
+
+	# Check field exists before querying
+	if not frappe.db.has_column("Serial No", fieldname):
+		return None
+
+	document_no = frappe.db.get_value(
+		"Serial No",
+		serial_no,
+		fieldname
+	)
+
+	if not document_no:
+		return None
+
+	return get_supplier_from_document_no(document_no)
+
+
+def get_supplier_from_document_no(document_no):
+
+	if not document_no:
+		return None
+
+
+	if frappe.db.exists("Purchase Receipt", document_no):
+
+		return frappe.db.get_value(
+			"Purchase Receipt",
+			{
+				"name": document_no,
+				"docstatus": 1,
+			},
+			"supplier"
+		)
+
+	if frappe.db.exists(
+		"Subcontracting Receipt",
+		document_no
+	):
+
+		return frappe.db.get_value(
+			"Subcontracting Receipt",
+			{
+				"name": document_no,
+				"docstatus": 1,
+			},
+			"supplier"
+		)
+
+	if frappe.db.exists(
+		"Purchase Invoice",
+		document_no
+	):
+
+		return frappe.db.get_value(
+			"Purchase Invoice",
+			{
+				"name": document_no,
+				"docstatus": 1,
+			},
+			"supplier"
+		)
+
+	if frappe.db.exists(
+		"Purchase Order",
+		document_no
+	):
+
+		return frappe.db.get_value(
+			"Purchase Order",
+			{
+				"name": document_no,
+				"docstatus": 1,
+			},
+			"supplier"
+		)
+
+
+	if frappe.db.exists(
+		"Stock Reconciliation",
+		document_no
+	):
+
+		return get_supplier_from_custom_document(
+			"Stock Reconciliation",
+			document_no
+		)
+
+	
+	if frappe.db.exists(
+		"Stock Entry",
+		document_no
+	):
+
+		return get_supplier_from_custom_document(
+			"Stock Entry",
+			document_no
+		)
+
+
+	if frappe.db.exists(
+		"DocType",
+		"Opening Stock"
+	):
+
+		if frappe.db.exists(
+			"Opening Stock",
+			document_no
+		):
+
+			return get_supplier_from_custom_document(
+				"Opening Stock",
+				document_no
+			)
+
+	return None
+
+
+def get_supplier_from_custom_document(
+	doctype,
+	document_no
+):
+
+	possible_fields = [
+		"supplier",
+		"custom_supplier",
+		"default_supplier",
+	]
+
+	for fieldname in possible_fields:
+
+		if frappe.db.has_column(
+			doctype,
+			fieldname
+		):
+
+			supplier = frappe.db.get_value(
+				doctype,
+				document_no,
+				fieldname
+			)
+
+			if supplier:
+				return supplier
+
+	return None
+
+
+
+def get_supplier_from_subcontracting_serial(
+	item_code,
+	serial_no
+):
+
+	if not serial_no:
+		return None
+
+	result = frappe.db.sql(
+		"""
+		SELECT
+			sr.supplier
+
+		FROM
+			`tabSubcontracting Receipt Item` sri
+
+		INNER JOIN
+			`tabSubcontracting Receipt` sr
+			ON sr.name = sri.parent
+
+		WHERE
+			sr.docstatus = 1
+			AND sri.item_code = %(item_code)s
+
+			AND (
+				sri.serial_no = %(serial_no)s
+
+				OR FIND_IN_SET(
+					%(serial_no)s,
+
+					REPLACE(
+						REPLACE(
+							IFNULL(sri.serial_no, ''),
+							'\\n',
+							','
+						),
+						'\\r',
+						''
+					)
+				) > 0
+			)
+
+		ORDER BY
+			sr.posting_date ASC
+
+		LIMIT 1
+		""",
+		{
+			"item_code": item_code,
+			"serial_no": serial_no,
+		},
+		as_dict=True,
+	)
+
+	if result:
+		return result[0].get("supplier")
+
+	return None
+
+
+def get_supplier_from_purchase_invoice_serial(
+	item_code,
+	serial_no
+):
+
+	if not serial_no:
+		return None
+
+	result = frappe.db.sql(
+		"""
+		SELECT
+			pi.supplier
+
+		FROM
+			`tabPurchase Invoice Item` pii
+
+		INNER JOIN
+			`tabPurchase Invoice` pi
+			ON pi.name = pii.parent
+
+		WHERE
+			pi.docstatus = 1
+			AND pii.item_code = %(item_code)s
+
+			AND (
+				pii.serial_no = %(serial_no)s
+
+				OR FIND_IN_SET(
+					%(serial_no)s,
+
+					REPLACE(
+						REPLACE(
+							IFNULL(pii.serial_no, ''),
+							'\\n',
+							','
+						),
+						'\\r',
+						''
+					)
+				) > 0
+			)
+
+		ORDER BY
+			pi.posting_date ASC
+
+		LIMIT 1
+		""",
+		{
+			"item_code": item_code,
+			"serial_no": serial_no,
+		},
+		as_dict=True,
+	)
+
+	if result:
+		return result[0].get("supplier")
+
+	return None
+
+
+
+def get_supplier_from_stock_ledger(
+	item_code,
+	serial_no
+):
+
+	if not serial_no:
+		return None
+
+	entries = frappe.db.sql(
+		"""
+		SELECT
+			voucher_type,
+			voucher_no
+
+		FROM
+			`tabStock Ledger Entry`
+
+		WHERE
+			is_cancelled = 0
+			AND item_code = %(item_code)s
+
+			AND (
+				serial_no = %(serial_no)s
+
+				OR FIND_IN_SET(
+					%(serial_no)s,
+
+					REPLACE(
+						REPLACE(
+							IFNULL(serial_no, ''),
+							'\\n',
+							','
+						),
+						'\\r',
+						''
+					)
+				) > 0
+			)
+
+		ORDER BY
+			posting_date ASC,
+			posting_time ASC
+
+		LIMIT 20
+		""",
+		{
+			"item_code": item_code,
+			"serial_no": serial_no,
+		},
+		as_dict=True,
+	)
+
+	for entry in entries:
+
+		voucher_type = entry.get("voucher_type")
+		voucher_no = entry.get("voucher_no")
+
+		if not voucher_type or not voucher_no:
+			continue
+
+		if voucher_type in [
+			"Purchase Receipt",
+			"Purchase Invoice",
+			"Purchase Order",
+			"Subcontracting Receipt",
+		]:
+
+			supplier = get_supplier_from_document_no(
+				voucher_no
+			)
+
+			if supplier:
+				return supplier
+
+		if voucher_type in [
+			"Stock Reconciliation",
+			"Stock Entry",
+		]:
+
+			supplier = get_supplier_from_document_no(
+				voucher_no
+			)
+
+			if supplier:
+				return supplier
+
+	return None
+
+
+
+
+def get_supplier_from_item_supplier(item_code):
+
+	if not item_code:
+		return None
+
+	result = frappe.db.sql(
+		"""
+		SELECT
+			supplier
+
+		FROM
+			`tabItem Supplier`
+
+		WHERE
+			parent = %(item_code)s
+			AND IFNULL(supplier, '') != ''
+
+		ORDER BY
+			idx ASC
+
+		LIMIT 1
+		""",
+		{
+			"item_code": item_code,
+		},
+		as_dict=True,
+	)
+
+	if result:
+		return result[0].get("supplier")
+
+	if frappe.db.has_column(
+		"Item",
+		"default_supplier"
+	):
+
+		supplier = frappe.db.get_value(
+			"Item",
+			item_code,
+			"default_supplier"
+		)
+
+		if supplier:
+			return supplier
+
+	return None
+
+
+
+def get_supplier_from_purchase_history(item_code):
+
+	if not item_code:
+		return None
+
+	result = frappe.db.sql(
+		"""
+		SELECT
+			pr.supplier
+
+		FROM
+			`tabPurchase Receipt Item` pri
+
+		INNER JOIN
+			`tabPurchase Receipt` pr
+			ON pr.name = pri.parent
+
+		WHERE
+			pr.docstatus = 1
+			AND pri.item_code = %(item_code)s
+			AND IFNULL(pr.supplier, '') != ''
+
+		ORDER BY
+			pr.posting_date DESC,
+			pr.creation DESC
+
+		LIMIT 1
+		""",
+		{
+			"item_code": item_code,
+		},
+		as_dict=True,
+	)
+
+	if result:
+		return result[0].get("supplier")
+
+	return None
+
+
+
+
+def split_serial_numbers(serial_no):
+
+	if not serial_no:
+		return []
+
+	if isinstance(serial_no, list):
+		return serial_no
+
+	serial_no = str(serial_no)
+
+	serial_no = serial_no.replace(
+		"\r",
+		"\n"
+	)
+
+	serial_no = serial_no.replace(
+		",",
+		"\n"
+	)
+
+	return [
+		x.strip()
+		for x in serial_no.split("\n")
+		if x.strip()
+	]
+
+
+
+
 def get_filter_list(value):
 
 	if not value:
 		return []
 
-	# Already a list
 	if isinstance(value, list):
 		return value
 
-	# MultiSelectList usually sends string
 	if isinstance(value, str):
 
-		# Try JSON list
 		try:
+
 			parsed_value = json.loads(value)
 
 			if isinstance(parsed_value, list):
@@ -440,7 +947,6 @@ def get_filter_list(value):
 		except Exception:
 			pass
 
-		# Comma-separated values
 		return [
 			x.strip()
 			for x in value.split(",")
