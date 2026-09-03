@@ -6,7 +6,8 @@
 
 import frappe
 from frappe.utils import cint
-from franchise_erp.utils.dashboard_permissions import get_allowed_company
+# from franchise_erp.utils.dashboard_permissions import get_allowed_company
+from franchise_erp.utils.dashboard_permissions import resolve_dashboard_source
 
 
 def execute(filters=None):
@@ -30,32 +31,101 @@ def get_columns():
     ]
 
 
-def get_data(filters):
-    conditions = ["si.docstatus = 1"]
-    params = {}
+# def get_data(filters):
+#     conditions = ["si.docstatus = 1"]
+#     params = {}
 
-    # Date Filter
+#     # Date Filter
+#     if filters.get("from_date"):
+#         conditions.append("si.posting_date >= %(from_date)s")
+#         params["from_date"] = filters.get("from_date")
+
+#     if filters.get("to_date"):
+#         conditions.append("si.posting_date <= %(to_date)s")
+#         params["to_date"] = filters.get("to_date")
+
+#     # Company Filter — ab permission-checked
+#     company = get_allowed_company(filters)
+#     if company:
+#         conditions.append("si.company = %(company)s")
+#         params["company"] = company
+
+#     # Month Filter ONLY when date filter not selected
+#     if (
+#         filters.get("month")
+#         and not filters.get("from_date")
+#         and not filters.get("to_date")
+#     ):
+#         conditions.append("MONTH(si.posting_date) = %(month)s")
+#         params["month"] = cint(filters.get("month"))
+
+#     where_clause = " AND ".join(conditions)
+
+#     data = frappe.db.sql(
+#         f"""
+#         SELECT
+#             i.image,
+#             i.custom_barcode_code,
+#             i.custom_departments AS custom_department,
+#             MONTH(si.posting_date) AS month,
+#             SUM(sii.qty) AS sales_qty,
+#             IFNULL(
+#                 (SELECT actual_qty FROM `tabBin` WHERE item_code = sii.item_code LIMIT 1),
+#                 0
+#             ) AS stock_qty,
+#             CASE
+#                 WHEN IFNULL(
+#                     (SELECT actual_qty FROM `tabBin` WHERE item_code = sii.item_code LIMIT 1),
+#                     0
+#                 ) > SUM(sii.qty)
+#                 THEN 'In Stock'
+#                 ELSE 'Low Stock'
+#             END AS status
+#         FROM `tabSales Invoice Item` sii
+#         INNER JOIN `tabSales Invoice` si ON sii.parent = si.name
+#         LEFT JOIN `tabItem` i ON i.item_code = sii.item_code
+#         WHERE {where_clause}
+#         GROUP BY sii.item_code, MONTH(si.posting_date)
+#         ORDER BY sales_qty DESC
+#         """,
+#         params,
+#         as_dict=True,
+#     )
+
+#     for row in data:
+#         if row.get("image"):
+#             img = row.image
+#             if not img.startswith("/"):
+#                 img = "/" + img
+#             row["image_url"] = img
+#         else:
+#             row["image_url"] = ""
+
+#         dept = row.get("custom_department") or ""
+#         row["custom_department"] = dept.split("-")[-1].strip() if dept else ""
+
+#     return data
+def get_data(filters):
+    company, doctype = resolve_dashboard_source(filters)
+
+    if doctype == "Sales Invoice":
+        parent_table, child_table = "tabSales Invoice", "tabSales Invoice Item"
+    else:
+        parent_table, child_table = "tabDelivery Note", "tabDelivery Note Item"
+
+    conditions = ["txn.docstatus = 1", "txn.company = %(company)s"]
+    params = {"company": company}
+
     if filters.get("from_date"):
-        conditions.append("si.posting_date >= %(from_date)s")
+        conditions.append("txn.posting_date >= %(from_date)s")
         params["from_date"] = filters.get("from_date")
 
     if filters.get("to_date"):
-        conditions.append("si.posting_date <= %(to_date)s")
+        conditions.append("txn.posting_date <= %(to_date)s")
         params["to_date"] = filters.get("to_date")
 
-    # Company Filter — ab permission-checked
-    company = get_allowed_company(filters)
-    if company:
-        conditions.append("si.company = %(company)s")
-        params["company"] = company
-
-    # Month Filter ONLY when date filter not selected
-    if (
-        filters.get("month")
-        and not filters.get("from_date")
-        and not filters.get("to_date")
-    ):
-        conditions.append("MONTH(si.posting_date) = %(month)s")
+    if filters.get("month") and not filters.get("from_date") and not filters.get("to_date"):
+        conditions.append("MONTH(txn.posting_date) = %(month)s")
         params["month"] = cint(filters.get("month"))
 
     where_clause = " AND ".join(conditions)
@@ -66,45 +136,24 @@ def get_data(filters):
             i.image,
             i.custom_barcode_code,
             i.custom_departments AS custom_department,
-            MONTH(si.posting_date) AS month,
-            SUM(sii.qty) AS sales_qty,
-            IFNULL(
-                (SELECT actual_qty FROM `tabBin` WHERE item_code = sii.item_code LIMIT 1),
-                0
-            ) AS stock_qty,
+            MONTH(txn.posting_date) AS month,
+            SUM(item.qty) AS sales_qty,
+            IFNULL((SELECT actual_qty FROM `tabBin` WHERE item_code = item.item_code LIMIT 1), 0) AS stock_qty,
             CASE
-                WHEN IFNULL(
-                    (SELECT actual_qty FROM `tabBin` WHERE item_code = sii.item_code LIMIT 1),
-                    0
-                ) > SUM(sii.qty)
-                THEN 'In Stock'
-                ELSE 'Low Stock'
+                WHEN IFNULL((SELECT actual_qty FROM `tabBin` WHERE item_code = item.item_code LIMIT 1), 0) > SUM(item.qty)
+                THEN 'In Stock' ELSE 'Low Stock'
             END AS status
-        FROM `tabSales Invoice Item` sii
-        INNER JOIN `tabSales Invoice` si ON sii.parent = si.name
-        LEFT JOIN `tabItem` i ON i.item_code = sii.item_code
+        FROM `{child_table}` item
+        INNER JOIN `{parent_table}` txn ON item.parent = txn.name
+        LEFT JOIN `tabItem` i ON i.item_code = item.item_code
         WHERE {where_clause}
-        GROUP BY sii.item_code, MONTH(si.posting_date)
+        GROUP BY item.item_code, MONTH(txn.posting_date)
         ORDER BY sales_qty DESC
         """,
         params,
         as_dict=True,
     )
-
-    for row in data:
-        if row.get("image"):
-            img = row.image
-            if not img.startswith("/"):
-                img = "/" + img
-            row["image_url"] = img
-        else:
-            row["image_url"] = ""
-
-        dept = row.get("custom_department") or ""
-        row["custom_department"] = dept.split("-")[-1].strip() if dept else ""
-
     return data
-
 
 def get_chart_data(data):
     return {

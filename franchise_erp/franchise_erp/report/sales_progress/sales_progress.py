@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from franchise_erp.utils.dashboard_permissions import resolve_dashboard_source
 
 def execute(filters=None):
     filters = filters or {}
@@ -36,36 +37,60 @@ def get_columns():
 # ---------------------------
 # DATA
 # ---------------------------
+# def get_data(filters):
+#     conditions = "WHERE docstatus = 1"
+#     params = {}
+
+#     if filters.get("from_date") and filters.get("to_date"):
+#         conditions += " AND posting_date BETWEEN %(from_date)s AND %(to_date)s"
+#         params["from_date"] = filters["from_date"]
+#         params["to_date"] = filters["to_date"]
+
+#     if filters.get("company"):
+#         conditions += " AND company = %(company)s"
+#         params["company"] = filters["company"]
+
+#     view_type = filters.get("view_type") or "qty"
+
+#     if view_type == "qty":
+#         select_field = "SUM(total_qty) AS total_sales"
+#     else:
+#         select_field = "SUM(grand_total) AS total_sales"
+
+#     return frappe.db.sql(f"""
+#         SELECT 
+#             DATE_FORMAT(posting_date, '%%Y-%%m') AS month,
+#             {select_field}
+#         FROM `tabSales Invoice`
+#         {conditions}
+#         GROUP BY DATE_FORMAT(posting_date, '%%Y-%%m')
+#         ORDER BY month
+#     """, params, as_dict=True)
+
 def get_data(filters):
-    conditions = "WHERE docstatus = 1"
-    params = {}
+    company, doctype = resolve_dashboard_source(filters)
+    table = "tabSales Invoice" if doctype == "Sales Invoice" else "tabDelivery Note"
+
+    conditions = "WHERE docstatus = 1 AND company = %(company)s"
+    params = {"company": company}
 
     if filters.get("from_date") and filters.get("to_date"):
         conditions += " AND posting_date BETWEEN %(from_date)s AND %(to_date)s"
         params["from_date"] = filters["from_date"]
         params["to_date"] = filters["to_date"]
 
-    if filters.get("company"):
-        conditions += " AND company = %(company)s"
-        params["company"] = filters["company"]
-
     view_type = filters.get("view_type") or "qty"
-
-    if view_type == "qty":
-        select_field = "SUM(total_qty) AS total_sales"
-    else:
-        select_field = "SUM(grand_total) AS total_sales"
+    select_field = "SUM(total_qty) AS total_sales" if view_type == "qty" else "SUM(grand_total) AS total_sales"
 
     return frappe.db.sql(f"""
         SELECT 
             DATE_FORMAT(posting_date, '%%Y-%%m') AS month,
             {select_field}
-        FROM `tabSales Invoice`
+        FROM `{table}`
         {conditions}
         GROUP BY DATE_FORMAT(posting_date, '%%Y-%%m')
         ORDER BY month
     """, params, as_dict=True)
-
 
 # ---------------------------
 # CHART
