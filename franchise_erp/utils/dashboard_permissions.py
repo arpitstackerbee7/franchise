@@ -16,3 +16,14 @@ def get_allowed_company(filters):
     if requested and requested != user_company:
         frappe.throw("Not permitted to view other company's data", frappe.PermissionError)
     return user_company
+
+def resolve_dashboard_source(filters):
+    company = get_allowed_company(filters)
+    dashboard_company = frappe.db.get_single_value(
+        "TZU Setting", "dashboard_company"
+    )
+
+    company = company or dashboard_company
+    doctype = "Sales Invoice" if company == dashboard_company else "Delivery Note"
+
+    return company, doctype

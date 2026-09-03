@@ -152,7 +152,8 @@
 
 import frappe
 from frappe.utils import getdate
-from franchise_erp.utils.dashboard_permissions import get_allowed_company
+#from franchise_erp.utils.dashboard_permissions import get_allowed_company
+from franchise_erp.utils.dashboard_permissions import resolve_dashboard_source
 
 
 def execute(filters=None):
@@ -164,7 +165,7 @@ def execute(filters=None):
 
     view_type = filters.get("view_type") or "qty"
 
-    company = get_allowed_company(filters) 
+    company, doctype = resolve_dashboard_source(filters) 
 
     if not from_date or not to_date:
         return [], [], None, empty_chart()
@@ -175,7 +176,8 @@ def execute(filters=None):
         from_date,
         to_date,
         company,
-        view_type
+        view_type,
+        doctype
     )
 
     chart = get_chart_data(
@@ -209,47 +211,77 @@ def get_columns(view_type):
     ]
 
 
-def get_data(from_date, to_date, company, view_type):
+# def get_data(from_date, to_date, company, view_type):
+
+#     conditions = [
+#         "docstatus = 1",
+#         "posting_date BETWEEN %(from_date)s AND %(to_date)s"
+#     ]
+
+#     values = {
+#         "from_date": from_date,
+#         "to_date": to_date
+#     }
+
+#     if company:
+#         conditions.append("company = %(company)s")
+#         values["company"] = company
+
+#     if view_type == "qty":
+#         value_field = "SUM(total_qty)"
+#     else:
+#         value_field = "SUM(grand_total)"
+
+#     data = frappe.db.sql(f"""
+
+#         SELECT
+
+#             DATE_FORMAT(posting_date, '%%b') AS month,
+
+#             {value_field} AS value
+
+#         FROM `tabSales Invoice`
+
+#         WHERE {" AND ".join(conditions)}
+
+#         GROUP BY
+#             YEAR(posting_date),
+#             MONTH(posting_date)
+
+#         ORDER BY
+#             YEAR(posting_date),
+#             MONTH(posting_date)
+
+#     """, values, as_dict=True)
+
+#     return data
+
+def get_data(from_date, to_date, company, view_type, doctype):
+
+    table = "tabSales Invoice" if doctype == "Sales Invoice" else "tabDelivery Note"
 
     conditions = [
         "docstatus = 1",
-        "posting_date BETWEEN %(from_date)s AND %(to_date)s"
+        "posting_date BETWEEN %(from_date)s AND %(to_date)s",
+        "company = %(company)s"
     ]
 
     values = {
         "from_date": from_date,
-        "to_date": to_date
+        "to_date": to_date,
+        "company": company
     }
 
-    if company:
-        conditions.append("company = %(company)s")
-        values["company"] = company
-
-    if view_type == "qty":
-        value_field = "SUM(total_qty)"
-    else:
-        value_field = "SUM(grand_total)"
+    value_field = "SUM(total_qty)" if view_type == "qty" else "SUM(grand_total)"
 
     data = frappe.db.sql(f"""
-
         SELECT
-
             DATE_FORMAT(posting_date, '%%b') AS month,
-
             {value_field} AS value
-
-        FROM `tabSales Invoice`
-
+        FROM `{table}`
         WHERE {" AND ".join(conditions)}
-
-        GROUP BY
-            YEAR(posting_date),
-            MONTH(posting_date)
-
-        ORDER BY
-            YEAR(posting_date),
-            MONTH(posting_date)
-
+        GROUP BY YEAR(posting_date), MONTH(posting_date)
+        ORDER BY YEAR(posting_date), MONTH(posting_date)
     """, values, as_dict=True)
 
     return data
