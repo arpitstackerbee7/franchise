@@ -71,19 +71,20 @@ def get_data(filters):
         return []
 
     query_filters = {
-        "from_date": filters.from_date,
-        "to_date": filters.to_date,
+        "from_date": filters.get("from_date"),
+        "to_date": filters.get("to_date"),
     }
 
     company_condition = ""
     salesman_condition = ""
-    join_type = "LEFT JOIN"
 
+    # ---------------------------------------------------------
     # Counter Filter
+    # ---------------------------------------------------------
     if filters.get("counter"):
         represents_company = frappe.db.get_value(
             "Customer",
-            filters.counter,
+            filters.get("counter"),
             "represents_company",
         )
 
@@ -96,17 +97,19 @@ def get_data(filters):
             AND dn.company = %(company)s
         """
 
-        # Counter selected => only matching employees
-        join_type = "INNER JOIN"
-
+    # ---------------------------------------------------------
     # Sales Man Filter
+    # ---------------------------------------------------------
     if filters.get("sales_man"):
-        query_filters["sales_man"] = filters.sales_man
+        query_filters["sales_man"] = filters.get("sales_man")
 
         salesman_condition = """
             AND e.user_id = %(sales_man)s
         """
 
+    # ---------------------------------------------------------
+    # Get Employee-wise Delivery Note Sales
+    # ---------------------------------------------------------
     rows = frappe.db.sql(
         f"""
         SELECT
@@ -117,7 +120,7 @@ def get_data(filters):
 
         FROM `tabEmployee` e
 
-        {join_type} `tabDelivery Note` dn
+        INNER JOIN `tabDelivery Note` dn
             ON dn.owner = e.user_id
             AND dn.docstatus = 1
             AND dn.posting_date BETWEEN %(from_date)s AND %(to_date)s
@@ -139,10 +142,19 @@ def get_data(filters):
         as_dict=True,
     )
 
+    # ---------------------------------------------------------
+    # Get Incentive Slabs
+    # ---------------------------------------------------------
     incentive_slabs = get_incentive_slabs()
+
+    if not incentive_slabs:
+        return []
 
     data = []
 
+    # ---------------------------------------------------------
+    # Match Employee Sales With Incentive Slab
+    # ---------------------------------------------------------
     for row in rows:
         monthly_sales = flt(row.monthly_sales)
 
@@ -151,37 +163,45 @@ def get_data(filters):
             incentive_slabs,
         )
 
+        # Only show users who have an incentive slab
+        if incentive_percentage is None:
+            continue
+
         potential_payout = (
             monthly_sales * incentive_percentage / 100
-            if incentive_percentage is not None
-            else None
         )
 
-        data.append({
-            "user": row.user,
-            "employee_name": row.employee_name,
-            "employee_id": row.employee_id,
-            "monthly_sales": monthly_sales,
-            "incentive_percentage": incentive_percentage,
-            "potential_payout": potential_payout,
-            "slab_model": slab_model,
-        })
+        data.append(
+            {
+                "user": row.user,
+                "employee_name": row.employee_name,
+                "employee_id": row.employee_id,
+                "monthly_sales": monthly_sales,
+                "incentive_percentage": incentive_percentage,
+                "potential_payout": potential_payout,
+                "slab_model": slab_model,
+            }
+        )
 
     return data
 
+
 def get_incentive_slabs():
-    child_table_doctype = frappe.db.get_value(
-        "DocField",
-        {
-            "parent": "TZU Setting",
-            "fieldname": "individual_sales_representative_incentives",
-            "fieldtype": "Table",
-        },
-        "options",
+    """
+    Get Individual Sales Representative Incentive slabs
+    from TZU Setting child table.
+    """
+
+    meta = frappe.get_meta("TZU Setting")
+
+    field = meta.get_field(
+        "individual_sales_representative_incentives"
     )
 
-    if not child_table_doctype:
+    if not field or not field.options:
         return []
+
+    child_table_doctype = field.options
 
     rows = frappe.get_all(
         child_table_doctype,
@@ -211,13 +231,15 @@ def get_incentive_slabs():
 
         min_amount, max_amount = parsed_range
 
-        slabs.append({
-            "idx": row.idx,
-            "min_amount": min_amount,
-            "max_amount": max_amount,
-            "incentive": flt(row.incentive),
-            "slab_model": row.slab_model or "",
-        })
+        slabs.append(
+            {
+                "idx": row.idx,
+                "min_amount": min_amount,
+                "max_amount": max_amount,
+                "incentive": flt(row.incentive),
+                "slab_model": row.slab_model or "",
+            }
+        )
 
     slabs.sort(
         key=lambda slab: (
@@ -230,15 +252,46 @@ def get_incentive_slabs():
 
 
 def parse_sales_range(range_value):
-    if not range_value:
+    """
+    Supported formats:
+
+    200
+        -> 0 to 200
+
+    0 - 200
+        -> 0 to 200
+
+    200 - 500
+        -> 200 to 500
+
+    1,80,000 to 2,30,000
+        -> 180000 to 230000
+
+    2,80,000 & above
+        -> 280000 and above
+
+    280000+
+        -> 280000 and above
+    """
+
+    if range_value is None:
         return None
 
     value = str(range_value).strip().lower()
 
+    if not value:
+        return None
+
+    # Remove currency symbol
     value = value.replace("₹", "")
+
+    # Remove commas
     value = value.replace(",", "")
+
+    # Normalize spaces
     value = re.sub(r"\s+", " ", value).strip()
 
+    # Extract all numbers
     numbers = re.findall(
         r"\d+(?:\.\d+)?",
         value,
@@ -252,6 +305,9 @@ def parse_sales_range(range_value):
         for number in numbers
     ]
 
+    # ---------------------------------------------------------
+    # Above / Open-ended range
+    # ---------------------------------------------------------
     is_above_range = any(
         keyword in value
         for keyword in [
@@ -267,6 +323,10 @@ def parse_sales_range(range_value):
     if is_above_range:
         return amounts[0], None
 
+    # ---------------------------------------------------------
+    # Normal range with two values
+    # Example: 200 - 500
+    # ---------------------------------------------------------
     if len(amounts) >= 2:
         min_amount = amounts[0]
         max_amount = amounts[1]
@@ -279,10 +339,39 @@ def parse_sales_range(range_value):
 
         return min_amount, max_amount
 
-    return amounts[0], amounts[0]
+    # ---------------------------------------------------------
+    # Single value
+    # Example: 200
+    #
+    # Requirement:
+    # 200 means 0 to 200
+    # ---------------------------------------------------------
+    return 0, amounts[0]
 
 
 def get_incentive_slab(monthly_sales, slabs):
+    """
+    Find matching incentive slab.
+
+    Examples:
+
+    200
+        -> 0 to 200
+
+    200 - 500
+        -> 200 to 500
+
+    500 - 1000
+        -> 500 to 1000
+
+    1000 & above
+        -> 1000 and above
+
+    Boundary handling:
+
+    Previous slab owns the common boundary.
+    """
+
     if not slabs:
         return None, ""
 
@@ -290,7 +379,10 @@ def get_incentive_slab(monthly_sales, slabs):
         min_amount = slab["min_amount"]
         max_amount = slab["max_amount"]
 
-        # Example: 2,80,000 & above
+        # -----------------------------------------------------
+        # Open-ended slab
+        # Example: 1000 & above
+        # -----------------------------------------------------
         if max_amount is None:
             if monthly_sales > min_amount:
                 return (
@@ -298,10 +390,19 @@ def get_incentive_slab(monthly_sales, slabs):
                     slab["slab_model"],
                 )
 
+            # If this is the first slab, include boundary
+            if index == 0 and monthly_sales >= min_amount:
+                return (
+                    slab["incentive"],
+                    slab["slab_model"],
+                )
+
             continue
 
-        # First slab:
-        # 1,80,000 to 2,30,000
+        # -----------------------------------------------------
+        # First slab
+        # Example: 0 to 200
+        # -----------------------------------------------------
         if index == 0:
             if min_amount <= monthly_sales <= max_amount:
                 return (
@@ -309,9 +410,10 @@ def get_incentive_slab(monthly_sales, slabs):
                     slab["slab_model"],
                 )
 
-        # Other slabs:
-        # Previous slab owns the overlapping boundary.
-        # So 2,30,000 remains in Silver.
+        # -----------------------------------------------------
+        # Other slabs
+        # Previous slab owns common boundary
+        # -----------------------------------------------------
         else:
             if min_amount < monthly_sales <= max_amount:
                 return (
