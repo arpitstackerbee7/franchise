@@ -4,6 +4,7 @@
 frappe.query_reports["Custom Financial Statement"] = {
 
     filters: [
+
         {
             fieldname: "company",
             label: __("Company"),
@@ -12,6 +13,7 @@ frappe.query_reports["Custom Financial Statement"] = {
             reqd: 1,
             default: frappe.defaults.get_user_default("Company")
         },
+
         {
             fieldname: "fiscal_year",
             label: __("Fiscal Year"),
@@ -22,14 +24,21 @@ frappe.query_reports["Custom Financial Statement"] = {
 
             on_change: function (report) {
 
-                let fy = report.get_filter_value("fiscal_year");
+                let fy = report.get_filter_value(
+                    "fiscal_year"
+                );
 
-                if (!fy) return;
+                if (!fy) {
+                    return;
+                }
 
                 frappe.db.get_value(
                     "Fiscal Year",
                     fy,
-                    ["year_start_date", "year_end_date"]
+                    [
+                        "year_start_date",
+                        "year_end_date"
+                    ]
                 ).then(r => {
 
                     if (r.message) {
@@ -94,9 +103,20 @@ frappe.query_reports["Custom Financial Statement"] = {
         }
     ],
 
-    formatter(value, row, column, data, default_formatter) {
+    formatter(
+        value,
+        row,
+        column,
+        data,
+        default_formatter
+    ) {
 
-        value = default_formatter(value, row, column, data);
+        value = default_formatter(
+            value,
+            row,
+            column,
+            data
+        );
 
         if (!data) {
             return value;
@@ -105,17 +125,30 @@ frappe.query_reports["Custom Financial Statement"] = {
         const expense = data.expense || "";
         const income = data.income || "";
 
+        // -------------------------------------------------
+        // SECTION HEADERS
+        // -------------------------------------------------
+
         if (
             expense === "TRADING ACCOUNT" ||
             expense === "PROFIT & LOSS ACCOUNT" ||
             expense === "KEY PERFORMANCE METRICS"
         ) {
-            return `<div style="font-weight:bold;
-                                color:#1f4e78;
-                                font-size:14px;">
-                        ${value}
-                    </div>`;
+
+            return `
+                <div style="
+                    font-weight:bold;
+                    color:#1f4e78;
+                    font-size:14px;
+                ">
+                    ${value}
+                </div>
+            `;
         }
+
+        // -------------------------------------------------
+        // SUBTOTAL / TOTAL
+        // -------------------------------------------------
 
         if (
             expense === "Subtotal" ||
@@ -123,19 +156,62 @@ frappe.query_reports["Custom Financial Statement"] = {
             income === "Subtotal" ||
             income === "Total"
         ) {
+
             return `<b>${value}</b>`;
         }
 
-        if (expense === "Gross Profit") {
-            return `<span style="color:green;font-weight:bold;">${value}</span>`;
+        // -------------------------------------------------
+        // PROFIT / LOSS
+        // -------------------------------------------------
+
+        if (
+            expense === "Gross Profit" ||
+            expense === "Net Profit"
+        ) {
+
+            return `
+                <span style="
+                    color:green;
+                    font-weight:bold;
+                ">
+                    ${value}
+                </span>
+            `;
         }
+
+        if (
+            income === "Gross Loss" ||
+            income === "Net Loss"
+        ) {
+
+            return `
+                <span style="
+                    color:red;
+                    font-weight:bold;
+                ">
+                    ${value}
+                </span>
+            `;
+        }
+
+        // -------------------------------------------------
+        // KPI
+        // -------------------------------------------------
 
         if (
             expense === "Gross Profit %" ||
             expense === "Net Profit %" ||
             expense === "Operating Expense Ratio %"
         ) {
-            return `<span style="color:#1976d2;font-weight:bold;">${value}</span>`;
+
+            return `
+                <span style="
+                    color:#1976d2;
+                    font-weight:bold;
+                ">
+                    ${value}
+                </span>
+            `;
         }
 
         return value;
@@ -147,28 +223,45 @@ frappe.query_reports["Custom Financial Statement"] = {
             return;
         }
 
-        let fy = report.get_filter_value("fiscal_year");
+        let fy = report.get_filter_value(
+            "fiscal_year"
+        );
 
         frappe.db.get_value(
             "Fiscal Year",
             fy,
-            ["year_start_date", "year_end_date"]
+            [
+                "year_start_date",
+                "year_end_date"
+            ]
         ).then(r => {
 
             if (r.message) {
 
-                if (!report.get_filter_value("from_date")) {
+                if (
+                    !report.get_filter_value(
+                        "from_date"
+                    )
+                ) {
+
                     report.set_filter_value(
                         "from_date",
                         r.message.year_start_date
                     );
+
                 }
 
-                if (!report.get_filter_value("to_date")) {
+                if (
+                    !report.get_filter_value(
+                        "to_date"
+                    )
+                ) {
+
                     report.set_filter_value(
                         "to_date",
                         r.message.year_end_date
                     );
+
                 }
 
             }
