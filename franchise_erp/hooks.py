@@ -220,9 +220,14 @@ doc_events = {
                     "franchise_erp.custom.delivery_note.disable_eway_notification",
                     "franchise_erp.custom.delivery_note.apply_sales_person_rules",
                     "franchise_erp.custom.delivery_note.validate_internal_customer_credit",
+                    # "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note_for_stock_take",
                     # "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note",
                     ],
-        "before_validate" : "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note",
+        "before_validate" : [
+            "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note",
+             "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note_for_stock_take",
+            
+        ],
         "before_save": [
             "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
             "franchise_erp.custom.delivery_note.set_promo_group_id",

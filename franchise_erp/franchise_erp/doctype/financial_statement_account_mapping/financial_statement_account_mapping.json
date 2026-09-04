@@ -7,16 +7,18 @@
  "engine": "InnoDB",
  "field_order": [
   "statement_type",
+  "statement_section",
+  "type",
   "account",
+  "balance_type",
   "enabled"
  ],
  "fields": [
   {
    "fieldname": "statement_type",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Statement Type",
-   "options": "Opening Stock\nPurchases\nPurchase Return\nSales\nClosing Stock\nAdministrative Expenses\nSelling & Distribution Expenses\nFinance Costs\nDepreciation\nProvision for Tax\nOther Income\nInvestment Income"
+   "label": "Statement Type"
   },
   {
    "fieldname": "account",
@@ -31,13 +33,34 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Enabled"
+  },
+  {
+   "fieldname": "statement_section",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Statement Section",
+   "options": "Trading Account\nProfit & Loss Account"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Expense\nIncome"
+  },
+  {
+   "fieldname": "balance_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Balance Type",
+   "options": "Period Balance\nOpening Balance\nClosing Balance"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-14 11:17:03.326765",
+ "modified": "2026-09-03 15:39:54.923570",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Financial Statement Account Mapping",
