@@ -225,7 +225,7 @@ doc_events = {
                     ],
         "before_validate" : [
             "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note",
-             "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note_for_stock_take",
+            #  "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note_for_stock_take",
             
         ],
         "before_save": [
