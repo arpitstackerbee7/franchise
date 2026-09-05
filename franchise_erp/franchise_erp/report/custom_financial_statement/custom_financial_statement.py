@@ -103,7 +103,8 @@ def get_account_balance(
     account_name,
     filters,
     from_date=None,
-    to_date=None
+    to_date=None,
+    exclude_period_closing=False
 ):
 
     account = frappe.db.get_value(
@@ -206,6 +207,21 @@ def get_account_balance(
             "finance_book"
         )
 
+    # -----------------------------------------------------
+    # EXCLUDE PERIOD CLOSING VOUCHER
+    # Only for Opening Stock
+    # -----------------------------------------------------
+
+    if exclude_period_closing:
+
+        conditions.append(
+            "gle.voucher_type != 'Period Closing Voucher'"
+        )
+
+    # -----------------------------------------------------
+    # QUERY
+    # -----------------------------------------------------
+
     result = frappe.db.sql(
         f"""
         SELECT
@@ -239,8 +255,6 @@ def get_account_balance(
     else:
 
         return credit - debit
-
-
 # =========================================================
 # MAPPING VALUE
 # =========================================================
@@ -274,6 +288,24 @@ def get_mapping_value(row, filters):
     # OPENING BALANCE
     # -----------------------------------------------------
 
+    # if balance_type == "Opening Balance":
+
+    #     from_date = filters.get("from_date")
+
+    #     if not from_date:
+    #         return 0
+
+    #     opening_date = add_days(
+    #         from_date,
+    #         -1
+    #     )
+
+    #     return get_account_balance(
+    #         account,
+    #         filters,
+    #         None,
+    #         opening_date
+    #     )
     if balance_type == "Opening Balance":
 
         from_date = filters.get("from_date")
@@ -286,13 +318,29 @@ def get_mapping_value(row, filters):
             -1
         )
 
+        # -------------------------------------------------
+        # OPENING STOCK
+        # Period Closing Voucher ko ignore karke
+        # previous financial year's closing balance
+        # ko opening stock ke roop me use karo.
+        # -------------------------------------------------
+
+        if row.get("statement_type") == "Opening Stock":
+
+            return get_account_balance(
+                account,
+                filters,
+                None,
+                opening_date,
+                exclude_period_closing=True
+            )
+
         return get_account_balance(
             account,
             filters,
             None,
             opening_date
         )
-
     # -----------------------------------------------------
     # CLOSING BALANCE
     # -----------------------------------------------------
