@@ -364,47 +364,110 @@ def get_data(filters, companies):
 		})
 
 
+	# # =====================================================
+	# # SALE QUANTITY
+	# # =====================================================
+
+	# qty_data = frappe.db.sql(
+	# 	f"""
+	# 	SELECT
+	# 		si.customer AS customer,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN si.posting_date < %(last_15_start)s
+	# 				THEN sii.qty
+	# 				ELSE 0
+	# 			END
+	# 		) AS qty_ytd,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN si.posting_date >= %(last_15_start)s
+	# 				THEN sii.qty
+	# 				ELSE 0
+	# 			END
+	# 		) AS qty_15
+
+	# 	FROM `tabSales Invoice` si
+
+	# 	INNER JOIN `tabSales Invoice Item` sii
+	# 		ON sii.parent = si.name
+
+	# 	WHERE
+	# 		si.docstatus = 1
+	# 		AND si.company IN %(companies)s
+	# 		AND si.posting_date >= %(from_date)s
+	# 		AND si.posting_date <= %(to_date)s
+	# 		AND IFNULL(si.is_return, 0) = 0
+	# 		{customer_condition}
+
+	# 	GROUP BY si.customer
+	# 	""",
+	# 	sales_values,
+	# 	as_dict=True
+	# )
+
+	# qty_map = {
+	# 	d.customer: d
+	# 	for d in qty_data
+	# }
+
 	# =====================================================
 	# SALE QUANTITY
+	# From Delivery Note (not Sales Invoice)
 	# =====================================================
+
+	dn_values = {
+		"companies": companies,
+		"from_date": from_date,
+		"to_date": to_date,
+		"last_15_start": last_15_start
+	}
+
+	dn_customer_condition = ""
+
+	if customer_filter:
+		dn_customer_condition = " AND dn.customer = %(customer)s"
+		dn_values["customer"] = customer_filter
 
 	qty_data = frappe.db.sql(
 		f"""
 		SELECT
-			si.customer AS customer,
+			dn.customer AS customer,
 
 			SUM(
 				CASE
-					WHEN si.posting_date < %(last_15_start)s
-					THEN sii.qty
+					WHEN dn.posting_date < %(last_15_start)s
+					THEN dni.qty
 					ELSE 0
 				END
 			) AS qty_ytd,
 
 			SUM(
 				CASE
-					WHEN si.posting_date >= %(last_15_start)s
-					THEN sii.qty
+					WHEN dn.posting_date >= %(last_15_start)s
+					THEN dni.qty
 					ELSE 0
 				END
 			) AS qty_15
 
-		FROM `tabSales Invoice` si
+		FROM `tabDelivery Note` dn
 
-		INNER JOIN `tabSales Invoice Item` sii
-			ON sii.parent = si.name
+		INNER JOIN `tabDelivery Note Item` dni
+			ON dni.parent = dn.name
 
 		WHERE
-			si.docstatus = 1
-			AND si.company IN %(companies)s
-			AND si.posting_date >= %(from_date)s
-			AND si.posting_date <= %(to_date)s
-			AND IFNULL(si.is_return, 0) = 0
-			{customer_condition}
+			dn.docstatus = 1
+			AND dn.company IN %(companies)s
+			AND dn.posting_date >= %(from_date)s
+			AND dn.posting_date <= %(to_date)s
+			AND IFNULL(dn.is_return, 0) = 0
+			{dn_customer_condition}
 
-		GROUP BY si.customer
+		GROUP BY dn.customer
 		""",
-		sales_values,
+		dn_values,
 		as_dict=True
 	)
 
@@ -412,7 +475,6 @@ def get_data(filters, companies):
 		d.customer: d
 		for d in qty_data
 	}
-
 
 	# =====================================================
 	# SALE AMOUNT
