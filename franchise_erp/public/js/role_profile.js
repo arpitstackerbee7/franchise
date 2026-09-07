@@ -17,8 +17,6 @@
                     .map((row) => row.role)
                     .filter(Boolean);
 
-                // Role Profile ke liye __onload.all_roles set nahi hota,
-                // isliye base class multicheck banata hi nahi — force karo.
                 if (!this.multicheck) {
                     this.make(true);
                 }
