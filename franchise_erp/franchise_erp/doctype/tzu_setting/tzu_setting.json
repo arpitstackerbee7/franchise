@@ -6,36 +6,43 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "for_items_section",
   "serialno_series",
   "serial_no_uom",
   "product_bundle_series",
   "box_barcode_series",
   "transport_service_item",
-  "sis_debit_note_company",
-  "sis_debit_note_supplier",
-  "sis_debit_note_creditors",
-  "whatsapp_no",
-  "incoming_logistics_users",
-  "is_margin_calculate_on_dn",
-  "individual_sales_representative_incentives",
-  "counter_store_level_performance",
+  "all_counters_name_show_on_supplier",
+  "update_items_allowed_roles",
   "column_break_dltx",
   "item_name",
   "batch_uom",
   "enter_series_length",
   "box_barcode_series_length",
   "item_restricted_roles",
-  "update_items_allowed_roles",
-  "all_counters_name_show_on_supplier",
+  "enabled_features_section",
   "is_user_login_with_otp",
   "enable_geo_location",
+  "enable_pricing_rule",
+  "column_break_qyul",
   "enable_whatsapp_notification",
   "enable_whatsapp_group_notification",
+  "is_margin_calculate_on_dn",
   "enable_po_notification",
-  "is_credit_note_account",
-  "enable_pricing_rule",
+  "dynamic_set_value_section",
+  "sis_debit_note_supplier",
+  "sis_debit_note_company",
+  "sis_debit_note_creditors",
+  "incoming_logistics_users",
+  "column_break_ahji",
   "dashboard_company",
+  "is_credit_note_account",
   "employee_payable_account",
+  "whatsapp_no",
+  "for_reports_section",
+  "counter_store_level_performance",
+  "column_break_evnp",
+  "individual_sales_representative_incentives",
   "section_break_eiab",
   "financial_statement_account_mapping"
  ],
@@ -237,13 +244,45 @@
    "fieldtype": "Link",
    "label": "Employee Payable Account",
    "options": "Account"
+  },
+  {
+   "fieldname": "for_items_section",
+   "fieldtype": "Section Break",
+   "label": "For Items"
+  },
+  {
+   "fieldname": "enabled_features_section",
+   "fieldtype": "Section Break",
+   "label": "Enabled Features"
+  },
+  {
+   "fieldname": "column_break_qyul",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dynamic_set_value_section",
+   "fieldtype": "Section Break",
+   "label": "Dynamic Set Value"
+  },
+  {
+   "fieldname": "column_break_ahji",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "for_reports_section",
+   "fieldtype": "Section Break",
+   "label": "For Reports"
+  },
+  {
+   "fieldname": "column_break_evnp",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-24 17:04:07.664445",
+ "modified": "2026-09-07 14:38:42.038648",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
