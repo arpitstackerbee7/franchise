@@ -415,67 +415,99 @@ def get_data(filters, companies):
 
 	# =====================================================
 	# SALE QUANTITY
-	# From Delivery Note (not Sales Invoice)
-	# =====================================================
 
-	dn_values = {
-		"companies": companies,
-		"from_date": from_date,
-		"to_date": to_date,
-		"last_15_start": last_15_start
-	}
 
-	dn_customer_condition = ""
+	from franchise_erp.franchise_erp.doctype.sis_debit_note_log.sis_debit_note_log import fetch_invoices
 
-	if customer_filter:
-		dn_customer_condition = " AND dn.customer = %(customer)s"
-		dn_values["customer"] = customer_filter
+	qty_map = {}
 
-	qty_data = frappe.db.sql(
-		f"""
-		SELECT
-			dn.customer AS customer,
+	# -----------------------------------------------------
+	# Customer rows ke liye
+	# -----------------------------------------------------
 
-			SUM(
-				CASE
-					WHEN dn.posting_date < %(last_15_start)s
-					THEN dni.qty
-					ELSE 0
-				END
-			) AS qty_ytd,
+	for company in companies:
 
-			SUM(
-				CASE
-					WHEN dn.posting_date >= %(last_15_start)s
-					THEN dni.qty
-					ELSE 0
-				END
-			) AS qty_15
+		# Existing report customer list / data se customer identify hoga
+		customers = frappe.get_all(
+			"Customer",
+			filters={
+				"disabled": 0
+			},
+			pluck="name"
+		)
 
-		FROM `tabDelivery Note` dn
+		for customer in customers:
 
-		INNER JOIN `tabDelivery Note Item` dni
-			ON dni.parent = dn.name
+			# Agar report mein customer filter diya hai
+			if customer_filter and customer != customer_filter:
+				continue
 
-		WHERE
-			dn.docstatus = 1
-			AND dn.company IN %(companies)s
-			AND dn.posting_date >= %(from_date)s
-			AND dn.posting_date <= %(to_date)s
-			AND IFNULL(dn.is_return, 0) = 0
-			{dn_customer_condition}
+			# -------------------------------------------------
+			# IMPORTANT:
+			# Customer ko SIS Debit Note Log ki Company maana hai
+			#
+			# Example:
+			# Customer = Karishma Fabrics
+			# SIS Company = Karishma Fabrics
+			# -------------------------------------------------
 
-		GROUP BY dn.customer
-		""",
-		dn_values,
-		as_dict=True
-	)
+			sis_company = frappe.db.exists(
+				"Company",
+				{"name": customer}
+			)
 
-	qty_map = {
-		d.customer: d
-		for d in qty_data
-	}
+			if not sis_company:
+				continue
 
+			# -------------------------------------------------
+			# SAME LOGIC AS SIS DEBIT NOTE LOG
+			# -------------------------------------------------
+
+			result = fetch_invoices(
+				company=customer,
+				from_date=str(from_date),
+				to_date=str(to_date)
+			)
+
+			invoice_list = result.get("invoice_list") or []
+
+			# Initialize
+			if customer not in qty_map:
+				qty_map[customer] = {
+					"qty_ytd": 0,
+					"qty_15": 0
+				}
+
+			# -------------------------------------------------
+			# PROCESS INVOICE ITEMS
+			# -------------------------------------------------
+
+			for row in invoice_list:
+
+				qty = float(row.get("qty") or 0)
+				posting_date = row.get("posting_date")
+
+				# ---------------------------------------------
+				# FULL SELECTED PERIOD
+				#
+				# 01-04-2026 → 31-08-2026
+				#
+				# Karishma Fabrics = 21
+				# ---------------------------------------------
+				qty_map[customer]["qty_ytd"] += qty
+
+				# ---------------------------------------------
+				# LAST 15 DAYS
+				#
+				# To Date - 14 days → To Date
+				# ---------------------------------------------
+				if posting_date:
+					posting_date = getdate(posting_date)
+
+					if posting_date >= last_15_start:
+						qty_map[customer]["qty_15"] += qty
+
+										
 	# =====================================================
 	# SALE AMOUNT
 	# =====================================================
