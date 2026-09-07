@@ -378,7 +378,7 @@ doctype_js = {
     "Leave Application": "public/js/leave_application.js",
     # "Subcontracting Order": "public/js/job_work_order.js",
     "Full and Final Statement": "public/js/full_and_final_statement.js",
-
+    "Role Profile": "public/js/role_profile.js"
 }
 
 
@@ -393,7 +393,8 @@ override_doctype_class = {
     "Leave Application": "franchise_erp.overrides.custom_leave_application.CustomLeaveApplication",
     "Auto Repeat": "franchise_erp.overrides.auto_repeat.CustomAutoRepeat",
     "Payment Entry": "franchise_erp.custom.payment_entry.CustomPaymentEntry",
-    "Full and Final Statement": "franchise_erp.overrides.full_and_final_statement.CustomFullandFinalStatement"
+    "Full and Final Statement": "franchise_erp.overrides.full_and_final_statement.CustomFullandFinalStatement",
+    "Role Profile": "franchise_erp.overrides.role_profile.CustomRoleProfile"
 }
 
 # override_whitelisted_methods = {
