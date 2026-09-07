@@ -48,10 +48,14 @@ def get_all_active_schemes(doc):
 
     return applicable_schemes
 
+
 def apply_promotions(doc, method=None):
     if doc.docstatus == 1 or doc.ignore_pricing_rule:
         return
     
+    # Don't apply promotion for Stock Taking Delivery Notes
+    if doc.get("custom_stock_taking"):
+        return
     # Don't apply promotion for Internal Customers
     if doc.customer:
         is_internal_customer = frappe.db.get_value(

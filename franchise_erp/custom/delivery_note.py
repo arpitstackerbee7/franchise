@@ -6,7 +6,9 @@ from frappe.utils import nowdate, flt, getdate, today, cstr
 
 #for 2 get 1 free item
 def set_promo_group_id(doc, method=None):
-
+    
+    if doc.get("custom_stock_taking"):
+        return
     # Skip for Internal Customer
     if doc.customer and frappe.db.get_value("Customer", doc.customer, "is_internal_customer"):
         return
@@ -25,7 +27,9 @@ def set_promo_group_id(doc, method=None):
 #for 2 buy 1 item discount like 20%
 
 def set_percent_off_promo_flags(doc, method=None):
-
+    
+    if doc.get("custom_stock_taking"):
+        return
     # Skip for Internal Customer
     if doc.customer and frappe.db.get_value("Customer", doc.customer, "is_internal_customer"):
         return
@@ -750,5 +754,217 @@ def apply_sis_pricing_delivery_note(doc, method=None):
 
     # Force discount fields after all calculations
     for item in doc.items:
+        item.discount_percentage = 0
+        # item.discount_amount = 0
+        
+        
+        
+def apply_sis_pricing_delivery_note_for_stock_take(
+    doc,
+    method=None
+):
+
+    # =====================================================
+    # CONDITION 1:
+    # Stock Taking Settings me
+    # is_margin_calculate_on_dn checked hona chahiye
+    # =====================================================
+
+    if not frappe.db.get_single_value(
+        "Stock Taking Settings",
+        "is_margin_calculate_on_dn"
+    ):
+        return
+
+    # =====================================================
+    # CONDITION 2:
+    # Customer required
+    # =====================================================
+
+    if not doc.customer:
+        return
+
+    # =====================================================
+    # CONDITION 3:
+    # Customer INTERNAL nahi hona chahiye
+    # =====================================================
+
+    is_internal_customer = frappe.db.get_value(
+        "Customer",
+        doc.customer,
+        "is_internal_customer"
+    )
+
+    if is_internal_customer:
+        return
+
+    # =====================================================
+    # CONDITION 4:
+    # Delivery Note Stock Taking se linked hona chahiye
+    # =====================================================
+
+    stock_taking = doc.get(
+        "custom_stock_taking"
+    )
+
+    if not stock_taking:
+        return
+
+    # =====================================================
+    # CONDITION 5:
+    # Stock Taking Reason filled hona chahiye
+    #
+    # Draft DN create hone ke time reason blank ho sakta hai.
+    # User reason fill karke Save karega.
+    # Us time before_validate me SIS calculation chalegi.
+    # =====================================================
+
+    if not doc.get(
+        "custom_stock_taking_reason"
+    ):
+        return
+
+    # =====================================================
+    # ITEMS REQUIRED
+    # =====================================================
+
+    if not doc.items:
+        return
+
+    # =====================================================
+    # PACKED ITEMS
+    # =====================================================
+
+    if doc.get("packed_items"):
+        return
+
+    # =====================================================
+    # IMPORT STOCK TAKING SIS FUNCTION
+    # =====================================================
+
+    from franchise_erp.custom.sales_invoice import (
+        calculate_sis_values_for_stock_take,
+    )
+
+    # =====================================================
+    # SIS CALCULATION
+    # =====================================================
+
+    for item in doc.items:
+
+        # -------------------------------------------------
+        # ITEM CODE REQUIRED
+        # -------------------------------------------------
+
+        if not item.item_code:
+            continue
+
+        # -------------------------------------------------
+        # PRODUCT BUNDLE SKIP
+        # -------------------------------------------------
+
+        if item.get(
+            "custom_product_bundle"
+        ):
+            continue
+
+        # -------------------------------------------------
+        # ORIGINAL RATE
+        #
+        # price_list_rate ko priority denge because
+        # item.rate SIS calculation ke baad change ho sakta hai.
+        # -------------------------------------------------
+
+        original_rate = abs(
+            flt(
+                item.price_list_rate
+                or item.rate
+            )
+        )
+
+        if original_rate <= 0:
+            continue
+
+        # -------------------------------------------------
+        # CALCULATE STOCK TAKING SIS
+        # -------------------------------------------------
+
+        d = calculate_sis_values_for_stock_take(
+            doc.customer,
+            original_rate,
+            stock_taking
+        )
+
+        if not d:
+            continue
+
+        # =================================================
+        # DISPLAY FIELDS
+        # =================================================
+
+        item.custom_output_gst_ = d[
+            "gst_percent"
+        ]
+
+        item.custom_output_gst_value = d[
+            "output_gst_value"
+        ]
+
+        item.custom_net_sale_value = d[
+            "net_sale_value"
+        ]
+
+        item.custom_margins_ = d[
+            "margin_percent"
+        ]
+
+        item.custom_margin_amount = d[
+            "margin_amount"
+        ]
+
+        item.custom_total_invoice_amount = d[
+            "taxable_value"
+        ]
+
+        # =================================================
+        # RATE
+        # =================================================
+
+        item.rate = d[
+            "taxable_value"
+        ]
+
+        # =================================================
+        # DISCOUNT
+        # =================================================
+
+        item.discount_percentage = 0
+        item.discount_amount = 0
+
+        # =================================================
+        # SIS FLAGS
+        # =================================================
+
+        item.custom_sis_calculated = 1
+        item.custom_sis_done_calculated = 1
+
+    # =====================================================
+    # ERPNext CALCULATIONS
+    # =====================================================
+
+    doc.set_missing_values()
+
+    if hasattr(
+        doc,
+        "calculate_taxes_and_totals"
+    ):
+        doc.calculate_taxes_and_totals()
+
+    # =====================================================
+    # FORCE DISCOUNT = 0
+    # =====================================================
+
+    for item in doc.items:
+
         item.discount_percentage = 0
         # item.discount_amount = 0
