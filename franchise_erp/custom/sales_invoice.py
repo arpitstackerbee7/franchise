@@ -2067,3 +2067,169 @@ def update_serial_no_mrp(doc, method=None):
 
     frappe.db.commit()
 
+
+
+@frappe.whitelist()
+def calculate_sis_values_for_stock_take(
+    customer,
+    rate,
+    stock_taking=None
+):
+
+    # ==================================================
+    # BASIC CHECK
+    # ==================================================
+
+    if not customer or not rate:
+        return None
+
+    # ==================================================
+    # GUEST USER CHECK
+    # ==================================================
+
+    if frappe.session.user == "Guest":
+        return None
+
+    # ==================================================
+    # WEBSITE USER CHECK
+    # ==================================================
+
+    user_type = frappe.db.get_value(
+        "User",
+        frappe.session.user,
+        "user_type"
+    )
+
+    if user_type == "Website User":
+        return None
+
+    # ==================================================
+    # STOCK TAKING REQUIRED
+    # ==================================================
+
+    if not stock_taking:
+        return None
+
+    # ==================================================
+    # STOCK TAKING → COMPANY
+    # ==================================================
+
+    company = frappe.db.get_value(
+        "Stock Taking",
+        stock_taking,
+        "company"
+    )
+
+    if not company:
+        return None
+
+    # ==================================================
+    # SIS CONFIGURATION
+    # ==================================================
+
+    config = frappe.db.get_value(
+        "SIS Configuration",
+        {
+            "company": company
+        },
+        [
+            "output_gst_min_net_rate",
+            "output_gst_max_net_rate",
+            "fresh_margin",
+        ],
+        as_dict=True
+    )
+
+    if not config:
+        return None
+
+    # ==================================================
+    # ALWAYS POSITIVE RATE
+    # ==================================================
+
+    rate = abs(
+        flt(rate)
+    )
+
+    if rate <= 0:
+        return None
+
+    # ==================================================
+    # GST SLAB
+    # ==================================================
+
+    if rate <= flt(
+        config.output_gst_min_net_rate
+    ):
+
+        gst_percent = 5
+
+    elif rate >= flt(
+        config.output_gst_max_net_rate
+    ):
+
+        gst_percent = 18
+
+    else:
+
+        gst_percent = 12
+
+    # ==================================================
+    # GST SPLIT
+    # ==================================================
+
+    net_sale_value = flt(
+        (
+            rate * 100
+        )
+        /
+        (
+            100 + gst_percent
+        ),
+        2
+    )
+
+    gst_value = flt(
+        rate - net_sale_value,
+        2
+    )
+
+    # ==================================================
+    # MARGIN
+    # ==================================================
+
+    margin_percent = flt(
+        config.fresh_margin
+    )
+
+    margin_amount = flt(
+        (
+            rate * margin_percent
+        )
+        /
+        100,
+        2
+    )
+
+    # ==================================================
+    # FINAL TAXABLE VALUE
+    # ==================================================
+
+    taxable_value = flt(
+        net_sale_value - margin_amount,
+        2
+    )
+
+    # ==================================================
+    # RETURN
+    # ==================================================
+
+    return {
+        "gst_percent": gst_percent,
+        "output_gst_value": gst_value,
+        "margin_percent": margin_percent,
+        "margin_amount": margin_amount,
+        "net_sale_value": net_sale_value,
+        "taxable_value": taxable_value,
+        "company": company,
+    }

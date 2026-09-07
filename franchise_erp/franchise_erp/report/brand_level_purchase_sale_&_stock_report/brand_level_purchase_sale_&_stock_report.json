@@ -1,0 +1,70 @@
+{
+ "add_total_row": 1,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2026-09-07 10:14:46.588697",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": null,
+ "modified": "2026-09-07 10:14:46.588697",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Brand Level Purchase Sale & Stock Report",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Item",
+ "report_name": "Brand Level Purchase Sale & Stock Report",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Stock User"
+  },
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Purchase User"
+  },
+  {
+   "role": "Desk User"
+  },
+  {
+   "role": "Stock Manager"
+  },
+  {
+   "role": "Manufacturing User"
+  },
+  {
+   "role": "Maintenance User"
+  },
+  {
+   "role": "Item Manager"
+  },
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "SIS Counter"
+  },
+  {
+   "role": "Sales & Distribution"
+  },
+  {
+   "role": "admin"
+  },
+  {
+   "role": "Production"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "Accounts view"
+  }
+ ],
+ "timeout": 0
+}
