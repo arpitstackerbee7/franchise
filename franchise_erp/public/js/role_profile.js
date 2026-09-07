@@ -17,6 +17,12 @@
                     .map((row) => row.role)
                     .filter(Boolean);
 
+                // Role Profile ke liye __onload.all_roles set nahi hota,
+                // isliye base class multicheck banata hi nahi — force karo.
+                if (!this.multicheck) {
+                    this.make(true);
+                }
+
                 this.multicheck.df.get_data = () => {
                     return allowed_roles.map((role) => ({
                         label: __(role),
@@ -37,10 +43,7 @@
             if (!frm.roles_editor) {
                 const role_area = $(frm.fields_dict.roles_html.wrapper);
 
-                frm.roles_editor = new frappe.RoleEditor(
-                    role_area,
-                    frm
-                );
+                frm.roles_editor = new frappe.RoleEditor(role_area, frm);
             }
 
             frm.roles_editor.show();
