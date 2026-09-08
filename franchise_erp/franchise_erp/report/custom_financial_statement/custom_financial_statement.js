@@ -5,6 +5,10 @@ frappe.query_reports["Custom Financial Statement"] = {
 
     filters: [
 
+        // =================================================
+        // COMPANY
+        // =================================================
+
         {
             fieldname: "company",
             label: __("Company"),
@@ -13,6 +17,10 @@ frappe.query_reports["Custom Financial Statement"] = {
             reqd: 1,
             default: frappe.defaults.get_user_default("Company")
         },
+
+        // =================================================
+        // FISCAL YEAR
+        // =================================================
 
         {
             fieldname: "fiscal_year",
@@ -24,9 +32,7 @@ frappe.query_reports["Custom Financial Statement"] = {
 
             on_change: function (report) {
 
-                let fy = report.get_filter_value(
-                    "fiscal_year"
-                );
+                let fy = report.get_filter_value("fiscal_year");
 
                 if (!fy) {
                     return;
@@ -60,12 +66,20 @@ frappe.query_reports["Custom Financial Statement"] = {
             }
         },
 
+        // =================================================
+        // FROM DATE
+        // =================================================
+
         {
             fieldname: "from_date",
             label: __("From Date"),
             fieldtype: "Date",
             reqd: 1
         },
+
+        // =================================================
+        // TO DATE
+        // =================================================
 
         {
             fieldname: "to_date",
@@ -74,12 +88,20 @@ frappe.query_reports["Custom Financial Statement"] = {
             reqd: 1
         },
 
+        // =================================================
+        // COST CENTER
+        // =================================================
+
         {
             fieldname: "cost_center",
             label: __("Cost Center"),
             fieldtype: "Link",
             options: "Cost Center"
         },
+
+        // =================================================
+        // PROJECT
+        // =================================================
 
         {
             fieldname: "project",
@@ -88,12 +110,20 @@ frappe.query_reports["Custom Financial Statement"] = {
             options: "Project"
         },
 
+        // =================================================
+        // FINANCE BOOK
+        // =================================================
+
         {
             fieldname: "finance_book",
             label: __("Finance Book"),
             fieldtype: "Link",
             options: "Finance Book"
         },
+
+        // =================================================
+        // SHOW ZERO VALUES
+        // =================================================
 
         {
             fieldname: "show_zero_values",
@@ -102,6 +132,10 @@ frappe.query_reports["Custom Financial Statement"] = {
             default: 1
         }
     ],
+
+    // =====================================================
+    // FORMATTER
+    // =====================================================
 
     formatter(
         value,
@@ -125,19 +159,34 @@ frappe.query_reports["Custom Financial Statement"] = {
         const expense = data.expense || "";
         const income = data.income || "";
 
-        // -------------------------------------------------
-        // SECTION HEADERS
-        // -------------------------------------------------
+        // =================================================
+        // DYNAMIC SECTION HEADER
+        // =================================================
+        //
+        // Python creates section header like:
+        //
+        // {
+        //     expense: "SECTION NAME",
+        //     expense_amount: null,
+        //     income: null,
+        //     income_amount: null
+        // }
+        //
+        // Therefore ANY statement_section will be
+        // automatically highlighted.
+        // =================================================
 
-        if (
-            expense === "TRADING ACCOUNT" ||
-            expense === "PROFIT & LOSS ACCOUNT" ||
-            expense === "KEY PERFORMANCE METRICS"
-        ) {
+        const is_section_header =
+            data.expense &&
+            data.expense_amount === null &&
+            data.income === null &&
+            data.income_amount === null;
+
+        if (is_section_header) {
 
             return `
                 <div style="
-                    font-weight:bold;
+                    font-weight:700;
                     color:#1f4e78;
                     font-size:14px;
                 ">
@@ -146,9 +195,9 @@ frappe.query_reports["Custom Financial Statement"] = {
             `;
         }
 
-        // -------------------------------------------------
+        // =================================================
         // SUBTOTAL / TOTAL
-        // -------------------------------------------------
+        // =================================================
 
         if (
             expense === "Subtotal" ||
@@ -160,9 +209,9 @@ frappe.query_reports["Custom Financial Statement"] = {
             return `<b>${value}</b>`;
         }
 
-        // -------------------------------------------------
+        // =================================================
         // PROFIT / LOSS
-        // -------------------------------------------------
+        // =================================================
 
         if (
             expense === "Gross Profit" ||
@@ -194,9 +243,9 @@ frappe.query_reports["Custom Financial Statement"] = {
             `;
         }
 
-        // -------------------------------------------------
+        // =================================================
         // KPI
-        // -------------------------------------------------
+        // =================================================
 
         if (
             expense === "Gross Profit %" ||
@@ -217,15 +266,17 @@ frappe.query_reports["Custom Financial Statement"] = {
         return value;
     },
 
+    // =====================================================
+    // ONLOAD
+    // =====================================================
+
     onload(report) {
 
         if (!report.get_filter_value("fiscal_year")) {
             return;
         }
 
-        let fy = report.get_filter_value(
-            "fiscal_year"
-        );
+        let fy = report.get_filter_value("fiscal_year");
 
         frappe.db.get_value(
             "Fiscal Year",
@@ -239,9 +290,7 @@ frappe.query_reports["Custom Financial Statement"] = {
             if (r.message) {
 
                 if (
-                    !report.get_filter_value(
-                        "from_date"
-                    )
+                    !report.get_filter_value("from_date")
                 ) {
 
                     report.set_filter_value(
@@ -252,9 +301,7 @@ frappe.query_reports["Custom Financial Statement"] = {
                 }
 
                 if (
-                    !report.get_filter_value(
-                        "to_date"
-                    )
+                    !report.get_filter_value("to_date")
                 ) {
 
                     report.set_filter_value(
