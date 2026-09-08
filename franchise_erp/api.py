@@ -2764,3 +2764,36 @@ def is_otp_login_enabled():
 
     return 1 if enabled else 0
     
+    
+    
+import frappe
+from erpnext.stock.doctype.delivery_note.delivery_note import (
+    make_sales_invoice as erpnext_make_sales_invoice,
+)
+
+
+@frappe.whitelist()
+def make_sales_invoice(source_name, target_doc=None, args=None):
+    si = erpnext_make_sales_invoice(
+        source_name,
+        target_doc=target_doc,
+        args=args,
+    )
+
+    for item in si.items:
+        if item.dn_detail:
+            dn_item = frappe.db.get_value(
+                "Delivery Note Item",
+                item.dn_detail,
+                ["serial_no", "serial_and_batch_bundle"],
+                as_dict=True,
+            )
+
+            if dn_item:
+                if dn_item.serial_no:
+                    item.serial_no = dn_item.serial_no
+
+                if dn_item.serial_and_batch_bundle:
+                    item.serial_and_batch_bundle = dn_item.serial_and_batch_bundle
+
+    return si

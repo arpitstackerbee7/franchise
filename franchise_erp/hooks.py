@@ -402,6 +402,11 @@ override_doctype_class = {
     "Role Profile": "franchise_erp.overrides.role_profile.CustomRoleProfile"
 }
 
+override_whitelisted_methods = {
+    "erpnext.stock.doctype.delivery_note.delivery_note.make_sales_invoice":
+        "franchise_erp.api.make_sales_invoice"
+}
+
 # override_whitelisted_methods = {
 #     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"
 # }
