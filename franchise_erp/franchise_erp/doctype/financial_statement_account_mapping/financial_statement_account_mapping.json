@@ -36,10 +36,10 @@
   },
   {
    "fieldname": "statement_section",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Statement Section",
-   "options": "Trading Account\nProfit & Loss Account"
+   "options": "Statement Section"
   },
   {
    "fieldname": "type",
@@ -60,7 +60,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-03 15:39:54.923570",
+ "modified": "2026-09-08 12:55:32.842101",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Financial Statement Account Mapping",

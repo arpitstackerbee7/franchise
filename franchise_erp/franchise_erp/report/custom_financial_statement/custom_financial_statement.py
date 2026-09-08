@@ -6,6 +6,10 @@ from frappe import _
 from frappe.utils import flt, add_days
 
 
+# =========================================================
+# EXECUTE
+# =========================================================
+
 def execute(filters=None):
 
     filters = filters or {}
@@ -25,9 +29,14 @@ def get_columns(filters):
     fy = ""
 
     if filters.get("fiscal_year"):
+
         fy = filters.get("fiscal_year")
 
-    elif filters.get("from_date") and filters.get("to_date"):
+    elif (
+        filters.get("from_date")
+        and filters.get("to_date")
+    ):
+
         fy = (
             filters.get("from_date")[:4]
             + "-"
@@ -35,24 +44,28 @@ def get_columns(filters):
         )
 
     return [
+
         {
             "label": _("Expenses"),
             "fieldname": "expense",
             "fieldtype": "Data",
             "width": 320
         },
+
         {
             "label": _("Expenses - {0}").format(fy),
             "fieldname": "expense_amount",
             "fieldtype": "Currency",
             "width": 170
         },
+
         {
             "label": _("Income"),
             "fieldname": "income",
             "fieldtype": "Data",
             "width": 320
         },
+
         {
             "label": _("Income - {0}").format(fy),
             "fieldname": "income_amount",
@@ -63,16 +76,19 @@ def get_columns(filters):
 
 
 # =========================================================
-# GET MAPPINGS FROM TZU SETTING
+# GET MAPPINGS
 # =========================================================
 
 def get_statement_mappings(section=None):
 
     settings = frappe.get_single("TZU Setting")
 
-    mappings = settings.get(
-        "financial_statement_account_mapping"
-    ) or []
+    mappings = (
+        settings.get(
+            "financial_statement_account_mapping"
+        )
+        or []
+    )
 
     result = []
 
@@ -87,7 +103,10 @@ def get_statement_mappings(section=None):
         if not row.get("account"):
             continue
 
-        if section and row.get("statement_section") != section:
+        if (
+            section is not None
+            and row.get("statement_section") != section
+        ):
             continue
 
         result.append(row)
@@ -122,20 +141,26 @@ def get_account_balance(
         return 0
 
     conditions = [
+
         "gle.is_cancelled = 0",
+
         "gle.account = acc.name",
+
         "acc.lft >= %(lft)s",
+
         "acc.rgt <= %(rgt)s"
     ]
 
     values = {
+
         "lft": account.lft,
+
         "rgt": account.rgt
     }
 
-    # -----------------------------------------------------
+    # =====================================================
     # COMPANY
-    # -----------------------------------------------------
+    # =====================================================
 
     if filters.get("company"):
 
@@ -143,11 +168,13 @@ def get_account_balance(
             "gle.company = %(company)s"
         )
 
-        values["company"] = filters.get("company")
+        values["company"] = filters.get(
+            "company"
+        )
 
-    # -----------------------------------------------------
-    # DATE RANGE
-    # -----------------------------------------------------
+    # =====================================================
+    # DATE
+    # =====================================================
 
     if from_date:
 
@@ -165,9 +192,9 @@ def get_account_balance(
 
         values["to_date"] = to_date
 
-    # -----------------------------------------------------
+    # =====================================================
     # COST CENTER
-    # -----------------------------------------------------
+    # =====================================================
 
     if filters.get("cost_center"):
 
@@ -179,9 +206,9 @@ def get_account_balance(
             "cost_center"
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # PROJECT
-    # -----------------------------------------------------
+    # =====================================================
 
     if filters.get("project"):
 
@@ -193,9 +220,9 @@ def get_account_balance(
             "project"
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # FINANCE BOOK
-    # -----------------------------------------------------
+    # =====================================================
 
     if filters.get("finance_book"):
 
@@ -207,27 +234,34 @@ def get_account_balance(
             "finance_book"
         )
 
-    # -----------------------------------------------------
-    # EXCLUDE PERIOD CLOSING VOUCHER
-    # Only for Opening Stock
-    # -----------------------------------------------------
+    # =====================================================
+    # PERIOD CLOSING VOUCHER
+    # =====================================================
 
     if exclude_period_closing:
 
         conditions.append(
-            "gle.voucher_type != 'Period Closing Voucher'"
+            "gle.voucher_type != "
+            "'Period Closing Voucher'"
         )
 
-    # -----------------------------------------------------
-    # QUERY
-    # -----------------------------------------------------
+    # =====================================================
+    # SQL
+    # =====================================================
 
     result = frappe.db.sql(
         f"""
         SELECT
 
-            COALESCE(SUM(gle.debit), 0) AS debit,
-            COALESCE(SUM(gle.credit), 0) AS credit
+            COALESCE(
+                SUM(gle.debit),
+                0
+            ) AS debit,
+
+            COALESCE(
+                SUM(gle.credit),
+                0
+            ) AS credit
 
         FROM `tabGL Entry` gle
 
@@ -244,17 +278,28 @@ def get_account_balance(
     if not result:
         return 0
 
-    debit = flt(result[0].debit)
-    credit = flt(result[0].credit)
+    debit = flt(
+        result[0].debit
+    )
 
-    # Same basic sign logic as Trial Balance
-    if account.root_type in ("Expense", "Asset"):
+    credit = flt(
+        result[0].credit
+    )
+
+    # =====================================================
+    # SIGN
+    # =====================================================
+
+    if account.root_type in (
+        "Expense",
+        "Asset"
+    ):
 
         return debit - credit
 
-    else:
+    return credit - debit
 
-        return credit - debit
+
 # =========================================================
 # MAPPING VALUE
 # =========================================================
@@ -271,9 +316,9 @@ def get_mapping_value(row, filters):
         or "Period Balance"
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # PERIOD BALANCE
-    # -----------------------------------------------------
+    # =====================================================
 
     if balance_type == "Period Balance":
 
@@ -284,31 +329,15 @@ def get_mapping_value(row, filters):
             filters.get("to_date")
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # OPENING BALANCE
-    # -----------------------------------------------------
+    # =====================================================
 
-    # if balance_type == "Opening Balance":
-
-    #     from_date = filters.get("from_date")
-
-    #     if not from_date:
-    #         return 0
-
-    #     opening_date = add_days(
-    #         from_date,
-    #         -1
-    #     )
-
-    #     return get_account_balance(
-    #         account,
-    #         filters,
-    #         None,
-    #         opening_date
-    #     )
     if balance_type == "Opening Balance":
 
-        from_date = filters.get("from_date")
+        from_date = filters.get(
+            "from_date"
+        )
 
         if not from_date:
             return 0
@@ -320,12 +349,15 @@ def get_mapping_value(row, filters):
 
         # -------------------------------------------------
         # OPENING STOCK
-        # Period Closing Voucher ko ignore karke
-        # previous financial year's closing balance
-        # ko opening stock ke roop me use karo.
         # -------------------------------------------------
 
-        if row.get("statement_type") == "Opening Stock":
+        if (
+            str(
+                row.get("statement_type")
+                or ""
+            ).strip().lower()
+            == "opening stock"
+        ):
 
             return get_account_balance(
                 account,
@@ -341,9 +373,10 @@ def get_mapping_value(row, filters):
             None,
             opening_date
         )
-    # -----------------------------------------------------
+
+    # =====================================================
     # CLOSING BALANCE
-    # -----------------------------------------------------
+    # =====================================================
 
     if balance_type == "Closing Balance":
 
@@ -358,10 +391,13 @@ def get_mapping_value(row, filters):
 
 
 # =========================================================
-# BUILD SIDE BY SIDE ROWS
+# BUILD SIDE-BY-SIDE ROWS
 # =========================================================
 
-def build_rows(expense_rows, income_rows):
+def build_rows(
+    expense_rows,
+    income_rows
+):
 
     rows = []
 
@@ -385,6 +421,7 @@ def build_rows(expense_rows, income_rows):
         )
 
         rows.append({
+
             "expense": (
                 expense["label"]
                 if expense
@@ -417,9 +454,14 @@ def build_rows(expense_rows, income_rows):
 # GET SECTION DATA
 # =========================================================
 
-def get_section_data(section, filters):
+def get_section_data(
+    section,
+    filters
+):
 
-    mappings = get_statement_mappings(section)
+    mappings = get_statement_mappings(
+        section
+    )
 
     expense_rows = []
     income_rows = []
@@ -430,25 +472,38 @@ def get_section_data(section, filters):
             row,
             filters
         )
-        
+
+        # -------------------------------------------------
+        # ZERO VALUE FILTER
+        # -------------------------------------------------
+
         if (
-        not filters.get("show_zero_values")
-        and not flt(value)
+            not filters.get("show_zero_values")
+            and not flt(value)
         ):
+
             continue
 
         item = {
-            "label": row.get("statement_type"),
+
+            "label": row.get(
+                "statement_type"
+            ),
+
             "value": value
         }
 
         if row.get("type") == "Income":
 
-            income_rows.append(item)
+            income_rows.append(
+                item
+            )
 
         else:
 
-            expense_rows.append(item)
+            expense_rows.append(
+                item
+            )
 
     expense_total = sum(
         flt(row["value"])
@@ -461,93 +516,144 @@ def get_section_data(section, filters):
     )
 
     return {
+
         "expense_rows": expense_rows,
+
         "income_rows": income_rows,
+
         "expense_total": expense_total,
+
         "income_total": income_total
     }
 
 
 # =========================================================
-# TRADING ACCOUNT
+# DYNAMIC TRADING SECTION DETECTION
 # =========================================================
 
-def get_trading_values(filters):
+def is_trading_section(section_data):
 
-    trading = get_section_data(
-        "Trading Account",
-        filters
-    )
+    labels = {
 
-    trading["gross_profit"] = (
-        trading["income_total"]
-        - trading["expense_total"]
-    )
+        str(
+            row.get("label")
+            or ""
+        ).strip().lower()
 
-    return trading
-
-
-# =========================================================
-# PROFIT & LOSS
-# =========================================================
-
-def get_profit_loss_values(
-    filters,
-    gross_profit=0
-):
-
-    pnl = get_section_data(
-        "Profit & Loss Account",
-        filters
-    )
-
-    # Gross profit is income in P&L
-    if gross_profit >= 0:
-
-        pnl["income_total"] += gross_profit
-
-    else:
-
-        pnl["expense_total"] += abs(
-            gross_profit
+        for row in (
+            section_data["expense_rows"]
+            + section_data["income_rows"]
         )
+    }
 
-    pnl["net_profit"] = (
-        pnl["income_total"]
-        - pnl["expense_total"]
+    trading_labels = {
+
+        "opening stock",
+
+        "purchase",
+
+        "sales",
+
+        "closing stock"
+    }
+
+    return bool(
+        labels.intersection(
+            trading_labels
+        )
     )
 
-    return pnl
+
+# =========================================================
+# DYNAMIC KPI SECTION DETECTION
+# =========================================================
+
+def is_kpi_section(section_data):
+
+    labels = {
+
+        str(
+            row.get("label")
+            or ""
+        ).strip().lower()
+
+        for row in (
+            section_data["expense_rows"]
+            + section_data["income_rows"]
+        )
+    }
+
+    kpi_labels = {
+
+        "gross profit %",
+
+        "net profit %",
+
+        "operating expense ratio %"
+    }
+
+    return bool(
+        labels.intersection(
+            kpi_labels
+        )
+    )
 
 
 # =========================================================
-# KPI
+# KPI CALCULATION
 # =========================================================
 
-def get_kpi(trading, pnl):
+def get_kpi(
+    trading,
+    pnl
+):
 
     kpi = {}
 
     sales = 0
 
-    # Find Sales from Trading income mappings
+    # =====================================================
+    # SALES
+    # =====================================================
+
     for row in trading["income_rows"]:
 
-        if row["label"] == "Sales":
+        if (
+            str(
+                row.get("label")
+                or ""
+            ).strip().lower()
+            == "sales"
+        ):
 
-            sales += flt(row["value"])
+            sales += flt(
+                row.get("value")
+            )
 
     gross_profit = flt(
-        trading["gross_profit"]
+        trading.get(
+            "gross_profit",
+            0
+        )
     )
 
     net_profit = flt(
-        pnl["net_profit"]
+        pnl.get(
+            "net_profit",
+            0
+        )
     )
 
     operating_expense = flt(
-        pnl["expense_total"]
+        pnl.get(
+            "expense_total",
+            0
+        )
     )
+
+    # =====================================================
+    # CALCULATE
+    # =====================================================
 
     if sales:
 
@@ -566,7 +672,9 @@ def get_kpi(trading, pnl):
     else:
 
         kpi["gross_profit_percent"] = 0
+
         kpi["net_profit_percent"] = 0
+
         kpi["operating_expense_ratio"] = 0
 
     kpi["net_profit"] = net_profit
@@ -575,174 +683,466 @@ def get_kpi(trading, pnl):
 
 
 # =========================================================
-# FINAL DATA
+# GET DYNAMIC SECTIONS
+# =========================================================
+
+def get_statement_sections():
+
+    settings = frappe.get_single(
+        "TZU Setting"
+    )
+
+    mappings = (
+        settings.get(
+            "financial_statement_account_mapping"
+        )
+        or []
+    )
+
+    sections = []
+
+    for row in mappings:
+
+        if not row.get("enabled"):
+            continue
+
+        section = row.get(
+            "statement_section"
+        )
+
+        if not section:
+            continue
+
+        if section not in sections:
+
+            sections.append(
+                section
+            )
+
+    return sections
+
+
+# =========================================================
+# GET DATA
 # =========================================================
 
 def get_data(filters):
 
     rows = []
 
-    # -----------------------------------------------------
-    # TRADING
-    # -----------------------------------------------------
+    # =====================================================
+    # GET ALL SECTIONS DYNAMICALLY
+    # =====================================================
 
-    trading = get_trading_values(filters)
+    sections = get_statement_sections()
 
-    rows.append({
-        "expense": "TRADING ACCOUNT",
-        "expense_amount": None,
-        "income": None,
-        "income_amount": None
-    })
+    section_data_map = {}
 
-    rows.extend(
-        build_rows(
-            trading["expense_rows"],
-            trading["income_rows"]
+    trading_section = None
+    trading = None
+
+    kpi_section = None
+
+    # =====================================================
+    # FIRST PASS
+    # Load all section data
+    # =====================================================
+
+    for section in sections:
+
+        section_data = get_section_data(
+            section,
+            filters
         )
-    )
 
-    rows.append({
-        "expense": "Subtotal",
-        "expense_amount": trading["expense_total"],
-        "income": "Subtotal",
-        "income_amount": trading["income_total"]
-    })
+        section_data_map[
+            section
+        ] = section_data
 
-    # Gross Profit / Gross Loss
-    if trading["gross_profit"] >= 0:
+        # -------------------------------------------------
+        # TRADING SECTION
+        # -------------------------------------------------
+
+        if (
+            trading_section is None
+            and is_trading_section(
+                section_data
+            )
+        ):
+
+            trading_section = section
+
+            trading = section_data
+
+            trading["gross_profit"] = (
+
+                trading["income_total"]
+
+                - trading["expense_total"]
+            )
+
+        # -------------------------------------------------
+        # KPI SECTION
+        # -------------------------------------------------
+
+        if (
+            kpi_section is None
+            and is_kpi_section(
+                section_data
+            )
+        ):
+
+            kpi_section = section
+
+    # =====================================================
+    # DISPLAY SECTIONS
+    # =====================================================
+
+    for section in sections:
+
+        section_data = (
+            section_data_map[section]
+        )
+
+        # =================================================
+        # DYNAMIC SECTION HEADER
+        # =================================================
 
         rows.append({
-            "expense": "Gross Profit",
-            "expense_amount": trading["gross_profit"],
-            "income": "",
-            "income_amount": ""
+
+            "expense": str(
+                section
+            ).upper(),
+
+            "expense_amount": None,
+
+            "income": None,
+
+            "income_amount": None
         })
 
-        trading_total = trading["income_total"]
+        # =================================================
+        # KPI SECTION
+        # =================================================
 
-    else:
+        if section == kpi_section:
+
+            # KPI rows are added later after calculation.
+
+            continue
+
+        # =================================================
+        # NORMAL SECTION ROWS
+        # =================================================
+
+        rows.extend(
+            build_rows(
+
+                section_data[
+                    "expense_rows"
+                ],
+
+                section_data[
+                    "income_rows"
+                ]
+            )
+        )
+
+        # =================================================
+        # SUBTOTAL
+        # =================================================
 
         rows.append({
-            "expense": "",
-            "expense_amount": "",
-            "income": "Gross Loss",
-            "income_amount": abs(
-                trading["gross_profit"]
+
+            "expense": "Subtotal",
+
+            "expense_amount": (
+                section_data[
+                    "expense_total"
+                ]
+            ),
+
+            "income": "Subtotal",
+
+            "income_amount": (
+                section_data[
+                    "income_total"
+                ]
             )
         })
 
-        trading_total = trading["expense_total"]
+        # =================================================
+        # TRADING GROSS PROFIT / LOSS
+        # =================================================
 
-    rows.append({
-        "expense": "Total",
-        "expense_amount": trading_total,
-        "income": "Total",
-        "income_amount": trading_total
-    })
+        if section == trading_section:
 
-    # -----------------------------------------------------
-    # P&L
-    # -----------------------------------------------------
+            gross_profit = flt(
+                trading[
+                    "gross_profit"
+                ]
+            )
 
-    pnl = get_profit_loss_values(
-        filters,
-        trading["gross_profit"]
-    )
+            if gross_profit >= 0:
 
-    rows.append({
-        "expense": "PROFIT & LOSS ACCOUNT",
-        "expense_amount": None,
-        "income": None,
-        "income_amount": None
-    })
+                rows.append({
 
-    rows.extend(
-        build_rows(
-            pnl["expense_rows"],
-            pnl["income_rows"]
+                    "expense": "Gross Profit",
+
+                    "expense_amount":
+                        gross_profit,
+
+                    "income": "",
+
+                    "income_amount": ""
+                })
+
+                section_total = (
+                    section_data[
+                        "income_total"
+                    ]
+                )
+
+            else:
+
+                rows.append({
+
+                    "expense": "",
+
+                    "expense_amount": "",
+
+                    "income": "Gross Loss",
+
+                    "income_amount":
+                        abs(gross_profit)
+                })
+
+                section_total = (
+                    section_data[
+                        "expense_total"
+                    ]
+                )
+
+        else:
+
+            section_total = max(
+
+                section_data[
+                    "expense_total"
+                ],
+
+                section_data[
+                    "income_total"
+                ]
+            )
+
+        # =================================================
+        # TOTAL
+        # =================================================
+
+        rows.append({
+
+            "expense": "Total",
+
+            "expense_amount":
+                section_total,
+
+            "income": "Total",
+
+            "income_amount":
+                section_total
+        })
+
+    # =====================================================
+    # NO TRADING SECTION
+    # =====================================================
+
+    if not trading:
+
+        return rows
+
+    # =====================================================
+    # P&L CALCULATION
+    # =====================================================
+
+    pnl = {
+
+        "expense_total": 0,
+
+        "income_total": 0,
+
+        "net_profit": 0,
+
+        "expense_rows": [],
+
+        "income_rows": []
+    }
+
+    # =====================================================
+    # ALL NON-TRADING / NON-KPI SECTIONS
+    # =====================================================
+
+    for section in sections:
+
+        if section == trading_section:
+            continue
+
+        if section == kpi_section:
+            continue
+
+        section_data = (
+            section_data_map[
+                section
+            ]
         )
-    )
 
-    # P&L subtotal
-    rows.append({
-        "expense": "Subtotal",
-        "expense_amount": pnl["expense_total"],
-        "income": "Subtotal",
-        "income_amount": pnl["income_total"]
-    })
+        pnl["expense_total"] += flt(
+            section_data[
+                "expense_total"
+            ]
+        )
 
-    # Net Profit / Net Loss
-    # if pnl["net_profit"] >= 0:
+        pnl["income_total"] += flt(
+            section_data[
+                "income_total"
+            ]
+        )
 
-    #     rows.append({
-    #         "expense": "Net Profit",
-    #         "expense_amount": pnl["net_profit"],
-    #         "income": "",
-    #         "income_amount": ""
-    #     })
+    # =====================================================
+    # ADD GROSS PROFIT / LOSS
+    # =====================================================
 
-    #     pnl_total = pnl["income_total"]
+    if trading["gross_profit"] >= 0:
 
-    # else:
+        pnl["income_total"] += flt(
+            trading["gross_profit"]
+        )
 
-    #     rows.append({
-    #         "expense": "",
-    #         "expense_amount": "",
-    #         "income": "Net Loss",
-    #         "income_amount": abs(
-    #             pnl["net_profit"]
-    #         )
-    #     })
+    else:
 
-    #     pnl_total = pnl["expense_total"]
-    pnl_total = max(
-        pnl["expense_total"],
+        pnl["expense_total"] += abs(
+            trading["gross_profit"]
+        )
+
+    # =====================================================
+    # NET PROFIT
+    # =====================================================
+
+    pnl["net_profit"] = (
+
         pnl["income_total"]
+
+        - pnl["expense_total"]
     )
 
-    rows.append({
-        "expense": "Total",
-        "expense_amount": pnl_total,
-        "income": "Total",
-        "income_amount": pnl_total
-    })
-
-    # -----------------------------------------------------
+    # =====================================================
     # KPI
-    # -----------------------------------------------------
+    # =====================================================
 
     kpi = get_kpi(
         trading,
         pnl
     )
 
-    rows.append({
-        "expense": "KEY PERFORMANCE METRICS",
-        "expense_amount": None,
-        "income": None,
-        "income_amount": None
-    })
+    # =====================================================
+    # INSERT KPI DATA INTO DYNAMIC KPI SECTION
+    # =====================================================
 
-    rows.extend([
-        {
-            "expense": "Gross Profit %",
-            "expense_amount": kpi["gross_profit_percent"],
-            "income": "",
-            "income_amount": ""
-        },
-        {
-            "expense": "Net Profit %",
-            "expense_amount": kpi["net_profit_percent"],
-            "income": "",
-            "income_amount": ""
-        },
-        {
-            "expense": "Operating Expense Ratio %",
-            "expense_amount": kpi["operating_expense_ratio"],
-            "income": "",
-            "income_amount": ""
-        }
-    ])
+    if kpi_section:
+
+        kpi_rows = [
+
+            {
+                "expense": "Gross Profit %",
+
+                "expense_amount":
+                    kpi[
+                        "gross_profit_percent"
+                    ],
+
+                "income": "",
+
+                "income_amount": ""
+            },
+
+            {
+                "expense": "Net Profit %",
+
+                "expense_amount":
+                    kpi[
+                        "net_profit_percent"
+                    ],
+
+                "income": "",
+
+                "income_amount": ""
+            },
+
+            {
+                "expense":
+                    "Operating Expense Ratio %",
+
+                "expense_amount":
+                    kpi[
+                        "operating_expense_ratio"
+                    ],
+
+                "income": "",
+
+                "income_amount": ""
+            }
+        ]
+
+        # -------------------------------------------------
+        # Find KPI section header
+        # -------------------------------------------------
+
+        kpi_header_index = None
+
+        for index, row in enumerate(rows):
+
+            if (
+
+                row.get("expense")
+                == str(
+                    kpi_section
+                ).upper()
+
+                and row.get(
+                    "expense_amount"
+                ) is None
+
+                and row.get(
+                    "income"
+                ) is None
+
+                and row.get(
+                    "income_amount"
+                ) is None
+            ):
+
+                kpi_header_index = index
+
+                break
+
+        # -------------------------------------------------
+        # Insert KPI rows immediately
+        # after dynamic section heading
+        # -------------------------------------------------
+
+        if kpi_header_index is not None:
+
+            for offset, kpi_row in enumerate(
+                kpi_rows,
+                start=1
+            ):
+
+                rows.insert(
+
+                    kpi_header_index
+                    + offset,
+
+                    kpi_row
+                )
 
     return rows
