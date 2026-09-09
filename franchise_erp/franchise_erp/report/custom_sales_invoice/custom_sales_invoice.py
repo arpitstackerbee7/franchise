@@ -184,7 +184,6 @@ def get_data(filters):
 
 		.select(
 
-			# SALES INVOICE
 			si.name,
 			si.posting_date,
 			si.customer,
@@ -192,9 +191,9 @@ def get_data(filters):
 			si.custom_class_name.as_("class_name"),
 			si.company,
 			si.grand_total,
+			si.rounded_total,
 			si.currency,
 
-			# SALES INVOICE ITEM
 			sii.name.as_("sales_invoice_item"),
 			sii.item_code,
 			sii.item_name,
@@ -203,14 +202,12 @@ def get_data(filters):
 			sii.rate,
 			sii.amount,
 
-			# CUSTOM FIELDS
 			sii.custom_bottom_fabric,
 			sii.custom_dupatta_fabric,
 			sii.custom_top_fabric,
 			sii.custom_mrp,
 			sii.custom_count_of_pcs,
 
-			# ITEM MASTER
 			item.custom_sup_design_no.as_("sup_design_no"),
 		)
 
@@ -279,8 +276,10 @@ def get_data(filters):
 				supplier,
 				"custom_agent_supplier"
 			)
+			row["customer_agent_name"] = row.get("agent_supplier")
 		else:
 			row["agent_supplier"] = None
+			row["customer_agent_name"] = None
 
 
 	agents = get_filter_list(
@@ -448,7 +447,6 @@ def get_supplier_from_serial_document_field(
 	if not serial_no:
 		return None
 
-	# Check field exists before querying
 	if not frappe.db.has_column("Serial No", fieldname):
 		return None
 
