@@ -130,6 +130,20 @@ frappe.query_reports["Custom Account Payable"] = {
             default: 0,
         },
     ],
+onload: function(report) {
+    if (!document.getElementById("capayable-bold-css")) {
+        const style = document.createElement("style");
+        style.id = "capayable-bold-css";
+        style.innerHTML = `
+            .dt-cell__content b,
+            .dt-cell__content b a {
+                font-weight: 900 !important;
+                color: #000 !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+},
 
     formatter: function(value, row, column, data, default_formatter) {
     value = default_formatter(value, row, column, data);
@@ -140,7 +154,7 @@ frappe.query_reports["Custom Account Payable"] = {
     } else if (data && data.is_subtotal) {
         value = `<b style="display:block; background-color:#ffd6d6;">${value}</b>`;
     } else if (data && data.is_group) {
-        value = `<span style="display:block; background-color:#e6e6e6; color:#555;">${value}</span>`;
+        value = `<b style="display:block; background-color:#e6e6e6; color:#000; font-weight:900 !important;">${value}</b>`;
     }
     return value;
 },
