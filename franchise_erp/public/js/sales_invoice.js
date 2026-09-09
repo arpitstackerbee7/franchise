@@ -19,11 +19,7 @@
     };
 
 })();
-frappe.ui.form.on("Sales Invoice", {
-    onload(frm) {
-        frm.__disable_scan_alerts = true;
-    }
-});
+
 /*************************************************
  * SALES INVOICE – ULTRA OPTIMIZED CLIENT SCRIPT
  *************************************************/
@@ -129,6 +125,7 @@ frappe.ui.form.on("Sales Invoice", {
         check_delivery_note(frm);
     },
     onload(frm) {
+        frm.__disable_scan_alerts = true;
         make_total_qty_bold(frm);
 
         if (!frm.doc.is_return) return;

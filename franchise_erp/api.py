@@ -2461,29 +2461,40 @@ def build_item(item, serial, warehouse):
 
 #     return data
 
+# @frappe.whitelist()
+# def get_used_delivery_notes():
+
+#     # DN used in Sales Invoice
+#     used_dn = frappe.db.sql("""
+#         SELECT DISTINCT delivery_note
+#         FROM `tabSales Invoice Item`
+#         WHERE delivery_note IS NOT NULL
+#     """, as_dict=1)
+
+#     # 🔥 DN used via serial number
+#     serial_used_dn = frappe.db.sql("""
+#         SELECT DISTINCT dni.parent AS delivery_note
+#         FROM `tabDelivery Note Item` dni
+#         JOIN `tabSales Invoice Item` sii
+#             ON sii.serial_no LIKE CONCAT('%', dni.serial_no, '%')
+#     """, as_dict=1)
+
+#     # merge दोनों
+#     all_dn = {d["delivery_note"] for d in used_dn if d["delivery_note"]}
+#     all_dn.update({d["delivery_note"] for d in serial_used_dn})
+
+#     return [{"delivery_note": dn} for dn in all_dn]
+
+
 @frappe.whitelist()
 def get_used_delivery_notes():
-
-    # DN used in Sales Invoice
-    used_dn = frappe.db.sql("""
+    return frappe.db.sql("""
         SELECT DISTINCT delivery_note
         FROM `tabSales Invoice Item`
         WHERE delivery_note IS NOT NULL
-    """, as_dict=1)
-
-    # 🔥 DN used via serial number
-    serial_used_dn = frappe.db.sql("""
-        SELECT DISTINCT dni.parent AS delivery_note
-        FROM `tabDelivery Note Item` dni
-        JOIN `tabSales Invoice Item` sii
-            ON sii.serial_no LIKE CONCAT('%', dni.serial_no, '%')
-    """, as_dict=1)
-
-    # merge दोनों
-    all_dn = {d["delivery_note"] for d in used_dn if d["delivery_note"]}
-    all_dn.update({d["delivery_note"] for d in serial_used_dn})
-
-    return [{"delivery_note": dn} for dn in all_dn]
+          AND delivery_note != ''
+    """, as_dict=True)
+    
 
 import frappe
 from frappe import _
@@ -2774,6 +2785,7 @@ from erpnext.stock.doctype.delivery_note.delivery_note import (
 
 @frappe.whitelist()
 def make_sales_invoice(source_name, target_doc=None, args=None):
+
     si = erpnext_make_sales_invoice(
         source_name,
         target_doc=target_doc,
@@ -2781,19 +2793,29 @@ def make_sales_invoice(source_name, target_doc=None, args=None):
     )
 
     for item in si.items:
-        if item.dn_detail:
-            dn_item = frappe.db.get_value(
-                "Delivery Note Item",
-                item.dn_detail,
-                ["serial_no", "serial_and_batch_bundle"],
-                as_dict=True,
-            )
 
-            if dn_item:
-                if dn_item.serial_no:
-                    item.serial_no = dn_item.serial_no
+        if not item.dn_detail:
+            continue
 
-                if dn_item.serial_and_batch_bundle:
-                    item.serial_and_batch_bundle = dn_item.serial_and_batch_bundle
+        dn_item = frappe.db.get_value(
+            "Delivery Note Item",
+            item.dn_detail,
+            [
+                "serial_no",
+                "serial_and_batch_bundle"
+            ],
+            as_dict=True
+        )
+
+        if not dn_item:
+            continue
+
+        # Old serial_no mechanism
+        if dn_item.serial_no:
+            item.serial_no = dn_item.serial_no
+
+        # New Serial and Batch Bundle mechanism
+        elif dn_item.serial_and_batch_bundle:
+            item.serial_and_batch_bundle = dn_item.serial_and_batch_bundle
 
     return si
