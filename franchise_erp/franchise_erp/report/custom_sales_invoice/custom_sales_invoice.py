@@ -3,7 +3,6 @@ from frappe import _
 import json
 
 
-
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
 
@@ -13,11 +12,8 @@ def execute(filters=None):
 	return columns, data
 
 
-
 def get_columns():
 	return [
-
-
 		{
 			"label": _("Sales Invoice"),
 			"fieldname": "name",
@@ -45,6 +41,13 @@ def get_columns():
 			"width": 180,
 		},
 		{
+			"label": _("Customer Agent"),
+			"fieldname": "customer_agent",
+			"fieldtype": "Link",
+			"options": "Supplier",
+			"width": 180,
+		},
+		{
 			"label": _("Class Name"),
 			"fieldname": "class_name",
 			"fieldtype": "Data",
@@ -57,7 +60,6 @@ def get_columns():
 			"options": "Company",
 			"width": 150,
 		},
-
 		{
 			"label": _("Item Code"),
 			"fieldname": "item_code",
@@ -98,8 +100,15 @@ def get_columns():
 			"width": 120,
 		},
 		{
-			"label": _("Grand Total"),
-			"fieldname": "grand_total",
+			"label": _("Gross Amount"),
+			"fieldname": "gross_amount",
+			"fieldtype": "Currency",
+			"options": "currency",
+			"width": 130,
+		},
+		{
+			"label": _("Net Amount"),
+			"fieldname": "net_amount",
 			"fieldtype": "Currency",
 			"options": "currency",
 			"width": 130,
@@ -110,8 +119,6 @@ def get_columns():
 			"fieldtype": "Data",
 			"width": 90,
 		},
-
-
 		{
 			"label": _("Bottom Fabric"),
 			"fieldname": "custom_bottom_fabric",
@@ -143,8 +150,6 @@ def get_columns():
 			"fieldtype": "Data",
 			"width": 120,
 		},
-
-
 		{
 			"label": _("Supplier Name"),
 			"fieldname": "supplier_name",
@@ -158,42 +163,45 @@ def get_columns():
 			"fieldtype": "Data",
 			"width": 170,
 		},
-		{
-			"label": _("Agent Supplier"),
-			"fieldname": "agent_supplier",
-			"fieldtype": "Link",
-			"options": "Supplier",
-			"width": 180,
-		},
 	]
 
 
 def get_data(filters):
-
 	si = frappe.qb.DocType("Sales Invoice")
 	sii = frappe.qb.DocType("Sales Invoice Item")
 	item = frappe.qb.DocType("Item")
+	customer = frappe.qb.DocType("Customer")
 
 	query = (
 		frappe.qb.from_(si)
 		.inner_join(sii)
 		.on(sii.parent == si.name)
-
 		.left_join(item)
 		.on(item.name == sii.item_code)
-
+		.left_join(customer)
+		.on(customer.name == si.customer)
 		.select(
-
+			# Sales Invoice
 			si.name,
 			si.posting_date,
 			si.customer,
 			si.customer_name,
 			si.custom_class_name.as_("class_name"),
 			si.company,
-			si.grand_total,
-			si.rounded_total,
 			si.currency,
 
+			# Amounts
+			# Sales Invoice Total:
+			# discount ke baad, GST/tax ke pehle
+			si.total.as_("gross_amount"),
+
+			# Sales Invoice Rounded Total
+			si.rounded_total.as_("net_amount"),
+
+			# Customer Agent
+			customer.custom_agent.as_("customer_agent"),
+
+			# Sales Invoice Item
 			sii.name.as_("sales_invoice_item"),
 			sii.item_code,
 			sii.item_name,
@@ -202,18 +210,22 @@ def get_data(filters):
 			sii.rate,
 			sii.amount,
 
+			# Custom Item fields
 			sii.custom_bottom_fabric,
 			sii.custom_dupatta_fabric,
 			sii.custom_top_fabric,
 			sii.custom_mrp,
 			sii.custom_count_of_pcs,
 
+			# Item
 			item.custom_sup_design_no.as_("sup_design_no"),
 		)
-
 		.where(si.docstatus == 1)
 	)
 
+	# =========================================
+	# DATE FILTER
+	# =========================================
 
 	if filters.get("from_date"):
 		query = query.where(
@@ -225,14 +237,22 @@ def get_data(filters):
 			si.posting_date <= filters.get("to_date")
 		)
 
+	# =========================================
+	# CUSTOMER FILTER
+	# =========================================
 
-	customers = get_filter_list(filters.get("customer"))
+	customers = get_filter_list(
+		filters.get("customer")
+	)
 
 	if customers:
 		query = query.where(
 			si.customer.isin(customers)
 		)
 
+	# =========================================
+	# CLASS NAME FILTER
+	# =========================================
 
 	class_names = get_filter_list(
 		filters.get("class_name")
@@ -243,6 +263,9 @@ def get_data(filters):
 			si.custom_class_name.isin(class_names)
 		)
 
+	# =========================================
+	# SALES INVOICE FILTER
+	# =========================================
 
 	invoice_ids = get_filter_list(
 		filters.get("sales_invoice")
@@ -254,15 +277,33 @@ def get_data(filters):
 			si.name.isin(invoice_ids)
 		)
 
+	# =========================================
+	# CUSTOMER AGENT FILTER
+	# =========================================
+
+	agents = get_filter_list(
+		filters.get("agent")
+	)
+
+	if agents:
+		query = query.where(
+			customer.custom_agent.isin(agents)
+		)
+
+	# =========================================
+	# EXECUTE QUERY
+	# =========================================
 
 	data = query.orderby(
 		si.posting_date,
 		order=frappe.qb.desc
 	).run(as_dict=True)
 
+	# =========================================
+	# SUPPLIER LOOKUP
+	# =========================================
 
 	for row in data:
-
 		supplier = get_supplier_for_item(
 			item_code=row.get("item_code"),
 			serial_no=row.get("serial_no"),
@@ -270,41 +311,18 @@ def get_data(filters):
 
 		row["supplier_name"] = supplier
 
-		if supplier:
-			row["agent_supplier"] = frappe.db.get_value(
-				"Supplier",
-				supplier,
-				"custom_agent_supplier"
-			)
-			row["customer_agent_name"] = row.get("agent_supplier")
-		else:
-			row["agent_supplier"] = None
-			row["customer_agent_name"] = None
-
-
-	agents = get_filter_list(
-		filters.get("agent_supplier")
-		or filters.get("agent")
-	)
-
-	if agents:
-		data = [
-			row
-			for row in data
-			if row.get("agent_supplier") in agents
-		]
-
 	return data
 
 
+# ============================================================
+# SUPPLIER LOOKUP
+# ============================================================
+
 def get_supplier_for_item(item_code, serial_no):
-
-
 	serial_numbers = split_serial_numbers(serial_no)
 
-
+	# 1. Purchase Receipt Serial
 	for serial in serial_numbers:
-
 		supplier = get_supplier_from_purchase_receipt_serial(
 			item_code,
 			serial
@@ -313,9 +331,8 @@ def get_supplier_for_item(item_code, serial_no):
 		if supplier:
 			return supplier
 
-
+	# 2. Serial No purchase_document_no
 	for serial in serial_numbers:
-
 		supplier = get_supplier_from_serial_document_field(
 			serial,
 			"purchase_document_no"
@@ -324,9 +341,8 @@ def get_supplier_for_item(item_code, serial_no):
 		if supplier:
 			return supplier
 
-
+	# 3. Serial No creation_document_no
 	for serial in serial_numbers:
-
 		supplier = get_supplier_from_serial_document_field(
 			serial,
 			"creation_document_no"
@@ -335,8 +351,8 @@ def get_supplier_for_item(item_code, serial_no):
 		if supplier:
 			return supplier
 
+	# 4. Subcontracting Receipt
 	for serial in serial_numbers:
-
 		supplier = get_supplier_from_subcontracting_serial(
 			item_code,
 			serial
@@ -345,9 +361,8 @@ def get_supplier_for_item(item_code, serial_no):
 		if supplier:
 			return supplier
 
-
+	# 5. Purchase Invoice
 	for serial in serial_numbers:
-
 		supplier = get_supplier_from_purchase_invoice_serial(
 			item_code,
 			serial
@@ -356,9 +371,8 @@ def get_supplier_for_item(item_code, serial_no):
 		if supplier:
 			return supplier
 
-
+	# 6. Stock Ledger
 	for serial in serial_numbers:
-
 		supplier = get_supplier_from_stock_ledger(
 			item_code,
 			serial
@@ -367,13 +381,18 @@ def get_supplier_for_item(item_code, serial_no):
 		if supplier:
 			return supplier
 
-
-	supplier = get_supplier_from_item_supplier(item_code)
+	# 7. Item Supplier
+	supplier = get_supplier_from_item_supplier(
+		item_code
+	)
 
 	if supplier:
 		return supplier
 
-	supplier = get_supplier_from_purchase_history(item_code)
+	# 8. Purchase History
+	supplier = get_supplier_from_purchase_history(
+		item_code
+	)
 
 	if supplier:
 		return supplier
@@ -381,8 +400,14 @@ def get_supplier_for_item(item_code, serial_no):
 	return None
 
 
-def get_supplier_from_purchase_receipt_serial(item_code, serial_no):
+# ============================================================
+# PURCHASE RECEIPT SERIAL
+# ============================================================
 
+def get_supplier_from_purchase_receipt_serial(
+	item_code,
+	serial_no
+):
 	if not serial_no:
 		return None
 
@@ -390,27 +415,21 @@ def get_supplier_from_purchase_receipt_serial(item_code, serial_no):
 		"""
 		SELECT
 			pr.supplier
-
 		FROM
 			`tabPurchase Receipt Item` pri
-
 		INNER JOIN
 			`tabPurchase Receipt` pr
 			ON pr.name = pri.parent
-
 		WHERE
 			pr.docstatus = 1
 			AND pri.item_code = %(item_code)s
-
 			AND (
 				pri.serial_no = %(serial_no)s
-
 				OR FIND_IN_SET(
 					%(serial_no)s,
-
 					REPLACE(
 						REPLACE(
-							pri.serial_no,
+							IFNULL(pri.serial_no, ''),
 							'\\n',
 							','
 						),
@@ -419,10 +438,8 @@ def get_supplier_from_purchase_receipt_serial(item_code, serial_no):
 					)
 				) > 0
 			)
-
 		ORDER BY
 			pr.posting_date ASC
-
 		LIMIT 1
 		""",
 		{
@@ -438,16 +455,21 @@ def get_supplier_from_purchase_receipt_serial(item_code, serial_no):
 	return None
 
 
+# ============================================================
+# SERIAL DOCUMENT FIELD
+# ============================================================
 
 def get_supplier_from_serial_document_field(
 	serial_no,
 	fieldname
 ):
-
 	if not serial_no:
 		return None
 
-	if not frappe.db.has_column("Serial No", fieldname):
+	if not frappe.db.has_column(
+		"Serial No",
+		fieldname
+	):
 		return None
 
 	document_no = frappe.db.get_value(
@@ -459,17 +481,24 @@ def get_supplier_from_serial_document_field(
 	if not document_no:
 		return None
 
-	return get_supplier_from_document_no(document_no)
+	return get_supplier_from_document_no(
+		document_no
+	)
 
+
+# ============================================================
+# DOCUMENT SUPPLIER
+# ============================================================
 
 def get_supplier_from_document_no(document_no):
-
 	if not document_no:
 		return None
 
-
-	if frappe.db.exists("Purchase Receipt", document_no):
-
+	# Purchase Receipt
+	if frappe.db.exists(
+		"Purchase Receipt",
+		document_no
+	):
 		return frappe.db.get_value(
 			"Purchase Receipt",
 			{
@@ -479,11 +508,11 @@ def get_supplier_from_document_no(document_no):
 			"supplier"
 		)
 
+	# Subcontracting Receipt
 	if frappe.db.exists(
 		"Subcontracting Receipt",
 		document_no
 	):
-
 		return frappe.db.get_value(
 			"Subcontracting Receipt",
 			{
@@ -493,11 +522,11 @@ def get_supplier_from_document_no(document_no):
 			"supplier"
 		)
 
+	# Purchase Invoice
 	if frappe.db.exists(
 		"Purchase Invoice",
 		document_no
 	):
-
 		return frappe.db.get_value(
 			"Purchase Invoice",
 			{
@@ -507,11 +536,11 @@ def get_supplier_from_document_no(document_no):
 			"supplier"
 		)
 
+	# Purchase Order
 	if frappe.db.exists(
 		"Purchase Order",
 		document_no
 	):
-
 		return frappe.db.get_value(
 			"Purchase Order",
 			{
@@ -521,39 +550,35 @@ def get_supplier_from_document_no(document_no):
 			"supplier"
 		)
 
-
+	# Stock Reconciliation
 	if frappe.db.exists(
 		"Stock Reconciliation",
 		document_no
 	):
-
 		return get_supplier_from_custom_document(
 			"Stock Reconciliation",
 			document_no
 		)
 
-	
+	# Stock Entry
 	if frappe.db.exists(
 		"Stock Entry",
 		document_no
 	):
-
 		return get_supplier_from_custom_document(
 			"Stock Entry",
 			document_no
 		)
 
-
+	# Opening Stock
 	if frappe.db.exists(
 		"DocType",
 		"Opening Stock"
 	):
-
 		if frappe.db.exists(
 			"Opening Stock",
 			document_no
 		):
-
 			return get_supplier_from_custom_document(
 				"Opening Stock",
 				document_no
@@ -562,11 +587,14 @@ def get_supplier_from_document_no(document_no):
 	return None
 
 
+# ============================================================
+# CUSTOM DOCUMENT SUPPLIER
+# ============================================================
+
 def get_supplier_from_custom_document(
 	doctype,
 	document_no
 ):
-
 	possible_fields = [
 		"supplier",
 		"custom_supplier",
@@ -574,12 +602,10 @@ def get_supplier_from_custom_document(
 	]
 
 	for fieldname in possible_fields:
-
 		if frappe.db.has_column(
 			doctype,
 			fieldname
 		):
-
 			supplier = frappe.db.get_value(
 				doctype,
 				document_no,
@@ -592,12 +618,14 @@ def get_supplier_from_custom_document(
 	return None
 
 
+# ============================================================
+# SUBCONTRACTING SERIAL
+# ============================================================
 
 def get_supplier_from_subcontracting_serial(
 	item_code,
 	serial_no
 ):
-
 	if not serial_no:
 		return None
 
@@ -605,24 +633,18 @@ def get_supplier_from_subcontracting_serial(
 		"""
 		SELECT
 			sr.supplier
-
 		FROM
 			`tabSubcontracting Receipt Item` sri
-
 		INNER JOIN
 			`tabSubcontracting Receipt` sr
 			ON sr.name = sri.parent
-
 		WHERE
 			sr.docstatus = 1
 			AND sri.item_code = %(item_code)s
-
 			AND (
 				sri.serial_no = %(serial_no)s
-
 				OR FIND_IN_SET(
 					%(serial_no)s,
-
 					REPLACE(
 						REPLACE(
 							IFNULL(sri.serial_no, ''),
@@ -634,10 +656,8 @@ def get_supplier_from_subcontracting_serial(
 					)
 				) > 0
 			)
-
 		ORDER BY
 			sr.posting_date ASC
-
 		LIMIT 1
 		""",
 		{
@@ -653,11 +673,14 @@ def get_supplier_from_subcontracting_serial(
 	return None
 
 
+# ============================================================
+# PURCHASE INVOICE SERIAL
+# ============================================================
+
 def get_supplier_from_purchase_invoice_serial(
 	item_code,
 	serial_no
 ):
-
 	if not serial_no:
 		return None
 
@@ -665,24 +688,18 @@ def get_supplier_from_purchase_invoice_serial(
 		"""
 		SELECT
 			pi.supplier
-
 		FROM
 			`tabPurchase Invoice Item` pii
-
 		INNER JOIN
 			`tabPurchase Invoice` pi
 			ON pi.name = pii.parent
-
 		WHERE
 			pi.docstatus = 1
 			AND pii.item_code = %(item_code)s
-
 			AND (
 				pii.serial_no = %(serial_no)s
-
 				OR FIND_IN_SET(
 					%(serial_no)s,
-
 					REPLACE(
 						REPLACE(
 							IFNULL(pii.serial_no, ''),
@@ -694,10 +711,8 @@ def get_supplier_from_purchase_invoice_serial(
 					)
 				) > 0
 			)
-
 		ORDER BY
 			pi.posting_date ASC
-
 		LIMIT 1
 		""",
 		{
@@ -713,12 +728,14 @@ def get_supplier_from_purchase_invoice_serial(
 	return None
 
 
+# ============================================================
+# STOCK LEDGER
+# ============================================================
 
 def get_supplier_from_stock_ledger(
 	item_code,
 	serial_no
 ):
-
 	if not serial_no:
 		return None
 
@@ -727,20 +744,15 @@ def get_supplier_from_stock_ledger(
 		SELECT
 			voucher_type,
 			voucher_no
-
 		FROM
 			`tabStock Ledger Entry`
-
 		WHERE
 			is_cancelled = 0
 			AND item_code = %(item_code)s
-
 			AND (
 				serial_no = %(serial_no)s
-
 				OR FIND_IN_SET(
 					%(serial_no)s,
-
 					REPLACE(
 						REPLACE(
 							IFNULL(serial_no, ''),
@@ -752,11 +764,9 @@ def get_supplier_from_stock_ledger(
 					)
 				) > 0
 			)
-
 		ORDER BY
 			posting_date ASC,
 			posting_time ASC
-
 		LIMIT 20
 		""",
 		{
@@ -767,9 +777,13 @@ def get_supplier_from_stock_ledger(
 	)
 
 	for entry in entries:
+		voucher_type = entry.get(
+			"voucher_type"
+		)
 
-		voucher_type = entry.get("voucher_type")
-		voucher_no = entry.get("voucher_no")
+		voucher_no = entry.get(
+			"voucher_no"
+		)
 
 		if not voucher_type or not voucher_no:
 			continue
@@ -779,20 +793,9 @@ def get_supplier_from_stock_ledger(
 			"Purchase Invoice",
 			"Purchase Order",
 			"Subcontracting Receipt",
-		]:
-
-			supplier = get_supplier_from_document_no(
-				voucher_no
-			)
-
-			if supplier:
-				return supplier
-
-		if voucher_type in [
 			"Stock Reconciliation",
 			"Stock Entry",
 		]:
-
 			supplier = get_supplier_from_document_no(
 				voucher_no
 			)
@@ -803,10 +806,11 @@ def get_supplier_from_stock_ledger(
 	return None
 
 
-
+# ============================================================
+# ITEM SUPPLIER
+# ============================================================
 
 def get_supplier_from_item_supplier(item_code):
-
 	if not item_code:
 		return None
 
@@ -814,17 +818,13 @@ def get_supplier_from_item_supplier(item_code):
 		"""
 		SELECT
 			supplier
-
 		FROM
 			`tabItem Supplier`
-
 		WHERE
 			parent = %(item_code)s
 			AND IFNULL(supplier, '') != ''
-
 		ORDER BY
 			idx ASC
-
 		LIMIT 1
 		""",
 		{
@@ -836,11 +836,11 @@ def get_supplier_from_item_supplier(item_code):
 	if result:
 		return result[0].get("supplier")
 
+	# Item default supplier
 	if frappe.db.has_column(
 		"Item",
 		"default_supplier"
 	):
-
 		supplier = frappe.db.get_value(
 			"Item",
 			item_code,
@@ -853,9 +853,13 @@ def get_supplier_from_item_supplier(item_code):
 	return None
 
 
+# ============================================================
+# PURCHASE HISTORY
+# ============================================================
 
-def get_supplier_from_purchase_history(item_code):
-
+def get_supplier_from_purchase_history(
+	item_code
+):
 	if not item_code:
 		return None
 
@@ -863,23 +867,18 @@ def get_supplier_from_purchase_history(item_code):
 		"""
 		SELECT
 			pr.supplier
-
 		FROM
 			`tabPurchase Receipt Item` pri
-
 		INNER JOIN
 			`tabPurchase Receipt` pr
 			ON pr.name = pri.parent
-
 		WHERE
 			pr.docstatus = 1
 			AND pri.item_code = %(item_code)s
 			AND IFNULL(pr.supplier, '') != ''
-
 		ORDER BY
 			pr.posting_date DESC,
 			pr.creation DESC
-
 		LIMIT 1
 		""",
 		{
@@ -894,17 +893,23 @@ def get_supplier_from_purchase_history(item_code):
 	return None
 
 
-
+# ============================================================
+# SPLIT SERIAL NUMBERS
+# ============================================================
 
 def split_serial_numbers(serial_no):
-
 	if not serial_no:
 		return []
 
-	if isinstance(serial_no, list):
+	if isinstance(
+		serial_no,
+		list
+	):
 		return serial_no
 
-	serial_no = str(serial_no)
+	serial_no = str(
+		serial_no
+	)
 
 	serial_no = serial_no.replace(
 		"\r",
@@ -923,23 +928,33 @@ def split_serial_numbers(serial_no):
 	]
 
 
-
+# ============================================================
+# FILTER LIST
+# ============================================================
 
 def get_filter_list(value):
-
 	if not value:
 		return []
 
-	if isinstance(value, list):
+	if isinstance(
+		value,
+		list
+	):
 		return value
 
-	if isinstance(value, str):
-
+	if isinstance(
+		value,
+		str
+	):
 		try:
+			parsed_value = json.loads(
+				value
+			)
 
-			parsed_value = json.loads(value)
-
-			if isinstance(parsed_value, list):
+			if isinstance(
+				parsed_value,
+				list
+			):
 				return parsed_value
 
 		except Exception:

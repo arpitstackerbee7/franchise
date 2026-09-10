@@ -1,4 +1,3 @@
-
 frappe.query_reports["Custom Sales Invoice"] = {
 	filters: [
 		{
@@ -61,18 +60,36 @@ frappe.query_reports["Custom Sales Invoice"] = {
 				});
 			},
 		},
-		{
-			fieldname: "agent",
-			label: __("Agent"),
-			fieldtype: "MultiSelectList",
 
-			get_data: function (txt) {
-				return frappe.db.get_link_options(
-					"Supplier",
-					txt
-				);
-			},
-		},
+		// =========================================
+		// CUSTOMER AGENT FILTER
+		// =========================================
+		{
+    fieldname: "agent",
+    label: __("Agent"),
+    fieldtype: "MultiSelectList",
+    options: "Supplier",
+    get_data: function (txt) {
+        return frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+                doctype: "Supplier",
+                filters: {
+                    custom_is_agent: 1,
+                    name: ["like", `%${txt}%`]
+                },
+                fields: ["name"],
+                limit_page_length: 20
+            }
+        }).then(r => {
+            return (r.message || []).map(row => ({
+                value: row.name,
+                description: row.name
+            }));
+        });
+    }
+},
+
 		{
 			fieldname: "sales_invoice",
 			label: __("ID"),
@@ -107,11 +124,9 @@ frappe.query_reports["Custom Sales Invoice"] = {
 					freeze_message: __(
 						"Preparing Excel Export..."
 					),
-
 				}).then((r) => {
 					let result = r.message || {};
 					let data = result.result || [];
-
 
 					if (!data.length) {
 						frappe.msgprint(
@@ -123,12 +138,64 @@ frappe.query_reports["Custom Sales Invoice"] = {
 						return;
 					}
 
+					// =========================================
+					// GROUP BY SALES INVOICE
+					// =========================================
+
+					let grouped = {};
+
+					data.forEach((row) => {
+						let invoice = row.name || "";
+
+						if (!invoice) {
+							return;
+						}
+
+						if (!grouped[invoice]) {
+							grouped[invoice] = {
+								name: row.name || "",
+								posting_date:
+									row.posting_date || "",
+								customer:
+									row.customer || "",
+								customer_agent:
+									row.customer_agent || "",
+								class_name:
+									row.class_name || "",
+								company:
+									row.company || "",
+
+								qty: 0,
+
+								// Discount ke baad,
+								// GST ke pehle
+								gross_amount:
+									flt(row.gross_amount),
+
+								// Rounded Total
+								net_amount:
+									flt(row.net_amount),
+							};
+						}
+
+						// Invoice ke saare item qty
+						grouped[invoice].qty += flt(
+							row.qty
+						);
+					});
+
+					let summary_data =
+						Object.values(grouped);
+
+					// =========================================
+					// HEADERS
+					// =========================================
+
 					let headers = [
 						"Sales Invoice",
 						"Posting Date",
 						"Customer",
-						"Customer Name",
-						"Customer agent name",
+						"Customer Agent",
 						"Class Name",
 						"Company",
 						"Quantity",
@@ -136,6 +203,9 @@ frappe.query_reports["Custom Sales Invoice"] = {
 						"Net Amount",
 					];
 
+					// =========================================
+					// TOTALS
+					// =========================================
 
 					let total_qty = 0;
 					let total_gross_amount = 0;
@@ -143,61 +213,44 @@ frappe.query_reports["Custom Sales Invoice"] = {
 
 					let rows = [];
 
-					data.forEach((row) => {
-						let sales_invoice =
-							row.name || "";
+					// =========================================
+					// BUILD SUMMARY ROWS
+					// =========================================
 
-						let posting_date =
-							row.posting_date || "";
+					summary_data.forEach((row) => {
+						let qty = flt(row.qty);
 
-						let customer =
-							row.customer || "";
+						let gross_amount =
+							flt(row.gross_amount);
 
-						let customer_name =
-							row.customer_name || "";
-
-
-							let customer_agent_name =
-							row.agent_supplier || "";
-
-						let class_name =
-							row.class_name || "";
-
-						let company =
-							row.company || "";
-
-						let qty =
-							flt(row.qty);
-
-
-							let gross_amount =
-							flt(row.grand_total);
-
-
-							let net_amount =
-							flt(row.rounded_total);
+						let net_amount =
+							flt(row.net_amount);
 
 						rows.push([
-							sales_invoice,
-							posting_date,
-							customer,
-							customer_name,
-							customer_agent_name,
-							class_name,
-							company,
+							row.name || "",
+							row.posting_date || "",
+							row.customer || "",
+							row.customer_agent || "",
+							row.class_name || "",
+							row.company || "",
 							qty.toFixed(2),
 							gross_amount.toFixed(2),
 							net_amount.toFixed(2),
 						]);
 
 						total_qty += qty;
+
 						total_gross_amount +=
 							gross_amount;
+
 						total_net_amount +=
 							net_amount;
 					});
 
-	
+					// =========================================
+					// HTML
+					// =========================================
+
 					let html = `
 						<html>
 						<head>
@@ -234,9 +287,7 @@ frappe.query_reports["Custom Sales Invoice"] = {
 						</head>
 
 						<body>
-
 							<table>
-
 								<thead>
 									<tr>
 					`;
@@ -255,18 +306,22 @@ frappe.query_reports["Custom Sales Invoice"] = {
 								<tbody>
 					`;
 
+					// =========================================
+					// DATA ROWS
+					// =========================================
+
 					rows.forEach((row) => {
 						html += "<tr>";
 
 						row.forEach((value, index) => {
-							let class_name =
-								index >= 7
+							let cell_class =
+								index >= 6
 									? "number"
 									: "";
 
 							html +=
 								'<td class="' +
-								class_name +
+								cell_class +
 								'">' +
 								escape_html(value) +
 								"</td>";
@@ -275,6 +330,9 @@ frappe.query_reports["Custom Sales Invoice"] = {
 						html += "</tr>";
 					});
 
+					// =========================================
+					// TOTAL ROW
+					// =========================================
 
 					html += `
 						<tr class="total-row">
@@ -284,13 +342,15 @@ frappe.query_reports["Custom Sales Invoice"] = {
 							<td></td>
 							<td></td>
 							<td></td>
-							<td></td>
+
 							<td class="number">
 								${total_qty.toFixed(2)}
 							</td>
+
 							<td class="number">
 								${total_gross_amount.toFixed(2)}
 							</td>
+
 							<td class="number">
 								${total_net_amount.toFixed(2)}
 							</td>
@@ -299,16 +359,18 @@ frappe.query_reports["Custom Sales Invoice"] = {
 
 					html += `
 								</tbody>
-
 							</table>
-
 						</body>
 						</html>
 					`;
 
+					// =========================================
+					// CREATE EXCEL FILE
+					// =========================================
+
 					let blob = new Blob(
 						[
-							"\ufeff" + html
+							"\ufeff" + html,
 						],
 						{
 							type:
@@ -319,7 +381,6 @@ frappe.query_reports["Custom Sales Invoice"] = {
 					let url =
 						URL.createObjectURL(blob);
 
-		
 					let link =
 						document.createElement("a");
 
@@ -347,6 +408,7 @@ frappe.query_reports["Custom Sales Invoice"] = {
 						message: __(
 							"Excel file downloaded successfully."
 						),
+
 						indicator: "green",
 					});
 				});
@@ -355,6 +417,10 @@ frappe.query_reports["Custom Sales Invoice"] = {
 	},
 };
 
+
+// =========================================
+// ESCAPE HTML
+// =========================================
 
 function escape_html(value) {
 	if (
