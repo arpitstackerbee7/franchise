@@ -399,7 +399,8 @@ override_doctype_class = {
     "Auto Repeat": "franchise_erp.overrides.auto_repeat.CustomAutoRepeat",
     "Payment Entry": "franchise_erp.custom.payment_entry.CustomPaymentEntry",
     "Full and Final Statement": "franchise_erp.overrides.full_and_final_statement.CustomFullandFinalStatement",
-    "Role Profile": "franchise_erp.overrides.role_profile.CustomRoleProfile"
+    "Role Profile": "franchise_erp.overrides.role_profile.CustomRoleProfile",
+    "Purchase Receipt": "franchise_erp.overrides.purchase_receipt.PurchaseReceipt"
 }
 
 override_whitelisted_methods = {

@@ -28,13 +28,6 @@ def get_columns():
 			"width": 110,
 		},
 		{
-			"label": _("Customer"),
-			"fieldname": "customer",
-			"fieldtype": "Link",
-			"options": "Customer",
-			"width": 160,
-		},
-		{
 			"label": _("Customer Name"),
 			"fieldname": "customer_name",
 			"fieldtype": "Data",
@@ -48,6 +41,27 @@ def get_columns():
 			"width": 180,
 		},
 		{
+			"label": _("Customer Group"),
+			"fieldname": "customer_group",
+			"fieldtype": "Link",
+			"options": "Customer Group",
+			"width": 180,
+		},
+       {
+			"label": _("Supplier Name"),
+			"fieldname": "supplier_name",
+			"fieldtype": "Link",
+			"options": "Supplier",
+			"width": 180,
+		},
+       {
+				"label": _("Item Code"),
+				"fieldname": "item_code",
+				"fieldtype": "Link",
+				"options": "Item",
+				"width": 140,
+			},
+		{
 			"label": _("Class Name"),
 			"fieldname": "class_name",
 			"fieldtype": "Data",
@@ -60,13 +74,7 @@ def get_columns():
 			"options": "Company",
 			"width": 150,
 		},
-		{
-			"label": _("Item Code"),
-			"fieldname": "item_code",
-			"fieldtype": "Link",
-			"options": "Item",
-			"width": 140,
-		},
+		
 		{
 			"label": _("Item Name"),
 			"fieldname": "item_name",
@@ -92,13 +100,6 @@ def get_columns():
 			"options": "currency",
 			"width": 110,
 		},
-		# {
-		# 	"label": _("Amount"),
-		# 	"fieldname": "amount",
-		# 	"fieldtype": "Currency",
-		# 	"options": "currency",
-		# 	"width": 120,
-		# },
 		{
 			"label": _("Gross Amount"),
 			"fieldname": "gross_amount",
@@ -150,13 +151,7 @@ def get_columns():
 			"fieldtype": "Data",
 			"width": 120,
 		},
-		{
-			"label": _("Supplier Name"),
-			"fieldname": "supplier_name",
-			"fieldtype": "Link",
-			"options": "Supplier",
-			"width": 180,
-		},
+		
 		{
 			"label": _("Sup Design No."),
 			"fieldname": "sup_design_no",
@@ -181,7 +176,9 @@ def get_data(filters):
 		.left_join(customer)
 		.on(customer.name == si.customer)
 		.select(
-			# Sales Invoice
+			# =========================================
+			# SALES INVOICE
+			# =========================================
 			si.name,
 			si.posting_date,
 			si.customer,
@@ -190,18 +187,27 @@ def get_data(filters):
 			si.company,
 			si.currency,
 
-			# Amounts
-			# Sales Invoice Total:
-			# discount ke baad, GST/tax ke pehle
+			# =========================================
+			# AMOUNTS
+			# =========================================
+
+			# Net Total:
+			# Discount ke baad, GST/tax ke pehle
 			si.net_total.as_("gross_amount"),
 
-			# Sales Invoice Rounded Total
+			# Rounded Total:
+			# GST included final amount
 			si.rounded_total.as_("net_amount"),
 
-			# Customer Agent
+			# =========================================
+			# CUSTOMER
+			# =========================================
 			customer.custom_agent.as_("customer_agent"),
+			customer.customer_group.as_("customer_group"),
 
-			# Sales Invoice Item
+			# =========================================
+			# SALES INVOICE ITEM
+			# =========================================
 			sii.name.as_("sales_invoice_item"),
 			sii.item_code,
 			sii.item_name,
@@ -210,14 +216,18 @@ def get_data(filters):
 			sii.rate,
 			sii.amount,
 
-			# Custom Item fields
+			# =========================================
+			# CUSTOM ITEM FIELDS
+			# =========================================
 			sii.custom_bottom_fabric,
 			sii.custom_dupatta_fabric,
 			sii.custom_top_fabric,
 			sii.custom_mrp,
 			sii.custom_count_of_pcs,
 
-			# Item
+			# =========================================
+			# ITEM
+			# =========================================
 			item.custom_sup_design_no.as_("sup_design_no"),
 		)
 		.where(si.docstatus == 1)
@@ -229,12 +239,16 @@ def get_data(filters):
 
 	if filters.get("from_date"):
 		query = query.where(
-			si.posting_date >= filters.get("from_date")
+			si.posting_date >= filters.get(
+				"from_date"
+			)
 		)
 
 	if filters.get("to_date"):
 		query = query.where(
-			si.posting_date <= filters.get("to_date")
+			si.posting_date <= filters.get(
+				"to_date"
+			)
 		)
 
 	# =========================================
@@ -251,6 +265,21 @@ def get_data(filters):
 		)
 
 	# =========================================
+	# CUSTOMER GROUP FILTER
+	# =========================================
+
+	customer_groups = get_filter_list(
+		filters.get("customer_group")
+	)
+
+	if customer_groups:
+		query = query.where(
+			customer.customer_group.isin(
+				customer_groups
+			)
+		)
+
+	# =========================================
 	# CLASS NAME FILTER
 	# =========================================
 
@@ -260,7 +289,9 @@ def get_data(filters):
 
 	if class_names:
 		query = query.where(
-			si.custom_class_name.isin(class_names)
+			si.custom_class_name.isin(
+				class_names
+			)
 		)
 
 	# =========================================
@@ -287,7 +318,9 @@ def get_data(filters):
 
 	if agents:
 		query = query.where(
-			customer.custom_agent.isin(agents)
+			customer.custom_agent.isin(
+				agents
+			)
 		)
 
 	# =========================================
