@@ -160,34 +160,51 @@ def process_bulk_purchase_return(docname):
 
         frappe.db.commit()
 
-
-
         grouped = {}
 
         for row in doc.items:
+
+            if not row.purchase_receipt:
+                frappe.throw(
+                    f"Row {row.idx}: Purchase Receipt is required."
+                )
+
+            if not row.purchase_receipt_item:
+                frappe.throw(
+                    f"Row {row.idx}: Purchase Receipt Item is required."
+                )
 
             grouped.setdefault(
                 row.purchase_receipt,
                 []
             ).append(row)
 
-
-        combined_doc = None
-
-
-
-
-        for purchase_receipt, rows in grouped.items():
-
-            return_doc = make_return_doc(
-                "Purchase Receipt",
-                purchase_receipt
+        if not grouped:
+            frappe.throw(
+                "No return items found."
             )
 
+        # --------------------------------------------------
+        # FIRST GRN WILL BE HEADER RETURN AGAINST
+        # --------------------------------------------------
 
-            return_doc.items = []
+        first_purchase_receipt = next(
+            iter(grouped)
+        )
 
+        return_doc = make_return_doc(
+            "Purchase Receipt",
+            first_purchase_receipt
+        )
 
+        # Remove copied items
+        return_doc.items = []
+
+        # --------------------------------------------------
+        # ADD ITEMS FROM ALL GRNs
+        # --------------------------------------------------
+
+        for purchase_receipt, rows in grouped.items():
 
             for row in rows:
 
@@ -196,6 +213,13 @@ def process_bulk_purchase_return(docname):
                     row.purchase_receipt_item
                 )
 
+                if pr_item.parent != purchase_receipt:
+
+                    frappe.throw(
+                        f"Row {row.idx}: Purchase Receipt Item "
+                        f"{row.purchase_receipt_item} does not belong "
+                        f"to Purchase Receipt {purchase_receipt}."
+                    )
 
                 serials = (
                     row.serial_nos.strip()
@@ -203,16 +227,13 @@ def process_bulk_purchase_return(docname):
                     else ""
                 )
 
-
                 original_wh = pr_item.warehouse
-
 
                 warehouse_company = frappe.db.get_value(
                     "Warehouse",
                     original_wh,
                     "company"
                 )
-
 
                 if warehouse_company != return_doc.company:
 
@@ -222,15 +243,13 @@ def process_bulk_purchase_return(docname):
                         f"is {return_doc.company}"
                     )
 
-
                 return_doc.append(
                     "items",
                     {
-
                         "item_code": row.item_code,
-
                         "item_name": row.item_name,
 
+                        # Return qty must be negative
                         "qty": -abs(flt(row.qty)),
 
                         "warehouse": original_wh,
@@ -238,7 +257,6 @@ def process_bulk_purchase_return(docname):
                         "rate": row.rate,
 
                         "uom": row.uom,
-
                         "stock_uom": row.stock_uom,
 
                         "conversion_factor":
@@ -252,92 +270,51 @@ def process_bulk_purchase_return(docname):
                         "purchase_order_item":
                             pr_item.purchase_order_item,
 
+                        # VERY IMPORTANT
+                        # Keep original GRN item reference
                         "purchase_receipt_item":
                             row.purchase_receipt_item
                     }
                 )
 
-
-
-
-            if combined_doc is None:
-
-                combined_doc = return_doc
-
-
-
-            else:
-
-                for item in return_doc.items:
-
-                    item_dict = item.as_dict()
-
-
-                    for field in (
-                        "name",
-                        "parent",
-                        "parenttype",
-                        "parentfield",
-                        "owner",
-                        "creation",
-                        "modified",
-                        "modified_by",
-                        "idx",
-                        "docstatus"
-                    ):
-
-                        item_dict.pop(
-                            field,
-                            None
-                        )
-
-
-                    combined_doc.append(
-                        "items",
-                        item_dict
-                    )
-
-
-
-        if not combined_doc or not combined_doc.items:
-
+        if not return_doc.items:
             frappe.throw(
                 "No return items found."
             )
 
+        # --------------------------------------------------
+        # HEADER REFERENCES FIRST GRN
+        # --------------------------------------------------
 
+        return_doc.is_return = 1
 
-        combined_doc.return_against = None
-
-
-
-        combined_doc.custom_bulk_purchase_return = doc.name
-
-
-
-        for idx, item in enumerate(
-            combined_doc.items,
-            start=1
-        ):
-
-            item.idx = idx
-
-
-
-        combined_doc.set_missing_values()
-
-        combined_doc.calculate_taxes_and_totals()
-
-
-
-        combined_doc.insert(
-            ignore_permissions=True
+        return_doc.return_against = (
+            first_purchase_receipt
         )
 
+        # Link back to Bulk Purchase Return
+        return_doc.custom_bulk_purchase_return = (
+            doc.name
+        )
+
+        # Rebuild idx
+        for idx, item in enumerate(
+            return_doc.items,
+            start=1
+        ):
+            item.idx = idx
+
+        return_doc.set_missing_values()
+
+        return_doc.calculate_taxes_and_totals()
 
         # --------------------------------------------------
-        # SUCCESS
+        # INSERT ONE COMBINED RETURN PR
         # --------------------------------------------------
+
+        return_doc.insert(
+            ignore_permissions=True
+        )
 
         doc.db_set(
             "status",
@@ -346,18 +323,14 @@ def process_bulk_purchase_return(docname):
 
         frappe.db.commit()
 
-
-
     except Exception:
 
         frappe.db.rollback()
-
 
         frappe.log_error(
             frappe.get_traceback(),
             "Bulk Purchase Return Failed"
         )
-
 
         doc.db_set(
             "status",
@@ -366,6 +339,7 @@ def process_bulk_purchase_return(docname):
 
         frappe.db.commit()
 
+        raise
 
 @frappe.whitelist()
 def get_returnable_items(
