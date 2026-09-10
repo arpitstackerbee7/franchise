@@ -199,7 +199,7 @@ frappe.query_reports["Custom Sales Invoice"] = {
 						"Class Name",
 						"Company",
 						"Quantity",
-						"Gross Amount (Taxable Value (INR))",
+						"Gross Amount",
 						"Net Amount",
 					];
 
