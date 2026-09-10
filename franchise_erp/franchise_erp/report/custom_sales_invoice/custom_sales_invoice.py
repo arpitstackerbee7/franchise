@@ -92,13 +92,13 @@ def get_columns():
 			"options": "currency",
 			"width": 110,
 		},
-		{
-			"label": _("Amount"),
-			"fieldname": "amount",
-			"fieldtype": "Currency",
-			"options": "currency",
-			"width": 120,
-		},
+		# {
+		# 	"label": _("Amount"),
+		# 	"fieldname": "amount",
+		# 	"fieldtype": "Currency",
+		# 	"options": "currency",
+		# 	"width": 120,
+		# },
 		{
 			"label": _("Gross Amount"),
 			"fieldname": "gross_amount",
@@ -193,7 +193,7 @@ def get_data(filters):
 			# Amounts
 			# Sales Invoice Total:
 			# discount ke baad, GST/tax ke pehle
-			si.total.as_("gross_amount"),
+			si.net_total.as_("gross_amount"),
 
 			# Sales Invoice Rounded Total
 			si.rounded_total.as_("net_amount"),
