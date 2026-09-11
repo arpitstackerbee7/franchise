@@ -431,6 +431,9 @@ def validate_internal_customer_credit(doc, method):
     # Skip conditions
     if doc.is_return or not doc.customer:
         return
+    
+    if doc.get("custom_stock_taking"):
+        return
 
     # ===============================
     # ONLY INTERNAL CUSTOMER
