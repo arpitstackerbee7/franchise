@@ -61,31 +61,81 @@ def set_percent_off_promo_flags(doc, method=None):
 
 
 
+# def set_dn_naming_series(doc, method=None):
+
+#     # Clean abbreviation (allow only letters & numbers)
+#     abbr = re.sub(r"[^A-Za-z0-9]", "", doc.custom_abbr or "")
+
+#     # ✅ Get Financial Year (26-27)
+#     fy = frappe.defaults.get_user_default("fiscal_year")
+
+#     if fy and "-" in fy:
+#         start, end = fy.split("-")
+#         fy_code = f"{start[-2:]}-{end[-2:]}"
+#     else:
+#         year = datetime.now().year
+#         fy_code = f"{str(year)[-2:]}-{str(year+1)[-2:]}"
+
+#     # ✅ Apply FY to ALL series
+#     if doc.is_return:
+#         series = f"DRET-{abbr}-{fy_code}-"
+#     elif abbr:
+#         series = f"DN-{abbr}-{fy_code}-"
+#     else:
+#         series = f"DN-{fy_code}-"
+
+#     doc.naming_series = series
 def set_dn_naming_series(doc, method=None):
 
-    # Clean abbreviation (allow only letters & numbers)
-    abbr = re.sub(r"[^A-Za-z0-9]", "", doc.custom_abbr or "")
+    # ---------------------------------------------------------
+    # CLEAN ABBREVIATION
+    # ---------------------------------------------------------
+    abbr = re.sub(
+        r"[^A-Za-z0-9]",
+        "",
+        doc.custom_abbr or ""
+    )
 
-    # ✅ Get Financial Year (26-27)
+    # ---------------------------------------------------------
+    # GET FINANCIAL YEAR
+    # ---------------------------------------------------------
     fy = frappe.defaults.get_user_default("fiscal_year")
 
     if fy and "-" in fy:
+
         start, end = fy.split("-")
         fy_code = f"{start[-2:]}-{end[-2:]}"
-    else:
-        year = datetime.now().year
-        fy_code = f"{str(year)[-2:]}-{str(year+1)[-2:]}"
 
-    # ✅ Apply FY to ALL series
-    if doc.is_return:
-        series = f"DRET-{abbr}-{fy_code}-"
-    elif abbr:
-        series = f"DN-{abbr}-{fy_code}-"
     else:
+
+        year = datetime.now().year
+        fy_code = f"{str(year)[-2:]}-{str(year + 1)[-2:]}"
+
+    # ---------------------------------------------------------
+    # RETURN DELIVERY NOTE
+    # ---------------------------------------------------------
+    if doc.is_return:
+
+        if abbr:
+            series = f"DRET-{abbr}-{fy_code}-"
+        else:
+            series = f"DRET-{fy_code}-"
+
+    # ---------------------------------------------------------
+    # NORMAL DELIVERY NOTE
+    # ---------------------------------------------------------
+    elif abbr:
+
+        series = f"DN-{abbr}-{fy_code}-"
+
+    else:
+
         series = f"DN-{fy_code}-"
 
-    doc.naming_series = series
-    
+    # ---------------------------------------------------------
+    # SET NAMING SERIES
+    # ---------------------------------------------------------
+    doc.naming_series = series   
 # def set_dn_naming_series(doc, method):
 #     if doc.is_return:
 #         doc.naming_series = "DRET-.YY.-"
