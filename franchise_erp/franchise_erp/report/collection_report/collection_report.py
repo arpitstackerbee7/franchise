@@ -463,100 +463,47 @@ def get_data(filters, companies):
 			if not sis_company:
 				continue
 
-			# -------------------------------------------------
-			# SAME LOGIC AS SIS DEBIT NOTE LOG
-			# -------------------------------------------------
 
-			result = fetch_invoices(
-				company=customer,
-				from_date=str(from_date),
-				to_date=str(to_date)
-			)
-
-			invoice_list = result.get("invoice_list") or []
-
-			# Initialize
 			if customer not in qty_map:
 				qty_map[customer] = {
 					"qty_ytd": 0,
-					"qty_15": 0
+					"qty_15": 0,
+					"amount_ytd": 0,
+					"amount_15": 0
 				}
 
 			# -------------------------------------------------
-			# PROCESS INVOICE ITEMS
+			# PREVIOUS PERIOD (From Date -> Last 15 Days start - 1)
 			# -------------------------------------------------
 
-			for row in invoice_list:
+			previous_result = fetch_invoices(
+				company=customer,
+				from_date=str(from_date),
+				to_date=str(add_days(last_15_start, -1))
+			)
 
-				qty = float(row.get("qty") or 0)
-				posting_date = row.get("posting_date")
+			for row in (previous_result.get("invoice_list") or []):
+				qty_map[customer]["qty_ytd"] += float(row.get("qty") or 0)
+				qty_map[customer]["amount_ytd"] += float(row.get("total_amount") or 0)
 
-				# ---------------------------------------------
-				# FULL SELECTED PERIOD
-				#
-				# 01-04-2026 → 31-08-2026
-				#
-				# Karishma Fabrics = 21
-				# ---------------------------------------------
-				qty_map[customer]["qty_ytd"] += qty
+			# -------------------------------------------------
+			# LAST 15 DAYS (Last 15 Days start -> To Date)
+			# -------------------------------------------------
 
-				# ---------------------------------------------
-				# LAST 15 DAYS
-				#
-				# To Date - 14 days → To Date
-				# ---------------------------------------------
-				if posting_date:
-					posting_date = getdate(posting_date)
+			last_15_result = fetch_invoices(
+				company=customer,
+				from_date=str(last_15_start),
+				to_date=str(to_date)
+			)
 
-					if posting_date >= last_15_start:
-						qty_map[customer]["qty_15"] += qty
+			for row in (last_15_result.get("invoice_list") or []):
+				qty_map[customer]["qty_15"] += float(row.get("qty") or 0)
+				qty_map[customer]["amount_15"] += float(row.get("total_amount") or 0)
+
+		
 
 										
-	# =====================================================
-	# SALE AMOUNT
-	# =====================================================
 
-	amount_data = frappe.db.sql(
-		f"""
-		SELECT
-			si.customer AS customer,
-
-			SUM(
-				CASE
-					WHEN si.posting_date < %(last_15_start)s
-					THEN si.grand_total
-					ELSE 0
-				END
-			) AS amount_ytd,
-
-			SUM(
-				CASE
-					WHEN si.posting_date >= %(last_15_start)s
-					THEN si.grand_total
-					ELSE 0
-				END
-			) AS amount_15
-
-		FROM `tabSales Invoice` si
-
-		WHERE
-			si.docstatus = 1
-			AND si.company IN %(companies)s
-			AND si.posting_date >= %(from_date)s
-			AND si.posting_date <= %(to_date)s
-			AND IFNULL(si.is_return, 0) = 0
-			{customer_condition}
-
-		GROUP BY si.customer
-		""",
-		sales_values,
-		as_dict=True
-	)
-
-	amount_map = {
-		d.customer: d
-		for d in amount_data
-	}
 
 
 	# =====================================================
@@ -738,7 +685,6 @@ def get_data(filters, companies):
 		set(
 			list(opening_map)
 			+ list(qty_map)
-			+ list(amount_map)
 			+ list(credit_note_map)
 			+ list(debit_note_map)
 			+ list(payment_map)
@@ -784,13 +730,7 @@ def get_data(filters, companies):
 			customer,
 			frappe._dict()
 		)
-
 		qty = qty_map.get(
-			customer,
-			frappe._dict()
-		)
-
-		amt = amount_map.get(
 			customer,
 			frappe._dict()
 		)
@@ -816,9 +756,9 @@ def get_data(filters, companies):
 		sale_qty_ytd = qty.get("qty_ytd") or 0
 		sale_qty_15 = qty.get("qty_15") or 0
 
-		amount_ytd = amt.get("amount_ytd") or 0
-		amount_15 = amt.get("amount_15") or 0
-
+		amount_ytd = qty.get("amount_ytd") or 0
+		amount_15 = qty.get("amount_15") or 0
+	
 		credit_note = credit.get("credit_note") or 0
 		credit_note_15 = credit.get("credit_note_15") or 0
 
