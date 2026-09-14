@@ -617,6 +617,60 @@ def get_data(filters, companies):
 
 
 	# =====================================================
+	# CREDIT NOTES (from General Ledger - Journal Entry Credit side)
+	# =====================================================
+
+	gl_credit_customer_condition = ""
+
+	if customer_filter:
+		gl_credit_customer_condition = " AND gle.party = %(customer)s"
+
+	journal_credit_note_data = frappe.db.sql(
+		f"""
+		SELECT
+			gle.party AS customer,
+
+			SUM(
+				CASE
+					WHEN gle.posting_date < %(last_15_start)s
+					THEN gle.credit
+					ELSE 0
+				END
+			) AS credit_note,
+
+			SUM(
+				CASE
+					WHEN gle.posting_date >= %(last_15_start)s
+					THEN gle.credit
+					ELSE 0
+				END
+			) AS credit_note_15
+
+		FROM `tabGL Entry` gle
+
+		WHERE
+			gle.is_cancelled = 0
+			AND gle.company IN %(companies)s
+			AND gle.posting_date >= %(from_date)s
+			AND gle.posting_date <= %(to_date)s
+			AND gle.party_type = 'Customer'
+			AND IFNULL(gle.party, '') != ''
+			AND gle.voucher_type = 'Journal Entry'
+			AND gle.credit > 0
+			{gl_credit_customer_condition}
+
+		GROUP BY gle.party
+		""",
+		sales_values,
+		as_dict=True
+	)
+
+	journal_credit_note_map = {
+		d.customer: d
+		for d in journal_credit_note_data
+	}
+
+	# =====================================================
 	# PAYMENT / COLLECTION
 	# =====================================================
 
@@ -687,6 +741,7 @@ def get_data(filters, companies):
 			list(opening_map)
 			+ list(qty_map)
 			+ list(credit_note_map)
+			+ list(journal_credit_note_map)
 			+ list(debit_note_map)
 			+ list(payment_map)
 		)
@@ -741,6 +796,10 @@ def get_data(filters, companies):
 			frappe._dict()
 		)
 
+		journal_credit = journal_credit_note_map.get(
+			customer,
+			frappe._dict()
+		)
 		debit = debit_note_map.get(
 			customer,
 			frappe._dict()
@@ -760,8 +819,14 @@ def get_data(filters, companies):
 		amount_ytd = qty.get("amount_ytd") or 0
 		amount_15 = qty.get("amount_15") or 0
 	
-		credit_note = credit.get("credit_note") or 0
-		credit_note_15 = credit.get("credit_note_15") or 0
+		credit_note = (
+			(credit.get("credit_note") or 0)
+			+ (journal_credit.get("credit_note") or 0)
+		)
+		credit_note_15 = (
+			(credit.get("credit_note_15") or 0)
+			+ (journal_credit.get("credit_note_15") or 0)
+		)
 
 		debit_note = debit.get("debit_note") or 0
 		debit_note_15 = debit.get("debit_note_15") or 0
