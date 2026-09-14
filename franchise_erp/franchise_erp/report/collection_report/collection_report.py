@@ -8,16 +8,20 @@ from frappe.utils import add_days, getdate
 
 def execute(filters=None):
 	filters = filters or {}
-
+ 
 	validate_filters(filters)
-
+ 
 	companies = get_counter_companies(filters)
-
+ 
 	if not companies:
 		frappe.msgprint(_("No companies found."))
 		return [], []
+ 
+	columns = get_columns()
+	data = get_data(filters, companies)
+ 
+	return columns, data
 
-	return get_columns(), get_data(filters, companies)
 
 
 def validate_filters(filters):
@@ -95,126 +99,126 @@ def get_columns():
 			"fieldname": "customer_name",
 			"fieldtype": "Link",
 			"options": "Customer",
-			"width": 200
+			"width": 130
 		},
 
 		{
 			"label": _("Agent"),
 			"fieldname": "agent",
 			"fieldtype": "Data",
-			"width": 150
+			"width": 90
 		},
 
 		{
 			"label": _("ASM"),
 			"fieldname": "asm",
 			"fieldtype": "Data",
-			"width": 150
+			"width": 90
 		},
 
 		{
 			"label": _("Opening Amount"),
 			"fieldname": "opening_stock",
 			"fieldtype": "Currency",
-			"width": 140
+			"width": 90
 		},
 
 		{
 			"label": _("Credit Note"),
 			"fieldname": "credit_note",
 			"fieldtype": "Currency",
-			"width": 130
+			"width": 85
 		},
 
 		{
 			"label": _("Debit Note"),
 			"fieldname": "debit_note",
 			"fieldtype": "Currency",
-			"width": 130
+			"width": 85
 		},
 
 		{
 			"label": _("Previous Sale Qty"),
 			"fieldname": "sale_qty_ytd",
 			"fieldtype": "Float",
-			"width": 140
+			"width": 85
 		},
 
 		{
 			"label": _("Previous Sale Amount"),
 			"fieldname": "amount_ytd",
 			"fieldtype": "Currency",
-			"width": 170
+			"width": 100
 		},
 
 		{
 			"label": _("Payment Rec"),
 			"fieldname": "payment_received",
 			"fieldtype": "Currency",
-			"width": 140
+			"width": 90
 		},
 
 		{
 			"label": _("Previous Collection Amount"),
 			"fieldname": "previous_collection_amount",
 			"fieldtype": "Currency",
-			"width": 180
+			"width": 100
 		},
 
 		{
 			"label": _("Last 15 Days Sale Qty"),
 			"fieldname": "sale_qty_15",
 			"fieldtype": "Float",
-			"width": 160
+			"width": 90
 		},
 
 		{
 			"label": _("Last 15 Days Sale Amount"),
 			"fieldname": "amount_15",
 			"fieldtype": "Currency",
-			"width": 180
+			"width": 100
 		},
 
 		{
 			"label": _("Last 15 Days Collection Amount"),
 			"fieldname": "collection_15",
 			"fieldtype": "Currency",
-			"width": 190
+			"width": 100
 		},
 
 		{
 			"label": _("Credit Note (Last 15 Days)"),
 			"fieldname": "credit_note_15",
 			"fieldtype": "Currency",
-			"width": 170
+			"width": 90
 		},
 
 		{
 			"label": _("Debit Note (Last 15 Days)"),
 			"fieldname": "debit_note_15",
 			"fieldtype": "Currency",
-			"width": 170
+			"width": 90
 		},
 
 		{
 			"label": _("Collectable Amount Last 15 Days"),
 			"fieldname": "collectable_amount_15",
 			"fieldtype": "Currency",
-			"width": 210
+			"width": 100
 		},
 
 		{
 			"label": _("Total Collectable Amount"),
 			"fieldname": "total_collectable_amount",
 			"fieldtype": "Currency",
-			"width": 190
+			"width": 100
 		},
 
 		{
 			"label": _("Pending"),
 			"fieldname": "pending",
 			"fieldtype": "Currency",
-			"width": 130
+			"width": 85
 		}
 
 	]

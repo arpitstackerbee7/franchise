@@ -80,6 +80,8 @@ frappe.query_reports["Collection Report"] = {
 
 	onload: function(report) {
 		set_report_title();
+		override_print_title();
+		inject_print_heading_style();
 	},
 
 
@@ -116,4 +118,80 @@ function set_report_title() {
 	frappe.query_report.page.set_title(
 		get_report_title(filters)
 	);
+}
+
+function override_print_title() {
+
+	if (frappe.query_report._period_title_patched) {
+		return;
+	}
+
+	let original_print_report = frappe.query_report.print_report;
+
+	frappe.query_report.print_report = function(print_settings) {
+
+		let filters = frappe.query_report.get_filter_values();
+		this.report_name = get_report_title(filters);
+
+		return original_print_report.call(this, print_settings);
+	};
+
+	frappe.query_report._period_title_patched = true;
+
+}
+
+function inject_print_heading_style() {
+
+	if (document.getElementById("collection-report-print-style")) {
+		return;
+	}
+
+	let style = document.createElement("style");
+	style.id = "collection-report-print-style";
+	style.innerHTML = `
+		.print-heading, .print-heading h2, .print-format-container h2 {
+			font-weight: bold !important;
+		}
+
+		@media print {
+			@page {
+				size: A4 landscape;
+				margin: 8mm;
+			}
+
+			.print-format-container table {
+				table-layout: fixed !important;
+				width: 100% !important;
+				border-collapse: collapse !important;
+			}
+
+			.print-format-container table th,
+			.print-format-container table td {
+				font-size: 9px !important;
+				padding: 3px 4px !important;
+				word-wrap: break-word !important;
+				white-space: normal !important;
+				vertical-align: middle !important;
+				border: 1px solid #999 !important;
+			}
+
+			.print-format-container table th {
+				text-align: center !important;
+			}
+
+			.print-format-container table td {
+				text-align: right !important;
+			}
+
+			.print-format-container table td:first-child,
+			.print-format-container table th:first-child,
+			.print-format-container table td:nth-child(2),
+			.print-format-container table th:nth-child(2) {
+				text-align: left !important;
+			}
+		}
+	`;
+
+	document.head.appendChild(style);
+
 }
