@@ -479,12 +479,13 @@ def get_data(filters, companies):
 			previous_result = fetch_invoices(
 				company=customer,
 				from_date=str(from_date),
-				to_date=str(add_days(last_15_start, -1))
+				to_date=str(to_date)
 			)
 
 			for row in (previous_result.get("invoice_list") or []):
 				qty_map[customer]["qty_ytd"] += float(row.get("qty") or 0)
 				qty_map[customer]["amount_ytd"] += float(row.get("total_amount") or 0)
+
 
 			# -------------------------------------------------
 			# LAST 15 DAYS (Last 15 Days start -> To Date)
