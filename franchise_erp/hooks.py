@@ -405,7 +405,20 @@ override_doctype_class = {
 
 override_whitelisted_methods = {
     "erpnext.stock.doctype.delivery_note.delivery_note.make_sales_invoice":
-        "franchise_erp.api.make_sales_invoice"
+        "franchise_erp.api.make_sales_invoice",
+        
+    "frappe.core.page.permission_manager.permission_manager.add":
+        "franchise_erp.custom.permission_audit.add",
+
+    "frappe.core.page.permission_manager.permission_manager.update":
+        "franchise_erp.custom.permission_audit.update",
+
+    "frappe.core.page.permission_manager.permission_manager.remove":
+        "franchise_erp.custom.permission_audit.remove",
+
+    "frappe.core.page.permission_manager.permission_manager.reset":
+        "franchise_erp.custom.permission_audit.reset",
+
 }
 
 # override_whitelisted_methods = {
