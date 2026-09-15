@@ -55,6 +55,13 @@ def get_columns():
 			"width": 180,
 		},
        {
+				"label": _("Supplier Agent"),
+				"fieldname": "supplier_agent",
+				"fieldtype": "Link",
+				"options": "Supplier",
+				"width": 180,
+			},
+       {
 				"label": _("Item Code"),
 				"fieldname": "item_code",
 				"fieldtype": "Link",
@@ -336,6 +343,13 @@ def get_data(filters):
 	# SUPPLIER LOOKUP
 	# =========================================
 
+	# for row in data:
+	# 	supplier = get_supplier_for_item(
+	# 		item_code=row.get("item_code"),
+	# 		serial_no=row.get("serial_no"),
+	# 	)
+
+	# 	row["supplier_name"] = supplier
 	for row in data:
 		supplier = get_supplier_for_item(
 			item_code=row.get("item_code"),
@@ -343,10 +357,30 @@ def get_data(filters):
 		)
 
 		row["supplier_name"] = supplier
+		row["supplier_agent"] = get_supplier_agent(supplier)
 
 	return data
 
 
+# ============================================================
+# SUPPLIER AGENT
+# ============================================================
+
+def get_supplier_agent(supplier):
+    if not supplier:
+        return None
+
+    if not frappe.db.has_column(
+        "Supplier",
+        "custom_agent_supplier"
+    ):
+        return None
+
+    return frappe.db.get_value(
+        "Supplier",
+        supplier,
+        "custom_agent_supplier"
+    )
 # ============================================================
 # SUPPLIER LOOKUP
 # ============================================================
