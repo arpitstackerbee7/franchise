@@ -370,7 +370,6 @@ def get_data(filters, companies):
 	# 		"opening_stock": opening_stock
 	# 	})
 
-	from erpnext.accounts.utils import get_fiscal_year
 	from erpnext.accounts.report.trial_balance.trial_balance import execute as trial_balance_execute
 
 	tb_to_date = add_days(from_date, -1)
@@ -391,15 +390,26 @@ def get_data(filters, companies):
 		if not frappe.db.exists("Company", {"name": customer}):
 			continue
 
-		fy_name, fy_start, fy_end = get_fiscal_year(
-			tb_to_date,
-			company=customer
+		fiscal_year = frappe.db.get_value(
+			"Fiscal Year",
+			{
+				"year_start_date": ["<=", tb_to_date],
+				"year_end_date": [">=", tb_to_date],
+				"disabled": 0
+			},
+			["name", "year_start_date", "year_end_date"],
+			as_dict=True
 		)
+
+		if not fiscal_year:
+			frappe.throw(
+				_("No active Fiscal Year found for {0}").format(tb_to_date)
+			)
 
 		filters = frappe._dict({
 			"company": customer,
-			"fiscal_year": fy_name,
-			"from_date": fy_start,
+			"fiscal_year": fiscal_year.name,
+			"from_date": fiscal_year.year_start_date,
 			"to_date": tb_to_date,
 			"with_period_closing_entry_for_opening": 1,
 			"with_period_closing_entry_for_current": 1,
