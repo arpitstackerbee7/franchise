@@ -228,7 +228,10 @@ def get_data(filters, companies):
 
 	from_date = getdate(filters.get("from_date"))
 	to_date = getdate(filters.get("to_date"))
-	last_15_start = add_days(to_date, -14)
+	if to_date.day == 31:
+		last_15_start = to_date.replace(day=16)
+	else:
+		last_15_start = add_days(to_date, -14)
 
 	customer_filter = filters.get("customer")
 
@@ -246,128 +249,177 @@ def get_data(filters, companies):
 		sales_values["customer"] = customer_filter
 
 
-	# =====================================================
-	# OPENING AMOUNT
-	# Balance before selected From Date
-	# =====================================================
+	# # =====================================================
+	# # OPENING AMOUNT
+	# # Balance before selected From Date
+	# # =====================================================
 
-	opening_sales_data = frappe.db.sql(
-		f"""
-		SELECT
-			si.customer AS customer,
+	# opening_sales_data = frappe.db.sql(
+	# 	f"""
+	# 	SELECT
+	# 		si.customer AS customer,
 
-			SUM(
-				CASE
-					WHEN IFNULL(si.is_return, 0) = 0
-					THEN si.grand_total
-					ELSE 0
-				END
-			) AS total_sales,
+	# 		SUM(
+	# 			CASE
+	# 				WHEN IFNULL(si.is_return, 0) = 0
+	# 				THEN si.grand_total
+	# 				ELSE 0
+	# 			END
+	# 		) AS total_sales,
 
-			ABS(
-				SUM(
-					CASE
-						WHEN IFNULL(si.is_return, 0) = 1
-						THEN si.grand_total
-						ELSE 0
-					END
-				)
-			) AS credit_note
+	# 		ABS(
+	# 			SUM(
+	# 				CASE
+	# 					WHEN IFNULL(si.is_return, 0) = 1
+	# 					THEN si.grand_total
+	# 					ELSE 0
+	# 				END
+	# 			)
+	# 		) AS credit_note
 
-		FROM `tabSales Invoice` si
+	# 	FROM `tabSales Invoice` si
 
-		WHERE
-			si.docstatus = 1
-			AND si.company IN %(companies)s
-			AND si.posting_date < %(from_date)s
-			{customer_condition}
+	# 	WHERE
+	# 		si.docstatus = 1
+	# 		AND si.company IN %(companies)s
+	# 		AND si.posting_date < %(from_date)s
+	# 		{customer_condition}
 
-		GROUP BY si.customer
-		""",
-		sales_values,
-		as_dict=True
-	)
+	# 	GROUP BY si.customer
+	# 	""",
+	# 	sales_values,
+	# 	as_dict=True
+	# )
 
-	opening_sales_map = {
-		d.customer: d
-		for d in opening_sales_data
-	}
-
-
-	opening_payment_values = {
-		"companies": companies,
-		"from_date": from_date
-	}
-
-	opening_payment_customer_condition = ""
-
-	if customer_filter:
-		opening_payment_customer_condition = " AND pe.party = %(customer)s"
-		opening_payment_values["customer"] = customer_filter
+	# opening_sales_map = {
+	# 	d.customer: d
+	# 	for d in opening_sales_data
+	# }
 
 
-	opening_payment_data = frappe.db.sql(
-		f"""
-		SELECT
-			pe.party AS customer,
-			SUM(pe.paid_amount) AS total_payment
+	# opening_payment_values = {
+	# 	"companies": companies,
+	# 	"from_date": from_date
+	# }
 
-		FROM `tabPayment Entry` pe
+	# opening_payment_customer_condition = ""
 
-		WHERE
-			pe.docstatus = 1
-			AND pe.payment_type = 'Receive'
-			AND pe.party_type = 'Customer'
-			AND pe.company IN %(companies)s
-			AND pe.posting_date < %(from_date)s
-			{opening_payment_customer_condition}
+	# if customer_filter:
+	# 	opening_payment_customer_condition = " AND pe.party = %(customer)s"
+	# 	opening_payment_values["customer"] = customer_filter
 
-		GROUP BY pe.party
-		""",
-		opening_payment_values,
-		as_dict=True
-	)
 
-	opening_payment_map = {
-		d.customer: d
-		for d in opening_payment_data
-	}
+	# opening_payment_data = frappe.db.sql(
+	# 	f"""
+	# 	SELECT
+	# 		pe.party AS customer,
+	# 		SUM(pe.paid_amount) AS total_payment
 
+	# 	FROM `tabPayment Entry` pe
+
+	# 	WHERE
+	# 		pe.docstatus = 1
+	# 		AND pe.payment_type = 'Receive'
+	# 		AND pe.party_type = 'Customer'
+	# 		AND pe.company IN %(companies)s
+	# 		AND pe.posting_date < %(from_date)s
+	# 		{opening_payment_customer_condition}
+
+	# 	GROUP BY pe.party
+	# 	""",
+	# 	opening_payment_values,
+	# 	as_dict=True
+	# )
+
+	# opening_payment_map = {
+	# 	d.customer: d
+	# 	for d in opening_payment_data
+	# }
+
+
+	# opening_map = {}
+
+	# opening_customers = set(
+	# 	list(opening_sales_map)
+	# 	+ list(opening_payment_map)
+	# )
+
+	# for customer in opening_customers:
+
+	# 	sales = opening_sales_map.get(
+	# 		customer,
+	# 		frappe._dict()
+	# 	)
+
+	# 	payment = opening_payment_map.get(
+	# 		customer,
+	# 		frappe._dict()
+	# 	)
+
+	# 	total_sales = sales.get("total_sales") or 0
+	# 	credit_note = sales.get("credit_note") or 0
+	# 	total_payment = payment.get("total_payment") or 0
+
+	# 	opening_stock = (
+	# 		total_sales
+	# 		- credit_note
+	# 		- total_payment
+	# 	)
+
+	# 	opening_map[customer] = frappe._dict({
+	# 		"opening_stock": opening_stock
+	# 	})
+
+	from erpnext.accounts.utils import get_fiscal_year
+	from erpnext.accounts.report.trial_balance.trial_balance import execute as trial_balance_execute
+
+	tb_to_date = add_days(from_date, -1)
 
 	opening_map = {}
 
-	opening_customers = set(
-		list(opening_sales_map)
-		+ list(opening_payment_map)
+	sis_customers = frappe.get_all(
+		"Customer",
+		filters={"disabled": 0},
+		pluck="name"
 	)
 
-	for customer in opening_customers:
+	if customer_filter:
+		sis_customers = [c for c in sis_customers if c == customer_filter]
 
-		sales = opening_sales_map.get(
-			customer,
-			frappe._dict()
+	for customer in sis_customers:
+
+		if not frappe.db.exists("Company", {"name": customer}):
+			continue
+
+		fy_name, fy_start, fy_end = get_fiscal_year(
+			tb_to_date,
+			company=customer
 		)
 
-		payment = opening_payment_map.get(
-			customer,
-			frappe._dict()
-		)
-
-		total_sales = sales.get("total_sales") or 0
-		credit_note = sales.get("credit_note") or 0
-		total_payment = payment.get("total_payment") or 0
-
-		opening_stock = (
-			total_sales
-			- credit_note
-			- total_payment
-		)
-
-		opening_map[customer] = frappe._dict({
-			"opening_stock": opening_stock
+		filters = frappe._dict({
+			"company": customer,
+			"fiscal_year": fy_name,
+			"from_date": fy_start,
+			"to_date": tb_to_date,
+			"with_period_closing_entry_for_opening": 1,
+			"with_period_closing_entry_for_current": 1,
+			"show_net_values": 1,
+			"show_group_accounts": 1,
+			"include_default_book_entries": 1,
 		})
 
+		columns, trial_balance_data = trial_balance_execute(filters)
 
+		closing_dr = 0
+
+		for row in trial_balance_data:
+			if row.get("account_name") == "Stock Expenses":
+				closing_dr = row.get("closing_debit") or 0
+				break
+
+		opening_map[customer] = frappe._dict({
+			"opening_stock": closing_dr
+		})
 	# # =====================================================
 	# # SALE QUANTITY
 	# # =====================================================
