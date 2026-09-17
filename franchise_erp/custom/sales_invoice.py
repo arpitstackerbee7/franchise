@@ -1895,19 +1895,29 @@ def validate_sales_invoice(doc, method):
         )
 
 import frappe
+
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
+
+from franchise_erp.custom.sales_invoice_return import (
+    create_return_delivery_notes_for_sales_invoice,
+)
+
 
 class CustomSalesInvoice(SalesInvoice):
 
     def validate(self):
-        # 🔥 पहले qty fix करो
         if self.is_return:
             for item in self.items:
                 item.qty = -abs(item.qty or 0)
-                
                 item.stock_qty = item.qty * (item.conversion_factor or 1)
 
+        super().validate()
 
+    def on_submit(self):
+        super().on_submit()
+
+        if self.is_return:
+            create_return_delivery_notes_for_sales_invoice(self)
 
 def update_serial_no_mrp(doc, method=None):
     """
