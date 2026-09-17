@@ -696,9 +696,18 @@ def fetch_invoices(company, from_date=None, to_date=None):
         # -------------------------------------------------------------------
         # MARGIN LOGIC
         # -------------------------------------------------------------------
-        if is_promo or discount_percentage > 0:
+        # if is_promo or discount_percentage > 0:
+        #     margin_percent = discounted_margin
+        # else:
+        #     margin_percent = fresh_margin
+        if is_promo and promo_discount > 0:
+            # Promo scheme with actual promo discount → discounted margin
+            margin_percent = discounted_margin
+        elif not is_promo and discount_percentage > 0:
+            # Normal discount → discounted margin
             margin_percent = discounted_margin
         else:
+            # Promo scheme with 0 promo discount OR no discount → fresh margin
             margin_percent = fresh_margin
 
         margin_amount = (net_amount * margin_percent) / D(100)
