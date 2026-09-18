@@ -234,6 +234,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "financial_statement_account_mapping",
    "fieldtype": "Table",
    "label": "Financial Statement Account Mapping",
@@ -282,7 +283,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-09-07 14:38:42.038648",
+ "modified": "2026-09-18 13:17:23.911657",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",

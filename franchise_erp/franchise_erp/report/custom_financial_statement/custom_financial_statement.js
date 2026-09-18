@@ -5,9 +5,9 @@ frappe.query_reports["Custom Financial Statement"] = {
 
     filters: [
 
-        // =================================================
+        // ====================================================
         // COMPANY
-        // =================================================
+        // ====================================================
 
         {
             fieldname: "company",
@@ -15,12 +15,15 @@ frappe.query_reports["Custom Financial Statement"] = {
             fieldtype: "Link",
             options: "Company",
             reqd: 1,
-            default: frappe.defaults.get_user_default("Company")
+            default:
+                frappe.defaults.get_user_default(
+                    "Company"
+                )
         },
 
-        // =================================================
+        // ====================================================
         // FISCAL YEAR
-        // =================================================
+        // ====================================================
 
         {
             fieldname: "fiscal_year",
@@ -28,11 +31,17 @@ frappe.query_reports["Custom Financial Statement"] = {
             fieldtype: "Link",
             options: "Fiscal Year",
             reqd: 1,
-            default: frappe.defaults.get_user_default("fiscal_year"),
+            default:
+                frappe.defaults.get_user_default(
+                    "fiscal_year"
+                ),
 
             on_change: function (report) {
 
-                let fy = report.get_filter_value("fiscal_year");
+                const fy =
+                    report.get_filter_value(
+                        "fiscal_year"
+                    );
 
                 if (!fy) {
                     return;
@@ -47,28 +56,26 @@ frappe.query_reports["Custom Financial Statement"] = {
                     ]
                 ).then(r => {
 
-                    if (r.message) {
-
-                        report.set_filter_value(
-                            "from_date",
-                            r.message.year_start_date
-                        );
-
-                        report.set_filter_value(
-                            "to_date",
-                            r.message.year_end_date
-                        );
-
+                    if (!r.message) {
+                        return;
                     }
 
-                });
+                    report.set_filter_value(
+                        "from_date",
+                        r.message.year_start_date
+                    );
 
+                    report.set_filter_value(
+                        "to_date",
+                        r.message.year_end_date
+                    );
+                });
             }
         },
 
-        // =================================================
+        // ====================================================
         // FROM DATE
-        // =================================================
+        // ====================================================
 
         {
             fieldname: "from_date",
@@ -77,9 +84,9 @@ frappe.query_reports["Custom Financial Statement"] = {
             reqd: 1
         },
 
-        // =================================================
+        // ====================================================
         // TO DATE
-        // =================================================
+        // ====================================================
 
         {
             fieldname: "to_date",
@@ -88,9 +95,9 @@ frappe.query_reports["Custom Financial Statement"] = {
             reqd: 1
         },
 
-        // =================================================
+        // ====================================================
         // COST CENTER
-        // =================================================
+        // ====================================================
 
         {
             fieldname: "cost_center",
@@ -99,9 +106,9 @@ frappe.query_reports["Custom Financial Statement"] = {
             options: "Cost Center"
         },
 
-        // =================================================
+        // ====================================================
         // PROJECT
-        // =================================================
+        // ====================================================
 
         {
             fieldname: "project",
@@ -110,9 +117,9 @@ frappe.query_reports["Custom Financial Statement"] = {
             options: "Project"
         },
 
-        // =================================================
+        // ====================================================
         // FINANCE BOOK
-        // =================================================
+        // ====================================================
 
         {
             fieldname: "finance_book",
@@ -121,9 +128,9 @@ frappe.query_reports["Custom Financial Statement"] = {
             options: "Finance Book"
         },
 
-        // =================================================
+        // ====================================================
         // SHOW ZERO VALUES
-        // =================================================
+        // ====================================================
 
         {
             fieldname: "show_zero_values",
@@ -133,11 +140,12 @@ frappe.query_reports["Custom Financial Statement"] = {
         }
     ],
 
-    // =====================================================
-    // FORMATTER
-    // =====================================================
 
-    formatter(
+    // ========================================================
+    // FORMATTER
+    // ========================================================
+
+    formatter: function (
         value,
         row,
         column,
@@ -145,176 +153,856 @@ frappe.query_reports["Custom Financial Statement"] = {
         default_formatter
     ) {
 
-        value = default_formatter(
-            value,
-            row,
-            column,
-            data
-        );
+        let formatted_value =
+            default_formatter(
+                value,
+                row,
+                column,
+                data
+            );
 
         if (!data) {
-            return value;
+            return formatted_value;
         }
 
-        const expense = data.expense || "";
-        const income = data.income || "";
+        const fieldname =
+            column.fieldname;
 
-        // =================================================
-        // DYNAMIC SECTION HEADER
-        // =================================================
-        //
-        // Python creates section header like:
-        //
-        // {
-        //     expense: "SECTION NAME",
-        //     expense_amount: null,
-        //     income: null,
-        //     income_amount: null
-        // }
-        //
-        // Therefore ANY statement_section will be
-        // automatically highlighted.
-        // =================================================
 
-        const is_section_header =
-            data.expense &&
-            data.expense_amount === null &&
-            data.income === null &&
-            data.income_amount === null;
+        // ----------------------------------------------------
+// Section Header
+// ----------------------------------------------------
 
-        if (is_section_header) {
+if (data.is_section_header) {
 
-            return `
-                <div style="
+    if (
+        fieldname === "expense" ||
+        fieldname === "income"
+    ) {
+
+        const label =
+            fieldname === "expense"
+                ? data.expense
+                : data.income;
+
+        if (!label) {
+            return "";
+        }
+
+        return `
+            <div
+                style="
                     font-weight:700;
                     color:#1f4e78;
                     font-size:14px;
-                ">
-                    ${value}
-                </div>
-            `;
-        }
+                    line-height:20px;
+                    padding:0;
+                    margin:0;
+                    white-space:nowrap;
+                    overflow:visible;
+                "
+            >
+                ${frappe.utils.escape_html(label)}
+            </div>
+        `;
+    }
 
-        // =================================================
-        // SUBTOTAL / TOTAL
-        // =================================================
+    return "";
+}
 
-        if (
-            expense === "Subtotal" ||
-            expense === "Total" ||
-            income === "Subtotal" ||
-            income === "Total"
-        ) {
 
-            return `<b>${value}</b>`;
-        }
+        // ====================================================
+        // STATEMENT TYPE FLAGS
+        // ====================================================
 
-        // =================================================
-        // PROFIT / LOSS
-        // =================================================
+        const expenseStatement =
+            cint(
+                data.expense_is_statement_type
+                || 0
+            );
 
-        if (
-            expense === "Gross Profit" ||
-            expense === "Net Profit"
-        ) {
+        const incomeStatement =
+            cint(
+                data.income_is_statement_type
+                || 0
+            );
 
-            return `
-                <span style="
-                    color:green;
-                    font-weight:bold;
-                ">
-                    ${value}
-                </span>
-            `;
-        }
+
+        // ====================================================
+        // EXPENSE STATEMENT TYPE
+        // ====================================================
 
         if (
-            income === "Gross Loss" ||
-            income === "Net Loss"
+            fieldname === "expense"
+            &&
+            expenseStatement
         ) {
 
-            return `
-                <span style="
-                    color:red;
-                    font-weight:bold;
-                ">
-                    ${value}
-                </span>
-            `;
+            return render_statement_type(
+                "expense",
+                data
+            );
         }
 
-        // =================================================
-        // KPI
-        // =================================================
+
+        // ====================================================
+        // INCOME STATEMENT TYPE
+        // ====================================================
 
         if (
-            expense === "Gross Profit %" ||
-            expense === "Net Profit %" ||
-            expense === "Operating Expense Ratio %"
+            fieldname === "income"
+            &&
+            incomeStatement
         ) {
 
-            return `
-                <span style="
-                    color:#1976d2;
-                    font-weight:bold;
-                ">
-                    ${value}
-                </span>
-            `;
+            return render_statement_type(
+                "income",
+                data
+            );
         }
 
-        return value;
+
+        // ====================================================
+        // TOTAL / SUBTOTAL / GP / KPI
+        // ====================================================
+
+        if (
+            data.is_total
+            ||
+            data.is_subtotal
+            ||
+            data.is_gross_profit
+            ||
+            data.is_kpi
+        ) {
+
+            if (
+                fieldname === "expense"
+                &&
+                data.expense
+            ) {
+
+                return `
+                    <span
+                        style="
+                            font-weight:700;
+                        "
+                    >
+                        ${frappe.utils.escape_html(
+                            data.expense
+                        )}
+                    </span>
+                `;
+            }
+
+            if (
+                fieldname === "income"
+                &&
+                data.income
+            ) {
+
+                return `
+                    <span
+                        style="
+                            font-weight:700;
+                        "
+                    >
+                        ${frappe.utils.escape_html(
+                            data.income
+                        )}
+                    </span>
+                `;
+            }
+
+            return formatted_value;
+        }
+
+
+        // ====================================================
+        // EXPENSE TREE
+        // ====================================================
+
+        if (
+            fieldname === "expense"
+            &&
+            data.expense_tree_id
+            &&
+            !expenseStatement
+        ) {
+
+            return render_account_tree(
+                "expense",
+                data
+            );
+        }
+
+
+        // ====================================================
+        // INCOME TREE
+        // ====================================================
+
+        if (
+            fieldname === "income"
+            &&
+            data.income_tree_id
+            &&
+            !incomeStatement
+        ) {
+
+            return render_account_tree(
+                "income",
+                data
+            );
+        }
+
+
+        return formatted_value;
     },
 
-    // =====================================================
+
+    // ========================================================
     // ONLOAD
-    // =====================================================
+    // ========================================================
 
-    onload(report) {
+    onload: function (report) {
 
-        if (!report.get_filter_value("fiscal_year")) {
-            return;
-        }
+        const fy =
+            report.get_filter_value(
+                "fiscal_year"
+            );
 
-        let fy = report.get_filter_value("fiscal_year");
+        if (fy) {
 
-        frappe.db.get_value(
-            "Fiscal Year",
-            fy,
-            [
-                "year_start_date",
-                "year_end_date"
-            ]
-        ).then(r => {
+            frappe.db.get_value(
+                "Fiscal Year",
+                fy,
+                [
+                    "year_start_date",
+                    "year_end_date"
+                ]
+            ).then(r => {
 
-            if (r.message) {
+                if (!r.message) {
+                    return;
+                }
 
                 if (
-                    !report.get_filter_value("from_date")
+                    !report.get_filter_value(
+                        "from_date"
+                    )
                 ) {
 
                     report.set_filter_value(
                         "from_date",
                         r.message.year_start_date
                     );
-
                 }
 
                 if (
-                    !report.get_filter_value("to_date")
+                    !report.get_filter_value(
+                        "to_date"
+                    )
                 ) {
 
                     report.set_filter_value(
                         "to_date",
                         r.message.year_end_date
                     );
-
                 }
+            });
+        }
 
-            }
+        setTimeout(
+            function () {
 
-        });
+                install_financial_tree_events(
+                    report
+                );
 
+            },
+            500
+        );
+    },
+
+
+    // ========================================================
+    // AFTER REFRESH
+    // ========================================================
+
+    after_refresh: function (report) {
+
+        setTimeout(
+            function () {
+
+                install_financial_tree_events(
+                    report
+                );
+
+            },
+            300
+        );
+    }
+};
+
+
+// ============================================================
+// STATEMENT TYPE RENDER
+// ============================================================
+
+function render_statement_type(
+    side,
+    data
+) {
+
+    const treeId =
+        data[
+            `${side}_tree_id`
+        ] || "";
+
+    const label =
+        data[
+            side
+        ] || "";
+
+    const hasChildren =
+        cint(
+            data[
+                `${side}_has_children`
+            ] || 0
+        );
+
+    if (!label) {
+        return "";
     }
 
-};
+    const escapedLabel =
+        frappe.utils.escape_html(
+            label
+        );
+
+    const escapedTreeId =
+        frappe.utils.escape_html(
+            treeId
+        );
+
+    return `
+        <div
+            class="
+                custom-financial-statement-type
+                custom-financial-tree-toggle
+            "
+            data-side="${side}"
+            data-tree-id="${escapedTreeId}"
+            data-tree-parent=""
+            data-expanded="1"
+            style="
+                padding-left:0px;
+                font-weight:700;
+                cursor:${
+                    hasChildren
+                        ? "pointer"
+                        : "default"
+                };
+            "
+        >
+
+            ${
+                hasChildren
+                    ? `
+                        <span
+                            class="
+                                custom-financial-tree-arrow
+                            "
+                            style="
+                                display:inline-block;
+                                width:18px;
+                                margin-right:4px;
+                            "
+                        >
+                            ▼
+                        </span>
+                    `
+                    : `
+                        <span
+                            style="
+                                display:inline-block;
+                                width:22px;
+                            "
+                        ></span>
+                    `
+            }
+
+            <span>
+                ${escapedLabel}
+            </span>
+
+        </div>
+    `;
+}
+
+
+// ============================================================
+// ACCOUNT TREE RENDER
+// ============================================================
+
+function render_account_tree(
+    side,
+    data
+) {
+
+    const treeId =
+        data[
+            `${side}_tree_id`
+        ] || "";
+
+    const treeParent =
+        data[
+            `${side}_tree_parent`
+        ] || "";
+
+    const indent =
+        cint(
+            data[
+                `${side}_indent`
+            ] || 0
+        );
+
+    const hasChildren =
+        cint(
+            data[
+                `${side}_has_children`
+            ] || 0
+        );
+
+    const account =
+        data[
+            `${side}_account`
+        ] || "";
+
+    const label =
+        data[
+            side
+        ] || "";
+
+    if (!label) {
+        return "";
+    }
+
+    const escapedLabel =
+        frappe.utils.escape_html(
+            label
+        );
+
+    const escapedTreeId =
+        frappe.utils.escape_html(
+            treeId
+        );
+
+    const escapedTreeParent =
+        frappe.utils.escape_html(
+            treeParent
+        );
+
+    const escapedAccount =
+        frappe.utils.escape_html(
+            account
+        );
+
+
+    // ========================================================
+    // GROUP / PARENT
+    // ========================================================
+
+    if (hasChildren) {
+
+        return `
+            <div
+                class="
+                    custom-financial-tree-node
+                    custom-financial-tree-toggle
+                "
+                data-side="${side}"
+                data-tree-id="${escapedTreeId}"
+                data-tree-parent="${escapedTreeParent}"
+                data-account="${escapedAccount}"
+                data-expanded="1"
+                style="
+                    padding-left:${indent * 20}px;
+                    cursor:pointer;
+                "
+            >
+
+                <span
+                    class="
+                        custom-financial-tree-arrow
+                    "
+                    style="
+                        display:inline-block;
+                        width:18px;
+                        margin-right:4px;
+                    "
+                >
+                    ▼
+                </span>
+
+                <span>
+                    ${escapedLabel}
+                </span>
+
+            </div>
+        `;
+    }
+
+
+    // ========================================================
+    // LEAF
+    // ========================================================
+
+    return `
+        <div
+            class="
+                custom-financial-tree-leaf
+            "
+            data-side="${side}"
+            data-tree-id="${escapedTreeId}"
+            data-tree-parent="${escapedTreeParent}"
+            data-account="${escapedAccount}"
+            style="
+                padding-left:${(indent * 20) + 22}px;
+            "
+        >
+            ${escapedLabel}
+        </div>
+    `;
+}
+
+
+// ============================================================
+// INSTALL EVENTS
+// ============================================================
+
+function install_financial_tree_events(
+    report
+) {
+
+    if (
+        !report
+        ||
+        !report.page
+        ||
+        !report.page.wrapper
+    ) {
+        return;
+    }
+
+    const wrapper =
+        report.page.wrapper;
+
+    $(wrapper).off(
+        ".custom_financial_tree"
+    );
+
+    $(wrapper).on(
+        "click.custom_financial_tree",
+        ".custom-financial-tree-toggle",
+        function (e) {
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const clicked =
+                $(this);
+
+            const side =
+                clicked.attr(
+                    "data-side"
+                );
+
+            const treeId =
+                clicked.attr(
+                    "data-tree-id"
+                );
+
+            if (
+                !side
+                ||
+                !treeId
+            ) {
+                return;
+            }
+
+            const expanded =
+                clicked.attr(
+                    "data-expanded"
+                ) === "1";
+
+            clicked.attr(
+                "data-expanded",
+                expanded
+                    ? "0"
+                    : "1"
+            );
+
+            update_tree_arrows(
+                wrapper,
+                side
+            );
+
+            refresh_tree_visibility(
+                wrapper,
+                side
+            );
+        }
+    );
+
+    setTimeout(
+        function () {
+
+            update_tree_arrows(
+                wrapper,
+                "expense"
+            );
+
+            update_tree_arrows(
+                wrapper,
+                "income"
+            );
+
+            refresh_tree_visibility(
+                wrapper,
+                "expense"
+            );
+
+            refresh_tree_visibility(
+                wrapper,
+                "income"
+            );
+
+        },
+        100
+    );
+}
+
+
+// ============================================================
+// UPDATE ARROWS
+// ============================================================
+
+function update_tree_arrows(
+    wrapper,
+    side
+) {
+
+    $(wrapper)
+        .find(
+            `.custom-financial-tree-toggle[data-side="${side}"]`
+        )
+        .each(
+            function () {
+
+                const element =
+                    $(this);
+
+                const expanded =
+                    element.attr(
+                        "data-expanded"
+                    ) === "1";
+
+                element
+                    .find(
+                        ".custom-financial-tree-arrow"
+                    )
+                    .first()
+                    .text(
+                        expanded
+                            ? "▼"
+                            : "▶"
+                    );
+            }
+        );
+}
+
+
+// ============================================================
+// REFRESH VISIBILITY
+// ============================================================
+
+function refresh_tree_visibility(
+    wrapper,
+    side
+) {
+
+    const elements =
+        $(wrapper).find(`
+            .custom-financial-tree-toggle[data-side="${side}"],
+            .custom-financial-tree-leaf[data-side="${side}"]
+        `);
+
+    const byId = {};
+
+    elements.each(
+        function () {
+
+            const element =
+                $(this);
+
+            const treeId =
+                element.attr(
+                    "data-tree-id"
+                );
+
+            if (treeId) {
+
+                byId[
+                    treeId
+                ] = element;
+            }
+        }
+    );
+
+    elements.each(
+        function () {
+
+            const element =
+                $(this);
+
+            let parentId =
+                element.attr(
+                    "data-tree-parent"
+                ) || "";
+
+            let visible = true;
+
+            const visited = {};
+
+            while (parentId) {
+
+                if (
+                    visited[
+                        parentId
+                    ]
+                ) {
+                    break;
+                }
+
+                visited[
+                    parentId
+                ] = true;
+
+                const parent =
+                    byId[
+                        parentId
+                    ];
+
+                if (!parent) {
+                    break;
+                }
+
+                if (
+                    parent.hasClass(
+                        "custom-financial-tree-toggle"
+                    )
+                    &&
+                    parent.attr(
+                        "data-expanded"
+                    ) === "0"
+                ) {
+
+                    visible = false;
+
+                    break;
+                }
+
+                parentId =
+                    parent.attr(
+                        "data-tree-parent"
+                    ) || "";
+            }
+
+            set_tree_element_visibility(
+                element,
+                visible
+            );
+        }
+    );
+}
+
+
+// ============================================================
+// SET ROW VISIBILITY
+// ============================================================
+
+function set_tree_element_visibility(
+    element,
+    visible
+) {
+
+    if (
+        !element
+        ||
+        !element.length
+    ) {
+        return;
+    }
+
+    const cell =
+        element.closest(
+            ".dt-cell"
+        );
+
+    if (!cell.length) {
+
+        element.css(
+            "display",
+            visible
+                ? ""
+                : "none"
+        );
+
+        return;
+    }
+
+    const row =
+        cell.closest(
+            ".dt-row"
+        );
+
+    cell.css(
+        "display",
+        visible
+            ? ""
+            : "none"
+    );
+
+    if (!row.length) {
+        return;
+    }
+
+    const cells =
+        row.find(
+            ".dt-cell"
+        );
+
+    const cellIndex =
+        cells.index(
+            cell
+        );
+
+    if (
+        cellIndex >= 0
+        &&
+        cellIndex + 1 < cells.length
+    ) {
+
+        cells
+            .eq(
+                cellIndex + 1
+            )
+            .css(
+                "display",
+                visible
+                    ? ""
+                    : "none"
+            );
+    }
+}
