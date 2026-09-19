@@ -288,11 +288,18 @@ def remove(
 def reset(doctype: str):
     """
     Audit Restore Original Permissions.
+
+    Captures all Custom DocPerm rows before reset,
+    executes the original Frappe reset,
+    captures standard DocPerm rows after reset,
+    and creates a RESET audit log.
     """
 
     frappe.only_for("System Manager")
 
-    # Capture ALL custom permissions before reset.
+    # ---------------------------------------------------------
+    # CAPTURE CUSTOM PERMISSIONS BEFORE RESET
+    # ---------------------------------------------------------
     before_rows = frappe.get_all(
         "Custom DocPerm",
         filters={
@@ -302,9 +309,14 @@ def reset(doctype: str):
         order_by="permlevel",
     )
 
+    # ---------------------------------------------------------
+    # EXECUTE ORIGINAL FRAPPE RESET
+    # ---------------------------------------------------------
     result = original_reset(doctype)
 
-    # Capture standard permissions after reset.
+    # ---------------------------------------------------------
+    # CAPTURE STANDARD PERMISSIONS AFTER RESET
+    # ---------------------------------------------------------
     after_rows = frappe.get_all(
         "DocPerm",
         filters={
@@ -314,11 +326,31 @@ def reset(doctype: str):
         order_by="permlevel",
     )
 
+    # ---------------------------------------------------------
+    # GET A VALID ROLE FOR AUDIT LOG
+    # ---------------------------------------------------------
+    user_roles = frappe.get_roles(frappe.session.user)
+
+    audit_role = "System Manager"
+
+    if "System Manager" not in user_roles:
+        valid_roles = [
+            role
+            for role in user_roles
+            if frappe.db.exists("Role", role)
+        ]
+
+        if valid_roles:
+            audit_role = valid_roles[0]
+
+    # ---------------------------------------------------------
+    # CREATE RESET AUDIT LOG
+    # ---------------------------------------------------------
     _create_audit_log(
         action="RESET",
         status="Reset",
         document_type=doctype,
-        role="",
+        role=audit_role,
         permlevel=0,
         before_snapshot={
             "custom_permissions": before_rows,
@@ -328,7 +360,10 @@ def reset(doctype: str):
         },
     )
 
+    frappe.clear_cache(doctype=doctype)
+
     return result
+
 
 
 @frappe.whitelist()
