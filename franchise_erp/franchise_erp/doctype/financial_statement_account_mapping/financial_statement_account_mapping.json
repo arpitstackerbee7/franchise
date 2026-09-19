@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "statement_type",
+  "statement_parent",
   "statement_section",
   "type",
   "account",
@@ -18,7 +19,8 @@
    "fieldname": "statement_type",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Statement Type"
+   "label": "Statement Type",
+   "reqd": 1
   },
   {
    "fieldname": "account",
@@ -54,13 +56,19 @@
    "in_list_view": 1,
    "label": "Balance Type",
    "options": "Period Balance\nOpening Balance\nClosing Balance"
+  },
+  {
+   "fieldname": "statement_parent",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Statement Parent"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-08 12:55:32.842101",
+ "modified": "2026-09-19 14:57:57.217693",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Financial Statement Account Mapping",

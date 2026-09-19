@@ -11,6 +11,7 @@ from frappe.utils import flt, add_days
 # ============================================================
 
 def execute(filters=None):
+
     filters = frappe._dict(filters or {})
 
     if not filters.get("company"):
@@ -33,6 +34,7 @@ def execute(filters=None):
 # ============================================================
 
 def get_columns(filters=None):
+
     return [
         {
             "label": _("Expenses"),
@@ -67,36 +69,32 @@ def get_columns(filters=None):
 
 def get_statement_mappings(section=None):
     """
-    Read Financial Statement Account Mapping
-    from TZU Setting.
+    Read Statement mappings from TZU Setting.
 
-    Each mapping contains:
-        - statement_section
-        - statement_type
-        - type
-        - account
-        - balance_type
-        - enabled
+    IMPORTANT:
+
+    Statement Type order is EXACTLY the order of rows
+    inside financial_statement_account_mapping.
+
+    Account hierarchy is NOT used here.
     """
 
     settings = frappe.get_single("TZU Setting")
 
     mappings = (
-        settings.get(
-            "financial_statement_account_mapping"
-        )
+        settings.get("financial_statement_account_mapping")
         or []
     )
 
     result = []
 
-    for row in mappings:
+    for sequence, child in enumerate(mappings):
 
         # ----------------------------------------------------
-        # Disabled
+        # Enabled
         # ----------------------------------------------------
 
-        if not row.get("enabled"):
+        if not child.get("enabled"):
             continue
 
         # ----------------------------------------------------
@@ -104,8 +102,7 @@ def get_statement_mappings(section=None):
         # ----------------------------------------------------
 
         statement_type = str(
-            row.get("statement_type")
-            or ""
+            child.get("statement_type") or ""
         ).strip()
 
         if not statement_type:
@@ -115,7 +112,7 @@ def get_statement_mappings(section=None):
         # Account
         # ----------------------------------------------------
 
-        account = row.get("account")
+        account = child.get("account")
 
         if not account:
             continue
@@ -124,17 +121,44 @@ def get_statement_mappings(section=None):
         # Section
         # ----------------------------------------------------
 
-        if section:
+        row_section = str(
+            child.get("statement_section") or ""
+        ).strip()
 
-            row_section = str(
-                row.get("statement_section")
-                or ""
-            ).strip()
+        if section and row_section != section:
+            continue
 
-            if row_section != section:
-                continue
+        # ----------------------------------------------------
+        # Copy child row
+        # ----------------------------------------------------
+
+        row = frappe._dict(
+            child.as_dict()
+        )
+
+        # Exact TZU Setting sequence
+        row["_sequence"] = sequence
+
+        # ----------------------------------------------------
+        # Statement Parent
+        # ----------------------------------------------------
+
+        row["statement_parent"] = str(
+            child.get("statement_parent") or ""
+        ).strip()
 
         result.append(row)
+
+    # --------------------------------------------------------
+    # ALWAYS preserve TZU Setting order
+    # --------------------------------------------------------
+
+    result.sort(
+        key=lambda row: row.get(
+            "_sequence",
+            999999
+        )
+    )
 
     return result
 
@@ -144,23 +168,6 @@ def get_statement_mappings(section=None):
 # ============================================================
 
 def get_statement_side(mapping):
-    """
-    Expense / Income is taken from the mapping's
-    Type field.
-
-    Example:
-
-        Statement Type = Sales
-        Type           = Income
-
-    or:
-
-        Statement Type = Employee Cost
-        Type           = Expense
-
-    IMPORTANT:
-    statement_type is only the display label.
-    """
 
     statement_side = str(
         mapping.get("type")
@@ -173,10 +180,6 @@ def get_statement_side(mapping):
 
     if statement_side == "expense":
         return "expense"
-
-    # --------------------------------------------------------
-    # Unknown type
-    # --------------------------------------------------------
 
     frappe.log_error(
         title="Custom Financial Statement - Invalid Type",
@@ -198,208 +201,167 @@ def get_statement_side(mapping):
 # ============================================================
 
 def get_statement_type(mapping):
+
     return str(
-        mapping.get("statement_type")
-        or ""
+        mapping.get("statement_type") or ""
     ).strip()
 
 
 # ============================================================
-# CONFIGURED ACCOUNTS
+# STATEMENT PARENT
 # ============================================================
 
-def get_configured_account_names(mappings=None):
-    """
-    Return configured Account names.
-    """
+def get_statement_parent(mapping):
 
-    if mappings is None:
-        mappings = get_statement_mappings()
-
-    accounts = set()
-
-    for mapping in mappings:
-
-        account = mapping.get("account")
-
-        if account:
-            accounts.add(account)
-
-    return accounts
+    return str(
+        mapping.get("statement_parent") or ""
+    ).strip()
 
 
 # ============================================================
-# CHECK ACCOUNT DESCENDANT
+# FIND STATEMENT PARENT
 # ============================================================
 
-def is_account_descendant(
-    child_account,
-    parent_account,
-    account_cache=None,
+def find_statement_parent(
+    mapping,
+    mappings,
 ):
     """
-    Check whether child_account is a descendant of
-    parent_account using ERPNext parent_account hierarchy.
-
-    Same account is NOT considered descendant.
-    """
-
-    if not child_account or not parent_account:
-        return False
-
-    if child_account == parent_account:
-        return False
-
-    current = child_account
-
-    visited = set()
-
-    while current:
-
-        if current in visited:
-            break
-
-        visited.add(current)
-
-        if account_cache and current in account_cache:
-
-            current_row = account_cache[current]
-
-            current = (
-                current_row.get("parent_account")
-                or ""
-            )
-
-        else:
-
-            current = frappe.db.get_value(
-                "Account",
-                current,
-                "parent_account",
-            )
-
-        if current == parent_account:
-            return True
-
-    return False
-
-
-# ============================================================
-# TOP LEVEL MAPPINGS
-# ============================================================
-
-def get_top_level_mappings(mappings):
-    """
-    Determine top-level Statement Type mappings.
-
-    A mapping is top-level when its Account is NOT a child
-    of another configured mapping Account on the same side.
-
-    IMPORTANT:
-
-    Same Account can be used multiple times.
+    Parent-child relationship is controlled ONLY by
+    Statement Parent field.
 
     Example:
 
-        Opening Stock -> Stock Expenses
-        Purchases     -> Stock Expenses
+    Statement Type:
+        JOB CHARGES
 
-    Both remain top-level because they are two different
-    Statement Type mappings.
+    Statement Parent:
+        DIRECT EXPENSES
+
+    Therefore:
+
+        DIRECT EXPENSES
+            JOB CHARGES
     """
 
-    if not mappings:
-        return []
+    parent_name = get_statement_parent(
+        mapping
+    )
+
+    if not parent_name:
+        return None
+
+    current_sequence = mapping.get(
+        "_sequence",
+        999999
+    )
+
+    current_side = get_statement_side(
+        mapping
+    )
 
     # --------------------------------------------------------
-    # Account names
+    # Find exact Statement Type
     # --------------------------------------------------------
 
-    account_names = {
-        row.get("account")
-        for row in mappings
-        if row.get("account")
-    }
+    candidates = []
 
-    # --------------------------------------------------------
-    # Cache account parents
-    # --------------------------------------------------------
+    for other in mappings:
 
-    account_cache = {}
+        if other is mapping:
+            continue
 
-    for account_name in account_names:
-
-        account = frappe.db.get_value(
-            "Account",
-            account_name,
-            [
-                "name",
-                "parent_account",
-                "lft",
-                "rgt",
-                "is_group",
-            ],
-            as_dict=True,
+        other_statement_type = get_statement_type(
+            other
         )
 
-        if account:
-            account_cache[account_name] = account
-
-    # --------------------------------------------------------
-    # Find top-level
-    # --------------------------------------------------------
-
-    result = []
-
-    for index, mapping in enumerate(mappings):
-
-        account = mapping.get("account")
-
-        if not account:
+        if (
+            other_statement_type
+            != parent_name
+        ):
             continue
 
-        side = get_statement_side(mapping)
-
-        if not side:
+        # Parent must be on same side
+        if (
+            get_statement_side(other)
+            != current_side
+        ):
             continue
 
-        is_child = False
+        candidates.append(other)
 
-        for other_index, other_mapping in enumerate(mappings):
+    if not candidates:
+        return None
 
-            if index == other_index:
-                continue
+    # --------------------------------------------------------
+    # Normally Statement Type should be unique.
+    #
+    # If duplicate exists, use first row according to
+    # TZU Setting order.
+    # --------------------------------------------------------
 
-            other_account = other_mapping.get(
-                "account"
+    candidates.sort(
+        key=lambda row: row.get(
+            "_sequence",
+            999999
+        )
+    )
+
+    return candidates[0]
+
+
+# ============================================================
+# BUILD STATEMENT TREE
+# ============================================================
+
+def build_statement_tree(
+    mappings,
+):
+    """
+    Build explicit Statement Type hierarchy.
+
+    Parent-child relationship is based ONLY on:
+
+        statement_parent
+
+    NOT on Account.parent_account.
+    """
+
+    children_map = {}
+
+    for mapping in mappings:
+
+        parent = find_statement_parent(
+            mapping,
+            mappings,
+        )
+
+        if not parent:
+            continue
+
+        parent_id = id(parent)
+
+        children_map.setdefault(
+            parent_id,
+            []
+        ).append(
+            mapping
+        )
+
+    # --------------------------------------------------------
+    # Preserve TZU Setting order
+    # --------------------------------------------------------
+
+    for parent_id in children_map:
+
+        children_map[parent_id].sort(
+            key=lambda row: row.get(
+                "_sequence",
+                999999
             )
+        )
 
-            if not other_account:
-                continue
-
-            other_side = get_statement_side(
-                other_mapping
-            )
-
-            if other_side != side:
-                continue
-
-            # Same account must remain separate.
-            if other_account == account:
-                continue
-
-            if is_account_descendant(
-                account,
-                other_account,
-                account_cache,
-            ):
-                is_child = True
-                break
-
-        if not is_child:
-            result.append(mapping)
-
-    return result
+    return children_map
 
 
 # ============================================================
@@ -418,15 +380,6 @@ def get_account_balance(
 ):
     """
     Get balance for complete Account subtree.
-
-    If from_date is None:
-        Balance is calculated from beginning of ledger
-        up to to_date.
-
-    This is required for Opening Balance.
-
-    For Opening Stock:
-        Period Closing Voucher entries are excluded.
     """
 
     if not account:
@@ -446,10 +399,6 @@ def get_account_balance(
     if not account_details:
         return 0
 
-    # --------------------------------------------------------
-    # Conditions
-    # --------------------------------------------------------
-
     conditions = [
         "gle.company = %(company)s",
         "gle.is_cancelled = 0",
@@ -468,7 +417,7 @@ def get_account_balance(
     }
 
     # --------------------------------------------------------
-    # DATE CONDITION
+    # DATE
     # --------------------------------------------------------
 
     if from_date:
@@ -490,7 +439,7 @@ def get_account_balance(
         )
 
     # --------------------------------------------------------
-    # EXCLUDE PERIOD CLOSING
+    # PERIOD CLOSING
     # --------------------------------------------------------
 
     if exclude_period_closing:
@@ -562,15 +511,12 @@ def get_account_balance(
         conditions
     )
 
-    # --------------------------------------------------------
-    # Query
-    # --------------------------------------------------------
-
     result = frappe.db.sql(
         f"""
         SELECT
             COALESCE(SUM(gle.debit), 0) AS debit,
             COALESCE(SUM(gle.credit), 0) AS credit
+
         FROM `tabGL Entry` gle
 
         INNER JOIN `tabAccount` acc
@@ -594,169 +540,7 @@ def get_account_balance(
         else 0
     )
 
-    # --------------------------------------------------------
-    # Root Type
-    # --------------------------------------------------------
-
     root_type = account_details.root_type
-
-    if root_type in (
-        "Income",
-        "Liability",
-        "Equity",
-    ):
-        return credit - debit
-
-    return debit - credit
-
-
-# ============================================================
-# DIRECT ACCOUNT BALANCE
-# ============================================================
-
-def get_direct_account_balance(
-    account,
-    company,
-    from_date,
-    to_date,
-    cost_center=None,
-    project=None,
-    finance_book=None,
-):
-    """
-    Balance for only the selected Account.
-    """
-
-    if not account:
-        return 0
-
-    root_type = frappe.db.get_value(
-        "Account",
-        account,
-        "root_type",
-    )
-
-    if not root_type:
-        return 0
-
-    conditions = [
-        "gle.company = %(company)s",
-        "gle.account = %(account)s",
-        "gle.is_cancelled = 0",
-    ]
-
-    values = {
-        "company": company,
-        "account": account,
-        "from_date": from_date,
-        "to_date": to_date,
-    }
-
-    # --------------------------------------------------------
-    # DATE
-    # --------------------------------------------------------
-
-    if from_date:
-
-        conditions.append(
-            """
-            gle.posting_date
-            BETWEEN %(from_date)s
-            AND %(to_date)s
-            """
-        )
-
-    else:
-
-        conditions.append(
-            """
-            gle.posting_date <= %(to_date)s
-            """
-        )
-
-    # --------------------------------------------------------
-    # COST CENTER
-    # --------------------------------------------------------
-
-    if cost_center:
-
-        conditions.append(
-            """
-            (
-                gle.cost_center = %(cost_center)s
-                OR gle.cost_center IS NULL
-                OR gle.cost_center = ''
-            )
-            """
-        )
-
-        values["cost_center"] = cost_center
-
-    # --------------------------------------------------------
-    # PROJECT
-    # --------------------------------------------------------
-
-    if project:
-
-        conditions.append(
-            """
-            (
-                gle.project = %(project)s
-                OR gle.project IS NULL
-                OR gle.project = ''
-            )
-            """
-        )
-
-        values["project"] = project
-
-    # --------------------------------------------------------
-    # FINANCE BOOK
-    # --------------------------------------------------------
-
-    if finance_book:
-
-        conditions.append(
-            """
-            (
-                gle.finance_book = %(finance_book)s
-                OR gle.finance_book IS NULL
-                OR gle.finance_book = ''
-            )
-            """
-        )
-
-        values["finance_book"] = finance_book
-
-    where_clause = " AND ".join(
-        conditions
-    )
-
-    result = frappe.db.sql(
-        f"""
-        SELECT
-            COALESCE(SUM(gle.debit), 0) AS debit,
-            COALESCE(SUM(gle.credit), 0) AS credit
-
-        FROM `tabGL Entry` gle
-
-        WHERE {where_clause}
-        """,
-        values,
-        as_dict=True,
-    )
-
-    debit = flt(
-        result[0].debit
-        if result
-        else 0
-    )
-
-    credit = flt(
-        result[0].credit
-        if result
-        else 0
-    )
 
     if root_type in (
         "Income",
@@ -772,32 +556,23 @@ def get_direct_account_balance(
 # MAPPING VALUE
 # ============================================================
 
-def get_mapping_value(mapping, filters):
+def get_mapping_value(
+    mapping,
+    filters,
+):
     """
-    Get value according to configured Balance Type.
-
-    Opening Balance:
-        from_date - 1 day
-
-    Opening Stock:
-        Same opening calculation but Period Closing Voucher
-        entries are excluded.
-
-    Period Balance:
-        from_date -> to_date
-
-    Closing Balance:
-        beginning -> to_date
+    Get value according to Balance Type.
     """
 
-    account = mapping.get("account")
+    account = mapping.get(
+        "account"
+    )
 
     if not account:
         return 0
 
     balance_type = str(
-        mapping.get("balance_type")
-        or ""
+        mapping.get("balance_type") or ""
     ).strip().lower()
 
     # ========================================================
@@ -819,7 +594,7 @@ def get_mapping_value(mapping, filters):
         )
 
         # ----------------------------------------------------
-        # SPECIAL OPENING STOCK LOGIC
+        # OPENING STOCK SPECIAL LOGIC
         # ----------------------------------------------------
 
         if (
@@ -850,7 +625,7 @@ def get_mapping_value(mapping, filters):
             )
 
         # ----------------------------------------------------
-        # NORMAL OPENING BALANCE
+        # NORMAL OPENING
         # ----------------------------------------------------
 
         return get_account_balance(
@@ -925,260 +700,19 @@ def get_mapping_value(mapping, filters):
 
 
 # ============================================================
-# MAPPING TREE HELPERS
+# BUILD ROW
 # ============================================================
 
-def get_nearest_mapping_parent(
+def make_statement_row(
     mapping,
-    mappings,
-):
-    """
-    Find nearest configured Statement Type parent
-    based on ERPNext Account hierarchy.
-
-    Example:
-
-        Employee Cost
-            Staff Welfare
-
-    Mapping:
-
-        Employee Cost -> Employee Cost - TZUPL
-        Employees Welfare -> Staff Welfare - TZUPL
-
-    Result:
-
-        Employee Cost
-            Employees Welfare
-    """
-
-    account = mapping.get(
-        "account"
-    )
-
-    if not account:
-        return None
-
-    side = get_statement_side(
-        mapping
-    )
-
-    if not side:
-        return None
-
-    candidates = []
-
-    for other in mappings:
-
-        if other is mapping:
-            continue
-
-        other_account = other.get(
-            "account"
-        )
-
-        if not other_account:
-            continue
-
-        if other_account == account:
-            continue
-
-        other_side = get_statement_side(
-            other
-        )
-
-        if other_side != side:
-            continue
-
-        if is_account_descendant(
-            account,
-            other_account,
-        ):
-
-            candidates.append(
-                other
-            )
-
-    if not candidates:
-        return None
-
-    # --------------------------------------------------------
-    # Find nearest parent
-    # --------------------------------------------------------
-
-    nearest = None
-    nearest_distance = None
-
-    for candidate in candidates:
-
-        candidate_account = candidate.get(
-            "account"
-        )
-
-        distance = 0
-        current = account
-        visited = set()
-
-        while current:
-
-            if current in visited:
-                break
-
-            visited.add(current)
-
-            if current == candidate_account:
-                break
-
-            current = frappe.db.get_value(
-                "Account",
-                current,
-                "parent_account",
-            )
-
-            distance += 1
-
-        if current == candidate_account:
-
-            if (
-                nearest_distance is None
-                or distance < nearest_distance
-            ):
-                nearest = candidate
-                nearest_distance = distance
-
-    return nearest
-
-
-# ============================================================
-# STATEMENT TREE
-# ============================================================
-
-def get_statement_tree(
-    root_mapping,
-    mappings,
-):
-    """
-    Build Statement Type hierarchy.
-
-    Account names are NEVER returned as display labels.
-
-    Example:
-
-        Employee Cost
-            Employees Welfare
-
-    Instead of:
-
-        Employee Cost
-            Employee Cost - TZUPL
-                Staff Welfare - TZUPL
-    """
-
-    root_account = root_mapping.get(
-        "account"
-    )
-
-    root_side = get_statement_side(
-        root_mapping
-    )
-
-    if not root_account or not root_side:
-        return []
-
-    # --------------------------------------------------------
-    # Only same side
-    # --------------------------------------------------------
-
-    side_mappings = [
-        row
-        for row in mappings
-        if get_statement_side(row)
-        == root_side
-    ]
-
-    # --------------------------------------------------------
-    # Mapping identity
-    # --------------------------------------------------------
-
-    def mapping_key(mapping):
-        return (
-            id(mapping)
-        )
-
-    # --------------------------------------------------------
-    # Children
-    # --------------------------------------------------------
-
-    children_map = {}
-
-    for mapping in side_mappings:
-
-        if mapping is root_mapping:
-            continue
-
-        parent = get_nearest_mapping_parent(
-            mapping,
-            side_mappings,
-        )
-
-        if parent:
-
-            children_map.setdefault(
-                mapping_key(parent),
-                [],
-            ).append(
-                mapping
-            )
-
-    # --------------------------------------------------------
-    # Sort children according to Account lft
-    # --------------------------------------------------------
-
-    for parent_key in children_map:
-
-        children_map[parent_key].sort(
-            key=lambda row: (
-                frappe.db.get_value(
-                    "Account",
-                    row.get("account"),
-                    "lft",
-                )
-                or 0
-            )
-        )
-
-    return children_map
-
-
-# ============================================================
-# BUILD STATEMENT ACCOUNT ROWS
-# ============================================================
-
-def build_statement_account_rows(
-    mapping,
-    filters,
-    from_date,
-    to_date,
     section,
-    section_mappings=None,
+    filters,
+    children_map,
+    parent_tree_id="",
+    indent=0,
 ):
     """
-    Build Statement Type rows.
-
-    IMPORTANT:
-
-    We DO NOT show Account master names.
-
-    Example:
-
-        Employee Cost
-            Employees Welfare
-
-    not:
-
-        Employee Cost
-            Employee Cost - TZUPL
-                Staff Welfare - TZUPL
+    Create one Statement Type row.
     """
 
     statement_type = get_statement_type(
@@ -1189,145 +723,200 @@ def build_statement_account_rows(
         "account"
     )
 
-    if not statement_type or not account:
-        return []
-
-    # --------------------------------------------------------
-    # Unique tree ID
-    # --------------------------------------------------------
-
-    statement_tree_id = (
-        frappe.scrub(section)
-        + "__"
-        + frappe.scrub(
-            get_statement_side(mapping)
-            or "unknown"
-        )
-        + "__"
-        + frappe.scrub(
-            statement_type
-        )
-        + "__"
-        + frappe.scrub(
-            account
-        )
+    side = get_statement_side(
+        mapping
     )
 
-    # --------------------------------------------------------
-    # Mapping value
-    # --------------------------------------------------------
+    if not statement_type or not account or not side:
+        return None
 
-    mapping_value = get_mapping_value(
+    tree_id = (
+        frappe.scrub(section)
+        + "__"
+        + frappe.scrub(side)
+        + "__"
+        + str(
+            mapping.get(
+                "_sequence",
+                999999
+            )
+        )
+        + "__"
+        + frappe.scrub(statement_type)
+    )
+
+    children = children_map.get(
+        id(mapping),
+        []
+    )
+
+    value = get_mapping_value(
         mapping,
         filters,
     )
 
+    return {
+        "label": statement_type,
+        "value": value,
+        "account": account,
+
+        "statement_parent": get_statement_parent(
+            mapping
+        ),
+
+        "indent": indent,
+
+        "is_statement_type": 1,
+
+        "has_children": (
+            1 if children else 0
+        ),
+
+        "is_tree_node": 1,
+
+        "is_leaf": (
+            0 if children else 1
+        ),
+
+        "tree_id": tree_id,
+
+        "tree_parent": parent_tree_id,
+
+        "sequence": mapping.get(
+            "_sequence",
+            999999
+        ),
+    }
+
+
+# ============================================================
+# BUILD COMPLETE STATEMENT ROWS
+# ============================================================
+
+def build_all_statement_rows(
+    mappings,
+    filters,
+    section,
+):
+    """
+    Build explicit Statement Type hierarchy.
+
+    Rules:
+
+    1. TZU Setting controls order.
+    2. Statement Parent controls hierarchy.
+    3. Account hierarchy is completely ignored for
+       Statement Type parent-child relation.
+    4. Every configured Statement Type appears once.
+    """
+
+    if not mappings:
+        return [], []
+
+    children_map = build_statement_tree(
+        mappings
+    )
+
+    expense_rows = []
+    income_rows = []
+
     # --------------------------------------------------------
-    # Children
+    # Roots
+    #
+    # A row is root when Statement Parent is blank
+    # OR parent cannot be resolved.
     # --------------------------------------------------------
 
-    children_map = get_statement_tree(
-        mapping,
-        section_mappings
-        or [],
+    roots = []
+
+    for mapping in mappings:
+
+        parent = find_statement_parent(
+            mapping,
+            mappings,
+        )
+
+        if not parent:
+            roots.append(
+                mapping
+            )
+
+    # --------------------------------------------------------
+    # Root sequence
+    # --------------------------------------------------------
+
+    roots.sort(
+        key=lambda row: row.get(
+            "_sequence",
+            999999
+        )
     )
 
     # --------------------------------------------------------
-    # Rows
+    # Recursive builder
     # --------------------------------------------------------
 
-    rows = []
+    visited = set()
 
     def add_mapping(
-        current_mapping,
+        mapping,
         indent,
         parent_tree_id,
     ):
-        current_statement_type = get_statement_type(
-            current_mapping
-        )
 
-        current_account = current_mapping.get(
-            "account"
-        )
+        mapping_id = id(mapping)
 
-        if not current_statement_type:
+        if mapping_id in visited:
             return
 
-        current_tree_id = (
-            frappe.scrub(section)
-            + "__"
-            + frappe.scrub(
-                get_statement_side(
-                    current_mapping
-                )
-                or "unknown"
-            )
-            + "__"
-            + frappe.scrub(
-                current_statement_type
-            )
-            + "__"
-            + frappe.scrub(
-                current_account
-                or "root"
-            )
+        visited.add(
+            mapping_id
         )
+
+        side = get_statement_side(
+            mapping
+        )
+
+        if not side:
+            return
+
+        row = make_statement_row(
+            mapping=mapping,
+            section=section,
+            filters=filters,
+            children_map=children_map,
+            parent_tree_id=parent_tree_id,
+            indent=indent,
+        )
+
+        if row:
+
+            if side == "expense":
+                expense_rows.append(
+                    row
+                )
+
+            elif side == "income":
+                income_rows.append(
+                    row
+                )
 
         children = children_map.get(
-            id(current_mapping),
-            [],
+            mapping_id,
+            []
         )
 
-        value = get_mapping_value(
-            current_mapping,
-            filters,
+        children.sort(
+            key=lambda child: child.get(
+                "_sequence",
+                999999
+            )
         )
 
-        rows.append(
-            {
-                # ------------------------------------------------
-                # DISPLAY LABEL
-                # ------------------------------------------------
-                "label": current_statement_type,
-
-                # ------------------------------------------------
-                # VALUE
-                # ------------------------------------------------
-                "value": value,
-
-                # ------------------------------------------------
-                # ACCOUNT ONLY INTERNAL
-                # ------------------------------------------------
-                "account": current_account,
-
-                "parent_account": "",
-
-                # ------------------------------------------------
-                # TREE
-                # ------------------------------------------------
-                "indent": indent,
-
-                "is_statement_type": 1,
-
-                "has_children": (
-                    1
-                    if children
-                    else 0
-                ),
-
-                "is_tree_node": 1,
-
-                "is_leaf": (
-                    0
-                    if children
-                    else 1
-                ),
-
-                "tree_id": current_tree_id,
-
-                "tree_parent": parent_tree_id,
-            }
+        current_tree_id = (
+            row.get("tree_id")
+            if row
+            else parent_tree_id
         )
 
         for child in children:
@@ -1339,20 +928,154 @@ def build_statement_account_rows(
             )
 
     # --------------------------------------------------------
-    # Root
+    # Build roots
     # --------------------------------------------------------
 
-    add_mapping(
-        mapping,
-        0,
-        "",
+    for root in roots:
+
+        add_mapping(
+            root,
+            0,
+            "",
+        )
+
+    # --------------------------------------------------------
+    # Safety:
+    #
+    # If there is a broken/circular parent reference,
+    # don't silently lose the row.
+    #
+    # Add remaining mappings in original sequence.
+    # --------------------------------------------------------
+
+    remaining = [
+        mapping
+        for mapping in mappings
+        if id(mapping) not in visited
+    ]
+
+    remaining.sort(
+        key=lambda row: row.get(
+            "_sequence",
+            999999
+        )
     )
 
-    return rows
+    for mapping in remaining:
+
+        add_mapping(
+            mapping,
+            0,
+            "",
+        )
+
+    # --------------------------------------------------------
+    # Keep side-specific sequence.
+    # --------------------------------------------------------
+
+    expense_rows.sort(
+        key=lambda row: (
+            row.get(
+                "sequence",
+                999999
+            ),
+            row.get(
+                "indent",
+                0
+            ),
+        )
+    )
+
+    income_rows.sort(
+        key=lambda row: (
+            row.get(
+                "sequence",
+                999999
+            ),
+            row.get(
+                "indent",
+                0
+            ),
+        )
+    )
+
+    # --------------------------------------------------------
+    # IMPORTANT:
+    #
+    # Sorting by original sequence above would destroy
+    # nested visual order if a child was entered later.
+    #
+    # Therefore create final tree order separately.
+    # --------------------------------------------------------
+
+    def tree_order(rows):
+
+        if not rows:
+            return rows
+
+        by_parent = {}
+
+        for row in rows:
+
+            by_parent.setdefault(
+                row.get(
+                    "tree_parent",
+                    ""
+                ),
+                []
+            ).append(row)
+
+        for key in by_parent:
+
+            by_parent[key].sort(
+                key=lambda row: row.get(
+                    "sequence",
+                    999999
+                )
+            )
+
+        ordered = []
+
+        def walk(parent_id):
+
+            children = by_parent.get(
+                parent_id,
+                []
+            )
+
+            for row in children:
+
+                ordered.append(
+                    row
+                )
+
+                walk(
+                    row.get(
+                        "tree_id",
+                        ""
+                    )
+                )
+
+        walk("")
+
+        return ordered
+
+    expense_rows = tree_order(
+        expense_rows
+    )
+
+    income_rows = tree_order(
+        income_rows
+    )
+
+    return (
+        expense_rows,
+        income_rows,
+    )
 
 
 # ============================================================
-# BUILD SIDE-BY-SIDE ROWS
+# BUILD SIDE BY SIDE
 # ============================================================
 
 def build_rows(
@@ -1360,7 +1083,7 @@ def build_rows(
     income_rows,
 ):
     """
-    Put Expense and Income side by side.
+    Expense and Income are displayed side-by-side.
     """
 
     rows = []
@@ -1413,7 +1136,7 @@ def build_rows(
         }
 
         # ----------------------------------------------------
-        # Expense Metadata
+        # EXPENSE META
         # ----------------------------------------------------
 
         if expense:
@@ -1425,8 +1148,8 @@ def build_rows(
                         "",
                     ),
 
-                    "expense_parent_account": expense.get(
-                        "parent_account",
+                    "expense_statement_parent": expense.get(
+                        "statement_parent",
                         "",
                     ),
 
@@ -1468,7 +1191,7 @@ def build_rows(
             )
 
         # ----------------------------------------------------
-        # Income Metadata
+        # INCOME META
         # ----------------------------------------------------
 
         if income:
@@ -1480,8 +1203,8 @@ def build_rows(
                         "",
                     ),
 
-                    "income_parent_account": income.get(
-                        "parent_account",
+                    "income_statement_parent": income.get(
+                        "statement_parent",
                         "",
                     ),
 
@@ -1530,6 +1253,138 @@ def build_rows(
 
 
 # ============================================================
+# SECTION TOTAL
+# ============================================================
+
+def calculate_section_totals(
+    mappings,
+    filters,
+):
+    """
+    Total calculation is based on Statement Parent.
+
+    RULE:
+
+    Parent row:
+        included in total
+
+    Child row:
+        NOT separately included
+
+    Example:
+
+        DIRECT EXPENSES
+            JOB CHARGES
+                Consumables
+
+    If DIRECT EXPENSES is mapped to an Account whose balance
+    already contains JOB CHARGES / Consumables, only
+    DIRECT EXPENSES is counted.
+
+    This prevents double counting.
+    """
+
+    if not mappings:
+        return 0, 0
+
+    expense_total = 0
+    income_total = 0
+
+    # --------------------------------------------------------
+    # Only roots are included in total.
+    # --------------------------------------------------------
+
+    root_mappings = []
+
+    for mapping in mappings:
+
+        parent = find_statement_parent(
+            mapping,
+            mappings,
+        )
+
+        if not parent:
+
+            root_mappings.append(
+                mapping
+            )
+
+    # --------------------------------------------------------
+    # Exact TZU Setting sequence
+    # --------------------------------------------------------
+
+    root_mappings.sort(
+        key=lambda row: row.get(
+            "_sequence",
+            999999
+        )
+    )
+
+    counted_expense_accounts = set()
+    counted_income_accounts = set()
+
+    for mapping in root_mappings:
+
+        side = get_statement_side(
+            mapping
+        )
+
+        if not side:
+            continue
+
+        account = mapping.get(
+            "account"
+        )
+
+        if not account:
+            continue
+
+        value = get_mapping_value(
+            mapping,
+            filters,
+        )
+
+        # ----------------------------------------------------
+        # Expense
+        # ----------------------------------------------------
+
+        if side == "expense":
+
+            if account in counted_expense_accounts:
+                continue
+
+            counted_expense_accounts.add(
+                account
+            )
+
+            expense_total += flt(
+                value
+            )
+
+        # ----------------------------------------------------
+        # Income
+        # ----------------------------------------------------
+
+        elif side == "income":
+
+            if account in counted_income_accounts:
+                continue
+
+            counted_income_accounts.add(
+                account
+            )
+
+            income_total += flt(
+                value
+            )
+
+    return (
+        expense_total,
+        income_total,
+    )
+
+
+# ============================================================
 # SECTION DATA
 # ============================================================
 
@@ -1537,15 +1392,13 @@ def get_section_data(
     section,
     filters,
 ):
-    """
-    Prepare Expense / Income rows for one section.
-    """
 
     mappings = get_statement_mappings(
         section
     )
 
     if not mappings:
+
         return {
             "section": section,
             "expense_rows": [],
@@ -1555,85 +1408,29 @@ def get_section_data(
         }
 
     # --------------------------------------------------------
-    # Top-level mappings
+    # DISPLAY
     # --------------------------------------------------------
 
-    top_level_mappings = get_top_level_mappings(
-        mappings
+    (
+        expense_rows,
+        income_rows,
+    ) = build_all_statement_rows(
+        mappings=mappings,
+        filters=filters,
+        section=section,
     )
 
-    expense_rows = []
-    income_rows = []
-
     # --------------------------------------------------------
-    # Build trees
+    # TOTAL
     # --------------------------------------------------------
 
-    for mapping in top_level_mappings:
-
-        side = get_statement_side(
-            mapping
-        )
-
-        if not side:
-            continue
-
-        mapping_rows = build_statement_account_rows(
-            mapping=mapping,
-            filters=filters,
-            from_date=filters.get(
-                "from_date"
-            ),
-            to_date=filters.get(
-                "to_date"
-            ),
-            section=section,
-            section_mappings=mappings,
-        )
-
-        if side == "income":
-
-            income_rows.extend(
-                mapping_rows
-            )
-
-        elif side == "expense":
-
-            expense_rows.extend(
-                mapping_rows
-            )
-
-    # --------------------------------------------------------
-    # IMPORTANT:
-    #
-    # Since every visible row is now a Statement Type,
-    # totals must NOT sum parent + child.
-    #
-    # We sum only top-level Statement Type values.
-    # --------------------------------------------------------
-
-    expense_total = 0
-    income_total = 0
-
-    for mapping in top_level_mappings:
-
-        side = get_statement_side(
-            mapping
-        )
-
-        if not side:
-            continue
-
-        value = get_mapping_value(
-            mapping,
-            filters,
-        )
-
-        if side == "expense":
-            expense_total += flt(value)
-
-        elif side == "income":
-            income_total += flt(value)
+    (
+        expense_total,
+        income_total,
+    ) = calculate_section_totals(
+        mappings=mappings,
+        filters=filters,
+    )
 
     return {
         "section": section,
@@ -1649,10 +1446,6 @@ def get_section_data(
 # ============================================================
 
 def get_statement_sections():
-    """
-    Return unique enabled Statement Sections
-    in TZU Setting order.
-    """
 
     settings = frappe.get_single(
         "TZU Setting"
@@ -1681,6 +1474,7 @@ def get_statement_sections():
             continue
 
         if section not in sections:
+
             sections.append(
                 section
             )
@@ -1689,6 +1483,7 @@ def get_statement_sections():
 
 
 def is_trading_section(section):
+
     return (
         str(section or "")
         .strip()
@@ -1698,6 +1493,7 @@ def is_trading_section(section):
 
 
 def is_kpi_section(section):
+
     section_lower = str(
         section or ""
     ).strip().lower()
@@ -1716,9 +1512,6 @@ def get_kpi(
     section_data,
     gross_profit,
 ):
-    """
-    Calculate KPI rows.
-    """
 
     expense_total = flt(
         section_data.get(
@@ -1772,7 +1565,10 @@ def get_kpi(
     # --------------------------------------------------------
 
     gross_profit_percent = (
-        (gross_profit / sales)
+        (
+            gross_profit
+            / sales
+        )
         * 100
         if sales
         else 0
@@ -1783,7 +1579,10 @@ def get_kpi(
     # --------------------------------------------------------
 
     operating_expense_ratio = (
-        (operating_expenses / sales)
+        (
+            operating_expenses
+            / sales
+        )
         * 100
         if sales
         else 0
@@ -1808,9 +1607,6 @@ def get_kpi(
 # ============================================================
 
 def get_data(filters):
-    """
-    Final report data.
-    """
 
     sections = get_statement_sections()
 
@@ -1820,7 +1616,6 @@ def get_data(filters):
     all_section_data = []
 
     gross_profit = 0
-    trading_found = False
 
     # ========================================================
     # FIRST PASS
@@ -1844,8 +1639,6 @@ def get_data(filters):
         if is_trading_section(
             section
         ):
-
-            trading_found = True
 
             gross_profit = (
                 flt(
@@ -1914,17 +1707,15 @@ def get_data(filters):
             section
         ):
 
-            side_rows = build_rows(
-                section_data[
-                    "expense_rows"
-                ],
-                section_data[
-                    "income_rows"
-                ],
-            )
-
             final_rows.extend(
-                side_rows
+                build_rows(
+                    section_data[
+                        "expense_rows"
+                    ],
+                    section_data[
+                        "income_rows"
+                    ],
+                )
             )
 
             # ------------------------------------------------
@@ -1985,21 +1776,19 @@ def get_data(filters):
             section_data
         )
 
-        side_rows = build_rows(
-            section_data[
-                "expense_rows"
-            ],
-            section_data[
-                "income_rows"
-            ],
-        )
-
         final_rows.extend(
-            side_rows
+            build_rows(
+                section_data[
+                    "expense_rows"
+                ],
+                section_data[
+                    "income_rows"
+                ],
+            )
         )
 
         # ----------------------------------------------------
-        # SECTION SUBTOTAL
+        # SUBTOTAL
         # ----------------------------------------------------
 
         final_rows.append(
@@ -2101,10 +1890,6 @@ def get_data(filters):
             gross_profit,
         )
 
-        # ----------------------------------------------------
-        # KPI HEADER
-        # ----------------------------------------------------
-
         final_rows.append(
             {
                 "expense": kpi_section_data[
@@ -2116,10 +1901,6 @@ def get_data(filters):
                 "is_section_header": 1,
             }
         )
-
-        # ----------------------------------------------------
-        # KPI ROWS
-        # ----------------------------------------------------
 
         for kpi in kpi_rows:
 
