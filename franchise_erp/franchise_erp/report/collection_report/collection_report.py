@@ -1392,7 +1392,7 @@ def get_data(filters, companies):
 			si.customer AS customer,
 			SUM(
 				ROUND(
-					sii.net_amount + (sii.net_amount * sii.custom_output_gst_ / 100)
+					sii.net_amount + (sii.net_amount * IFNULL(stc.rate, 0) / 100)
 				)
 			) AS net_sale_franchise
 
@@ -1400,6 +1400,10 @@ def get_data(filters, companies):
 
 		INNER JOIN `tabSales Invoice` si
 			ON si.name = sii.parent
+
+		LEFT JOIN `tabSales Taxes and Charges` stc
+			ON stc.parent = si.name
+			AND stc.account_head LIKE 'Output Tax IGST%%'
 
 		WHERE
 			si.docstatus = 1
