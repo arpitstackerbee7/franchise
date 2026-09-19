@@ -23,8 +23,8 @@ class TZURolePermissionManager(Document):
 		"""
 		Allow submit when configuring Custom DocPerm.
 
-		This is important because the current user may not have
-		permission to create/submit Custom DocPerm itself.
+		The current user does not need direct permission on
+		Custom DocPerm to use TZU Role Permission Manager.
 		"""
 
 		if self.get("document_type") == "Custom DocPerm":
@@ -63,15 +63,15 @@ class TZURolePermissionManager(Document):
 		# =========================================================
 		# CUSTOM DOCPERM
 		#
-		# Custom DocPerm itself stores its permissions in:
+		# Actual permission table:
 		#     tabDocPerm
 		#
-		# We intentionally DO NOT use:
-		#     add_permission()
-		#     update_permission_property()
+		# IMPORTANT:
+		# Do NOT use add_permission()
+		# Do NOT use update_permission_property()
 		#
-		# because those functions can perform permission checks
-		# against Custom DocPerm and block the submit.
+		# Direct SQL is used so that submitting TZU Role Permission
+		# Manager does not require direct permission on Custom DocPerm.
 		# =========================================================
 
 		if document_type == "Custom DocPerm":
@@ -87,7 +87,7 @@ class TZURolePermissionManager(Document):
 			)
 
 			# -----------------------------------------------------
-			# EXISTING PERMISSION
+			# EXISTING PERMISSION CHECK
 			# -----------------------------------------------------
 
 			if existing_permission and not update_existing_role:
@@ -224,15 +224,7 @@ class TZURolePermissionManager(Document):
 				)
 
 			# -----------------------------------------------------
-			# CLEAR CACHE
-			# -----------------------------------------------------
-
-			frappe.clear_cache(doctype="Custom DocPerm")
-
-			# -----------------------------------------------------
-			# VALIDATE PERMISSIONS
-			#
-			# This keeps Frappe's permission state in sync.
+			# VALIDATE / CLEAR CACHE
 			# -----------------------------------------------------
 
 			try:
@@ -243,9 +235,12 @@ class TZURolePermissionManager(Document):
 				validate_permissions_for_doctype("Custom DocPerm")
 
 			except Exception:
-				# Do not block TZU Role Permission Manager submit
-				# because of a validation check on Custom DocPerm.
-				pass
+				frappe.log_error(
+					title="TZU Role Permission Manager - Custom DocPerm Validation",
+					message=frappe.get_traceback(),
+				)
+
+			frappe.clear_cache(doctype="Custom DocPerm")
 
 			frappe.msgprint(
 				f"Permissions for {role} on Custom DocPerm "
@@ -257,14 +252,11 @@ class TZURolePermissionManager(Document):
 		# =========================================================
 		# NORMAL DOCTYPES
 		#
-		# Permissions are stored in:
+		# Actual table:
 		#     tabCustom DocPerm
 		#
-		# DO NOT use add_permission() here.
-		# DO NOT use update_permission_property() here.
-		#
-		# Direct SQL avoids the Custom DocPerm permission check
-		# that was causing the submit error.
+		# Do NOT use add_permission()
+		# Do NOT use update_permission_property()
 		# =========================================================
 
 		existing_permission = frappe.db.get_value(
@@ -416,12 +408,6 @@ class TZURolePermissionManager(Document):
 
 		# =========================================================
 		# VALIDATE PERMISSIONS
-		#
-		# This is the part that existed in your old code.
-		# It is executed AFTER direct SQL update/insert.
-		#
-		# It does NOT call add_permission(), so the old
-		# Custom DocPerm permission error will not occur.
 		# =========================================================
 
 		try:
@@ -431,29 +417,137 @@ class TZURolePermissionManager(Document):
 
 			validate_permissions_for_doctype(document_type)
 
-		except Exception as e:
-			# Permission row has already been written through SQL.
-			# Do not make TZU Role Permission Manager submission
-			# fail because of validation of the configured DocType.
+		except Exception:
+			# SQL permission update is already done.
+			# Do not fail TZU Role Permission Manager submit
+			# because of a secondary validation issue.
 			frappe.log_error(
-				title="TZU Role Permission Manager Permission Validation",
+				title="TZU Role Permission Manager - Permission Validation",
 				message=frappe.get_traceback(),
 			)
 
 		# =========================================================
-		# CLEAR PERMISSION CACHE
-		#
-		# This makes the newly created/updated permission available
-		# to Role Permissions Manager and permission checks.
+		# CLEAR CACHE
 		# =========================================================
 
 		frappe.clear_cache(doctype=document_type)
-
-		# Also clear the Custom DocPerm cache because the actual
-		# permission configuration is stored there.
 		frappe.clear_cache(doctype="Custom DocPerm")
 
 		frappe.msgprint(
 			f"Permissions for {role} on {document_type} "
 			f"(Level {level}) have been updated."
+		)
+
+	# =============================================================
+	# CANCEL
+	#
+	# When a submitted TZU Role Permission Manager is cancelled,
+	# remove the corresponding permission from Role Permissions
+	# Manager.
+	# =============================================================
+
+	def on_cancel(self):
+
+		document_type = self.document_type
+		role = self.role
+		level = self.level or 0
+
+		# =========================================================
+		# CUSTOM DOCPERM
+		#
+		# Permission is stored in tabDocPerm
+		# =========================================================
+
+		if document_type == "Custom DocPerm":
+
+			permission_name = frappe.db.get_value(
+				"DocPerm",
+				{
+					"parent": "Custom DocPerm",
+					"role": role,
+					"permlevel": level,
+				},
+				"name",
+			)
+
+			if permission_name:
+
+				frappe.db.sql(
+					"""
+					DELETE FROM `tabDocPerm`
+					WHERE `name` = %(name)s
+					""",
+					{
+						"name": permission_name,
+					},
+				)
+
+			# Clear permission cache
+			frappe.clear_cache(doctype="Custom DocPerm")
+
+			frappe.msgprint(
+				f"Permissions for {role} on Custom DocPerm "
+				f"(Level {level}) have been removed."
+			)
+
+			return
+
+		# =========================================================
+		# NORMAL DOCTYPE
+		#
+		# Permission is stored in tabCustom DocPerm
+		# =========================================================
+
+		permission_name = frappe.db.get_value(
+			"Custom DocPerm",
+			{
+				"parent": document_type,
+				"role": role,
+				"permlevel": level,
+			},
+			"name",
+		)
+
+		if permission_name:
+
+			frappe.db.sql(
+				"""
+				DELETE FROM `tabCustom DocPerm`
+				WHERE `name` = %(name)s
+				""",
+				{
+					"name": permission_name,
+				},
+			)
+
+		# =========================================================
+		# CLEAR CACHE
+		# =========================================================
+
+		frappe.clear_cache(doctype=document_type)
+		frappe.clear_cache(doctype="Custom DocPerm")
+
+		# =========================================================
+		# VALIDATE AGAIN
+		#
+		# This refreshes the permission configuration after
+		# deleting the Custom DocPerm row.
+		# =========================================================
+
+		try:
+			from frappe.core.doctype.doctype.doctype import (
+				validate_permissions_for_doctype,
+			)
+
+			validate_permissions_for_doctype(document_type)
+
+		except Exception:
+			frappe.log_error(
+				title="TZU Role Permission Manager - Cancel Permission Validation",
+				message=frappe.get_traceback(),
+			)
+
+		frappe.msgprint(
+			f"Permissions for {role} on {document_type} "
+			f"(Level {level}) have been removed."
 		)
