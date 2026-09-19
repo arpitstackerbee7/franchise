@@ -1343,7 +1343,7 @@ def get_data(filters, companies):
 
 			for row in (previous_result.get("invoice_list") or []):
 				qty_map[customer]["qty_ytd"] += float(row.get("qty") or 0)
-				qty_map[customer]["amount_ytd"] += float(row.get("total_amount") or 0)
+				qty_map[customer]["amount_ytd"] += float(row.get("invoice_value") or 0)
 
 
 			# -------------------------------------------------
@@ -1358,7 +1358,7 @@ def get_data(filters, companies):
 
 			for row in (last_15_result.get("invoice_list") or []):
 				qty_map[customer]["qty_15"] += float(row.get("qty") or 0)
-				qty_map[customer]["amount_15"] += float(row.get("total_amount") or 0)
+				qty_map[customer]["amount_15"] += float(row.get("invoice_value") or 0)
 
 
 	# =====================================================
@@ -1390,18 +1390,20 @@ def get_data(filters, companies):
 		f"""
 		SELECT
 			si.customer AS customer,
-			SUM(sii.net_amount) AS net_sale_franchise
+			SUM(si.rounded_total) AS net_sale_franchise
 
-		FROM `tabSales Invoice Item` sii
-
-		INNER JOIN `tabSales Invoice` si
-			ON si.name = sii.parent
+		FROM `tabSales Invoice` si
 
 		WHERE
 			si.docstatus = 1
 			AND si.company IN %(companies)s
-			AND sii.item_code = 'Franchise Services'
 			AND si.creation <= %(now)s
+			AND EXISTS (
+				SELECT 1
+				FROM `tabSales Invoice Item` sii
+				WHERE sii.parent = si.name
+					AND sii.item_code = 'Franchise Services'
+			)
 			{franchise_customer_condition}
 
 		GROUP BY si.customer
