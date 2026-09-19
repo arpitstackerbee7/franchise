@@ -1070,7 +1070,7 @@ def get_columns():
 		},
 
 		{
-			"label": _("Net Sale under Franchise Fees"),
+			"label": _("Franchise Fees"),
 			"fieldname": "net_sale_franchise",
 			"fieldtype": "Currency",
 			"width": 130
@@ -1390,20 +1390,22 @@ def get_data(filters, companies):
 		f"""
 		SELECT
 			si.customer AS customer,
-			SUM(si.rounded_total) AS net_sale_franchise
+			SUM(
+				ROUND(
+					sii.net_amount + (sii.net_amount * sii.custom_output_gst_ / 100)
+				)
+			) AS net_sale_franchise
 
-		FROM `tabSales Invoice` si
+		FROM `tabSales Invoice Item` sii
+
+		INNER JOIN `tabSales Invoice` si
+			ON si.name = sii.parent
 
 		WHERE
 			si.docstatus = 1
 			AND si.company IN %(companies)s
 			AND si.creation <= %(now)s
-			AND EXISTS (
-				SELECT 1
-				FROM `tabSales Invoice Item` sii
-				WHERE sii.parent = si.name
-					AND sii.item_code = 'Franchise Services'
-			)
+			AND sii.item_code = 'Franchise Services'
 			{franchise_customer_condition}
 
 		GROUP BY si.customer
