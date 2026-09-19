@@ -1,6 +1,7 @@
 // Copyright (c) 2026
 // For license information, please see license.txt
 
+
 frappe.query_reports["Custom Financial Statement"] = {
 
     filters: [
@@ -21,6 +22,7 @@ frappe.query_reports["Custom Financial Statement"] = {
                 )
         },
 
+
         // ====================================================
         // FISCAL YEAR
         // ====================================================
@@ -36,7 +38,7 @@ frappe.query_reports["Custom Financial Statement"] = {
                     "fiscal_year"
                 ),
 
-            on_change: function (report) {
+            on_change: function(report) {
 
                 const fy =
                     report.get_filter_value(
@@ -69,9 +71,11 @@ frappe.query_reports["Custom Financial Statement"] = {
                         "to_date",
                         r.message.year_end_date
                     );
+
                 });
             }
         },
+
 
         // ====================================================
         // FROM DATE
@@ -84,6 +88,7 @@ frappe.query_reports["Custom Financial Statement"] = {
             reqd: 1
         },
 
+
         // ====================================================
         // TO DATE
         // ====================================================
@@ -94,6 +99,7 @@ frappe.query_reports["Custom Financial Statement"] = {
             fieldtype: "Date",
             reqd: 1
         },
+
 
         // ====================================================
         // COST CENTER
@@ -106,6 +112,7 @@ frappe.query_reports["Custom Financial Statement"] = {
             options: "Cost Center"
         },
 
+
         // ====================================================
         // PROJECT
         // ====================================================
@@ -116,6 +123,7 @@ frappe.query_reports["Custom Financial Statement"] = {
             fieldtype: "Link",
             options: "Project"
         },
+
 
         // ====================================================
         // FINANCE BOOK
@@ -128,6 +136,7 @@ frappe.query_reports["Custom Financial Statement"] = {
             options: "Finance Book"
         },
 
+
         // ====================================================
         // SHOW ZERO VALUES
         // ====================================================
@@ -138,6 +147,7 @@ frappe.query_reports["Custom Financial Statement"] = {
             fieldtype: "Check",
             default: 1
         }
+
     ],
 
 
@@ -145,7 +155,7 @@ frappe.query_reports["Custom Financial Statement"] = {
     // FORMATTER
     // ========================================================
 
-    formatter: function (
+    formatter: function(
         value,
         row,
         column,
@@ -169,97 +179,97 @@ frappe.query_reports["Custom Financial Statement"] = {
             column.fieldname;
 
 
-        // ----------------------------------------------------
-// Section Header
-// ----------------------------------------------------
+        // ====================================================
+        // SECTION HEADER
+        // ====================================================
 
-if (data.is_section_header) {
+        if (data.is_section_header) {
 
-    if (
-        fieldname === "expense" ||
-        fieldname === "income"
-    ) {
+            if (
+                fieldname === "expense" ||
+                fieldname === "income"
+            ) {
 
-        const label =
-            fieldname === "expense"
-                ? data.expense
-                : data.income;
+                const label =
+                    fieldname === "expense"
+                        ? data.expense
+                        : data.income;
 
-        if (!label) {
+                if (!label) {
+                    return "";
+                }
+
+                return `
+                    <div
+                        style="
+                            font-weight:700;
+                            color:#1f4e78;
+                            font-size:14px;
+                            line-height:20px;
+                            padding:0;
+                            margin:0;
+                            white-space:nowrap;
+                            overflow:visible;
+                        "
+                    >
+                        ${frappe.utils.escape_html(label)}
+                    </div>
+                `;
+            }
+
             return "";
         }
 
-        return `
-            <div
-                style="
-                    font-weight:700;
-                    color:#1f4e78;
-                    font-size:14px;
-                    line-height:20px;
-                    padding:0;
-                    margin:0;
-                    white-space:nowrap;
-                    overflow:visible;
-                "
-            >
-                ${frappe.utils.escape_html(label)}
-            </div>
-        `;
-    }
 
-    return "";
+        // ====================================================
+// STATEMENT TYPE FLAGS
+// ====================================================
+
+const expenseStatement =
+    cint(
+        data.expense_is_statement_type
+        || 0
+    );
+
+const incomeStatement =
+    cint(
+        data.income_is_statement_type
+        || 0
+    );
+
+
+// ====================================================
+// EXPENSE STATEMENT TYPE
+// ====================================================
+
+if (
+    fieldname === "expense"
+    &&
+    expenseStatement
+) {
+
+    return render_statement_type(
+        "expense",
+        data
+    );
 }
 
 
-        // ====================================================
-        // STATEMENT TYPE FLAGS
-        // ====================================================
+// ====================================================
+// INCOME STATEMENT TYPE
+// ====================================================
 
-        const expenseStatement =
-            cint(
-                data.expense_is_statement_type
-                || 0
-            );
+if (
+    fieldname === "income"
+    &&
+    incomeStatement
+) {
 
-        const incomeStatement =
-            cint(
-                data.income_is_statement_type
-                || 0
-            );
-
-
-        // ====================================================
-        // EXPENSE STATEMENT TYPE
-        // ====================================================
-
-        if (
-            fieldname === "expense"
-            &&
-            expenseStatement
-        ) {
-
-            return render_statement_type(
-                "expense",
-                data
-            );
-        }
-
-
-        // ====================================================
-        // INCOME STATEMENT TYPE
-        // ====================================================
-
-        if (
-            fieldname === "income"
-            &&
-            incomeStatement
-        ) {
-
-            return render_statement_type(
-                "income",
-                data
-            );
-        }
+    return render_statement_type(
+        "income",
+        data
+    );
+}
 
 
         // ====================================================
@@ -318,44 +328,6 @@ if (data.is_section_header) {
         }
 
 
-        // ====================================================
-        // EXPENSE TREE
-        // ====================================================
-
-        if (
-            fieldname === "expense"
-            &&
-            data.expense_tree_id
-            &&
-            !expenseStatement
-        ) {
-
-            return render_account_tree(
-                "expense",
-                data
-            );
-        }
-
-
-        // ====================================================
-        // INCOME TREE
-        // ====================================================
-
-        if (
-            fieldname === "income"
-            &&
-            data.income_tree_id
-            &&
-            !incomeStatement
-        ) {
-
-            return render_account_tree(
-                "income",
-                data
-            );
-        }
-
-
         return formatted_value;
     },
 
@@ -364,7 +336,7 @@ if (data.is_section_header) {
     // ONLOAD
     // ========================================================
 
-    onload: function (report) {
+    onload: function(report) {
 
         const fy =
             report.get_filter_value(
@@ -409,11 +381,12 @@ if (data.is_section_header) {
                         r.message.year_end_date
                     );
                 }
+
             });
         }
 
         setTimeout(
-            function () {
+            function() {
 
                 install_financial_tree_events(
                     report
@@ -429,10 +402,10 @@ if (data.is_section_header) {
     // AFTER REFRESH
     // ========================================================
 
-    after_refresh: function (report) {
+    after_refresh: function(report) {
 
         setTimeout(
-            function () {
+            function() {
 
                 install_financial_tree_events(
                     report
@@ -442,110 +415,14 @@ if (data.is_section_header) {
             300
         );
     }
+
 };
 
 
 // ============================================================
 // STATEMENT TYPE RENDER
 // ============================================================
-
 function render_statement_type(
-    side,
-    data
-) {
-
-    const treeId =
-        data[
-            `${side}_tree_id`
-        ] || "";
-
-    const label =
-        data[
-            side
-        ] || "";
-
-    const hasChildren =
-        cint(
-            data[
-                `${side}_has_children`
-            ] || 0
-        );
-
-    if (!label) {
-        return "";
-    }
-
-    const escapedLabel =
-        frappe.utils.escape_html(
-            label
-        );
-
-    const escapedTreeId =
-        frappe.utils.escape_html(
-            treeId
-        );
-
-    return `
-        <div
-            class="
-                custom-financial-statement-type
-                custom-financial-tree-toggle
-            "
-            data-side="${side}"
-            data-tree-id="${escapedTreeId}"
-            data-tree-parent=""
-            data-expanded="1"
-            style="
-                padding-left:0px;
-                font-weight:700;
-                cursor:${
-                    hasChildren
-                        ? "pointer"
-                        : "default"
-                };
-            "
-        >
-
-            ${
-                hasChildren
-                    ? `
-                        <span
-                            class="
-                                custom-financial-tree-arrow
-                            "
-                            style="
-                                display:inline-block;
-                                width:18px;
-                                margin-right:4px;
-                            "
-                        >
-                            ▼
-                        </span>
-                    `
-                    : `
-                        <span
-                            style="
-                                display:inline-block;
-                                width:22px;
-                            "
-                        ></span>
-                    `
-            }
-
-            <span>
-                ${escapedLabel}
-            </span>
-
-        </div>
-    `;
-}
-
-
-// ============================================================
-// ACCOUNT TREE RENDER
-// ============================================================
-
-function render_account_tree(
     side,
     data
 ) {
@@ -567,6 +444,11 @@ function render_account_tree(
             ] || 0
         );
 
+    const label =
+        data[
+            side
+        ] || "";
+
     const hasChildren =
         cint(
             data[
@@ -574,19 +456,26 @@ function render_account_tree(
             ] || 0
         );
 
-    const account =
-        data[
-            `${side}_account`
-        ] || "";
-
-    const label =
-        data[
-            side
-        ] || "";
-
     if (!label) {
         return "";
     }
+
+
+    // ====================================================
+    // IMPORTANT:
+    // statement_parent IS THE SOURCE FOR BOLDING
+    // ====================================================
+
+    const statementParent =
+        data.statement_parent
+        || data[`${side}_statement_parent`]
+        || "";
+
+    const fontWeight =
+        statementParent
+            ? "400"
+            : "700";
+
 
     const escapedLabel =
         frappe.utils.escape_html(
@@ -603,79 +492,67 @@ function render_account_tree(
             treeParent
         );
 
-    const escapedAccount =
-        frappe.utils.escape_html(
-            account
-        );
-
-
-    // ========================================================
-    // GROUP / PARENT
-    // ========================================================
-
-    if (hasChildren) {
-
-        return `
-            <div
-                class="
-                    custom-financial-tree-node
-                    custom-financial-tree-toggle
-                "
-                data-side="${side}"
-                data-tree-id="${escapedTreeId}"
-                data-tree-parent="${escapedTreeParent}"
-                data-account="${escapedAccount}"
-                data-expanded="1"
-                style="
-                    padding-left:${indent * 20}px;
-                    cursor:pointer;
-                "
-            >
-
-                <span
-                    class="
-                        custom-financial-tree-arrow
-                    "
-                    style="
-                        display:inline-block;
-                        width:18px;
-                        margin-right:4px;
-                    "
-                >
-                    ▼
-                </span>
-
-                <span>
-                    ${escapedLabel}
-                </span>
-
-            </div>
-        `;
-    }
-
-
-    // ========================================================
-    // LEAF
-    // ========================================================
 
     return `
         <div
             class="
-                custom-financial-tree-leaf
+                custom-financial-statement-type
+                custom-financial-tree-toggle
             "
             data-side="${side}"
             data-tree-id="${escapedTreeId}"
             data-tree-parent="${escapedTreeParent}"
-            data-account="${escapedAccount}"
+            data-expanded="1"
             style="
-                padding-left:${(indent * 20) + 22}px;
+                padding-left:${indent * 20}px;
+                font-weight:${fontWeight} !important;
+                cursor:${
+                    hasChildren
+                        ? "pointer"
+                        : "default"
+                };
+                white-space:nowrap;
             "
         >
-            ${escapedLabel}
+
+            ${
+                hasChildren
+                    ? `
+                        <span
+                            class="
+                                custom-financial-tree-arrow
+                            "
+                            style="
+                                display:inline-block;
+                                width:18px;
+                                margin-right:4px;
+                                font-weight:400 !important;
+                            "
+                        >
+                            ▼
+                        </span>
+                    `
+                    : `
+                        <span
+                            style="
+                                display:inline-block;
+                                width:22px;
+                            "
+                        ></span>
+                    `
+            }
+
+            <span
+                style="
+                    font-weight:${fontWeight} !important;
+                "
+            >
+                ${escapedLabel}
+            </span>
+
         </div>
     `;
 }
-
 
 // ============================================================
 // INSTALL EVENTS
@@ -705,7 +582,7 @@ function install_financial_tree_events(
     $(wrapper).on(
         "click.custom_financial_tree",
         ".custom-financial-tree-toggle",
-        function (e) {
+        function(e) {
 
             e.preventDefault();
             e.stopPropagation();
@@ -755,8 +632,9 @@ function install_financial_tree_events(
         }
     );
 
+
     setTimeout(
-        function () {
+        function() {
 
             update_tree_arrows(
                 wrapper,
@@ -798,7 +676,7 @@ function update_tree_arrows(
             `.custom-financial-tree-toggle[data-side="${side}"]`
         )
         .each(
-            function () {
+            function() {
 
                 const element =
                     $(this);
@@ -841,7 +719,7 @@ function refresh_tree_visibility(
     const byId = {};
 
     elements.each(
-        function () {
+        function() {
 
             const element =
                 $(this);
@@ -860,8 +738,9 @@ function refresh_tree_visibility(
         }
     );
 
+
     elements.each(
-        function () {
+        function() {
 
             const element =
                 $(this);
