@@ -27,6 +27,7 @@ def execute(filters=None):
     columns = list(result[0])
     raw_data = [row for row in (result[1] or []) if isinstance(row, dict)]
 
+    group_by_party = int((filters or {}).get("group_by_party") or 0)
     customer_filter = (filters or {}).get("customer") or []
     if customer_filter:
         customer_list = [
@@ -38,6 +39,31 @@ def execute(filters=None):
             raw_data = [
                 row for row in raw_data
                 if (row.get("party") or "").strip() in customer_list
+            ]
+
+    customer_group_filter = (filters or {}).get("customer_group") or []
+    if customer_group_filter:
+        customer_group_list = [
+            (g if isinstance(g, str) else g.get("value", "")).strip()
+            for g in customer_group_filter
+        ]
+        customer_group_list = [g for g in customer_group_list if g]
+        if customer_group_list:
+            raw_data = [
+                row for row in raw_data
+                if (row.get("customer_group") or "").strip() in customer_group_list
+            ]
+    receivable_account_filter = (filters or {}).get("receivable_account") or []
+    if receivable_account_filter:
+        receivable_account_list = [
+            (a if isinstance(a, str) else a.get("value", "")).strip()
+            for a in receivable_account_filter
+        ]
+        receivable_account_list = [a for a in receivable_account_list if a]
+        if receivable_account_list:
+            raw_data = [
+                row for row in raw_data
+                if (row.get("receivable_account") or "").strip() in receivable_account_list
             ]
 
     # ── Remove unwanted columns ────────────────────────────────────────────
@@ -153,6 +179,23 @@ def execute(filters=None):
         if party not in party_buckets:
             party_order.append(party)
         party_buckets[party].append(row)
+
+    if not group_by_party:
+        output = []
+        for party in party_order:
+            rows = party_buckets[party]
+            rows.sort(key=lambda r: r.get("posting_date") or date.min)
+            running_balance = 0.0
+            for row in rows:
+                running_balance += flt(row.get("outstanding"))
+                row["running_balance"] = running_balance
+                output.append(row)
+
+        result = list(result)
+        result[0] = columns
+        result[1] = output
+        return result
+
 
     # ── Build output ──────────────────────────────────────────────────────
     output = []
