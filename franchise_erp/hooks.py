@@ -104,7 +104,11 @@ doc_events = {
             ],
         "before_submit": [
             "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
-        ]
+        ],
+        "on_submit": (
+            "franchise_erp.franchise_erp.doctype.bulk_sales_return."
+            "bulk_sales_return.auto_submit_linked_delivery_note_return"
+        )
         # "on_submit": "franchise_erp.custom.sales_invoice.update_serial_no_mrp"
     },
     "Purchase Order": {

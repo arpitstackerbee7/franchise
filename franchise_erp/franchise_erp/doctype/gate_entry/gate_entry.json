@@ -208,10 +208,11 @@
    "allow_on_submit": 1,
    "depends_on": "eval:doc.gate_entry && doc.gate_entry.toLowerCase().trim()==\"yes\"",
    "fieldname": "incoming_logistics",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Incoming Logistics",
    "link_filters": "[[\"Incoming Logistics\",\"gate_entry_no\",\"like\",null]]",
-   "options": "Incoming Logistics"
+   "options": "Incoming Logistics",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_ejse",
@@ -365,7 +366,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-08-17 13:21:24.072397",
+ "modified": "2026-09-21 16:25:01.756405",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
