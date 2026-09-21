@@ -1158,14 +1158,8 @@ def get_columns():
 			"fieldname": "total_collectable_amount",
 			"fieldtype": "Currency",
 			"width": 100
-		},
-
-		{
-			"label": _("Pending"),
-			"fieldname": "pending",
-			"fieldtype": "Currency",
-			"width": 85
 		}
+
 
 	]
 
@@ -1368,13 +1362,6 @@ def get_data(filters, companies):
 	# report is run) - NOT bound by the from_date/to_date filters.
 	# =====================================================
 
-	# =====================================================
-	# NET SALE UNDER FRANCHISE FEES
-	# Sales Invoice Item where item_code = 'Franchise Services'
-	# Cumulative since inception till exact date+time when
-	# report is run - NOT bound by the from_date/to_date filters.
-	# =====================================================
-
 	franchise_customer_condition = ""
 
 	franchise_values = {
@@ -1392,7 +1379,21 @@ def get_data(filters, companies):
 			si.customer AS customer,
 			SUM(
 				ROUND(
-					sii.net_amount + (sii.net_amount * IFNULL(stc.rate, 0) / 100)
+					sii.net_amount + IFNULL(
+						(
+							SELECT SUM(
+								CAST(
+									JSON_UNQUOTE(
+										JSON_EXTRACT(stc.item_wise_tax_detail, CONCAT('$."', sii.item_code, '"[1]'))
+									) AS DECIMAL(18,2)
+								)
+							)
+							FROM `tabSales Taxes and Charges` stc
+							WHERE stc.parent = si.name
+								AND stc.account_head LIKE 'Output Tax%%'
+						),
+						0
+					)
 				)
 			) AS net_sale_franchise
 
@@ -1400,10 +1401,6 @@ def get_data(filters, companies):
 
 		INNER JOIN `tabSales Invoice` si
 			ON si.name = sii.parent
-
-		LEFT JOIN `tabSales Taxes and Charges` stc
-			ON stc.parent = si.name
-			AND stc.account_head LIKE 'Output Tax IGST%%'
 
 		WHERE
 			si.docstatus = 1
@@ -1810,10 +1807,7 @@ def get_data(filters, companies):
 		)
 
 
-		pending = (
-			total_collectable_amount
-			- payment_received
-		)
+
 
 
 		data.append({
@@ -1840,9 +1834,9 @@ def get_data(filters, companies):
 
 			"collectable_amount_15": collectable_amount_15,
 
-			"total_collectable_amount": total_collectable_amount,
+			"total_collectable_amount": total_collectable_amount
 
-			"pending": pending
+			
 		})
 
 
