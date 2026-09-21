@@ -648,264 +648,392 @@ function open_sales_invoice_dialog(frm) {
         primary_action_label:
             "Add Selected Items",
 
-        primary_action() {
+       primary_action() {
 
-            let selected =
-                dialog.fields_dict
-                    .items_table
-                    .df
-                    .data
-                    .filter(
-                        d =>
-                            selected_rows[
-                                d.sales_invoice_item
-                            ]
-                    );
+    let selected_rows =
+        dialog.fields_dict.items_table.grid.get_selected_children();
 
-            if (!selected.length) {
+    if (!selected_rows.length) {
+        frappe.msgprint("Please select rows");
+        return;
+    }
 
-                frappe.msgprint(
-                    "Please select rows"
+    // ============================================================
+    // MERGE SAME SALES INVOICE ITEM FIRST
+    // ============================================================
+
+    let merged_rows = {};
+
+    selected_rows.forEach(d => {
+
+        let key = d.sales_invoice_item;
+
+        if (!key) {
+            key = `${d.sales_invoice || ""}-${d.item_code || ""}`;
+        }
+
+        if (!merged_rows[key]) {
+
+            merged_rows[key] = {
+                ...d,
+
+                return_qty: flt(d.return_qty || 0),
+
+                serial_nos: d.serial_nos || "",
+
+                // Keep original returnable qty
+                returnable_qty: flt(
+                    d.returnable_qty || 0
+                ),
+
+                returned_qty: flt(
+                    d.returned_qty || 0
+                )
+            };
+
+        } else {
+
+            let existing = merged_rows[key];
+
+            existing.return_qty =
+                flt(existing.return_qty) +
+                flt(d.return_qty);
+
+            existing.returned_qty =
+                Math.max(
+                    flt(existing.returned_qty),
+                    flt(d.returned_qty)
                 );
 
-                return;
+            // ----------------------------------------------------
+            // Merge serial numbers
+            // ----------------------------------------------------
+
+            let existing_serials =
+                existing.serial_nos
+                    ? existing.serial_nos
+                        .split("\n")
+                        .map(s => s.trim())
+                        .filter(Boolean)
+                    : [];
+
+            let new_serials =
+                d.serial_nos
+                    ? d.serial_nos
+                        .split("\n")
+                        .map(s => s.trim())
+                        .filter(Boolean)
+                    : [];
+
+            existing.serial_nos = [
+                ...new Set([
+                    ...existing_serials,
+                    ...new_serials
+                ])
+            ].join("\n");
+
+            // ----------------------------------------------------
+            // Important:
+            // If multiple serials belong to same SI Item,
+            // returnable qty must not remain 1.
+            //
+            // Use the larger value available from scanned rows.
+            // ----------------------------------------------------
+
+            existing.returnable_qty =
+                Math.max(
+                    flt(existing.returnable_qty),
+                    flt(d.returnable_qty),
+                    flt(existing.return_qty)
+                );
+        }
+    });
+
+    selected_rows = Object.values(merged_rows);
+
+
+    // ============================================================
+    // VALIDATE AFTER MERGING
+    // ============================================================
+
+    for (let d of selected_rows) {
+
+        let return_qty =
+            flt(d.return_qty || 0);
+
+        let returnable_qty =
+            flt(d.returnable_qty || 0);
+
+        if (return_qty <= 0) {
+
+            frappe.throw(
+                `Return Qty must be greater than 0 for Item ${d.item_code}`
+            );
+        }
+
+
+        // --------------------------------------------------------
+        // SERIALIZED ITEM
+        // --------------------------------------------------------
+
+        if (d.has_serial_no == 1) {
+
+            let serials =
+                (d.serial_nos || "")
+                    .split("\n")
+                    .map(s => s.trim())
+                    .filter(Boolean);
+
+            if (!serials.length) {
+
+                frappe.throw(
+                    `Please scan Serial Numbers for Item ${d.item_code}`
+                );
             }
 
-            for (let d of selected) {
 
-                if (
-                    !d.return_qty ||
-                    d.return_qty <= 0
-                ) {
+            // Serial count is the actual return quantity
+            let serial_qty =
+                serials.length;
 
-                    frappe.throw(
-                        `Return Qty must be greater than 0 for Item ${d.item_code}`
-                    );
-                }
+            if (serial_qty !== return_qty) {
 
-                if (
-                    flt(d.return_qty) >
-                    flt(d.returnable_qty)
-                ) {
+                d.return_qty = serial_qty;
+                return_qty = serial_qty;
+            }
+
+
+            // ----------------------------------------------------
+            // For serialized items, don't reject merely because
+            // every scan response returned returnable_qty = 1.
+            //
+            // The same SI Item can contain multiple serials.
+            // ----------------------------------------------------
+
+            if (return_qty > returnable_qty) {
+
+                // If the scanned serial count itself represents
+                // the available quantity, allow it.
+                if (serial_qty >= return_qty) {
+
+                    d.returnable_qty =
+                        Math.max(
+                            returnable_qty,
+                            return_qty
+                        );
+
+                } else {
 
                     frappe.throw(
                         `Return Qty cannot exceed Returnable Qty for Item ${d.item_code}`
                     );
                 }
-
-                if (d.has_serial_no == 1) {
-
-                    let serials =
-                        (
-                            d.serial_nos ||
-                            ""
-                        )
-                        .split("\n")
-                        .filter(
-                            s => s.trim()
-                        );
-
-                    if (!serials.length) {
-
-                        frappe.throw(
-                            `Please scan Serial Numbers for Item ${d.item_code}`
-                        );
-                    }
-
-                    if (
-                        serials.length !==
-                        flt(d.return_qty)
-                    ) {
-
-                        frappe.throw(
-                            `Serial count must match Return Qty for Item ${d.item_code}`
-                        );
-                    }
-                }
             }
 
-            // ---------------------------------------------------------
-            // MERGE SAME SI ITEM
-            // ---------------------------------------------------------
+        } else {
 
-            let merged_rows = {};
+            // ----------------------------------------------------
+            // NON-SERIALIZED ITEM
+            // ----------------------------------------------------
 
-            selected.forEach(d => {
+            if (return_qty > returnable_qty) {
 
-                let key =
-                    d.sales_invoice_item;
+                frappe.throw(
+                    `Return Qty cannot exceed Returnable Qty for Item ${d.item_code}`
+                );
+            }
+        }
+    }
 
-                if (!merged_rows[key]) {
 
-                    merged_rows[key] = {
-                        ...d
-                    };
+    // ============================================================
+    // ADD TO MAIN BULK SALES RETURN TABLE
+    // ============================================================
 
-                } else {
+    selected_rows.forEach(d => {
 
-                    merged_rows[key].return_qty =
-                        flt(
-                            merged_rows[key].return_qty
-                        ) +
-                        flt(
-                            d.return_qty
-                        );
+        let existing = frm.doc.items.find(row =>
+            row.sales_invoice_item === d.sales_invoice_item
+        );
 
-                    if (d.serial_nos) {
 
-                        merged_rows[key].serial_nos =
-                            (
-                                merged_rows[key]
-                                    .serial_nos ||
-                                ""
-                            ) +
-                            "\n" +
-                            d.serial_nos;
-                    }
-                }
-            });
+        // ========================================================
+        // EXISTING ROW
+        // ========================================================
 
-            selected =
-                Object.values(
-                    merged_rows
+        if (existing) {
+
+            let new_qty =
+                flt(existing.qty || 0) +
+                flt(d.return_qty || 0);
+
+            let existing_serials =
+                existing.serial_nos
+                    ? existing.serial_nos
+                        .split("\n")
+                        .map(s => s.trim())
+                        .filter(Boolean)
+                    : [];
+
+            let new_serials =
+                d.serial_nos
+                    ? d.serial_nos
+                        .split("\n")
+                        .map(s => s.trim())
+                        .filter(Boolean)
+                    : [];
+
+            let merged_serials = [
+                ...new Set([
+                    ...existing_serials,
+                    ...new_serials
+                ])
+            ];
+
+
+            // ----------------------------------------------------
+            // SERIALIZED ITEM
+            // ----------------------------------------------------
+
+            if (d.has_serial_no == 1) {
+
+                let serial_qty =
+                    merged_serials.length;
+
+                new_qty = serial_qty;
+            }
+
+
+            // ----------------------------------------------------
+            // Validate against existing returnable quantity
+            // ----------------------------------------------------
+
+            let allowed_qty =
+                Math.max(
+                    flt(existing.returnable_quantity || 0),
+                    flt(d.returnable_qty || 0),
+                    new_qty
                 );
 
-            // ---------------------------------------------------------
-            // ADD TO MAIN FORM
-            // ---------------------------------------------------------
+            if (new_qty > allowed_qty) {
 
-            selected.forEach(d => {
+                frappe.throw(
+                    __(
+                        "Return Qty exceeded for Item {0}. Allowed Qty: {1}",
+                        [
+                            existing.item_code,
+                            allowed_qty
+                        ]
+                    )
+                );
+            }
 
-                let existing =
-                    frm.doc.items.find(
-                        row =>
-                            row.sales_invoice_item ===
-                            d.sales_invoice_item
-                    );
 
-                if (existing) {
-
-                    let new_qty =
-                        flt(existing.qty) +
-                        flt(d.return_qty);
-
-                    if (
-                        new_qty >
-                        flt(
-                            existing.returnable_quantity
-                        )
-                    ) {
-
-                        frappe.throw(
-                            __(
-                                "Return Qty exceeded for Item {0}. Allowed Qty: {1}",
-                                [
-                                    existing.item_code,
-                                    existing.returnable_quantity
-                                ]
-                            )
-                        );
-                    }
-
-                    frappe.model.set_value(
-                        existing.doctype,
-                        existing.name,
-                        "qty",
-                        new_qty
-                    );
-
-                    if (d.serial_nos) {
-
-                        let existing_serials =
-                            existing.serial_nos
-                                ? existing.serial_nos
-                                    .split("\n")
-                                    .filter(
-                                        s => s.trim()
-                                    )
-                                : [];
-
-                        let new_serials =
-                            d.serial_nos
-                                ? d.serial_nos
-                                    .split("\n")
-                                    .filter(
-                                        s => s.trim()
-                                    )
-                                : [];
-
-                        let merged = [
-                            ...new Set([
-                                ...existing_serials,
-                                ...new_serials
-                            ])
-                        ];
-
-                        frappe.model.set_value(
-                            existing.doctype,
-                            existing.name,
-                            "serial_nos",
-                            merged.join("\n")
-                        );
-                    }
-
-                } else {
-
-                    let row =
-                        frm.add_child(
-                            "items"
-                        );
-
-                    row.item_code =
-                        d.item_code;
-
-                    row.item_name =
-                        d.item_name;
-
-                    row.qty =
-                        d.return_qty;
-
-                    row.rate =
-                        d.rate;
-
-                    row.sales_invoice =
-                        d.sales_invoice;
-
-                    row.sales_invoice_item =
-                        d.sales_invoice_item;
-
-                    row.warehouse =
-                        d.warehouse;
-
-                    row.returnable_quantity =
-                        d.returnable_qty;
-
-                    if (d.serial_nos) {
-
-                        frappe.model.set_value(
-                            row.doctype,
-                            row.name,
-                            "serial_nos",
-                            d.serial_nos
-                        );
-                    }
-                }
-            });
-
-            frm.refresh_field(
-                "items"
+            frappe.model.set_value(
+                existing.doctype,
+                existing.name,
+                "qty",
+                new_qty
             );
 
-            setTimeout(() => {
 
-                update_total_quantity(
-                    frm
+            if (d.serial_nos) {
+
+                frappe.model.set_value(
+                    existing.doctype,
+                    existing.name,
+                    "serial_nos",
+                    merged_serials.join("\n")
+                );
+            }
+
+
+            // Keep correct returnable quantity
+            if (
+                flt(existing.returnable_quantity || 0)
+                <
+                flt(d.returnable_qty || 0)
+            ) {
+
+                frappe.model.set_value(
+                    existing.doctype,
+                    existing.name,
+                    "returnable_quantity",
+                    flt(d.returnable_qty)
+                );
+            }
+
+        }
+
+        // ========================================================
+        // NEW ROW
+        // ========================================================
+
+        else {
+
+            let row =
+                frm.add_child("items");
+
+            row.item_code =
+                d.item_code;
+
+            row.item_name =
+                d.item_name;
+
+            row.qty =
+                flt(d.return_qty);
+
+            row.rate =
+                d.rate;
+
+            row.sales_invoice =
+                d.sales_invoice;
+
+            row.sales_invoice_item =
+                d.sales_invoice_item;
+
+            row.delivery_note =
+                d.delivery_note;
+
+            row.delivery_note_item =
+                d.delivery_note_item;
+
+            row.warehouse =
+                d.warehouse;
+
+            row.returnable_quantity =
+                Math.max(
+                    flt(d.returnable_qty || 0),
+                    flt(d.return_qty || 0)
                 );
 
-            }, 50);
+            if (d.serial_nos) {
 
-            dialog.hide();
+                frappe.model.set_value(
+                    row.doctype,
+                    row.name,
+                    "serial_nos",
+                    d.serial_nos
+                );
+            }
         }
+    });
+
+
+    // ============================================================
+    // REFRESH
+    // ============================================================
+
+    frm.refresh_field("items");
+
+    setTimeout(() => {
+
+        update_total_quantity(frm);
+
+    }, 50);
+
+    dialog.hide();
+}
     });
 
     dialog.show();
@@ -2010,6 +2138,7 @@ function load_returnable_items(
 }
 
 
+
 // =============================================================
 // COMMON SI / DN SCAN DIALOG
 // =============================================================
@@ -2017,6 +2146,361 @@ function load_returnable_items(
 function open_si_dn_dialog(frm) {
 
     let selected_rows = {};
+
+    // =============================================================
+    // HELPERS
+    // =============================================================
+
+    function get_serials(serial_nos) {
+
+        return (
+            serial_nos || ""
+        )
+            .split("\n")
+            .map(s => s.trim())
+            .filter(Boolean);
+    }
+
+
+    // =============================================================
+    // GET SOURCE KEY
+    //
+    // NON-SERIALIZED:
+    //     Same source item = same row
+    //
+    // SERIALIZED:
+    //     Every serial = separate row
+    // =============================================================
+
+    function get_row_key(d) {
+
+        if (!d) {
+            return null;
+        }
+
+        // ---------------------------------------------------------
+        // IMPORTANT:
+        // Serialized item must always have its own row.
+        // Serial number is therefore part of the key.
+        // ---------------------------------------------------------
+
+        if (d.has_serial_no) {
+
+            let serials =
+                get_serials(
+                    d.serial_nos
+                );
+
+            let serial =
+                serials.length
+                    ? serials[0]
+                    : d._scanned_serial;
+
+            if (
+                d.source_type ===
+                "Sales Invoice"
+            ) {
+
+                if (
+                    d.sales_invoice_item &&
+                    serial
+                ) {
+
+                    return (
+                        `SI::${d.sales_invoice_item}::SERIAL::${serial}`
+                    );
+                }
+
+            } else if (
+                d.source_type ===
+                "Delivery Note"
+            ) {
+
+                if (
+                    d.delivery_note_item &&
+                    serial
+                ) {
+
+                    return (
+                        `DN::${d.delivery_note_item}::SERIAL::${serial}`
+                    );
+                }
+            }
+        }
+
+        // ---------------------------------------------------------
+        // EXISTING MANUALLY CREATED KEY
+        // ---------------------------------------------------------
+
+        if (d._common_key) {
+            return d._common_key;
+        }
+
+        // ---------------------------------------------------------
+        // NON-SERIALIZED SALES INVOICE
+        // ---------------------------------------------------------
+
+        if (
+            d.source_type ===
+            "Sales Invoice"
+        ) {
+
+            return d.sales_invoice_item
+                ? `SI::${d.sales_invoice_item}`
+                : null;
+        }
+
+        // ---------------------------------------------------------
+        // NON-SERIALIZED DELIVERY NOTE
+        // ---------------------------------------------------------
+
+        if (
+            d.source_type ===
+            "Delivery Note"
+        ) {
+
+            return d.delivery_note_item
+                ? `DN::${d.delivery_note_item}`
+                : null;
+        }
+
+        return null;
+    }
+
+
+    // =============================================================
+    // GET NON-SERIALIZED SOURCE KEY
+    // =============================================================
+
+    function get_source_key(d) {
+
+        if (!d) {
+            return null;
+        }
+
+        if (
+            d.source_type ===
+            "Sales Invoice"
+        ) {
+
+            return d.sales_invoice_item
+                ? `SI::${d.sales_invoice_item}`
+                : null;
+        }
+
+        if (
+            d.source_type ===
+            "Delivery Note"
+        ) {
+
+            return d.delivery_note_item
+                ? `DN::${d.delivery_note_item}`
+                : null;
+        }
+
+        return null;
+    }
+
+
+    // =============================================================
+    // EXISTING MAIN FORM SERIAL CHECK
+    // =============================================================
+
+    function serial_exists_in_main_form(serial) {
+
+        let exists = false;
+
+        (
+            frm.doc.items ||
+            []
+        ).forEach(
+            row => {
+
+                if (!row.serial_nos) {
+                    return;
+                }
+
+                let serials =
+                    get_serials(
+                        row.serial_nos
+                    );
+
+                if (
+                    serials.includes(
+                        serial
+                    )
+                ) {
+
+                    exists = true;
+                }
+            }
+        );
+
+        return exists;
+    }
+
+
+    // =============================================================
+    // SERIAL ALREADY SCANNED IN DIALOG
+    // =============================================================
+
+    function serial_exists_in_dialog(
+        dialog,
+        serial
+    ) {
+
+        let rows =
+            dialog.fields_dict
+                .items_table
+                .df
+                .data || [];
+
+        return rows.some(
+            row => {
+
+                let serials =
+                    get_serials(
+                        row.serial_nos
+                    );
+
+                return serials.includes(
+                    serial
+                );
+            }
+        );
+    }
+
+
+    // =============================================================
+    // REFRESH GRID
+    // =============================================================
+
+    function refresh_dialog_grid(
+        dialog
+    ) {
+
+        let table_field =
+            dialog.fields_dict
+                .items_table;
+
+        if (!table_field) {
+            return;
+        }
+
+        let grid =
+            table_field.grid;
+
+        if (!grid) {
+            return;
+        }
+
+        grid.refresh();
+
+        frappe.after_ajax(
+            () => {
+
+                setTimeout(
+                    () => {
+
+                        if (
+                            !grid.grid_rows
+                        ) {
+                            return;
+                        }
+
+                        grid.grid_rows.forEach(
+                            gr => {
+
+                                let row =
+                                    gr.doc;
+
+                                let key =
+                                    get_row_key(
+                                        row
+                                    );
+
+                                if (!key) {
+                                    return;
+                                }
+
+                                let checkbox =
+                                    gr.wrapper.find(
+                                        ".grid-row-check"
+                                    );
+
+                                if (
+                                    !checkbox.length
+                                ) {
+                                    return;
+                                }
+
+                                let should_check =
+                                    !!selected_rows[
+                                        key
+                                    ];
+
+                                let checked =
+                                    checkbox.prop(
+                                        "checked"
+                                    );
+
+                                if (
+                                    should_check !==
+                                    checked
+                                ) {
+
+                                    checkbox.prop(
+                                        "checked",
+                                        should_check
+                                    );
+                                }
+                            }
+                        );
+
+                        update_common_scan_total(
+                            dialog,
+                            selected_rows
+                        );
+
+                    },
+                    100
+                );
+            }
+        );
+    }
+
+
+    // =============================================================
+    // FOCUS SERIAL INPUT
+    // =============================================================
+
+    function focus_serial_input(
+        delay = 100
+    ) {
+
+        setTimeout(
+            () => {
+
+                if (
+                    dialog.fields_dict.serial_no &&
+                    dialog.fields_dict.serial_no.$input
+                ) {
+
+                    dialog.fields_dict
+                        .serial_no
+                        .$input
+                        .focus();
+                }
+
+            },
+            delay
+        );
+    }
+
+
+    // =============================================================
+    // DIALOG
+    // =============================================================
 
     let dialog =
         new frappe.ui.Dialog({
@@ -2029,29 +2513,49 @@ function open_si_dn_dialog(frm) {
 
             fields: [
 
-                // -------------------------------------------------
+                // =================================================
                 // CUSTOMER
-                // -------------------------------------------------
+                // =================================================
 
                 {
-                    fieldname: "customer",
-                    label: "Customer",
-                    fieldtype: "Link",
-                    options: "Customer",
-                    default: frm.doc.customer,
-                    read_only: 1,
-                    reqd: 1
+                    fieldname:
+                        "customer",
+
+                    label:
+                        "Customer",
+
+                    fieldtype:
+                        "Link",
+
+                    options:
+                        "Customer",
+
+                    default:
+                        frm.doc.customer,
+
+                    read_only:
+                        1,
+
+                    reqd:
+                        1
                 },
 
-                // -------------------------------------------------
-                // ITEM
-                // -------------------------------------------------
+                // =================================================
+                // ITEM FILTER
+                // =================================================
 
                 {
-                    fieldname: "item_code",
-                    label: "Item",
-                    fieldtype: "Link",
-                    options: "Item",
+                    fieldname:
+                        "item_code",
+
+                    label:
+                        "Item",
+
+                    fieldtype:
+                        "Link",
+
+                    options:
+                        "Item",
 
                     onchange() {
 
@@ -2063,15 +2567,22 @@ function open_si_dn_dialog(frm) {
                     }
                 },
 
-                // -------------------------------------------------
+                // =================================================
                 // SERIAL SCAN
-                // -------------------------------------------------
+                // =================================================
 
                 {
-                    fieldname: "serial_no",
-                    label: "Scan Serial",
-                    fieldtype: "Data",
-                    options: "Barcode",
+                    fieldname:
+                        "serial_no",
+
+                    label:
+                        "Scan Serial",
+
+                    fieldtype:
+                        "Data",
+
+                    options:
+                        "Barcode",
 
                     onchange() {
 
@@ -2085,6 +2596,73 @@ function open_si_dn_dialog(frm) {
                         if (!serial) {
                             return;
                         }
+
+                        // =================================================
+                        // DUPLICATE SERIAL - MAIN FORM
+                        // =================================================
+
+                        if (
+                            serial_exists_in_main_form(
+                                serial
+                            )
+                        ) {
+
+                            frappe.msgprint(
+                                __(
+                                    "Serial {0} already exists in the Items table.",
+                                    [
+                                        serial
+                                    ]
+                                )
+                            );
+
+                            dialog.set_value(
+                                "serial_no",
+                                ""
+                            );
+
+                            focus_serial_input(
+                                100
+                            );
+
+                            return;
+                        }
+
+                        // =================================================
+                        // DUPLICATE SERIAL - CURRENT DIALOG
+                        // =================================================
+
+                        if (
+                            serial_exists_in_dialog(
+                                dialog,
+                                serial
+                            )
+                        ) {
+
+                            frappe.msgprint(
+                                __(
+                                    "Serial {0} is already scanned.",
+                                    [
+                                        serial
+                                    ]
+                                )
+                            );
+
+                            dialog.set_value(
+                                "serial_no",
+                                ""
+                            );
+
+                            focus_serial_input(
+                                100
+                            );
+
+                            return;
+                        }
+
+                        // =================================================
+                        // GET SOURCE
+                        // =================================================
 
                         frappe.call({
 
@@ -2105,7 +2683,8 @@ function open_si_dn_dialog(frm) {
                                     )
                             },
 
-                            freeze: true,
+                            freeze:
+                                true,
 
                             freeze_message:
                                 "Finding return source...",
@@ -2113,14 +2692,21 @@ function open_si_dn_dialog(frm) {
                             callback:
                                 function(r) {
 
-                                    // -----------------------------------------
+                                    // =================================================
                                     // NOT FOUND
-                                    // -----------------------------------------
+                                    // =================================================
 
-                                    if (!r.message) {
+                                    if (
+                                        !r.message
+                                    ) {
 
                                         frappe.msgprint(
-                                            `Serial ${serial} was not found in any submitted Sales Invoice or Delivery Note.`
+                                            __(
+                                                "Serial {0} was not found in any submitted Sales Invoice or Delivery Note.",
+                                                [
+                                                    serial
+                                                ]
+                                            )
                                         );
 
                                         dialog.set_value(
@@ -2128,15 +2714,7 @@ function open_si_dn_dialog(frm) {
                                             ""
                                         );
 
-                                        setTimeout(
-                                            () => {
-
-                                                dialog.fields_dict
-                                                    .serial_no
-                                                    .$input
-                                                    .focus();
-
-                                            },
+                                        focus_serial_input(
                                             100
                                         );
 
@@ -2146,44 +2724,159 @@ function open_si_dn_dialog(frm) {
                                     let d =
                                         r.message;
 
-                                    // -----------------------------------------
-                                    // DUPLICATE SERIAL
-                                    // -----------------------------------------
+                                    // =================================================
+                                    // SERIAL FLAG
+                                    // =================================================
 
-                                    let serial_exists =
-                                        false;
+                                    let is_serialized =
+                                        !!d.has_serial_no;
 
-                                    (
-                                        frm.doc.items ||
-                                        []
-                                    ).forEach(
-                                        row => {
-
-                                            if (
-                                                row.serial_nos &&
-                                                row.serial_nos
-                                                    .split("\n")
-                                                    .map(
-                                                        s =>
-                                                            s.trim()
-                                                    )
-                                                    .includes(
-                                                        serial
-                                                    )
-                                            ) {
-
-                                                serial_exists =
-                                                    true;
-                                            }
-                                        }
-                                    );
+                                    // =================================================
+                                    // SERIALIZED ITEM
+                                    //
+                                    // VERY IMPORTANT:
+                                    // DO NOT MERGE WITH EXISTING ROW.
+                                    //
+                                    // Every scanned serial gets a new row.
+                                    // =================================================
 
                                     if (
-                                        serial_exists
+                                        is_serialized
+                                    ) {
+
+                                        // ---------------------------------------------
+                                        // Each serial is one independent row.
+                                        // ---------------------------------------------
+
+                                        d._scanned_serial =
+                                            serial;
+
+                                        d._common_key =
+                                            get_row_key(
+                                                {
+                                                    ...d,
+                                                    serial_nos:
+                                                        serial
+                                                }
+                                            );
+
+                                        // ---------------------------------------------
+                                        // Safety check
+                                        // ---------------------------------------------
+
+                                        if (
+                                            !d._common_key
+                                        ) {
+
+                                            frappe.msgprint(
+                                                __(
+                                                    "Unable to identify the return source for Serial {0}.",
+                                                    [
+                                                        serial
+                                                    ]
+                                                )
+                                            );
+
+                                            dialog.set_value(
+                                                "serial_no",
+                                                ""
+                                            );
+
+                                            focus_serial_input(
+                                                100
+                                            );
+
+                                            return;
+                                        }
+
+                                        // ---------------------------------------------
+                                        // ONE SERIAL = ONE QTY
+                                        // ---------------------------------------------
+
+                                        d.return_qty =
+                                            1;
+
+                                        d.serial_nos =
+                                            serial;
+
+                                        // ---------------------------------------------
+                                        // IMPORTANT:
+                                        //
+                                        // Do NOT check:
+                                        //
+                                        // current_count >= returnable
+                                        //
+                                        // because each serial is its own row.
+                                        // ---------------------------------------------
+
+                                        selected_rows[
+                                            d._common_key
+                                        ] = true;
+
+                                        // ---------------------------------------------
+                                        // ALWAYS CREATE NEW ROW
+                                        // ---------------------------------------------
+
+                                        let rows =
+                                            dialog.fields_dict
+                                                .items_table
+                                                .df
+                                                .data || [];
+
+                                        rows.unshift(
+                                            d
+                                        );
+
+                                        dialog.fields_dict
+                                            .items_table
+                                            .df
+                                            .data =
+                                            rows;
+
+                                        // ---------------------------------------------
+                                        // REFRESH GRID
+                                        // ---------------------------------------------
+
+                                        refresh_dialog_grid(
+                                            dialog
+                                        );
+
+                                        // ---------------------------------------------
+                                        // CLEAR SCAN
+                                        // ---------------------------------------------
+
+                                        dialog.set_value(
+                                            "serial_no",
+                                            ""
+                                        );
+
+                                        focus_serial_input(
+                                            200
+                                        );
+
+                                        return;
+                                    }
+
+                                    // =================================================
+                                    // NON-SERIALIZED ITEM
+                                    // =================================================
+
+                                    let common_key =
+                                        get_source_key(
+                                            d
+                                        );
+
+                                    if (
+                                        !common_key
                                     ) {
 
                                         frappe.msgprint(
-                                            `Serial ${serial} already exists in the Items table.`
+                                            __(
+                                                "Unable to identify the return source for Item {0}.",
+                                                [
+                                                    d.item_code
+                                                ]
+                                            )
                                         );
 
                                         dialog.set_value(
@@ -2191,168 +2884,172 @@ function open_si_dn_dialog(frm) {
                                             ""
                                         );
 
-                                        setTimeout(
-                                            () => {
-
-                                                dialog.fields_dict
-                                                    .serial_no
-                                                    .$input
-                                                    .focus();
-
-                                            },
+                                        focus_serial_input(
                                             100
                                         );
 
                                         return;
                                     }
 
-                                    // -----------------------------------------
-                                    // GRID DATA
-                                    // -----------------------------------------
-
-                                    let grid =
-                                        dialog.fields_dict
-                                            .items_table
-                                            .grid;
-
-                                    let rows =
-                                        dialog.fields_dict
-                                            .items_table
-                                            .df
-                                            .data || [];
-
-                                    // -----------------------------------------
-                                    // UNIQUE KEY
-                                    // -----------------------------------------
-
-                                    let common_key;
-
-                                    if (
-                                        d.source_type ===
-                                        "Sales Invoice"
-                                    ) {
-
-                                        common_key =
-                                            `SI::${d.sales_invoice_item}`;
-
-                                    } else {
-
-                                        common_key =
-                                            `DN::${d.delivery_note_item}`;
-                                    }
-
                                     d._common_key =
                                         common_key;
 
-                                    // -----------------------------------------
-                                    // FIND EXISTING ROW
-                                    // -----------------------------------------
+                                    let table_field =
+                                        dialog.fields_dict
+                                            .items_table;
+
+                                    let rows =
+                                        table_field
+                                            .df
+                                            .data || [];
+
+                                    // =================================================
+                                    // FIND EXISTING NON-SERIALIZED ROW
+                                    // =================================================
 
                                     let index =
                                         rows.findIndex(
                                             row =>
-                                                row._common_key ===
-                                                common_key
+                                                get_source_key(
+                                                    row
+                                                ) ===
+                                                common_key &&
+                                                !row.has_serial_no
                                         );
 
-                                    // -----------------------------------------
-                                    // EXISTING ROW
-                                    // -----------------------------------------
+                                    // =================================================
+                                    // EXISTING NON-SERIALIZED ROW
+                                    // =================================================
 
                                     if (
-                                        index !== -1
+                                        index !==
+                                        -1
                                     ) {
 
                                         let existing =
                                             rows[index];
 
-                                        let existing_serials =
-                                            existing.serial_nos
-                                                ? existing.serial_nos
-                                                    .split("\n")
-                                                    .map(
-                                                        s =>
-                                                            s.trim()
-                                                    )
-                                                    .filter(
-                                                        Boolean
-                                                    )
-                                                : [];
+                                        let current_qty =
+                                            flt(
+                                                existing.return_qty
+                                            );
+
+                                        let returnable =
+                                            flt(
+                                                existing.returnable_qty
+                                            );
+
+                                        let new_qty =
+                                            current_qty +
+                                            1;
+
+                                        // ---------------------------------------------
+                                        // NON-SERIALIZED LIMIT
+                                        // ---------------------------------------------
 
                                         if (
-                                            existing_serials
-                                                .includes(
-                                                    serial
-                                                )
+                                            new_qty >
+                                            returnable
                                         ) {
 
                                             frappe.msgprint(
-                                                `Serial ${serial} already scanned.`
+                                                __(
+                                                    "Return Qty cannot exceed Returnable Qty for Item {0}. Allowed Qty: {1}",
+                                                    [
+                                                        existing.item_code,
+                                                        returnable
+                                                    ]
+                                                )
                                             );
 
-                                        } else {
-
-                                            existing_serials.push(
-                                                serial
+                                            dialog.set_value(
+                                                "serial_no",
+                                                ""
                                             );
 
-                                            existing.serial_nos =
-                                                existing_serials
-                                                    .join("\n");
-
-                                            existing.return_qty =
-                                                existing_serials.length;
-
-                                            selected_rows[
-                                                common_key
-                                            ] = true;
-
-                                            // ---------------------------------
-                                            // IMPORTANT:
-                                            // Preserve DN information if
-                                            // returned by backend.
-                                            // ---------------------------------
-
-                                            if (
-                                                d.delivery_note
-                                            ) {
-
-                                                existing.delivery_note =
-                                                    d.delivery_note;
-                                            }
-
-                                            if (
-                                                d.delivery_note_item
-                                            ) {
-
-                                                existing.delivery_note_item =
-                                                    d.delivery_note_item;
-                                            }
-
-                                            // Move to top
-                                            rows.splice(
-                                                index,
-                                                1
+                                            focus_serial_input(
+                                                100
                                             );
 
-                                            rows.unshift(
-                                                existing
-                                            );
+                                            return;
                                         }
 
+                                        existing.return_qty =
+                                            new_qty;
+
+                                        selected_rows[
+                                            common_key
+                                        ] = true;
+
+                                        // ---------------------------------------------
+                                        // PRESERVE DN
+                                        // ---------------------------------------------
+
+                                        if (
+                                            d.delivery_note
+                                        ) {
+
+                                            existing.delivery_note =
+                                                d.delivery_note;
+                                        }
+
+                                        if (
+                                            d.delivery_note_item
+                                        ) {
+
+                                            existing.delivery_note_item =
+                                                d.delivery_note_item;
+                                        }
+
+                                        // ---------------------------------------------
+                                        // MOVE TO TOP
+                                        // ---------------------------------------------
+
+                                        rows.splice(
+                                            index,
+                                            1
+                                        );
+
+                                        rows.unshift(
+                                            existing
+                                        );
                                     }
 
-                                    // -----------------------------------------
-                                    // NEW ROW
-                                    // -----------------------------------------
+                                    // =================================================
+                                    // NEW NON-SERIALIZED ROW
+                                    // =================================================
 
                                     else {
 
+                                        if (
+                                            flt(
+                                                d.returnable_qty
+                                            ) <= 0
+                                        ) {
+
+                                            frappe.msgprint(
+                                                __(
+                                                    "No returnable quantity is available for Item {0}.",
+                                                    [
+                                                        d.item_code
+                                                    ]
+                                                )
+                                            );
+
+                                            dialog.set_value(
+                                                "serial_no",
+                                                ""
+                                            );
+
+                                            focus_serial_input(
+                                                100
+                                            );
+
+                                            return;
+                                        }
+
                                         d.return_qty =
                                             1;
-
-                                        d.serial_nos =
-                                            serial;
 
                                         selected_rows[
                                             common_key
@@ -2363,105 +3060,29 @@ function open_si_dn_dialog(frm) {
                                         );
                                     }
 
-                                    // -----------------------------------------
+                                    // =================================================
                                     // SET DATA
-                                    // -----------------------------------------
+                                    // =================================================
 
-                                    dialog.fields_dict
-                                        .items_table
+                                    table_field
                                         .df
                                         .data =
                                         rows;
 
-                                    grid.refresh();
-
-                                    // -----------------------------------------
-                                    // SELECT CHECKBOX
-                                    // -----------------------------------------
-
-                                    frappe.after_ajax(
-                                        () => {
-
-                                            setTimeout(
-                                                () => {
-
-                                                    let grid_rows =
-                                                        dialog.fields_dict
-                                                            .items_table
-                                                            .grid
-                                                            .grid_rows;
-
-                                                    grid_rows.forEach(
-                                                        gr => {
-
-                                                            let row =
-                                                                gr.doc;
-
-                                                            let key =
-                                                                row._common_key;
-
-                                                            let checkbox =
-                                                                gr.wrapper
-                                                                    .find(
-                                                                        ".grid-row-check"
-                                                                    );
-
-                                                            let should_check =
-                                                                !!selected_rows[
-                                                                    key
-                                                                ];
-
-                                                            if (
-                                                                should_check &&
-                                                                !checkbox.prop(
-                                                                    "checked"
-                                                                )
-                                                            ) {
-
-                                                                checkbox.click();
-                                                            }
-
-                                                            else if (
-                                                                !should_check &&
-                                                                checkbox.prop(
-                                                                    "checked"
-                                                                )
-                                                            ) {
-
-                                                                checkbox.click();
-                                                            }
-                                                        }
-                                                    );
-
-                                                    update_common_scan_total(
-                                                        dialog,
-                                                        selected_rows
-                                                    );
-
-                                                },
-                                                150
-                                            );
-                                        }
+                                    refresh_dialog_grid(
+                                        dialog
                                     );
 
-                                    // -----------------------------------------
+                                    // =================================================
                                     // CLEAR SCAN
-                                    // -----------------------------------------
+                                    // =================================================
 
                                     dialog.set_value(
                                         "serial_no",
                                         ""
                                     );
 
-                                    setTimeout(
-                                        () => {
-
-                                            dialog.fields_dict
-                                                .serial_no
-                                                .$input
-                                                .focus();
-
-                                        },
+                                    focus_serial_input(
                                         200
                                     );
                                 }
@@ -2469,9 +3090,9 @@ function open_si_dn_dialog(frm) {
                     }
                 },
 
-                // -------------------------------------------------
-                // TOTAL
-                // -------------------------------------------------
+                // =================================================
+                // TOTAL QUANTITY
+                // =================================================
 
                 {
                     fieldname:
@@ -2490,9 +3111,9 @@ function open_si_dn_dialog(frm) {
                         0
                 },
 
-                // -------------------------------------------------
+                // =================================================
                 // ITEMS TABLE
-                // -------------------------------------------------
+                // =================================================
 
                 {
                     fieldname:
@@ -2511,6 +3132,10 @@ function open_si_dn_dialog(frm) {
                         true,
 
                     fields: [
+
+                        // ---------------------------------------------
+                        // SOURCE
+                        // ---------------------------------------------
 
                         {
                             fieldname:
@@ -2532,6 +3157,10 @@ function open_si_dn_dialog(frm) {
                                 1
                         },
 
+                        // ---------------------------------------------
+                        // SALES INVOICE
+                        // ---------------------------------------------
+
                         {
                             fieldname:
                                 "sales_invoice",
@@ -2551,6 +3180,10 @@ function open_si_dn_dialog(frm) {
                             columns:
                                 2
                         },
+
+                        // ---------------------------------------------
+                        // DELIVERY NOTE
+                        // ---------------------------------------------
 
                         {
                             fieldname:
@@ -2572,6 +3205,10 @@ function open_si_dn_dialog(frm) {
                                 2
                         },
 
+                        // ---------------------------------------------
+                        // ITEM
+                        // ---------------------------------------------
+
                         {
                             fieldname:
                                 "item_code",
@@ -2591,6 +3228,10 @@ function open_si_dn_dialog(frm) {
                             columns:
                                 2
                         },
+
+                        // ---------------------------------------------
+                        // RETURNABLE
+                        // ---------------------------------------------
 
                         {
                             fieldname:
@@ -2612,6 +3253,10 @@ function open_si_dn_dialog(frm) {
                                 1
                         },
 
+                        // ---------------------------------------------
+                        // RETURNED
+                        // ---------------------------------------------
+
                         {
                             fieldname:
                                 "returned_qty",
@@ -2631,6 +3276,10 @@ function open_si_dn_dialog(frm) {
                             columns:
                                 1
                         },
+
+                        // ---------------------------------------------
+                        // RETURN QTY
+                        // ---------------------------------------------
 
                         {
                             fieldname:
@@ -2657,54 +3306,72 @@ function open_si_dn_dialog(frm) {
                                     return;
                                 }
 
-                                // -----------------------------------------
+                                // =====================================
                                 // SERIALIZED
-                                // -----------------------------------------
+                                //
+                                // ALWAYS ONE SERIAL = ONE QTY
+                                // =====================================
 
                                 if (
                                     d.has_serial_no
                                 ) {
 
-                                    let serial_count =
-                                        (
-                                            d.serial_nos ||
-                                            ""
-                                        )
-                                        .split("\n")
-                                        .map(
-                                            s =>
-                                                s.trim()
-                                        )
-                                        .filter(
-                                            Boolean
-                                        )
-                                        .length;
+                                    let serials =
+                                        get_serials(
+                                            d.serial_nos
+                                        );
 
                                     d.return_qty =
-                                        serial_count;
+                                        serials.length;
+
+                                    // ---------------------------------
+                                    // Serialized dialog row must
+                                    // contain exactly one serial.
+                                    // ---------------------------------
+
+                                    if (
+                                        serials.length >
+                                        1
+                                    ) {
+
+                                        d.serial_nos =
+                                            serials[0];
+
+                                        d.return_qty =
+                                            1;
+                                    }
+
+                                    return;
                                 }
 
-                                // -----------------------------------------
-                                // QTY VALIDATION
-                                // -----------------------------------------
+                                // =====================================
+                                // NON-SERIALIZED
+                                // =====================================
 
-                                if (
-                                    flt(
-                                        d.return_qty
-                                    ) >
+                                let returnable =
                                     flt(
                                         d.returnable_qty
-                                    )
+                                    );
+
+                                let qty =
+                                    flt(
+                                        d.return_qty
+                                    );
+
+                                if (
+                                    qty >
+                                    returnable
                                 ) {
 
                                     d.return_qty =
-                                        d.returnable_qty;
+                                        returnable;
 
                                     frappe.msgprint(
                                         __(
-                                            "Return Qty cannot exceed Returnable Qty for Item {0}",
+                                            "Return Qty cannot exceed Returnable Qty for Item {0}. Allowed Qty: {1}",
                                             [
-                                                d.item_code
+                                                d.item_code,
+                                                returnable
                                             ]
                                         )
                                     );
@@ -2716,6 +3383,10 @@ function open_si_dn_dialog(frm) {
                                 );
                             }
                         },
+
+                        // ---------------------------------------------
+                        // SERIAL NOS
+                        // ---------------------------------------------
 
                         {
                             fieldname:
@@ -2740,6 +3411,10 @@ function open_si_dn_dialog(frm) {
                 }
             ],
 
+            // =========================================================
+            // PRIMARY ACTION
+            // =========================================================
+
             primary_action_label:
                 "Add Selected Items",
 
@@ -2751,28 +3426,31 @@ function open_si_dn_dialog(frm) {
                         .df
                         .data || [];
 
+                // =====================================================
+                // GET SELECTED
+                // =====================================================
+
                 let selected =
                     all_rows.filter(
                         row => {
 
                             let key =
-                                row._common_key ||
-                                (
-                                    row.source_type ===
-                                    "Sales Invoice"
-
-                                        ? `SI::${row.sales_invoice_item}`
-
-                                        : `DN::${row.delivery_note_item}`
+                                get_row_key(
+                                    row
                                 );
 
-                            return !!selected_rows[
-                                key
-                            ];
+                            return (
+                                key &&
+                                !!selected_rows[
+                                    key
+                                ]
+                            );
                         }
                     );
 
-                if (!selected.length) {
+                if (
+                    !selected.length
+                ) {
 
                     frappe.msgprint(
                         "Please select rows."
@@ -2781,88 +3459,217 @@ function open_si_dn_dialog(frm) {
                     return;
                 }
 
-                // ---------------------------------------------------------
-                // VALIDATE
-                // ---------------------------------------------------------
+                // =====================================================
+                // VALIDATE SELECTED ROWS
+                // =====================================================
 
                 for (
                     let d of selected
                 ) {
 
-                    if (
-                        !d.return_qty ||
-                        flt(d.return_qty) <= 0
-                    ) {
-
-                        frappe.throw(
-                            `Return Qty must be greater than 0 for Item ${d.item_code}`
-                        );
-                    }
-
-                    if (
-                        flt(d.return_qty) >
-                        flt(d.returnable_qty)
-                    ) {
-
-                        frappe.throw(
-                            `Return Qty cannot exceed Returnable Qty for Item ${d.item_code}`
-                        );
-                    }
+                    // =================================================
+                    // SERIALIZED
+                    // =================================================
 
                     if (
                         d.has_serial_no
                     ) {
 
                         let serials =
-                            (
-                                d.serial_nos ||
-                                ""
-                            )
-                            .split("\n")
-                            .map(
-                                s =>
-                                    s.trim()
-                            )
-                            .filter(
-                                Boolean
+                            get_serials(
+                                d.serial_nos
                             );
 
-                        if (
-                            !serials.length
-                        ) {
-
-                            frappe.throw(
-                                `Please scan Serial Number for Item ${d.item_code}`
-                            );
-                        }
+                        // ---------------------------------------------
+                        // SERIAL REQUIRED
+                        // ---------------------------------------------
 
                         if (
                             serials.length !==
-                            flt(d.return_qty)
+                            1
                         ) {
 
                             frappe.throw(
-                                `Serial count must match Return Qty for Item ${d.item_code}`
+                                __(
+                                    "Each serialized item row must contain exactly one Serial Number for Item {0}.",
+                                    [
+                                        d.item_code
+                                    ]
+                                )
                             );
                         }
+
+                        // ---------------------------------------------
+                        // ONE SERIAL = ONE QTY
+                        // ---------------------------------------------
+
+                        if (
+                            flt(
+                                d.return_qty
+                            ) !== 1
+                        ) {
+
+                            frappe.throw(
+                                __(
+                                    "Return Qty must be 1 for serialized Item {0}.",
+                                    [
+                                        d.item_code
+                                    ]
+                                )
+                            );
+                        }
+
+                        continue;
+                    }
+
+                    // =================================================
+                    // NON-SERIALIZED
+                    // =================================================
+
+                    let qty =
+                        flt(
+                            d.return_qty
+                        );
+
+                    let returnable =
+                        flt(
+                            d.returnable_qty
+                        );
+
+                    // ---------------------------------------------
+                    // QTY > 0
+                    // ---------------------------------------------
+
+                    if (
+                        qty <= 0
+                    ) {
+
+                        frappe.throw(
+                            __(
+                                "Return Qty must be greater than 0 for Item {0}.",
+                                [
+                                    d.item_code
+                                ]
+                            )
+                        );
+                    }
+
+                    // ---------------------------------------------
+                    // QTY > RETURNABLE
+                    // ---------------------------------------------
+
+                    if (
+                        qty >
+                        returnable
+                    ) {
+
+                        frappe.throw(
+                            __(
+                                "Return Qty cannot exceed Returnable Qty for Item {0}. Allowed Qty: {1}, Requested Qty: {2}",
+                                [
+                                    d.item_code,
+                                    returnable,
+                                    qty
+                                ]
+                            )
+                        );
                     }
                 }
 
-                // ---------------------------------------------------------
-                // ADD ITEMS TO MAIN FORM
-                // ---------------------------------------------------------
+                // =====================================================
+                // ADD TO MAIN FORM
+                // =====================================================
 
                 selected.forEach(
                     d => {
 
                         // =================================================
-                        // SALES INVOICE SOURCE
+                        // SALES INVOICE
                         // =================================================
 
                         if (
                             d.source_type ===
                             "Sales Invoice"
                         ) {
+
+                            // =============================================
+                            // SERIALIZED SI
+                            //
+                            // IMPORTANT:
+                            // ALWAYS CREATE NEW ROW.
+                            // DO NOT MERGE BY sales_invoice_item.
+                            // =============================================
+
+                            if (
+                                d.has_serial_no
+                            ) {
+
+                                let row =
+                                    frm.add_child(
+                                        "items"
+                                    );
+
+                                row.item_code =
+                                    d.item_code;
+
+                                row.item_name =
+                                    d.item_name;
+
+                                row.qty =
+                                    1;
+
+                                row.rate =
+                                    d.rate;
+
+                                row.sales_invoice =
+                                    d.sales_invoice;
+
+                                row.sales_invoice_item =
+                                    d.sales_invoice_item;
+
+                                row.warehouse =
+                                    d.warehouse;
+
+                                row.returnable_quantity =
+                                    d.returnable_qty;
+
+                                // -----------------------------------------
+                                // SI -> DN RELATION
+                                // -----------------------------------------
+
+                                if (
+                                    d.delivery_note
+                                ) {
+
+                                    row.delivery_note =
+                                        d.delivery_note;
+                                }
+
+                                if (
+                                    d.delivery_note_item
+                                ) {
+
+                                    row.delivery_note_item =
+                                        d.delivery_note_item;
+                                }
+
+                                // -----------------------------------------
+                                // SERIAL
+                                // -----------------------------------------
+
+                                frappe.model.set_value(
+                                    row.doctype,
+                                    row.name,
+                                    "serial_nos",
+                                    d.serial_nos
+                                );
+
+                                return;
+                            }
+
+                            // =============================================
+                            // NON-SERIALIZED SI
+                            // =============================================
 
                             let existing =
                                 frm.doc.items.find(
@@ -2871,7 +3678,9 @@ function open_si_dn_dialog(frm) {
                                         d.sales_invoice_item
                                 );
 
-                            if (existing) {
+                            if (
+                                existing
+                            ) {
 
                                 let new_qty =
                                     flt(
@@ -2884,16 +3693,17 @@ function open_si_dn_dialog(frm) {
                                 if (
                                     new_qty >
                                     flt(
-                                        existing.returnable_quantity
+                                        d.returnable_qty
                                     )
                                 ) {
 
                                     frappe.throw(
                                         __(
-                                            "Return Qty exceeded for Item {0}. Allowed Qty: {1}",
+                                            "Return Qty exceeded for Item {0}. Allowed Qty: {1}, Requested Total: {2}",
                                             [
                                                 existing.item_code,
-                                                existing.returnable_quantity
+                                                d.returnable_qty,
+                                                new_qty
                                             ]
                                         )
                                     );
@@ -2907,9 +3717,7 @@ function open_si_dn_dialog(frm) {
                                 );
 
                                 // -----------------------------------------
-                                // IMPORTANT:
-                                // If SI item has DN reference,
-                                // preserve it in existing row.
+                                // PRESERVE DN
                                 // -----------------------------------------
 
                                 if (
@@ -2933,45 +3741,6 @@ function open_si_dn_dialog(frm) {
                                         existing.name,
                                         "delivery_note_item",
                                         d.delivery_note_item
-                                    );
-                                }
-
-                                // -----------------------------------------
-                                // SERIALS
-                                // -----------------------------------------
-
-                                if (
-                                    d.serial_nos
-                                ) {
-
-                                    let old_serials =
-                                        existing.serial_nos
-                                            ? existing.serial_nos
-                                                .split("\n")
-                                                .filter(
-                                                    Boolean
-                                                )
-                                            : [];
-
-                                    let new_serials =
-                                        d.serial_nos
-                                            .split("\n")
-                                            .filter(
-                                                Boolean
-                                            );
-
-                                    let merged = [
-                                        ...new Set([
-                                            ...old_serials,
-                                            ...new_serials
-                                        ])
-                                    ];
-
-                                    frappe.model.set_value(
-                                        existing.doctype,
-                                        existing.name,
-                                        "serial_nos",
-                                        merged.join("\n")
                                     );
                                 }
 
@@ -3007,8 +3776,7 @@ function open_si_dn_dialog(frm) {
                                     d.returnable_qty;
 
                                 // -----------------------------------------
-                                // IMPORTANT:
-                                // SI -> DN relation
+                                // SI -> DN RELATION
                                 // -----------------------------------------
 
                                 if (
@@ -3026,29 +3794,83 @@ function open_si_dn_dialog(frm) {
                                     row.delivery_note_item =
                                         d.delivery_note_item;
                                 }
-
-                                if (
-                                    d.serial_nos
-                                ) {
-
-                                    frappe.model.set_value(
-                                        row.doctype,
-                                        row.name,
-                                        "serial_nos",
-                                        d.serial_nos
-                                    );
-                                }
                             }
                         }
 
                         // =================================================
-                        // DELIVERY NOTE SOURCE
+                        // DELIVERY NOTE
                         // =================================================
 
                         else if (
                             d.source_type ===
                             "Delivery Note"
                         ) {
+
+                            // =============================================
+                            // SERIALIZED DN
+                            //
+                            // ALWAYS CREATE NEW ROW.
+                            // =============================================
+
+                            if (
+                                d.has_serial_no
+                            ) {
+
+                                let row =
+                                    frm.add_child(
+                                        "items"
+                                    );
+
+                                row.delivery_note =
+                                    d.delivery_note;
+
+                                row.delivery_note_item =
+                                    d.delivery_note_item;
+
+                                row.item_code =
+                                    d.item_code;
+
+                                row.item_name =
+                                    d.item_name;
+
+                                row.qty =
+                                    1;
+
+                                row.uom =
+                                    d.uom;
+
+                                row.stock_uom =
+                                    d.stock_uom;
+
+                                row.conversion_factor =
+                                    d.conversion_factor;
+
+                                row.rate =
+                                    d.rate;
+
+                                row.warehouse =
+                                    d.warehouse;
+
+                                row.returnable_quantity =
+                                    d.returnable_qty;
+
+                                // -----------------------------------------
+                                // SERIAL
+                                // -----------------------------------------
+
+                                frappe.model.set_value(
+                                    row.doctype,
+                                    row.name,
+                                    "serial_nos",
+                                    d.serial_nos
+                                );
+
+                                return;
+                            }
+
+                            // =============================================
+                            // NON-SERIALIZED DN
+                            // =============================================
 
                             let existing =
                                 frm.doc.items.find(
@@ -3059,7 +3881,9 @@ function open_si_dn_dialog(frm) {
                                             d.warehouse
                                 );
 
-                            if (existing) {
+                            if (
+                                existing
+                            ) {
 
                                 let new_qty =
                                     flt(
@@ -3072,16 +3896,17 @@ function open_si_dn_dialog(frm) {
                                 if (
                                     new_qty >
                                     flt(
-                                        existing.returnable_quantity
+                                        d.returnable_qty
                                     )
                                 ) {
 
                                     frappe.throw(
                                         __(
-                                            "Return Qty exceeded for Item {0}. Allowed Qty: {1}",
+                                            "Return Qty exceeded for Item {0}. Allowed Qty: {1}, Requested Total: {2}",
                                             [
                                                 existing.item_code,
-                                                existing.returnable_quantity
+                                                d.returnable_qty,
+                                                new_qty
                                             ]
                                         )
                                     );
@@ -3093,41 +3918,6 @@ function open_si_dn_dialog(frm) {
                                     "qty",
                                     new_qty
                                 );
-
-                                if (
-                                    d.serial_nos
-                                ) {
-
-                                    let old_serials =
-                                        existing.serial_nos
-                                            ? existing.serial_nos
-                                                .split("\n")
-                                                .filter(
-                                                    Boolean
-                                                )
-                                            : [];
-
-                                    let new_serials =
-                                        d.serial_nos
-                                            .split("\n")
-                                            .filter(
-                                                Boolean
-                                            );
-
-                                    let merged = [
-                                        ...new Set([
-                                            ...old_serials,
-                                            ...new_serials
-                                        ])
-                                    ];
-
-                                    frappe.model.set_value(
-                                        existing.doctype,
-                                        existing.name,
-                                        "serial_nos",
-                                        merged.join("\n")
-                                    );
-                                }
 
                             } else {
 
@@ -3168,22 +3958,14 @@ function open_si_dn_dialog(frm) {
 
                                 row.returnable_quantity =
                                     d.returnable_qty;
-
-                                if (
-                                    d.serial_nos
-                                ) {
-
-                                    frappe.model.set_value(
-                                        row.doctype,
-                                        row.name,
-                                        "serial_nos",
-                                        d.serial_nos
-                                    );
-                                }
                             }
                         }
                     }
                 );
+
+                // =====================================================
+                // REFRESH MAIN FORM
+                // =====================================================
 
                 frm.refresh_field(
                     "items"
@@ -3200,15 +3982,21 @@ function open_si_dn_dialog(frm) {
                     50
                 );
 
+                // =====================================================
+                // CLOSE
+                // =====================================================
+
                 dialog.hide();
             }
         });
+
 
     // =============================================================
     // SHOW
     // =============================================================
 
     dialog.show();
+
 
     // =============================================================
     // CHECKBOX CHANGE
@@ -3219,38 +4007,91 @@ function open_si_dn_dialog(frm) {
         ".grid-row-check",
         function() {
 
+            let checkbox =
+                $(this);
+
             let grid =
                 dialog.fields_dict
                     .items_table
                     .grid;
 
-            grid.grid_rows.forEach(
-                gr => {
+            let grid_row =
+                checkbox.closest(
+                    ".grid-row"
+                );
 
-                    let row =
-                        gr.doc;
+            let row_name =
+                grid_row.attr(
+                    "data-name"
+                );
 
-                    let key =
-                        row._common_key ||
-                        (
-                            row.source_type ===
-                            "Sales Invoice"
+            let target_row =
+                null;
 
-                                ? `SI::${row.sales_invoice_item}`
+            // ---------------------------------------------------------
+            // DIRECT LOOKUP
+            // ---------------------------------------------------------
 
-                                : `DN::${row.delivery_note_item}`
-                        );
+            if (
+                row_name &&
+                grid.grid_rows_by_docname
+            ) {
 
-                    let checked =
-                        gr.wrapper
-                            .find(
-                                ".grid-row-check"
+                target_row =
+                    grid.grid_rows_by_docname[
+                        row_name
+                    ];
+            }
+
+            // ---------------------------------------------------------
+            // FALLBACK
+            // ---------------------------------------------------------
+
+            if (
+                !target_row &&
+                grid.grid_rows
+            ) {
+
+                grid.grid_rows.forEach(
+                    gr => {
+
+                        if (
+                            gr.wrapper.is(
+                                grid_row
                             )
-                            .prop(
-                                "checked"
-                            );
+                        ) {
 
-                    if (checked) {
+                            target_row =
+                                gr;
+                        }
+                    }
+                );
+            }
+
+            // ---------------------------------------------------------
+            // UPDATE SELECTION
+            // ---------------------------------------------------------
+
+            if (
+                target_row &&
+                target_row.doc
+            ) {
+
+                let row =
+                    target_row.doc;
+
+                let key =
+                    get_row_key(
+                        row
+                    );
+
+                if (key) {
+
+                    if (
+                        checkbox.prop(
+                            "checked"
+                        )
+                    ) {
 
                         selected_rows[
                             key
@@ -3263,7 +4104,11 @@ function open_si_dn_dialog(frm) {
                         ];
                     }
                 }
-            );
+            }
+
+            // ---------------------------------------------------------
+            // TOTAL
+            // ---------------------------------------------------------
 
             update_common_scan_total(
                 dialog,
@@ -3271,6 +4116,7 @@ function open_si_dn_dialog(frm) {
             );
         }
     );
+
 
     // =============================================================
     // DISABLE ENTER
@@ -3280,7 +4126,10 @@ function open_si_dn_dialog(frm) {
         "keydown",
         function(e) {
 
-            if (e.key === "Enter") {
+            if (
+                e.key ===
+                "Enter"
+            ) {
 
                 e.preventDefault();
                 e.stopPropagation();
@@ -3290,8 +4139,9 @@ function open_si_dn_dialog(frm) {
         }
     );
 
+
     // =============================================================
-    // FOCUS SCAN
+    // INITIAL FOCUS
     // =============================================================
 
     setTimeout(
@@ -3312,6 +4162,7 @@ function open_si_dn_dialog(frm) {
         300
     );
 }
+
 
 
 // =============================================================
