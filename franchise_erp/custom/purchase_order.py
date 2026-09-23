@@ -1,307 +1,315 @@
-# import frappe
-# from frappe.model.naming import make_autoname
-
-# def generate_serials_on_po_submit(doc, method):
-#     for item in doc.items:
-
-#         item_info = frappe.db.get_value("Item", item.item_code, ["has_serial_no", "serial_no_series"], as_dict=True)
-        
-#         if item_info and item_info.has_serial_no:
-#             generated = []
-            
-#             series_prefix = item_info.serial_no_series if item_info.serial_no_series else f"{item.item_code}-.#####"
-            
-#             for i in range(int(item.qty)):
-#                 sn = make_autoname(series_prefix)
-#                 generated.append(sn)
-            
-            
-#             item.custom_generated_serials = "\n".join(generated)
-#             frappe.db.set_value("Purchase Order Item", item.name, "custom_generated_serials", item.custom_generated_serials)
-
-# import frappe
-# from frappe.model.naming import make_autoname
-
-# def generate_serials_on_po_submit(doc, method):
-#     for item in doc.items:
-
-#         # =================================================
-#         # EXISTING LOGIC – Normal Item Serials
-#         # =================================================
-#         item_info = frappe.db.get_value(
-#             "Item",
-#             item.item_code,
-#             ["has_serial_no", "serial_no_series"],
-#             as_dict=True
-#         )
-
-#         if item_info and item_info.has_serial_no:
-#             generated = []
-
-#             series_prefix = (
-#                 item_info.serial_no_series
-#                 if item_info.serial_no_series
-#                 else f"{item.item_code}-.#####"
-#             )
-
-#             for i in range(int(item.qty)):
-#                 sn = make_autoname(series_prefix)
-#                 generated.append(sn)
-
-#             item.custom_generated_serials = "\n".join(generated)
-
-#         # =================================================
-#         # NEW LOGIC – Subcontracted Finished Good Serials
-#         # =================================================
-#         if not doc.is_subcontracted:
-#             continue
-
-#         if not item.fg_item or not item.fg_item_qty or not item.qty:
-#             continue
-
-#         fg_item_info = frappe.db.get_value(
-#             "Item",
-#             item.fg_item,
-#             ["has_serial_no", "serial_no_series"],
-#             as_dict=True
-#         )
-
-#         if not fg_item_info or not fg_item_info.has_serial_no:
-#             continue
-
-#         fg_serials = []
-
-#         fg_series_prefix = (
-#             fg_item_info.serial_no_series
-#             if fg_item_info.serial_no_series
-#             else f"{item.fg_item}-.#####"
-#         )
-
-#         # 🔥 IMPORTANT CHANGE: Qty × FG Qty
-#         total_fg_qty = int(item.qty) * int(item.fg_item_qty)
-
-#         for i in range(total_fg_qty):
-#             sn = make_autoname(fg_series_prefix)
-#             fg_serials.append(sn)
-
-#         # 👉 Store FG serials in SAME field
-#         item.custom_generated_serials = "\n".join(fg_serials)
-
 import frappe
 from frappe.model.naming import make_autoname
+from frappe.utils import flt
 
-# def generate_serials_on_po_submit(doc, method):
-#     for item in doc.items:
-
-#         serials_to_save = []
-
-#         # =================================================
-#         # NORMAL ITEM SERIALS
-#         # =================================================
-#         item_info = frappe.db.get_value(
-#             "Item",
-#             item.item_code,
-#             ["has_serial_no", "serial_no_series"],
-#             as_dict=True
-#         )
-
-#         if item_info and item_info.has_serial_no:
-#             series_prefix = (
-#                 item_info.serial_no_series
-#                 if item_info.serial_no_series
-#                 else f"{item.item_code}-.#####"
-#             )
-
-#             for _ in range(int(item.qty)):
-#                 serials_to_save.append(make_autoname(series_prefix))
-
-#         # =================================================
-#         # SUBCONTRACTED FG SERIALS
-#         # =================================================
-#         if doc.is_subcontracted and item.fg_item and item.fg_item_qty and item.qty:
-
-#             fg_item_info = frappe.db.get_value(
-#                 "Item",
-#                 item.fg_item,
-#                 ["has_serial_no", "serial_no_series"],
-#                 as_dict=True
-#             )
-
-#             if fg_item_info and fg_item_info.has_serial_no:
-#                 fg_series_prefix = (
-#                     fg_item_info.serial_no_series
-#                     if fg_item_info.serial_no_series
-#                     else f"{item.fg_item}-.#####"
-#                 )
-
-#                 # total_fg_qty = int(item.qty) * int(item.fg_item_qty)
-#                 total_fg_qty = int(item.fg_item_qty)
-
-#                 serials_to_save = []  # overwrite normal serials
-#                 for _ in range(total_fg_qty):
-#                     serials_to_save.append(make_autoname(fg_series_prefix))
-
-#         # =================================================
-#         # 🔥 FORCE SAVE IN DB (THIS WAS MISSING)
-#         # =================================================
-#         if serials_to_save:
-#             frappe.db.set_value(
-#                 "Purchase Order Item",
-#                 item.name,
-#                 "custom_generated_serials",
-#                 "\n".join(serials_to_save)
-#             )
-
-
-# def get_next_available_serial(series_prefix, count):
-#     serials = []
-#     attempts = 0
-
-#     while len(serials) < count:
-#         attempts += 1
-#         serial = make_autoname(series_prefix)
-
-#         exists = frappe.db.exists(
-#             "Purchase Order Item",
-#             {"custom_generated_serials": ["like", f"%{serial}%"]}
-#         )
-
-#         if not exists:
-#             serials.append(serial)
-
-#         if attempts > 1000:
-#             frappe.throw("Unable to generate unique serial numbers")
-
-#     return serials
-
-#po and sub-contracting both me logic laga hai
-# def generate_serials_on_po_submit(doc, method):
-
-#     for item in doc.items:
-
-#         # ==============================
-#         # EXISTING SERIALS (AMEND CASE)
-#         # ==============================
-#         existing_serials = []
-#         if item.custom_generated_serials:
-#             existing_serials = item.custom_generated_serials.split("\n")
-
-#         serials_to_save = existing_serials.copy()
-
-#         # ==============================
-#         # ITEM INFO (NORMAL / FG)
-#         # ==============================
-#         if doc.is_subcontracted and item.fg_item:
-#             item_code = item.fg_item
-#             qty_required = int(item.fg_item_qty or 0)
-#         else:
-#             item_code = item.item_code
-#             qty_required = int(item.qty or 0)
-
-#         item_info = frappe.db.get_value(
-#             "Item",
-#             item_code,
-#             ["has_serial_no", "serial_no_series"],
-#             as_dict=True
-#         )
-
-#         if not item_info or not item_info.has_serial_no:
-#             continue
-
-#         series_prefix = (
-#             item_info.serial_no_series
-#             if item_info.serial_no_series
-#             else f"{item_code}-.#####"
-#         )
-
-#         current_qty = len(existing_serials)
-
-#         # ==============================
-#         # QTY REDUCED → TRIM SERIALS
-#         # ==============================
-#         if qty_required < current_qty:
-#             serials_to_save = serials_to_save[:qty_required]
-
-#         # ==============================
-#         # QTY INCREASED → ADD SERIALS
-#         # ==============================
-#         elif qty_required > current_qty:
-#             diff = qty_required - current_qty
-#             new_serials = get_next_available_serial(series_prefix, diff)
-#             serials_to_save.extend(new_serials)
-
-#         # ==============================
-#         # FORCE SAVE
-#         # ==============================
-#         frappe.db.set_value(
-#             "Purchase Order Item",
-#             item.name,
-#             "custom_generated_serials",
-#             "\n".join(serials_to_save)
-#         )
 
 #sub-contracting me logic laga hai
-def get_next_available_serial(series_prefix):
-    while True:
+
+def normalize_serials(value):
+    """Convert newline-separated serials into a clean list."""
+    if not value:
+        return []
+
+    return [
+        serial.strip()
+        for serial in value.split("\n")
+        if serial.strip()
+    ]
+
+
+def is_serial_allocated_in_other_po(serial, current_po=None):
+    """
+    Check whether serial is already allocated in another Purchase Order.
+
+    Current PO is excluded so that an existing PO's own serials
+    are not treated as duplicates.
+    """
+
+    rows = frappe.db.sql(
+        """
+        SELECT
+            poi.parent,
+            poi.custom_generated_serials
+        FROM `tabPurchase Order Item` poi
+        INNER JOIN `tabPurchase Order` po
+            ON po.name = poi.parent
+        WHERE
+            poi.custom_generated_serials IS NOT NULL
+            AND poi.custom_generated_serials != ''
+            AND po.docstatus IN (0, 1)
+            AND poi.custom_generated_serials LIKE %s
+            AND poi.parent != %s
+        """,
+        (
+            f"%{serial}%",
+            current_po or ""
+        ),
+        as_dict=True
+    )
+
+    for row in rows:
+        serials = normalize_serials(row.custom_generated_serials)
+
+        if serial in serials:
+            return True
+
+    return False
+
+
+def is_serial_exists_in_serial_no(serial):
+    """Check actual Serial No DocType."""
+    return bool(
+        frappe.db.exists(
+            "Serial No",
+            serial
+        )
+    )
+
+
+def get_next_available_serial(
+    series_prefix,
+    allocated_serials=None,
+    current_po=None
+):
+    """
+    Generate a serial which is not already allocated anywhere.
+
+    Checks:
+    1. Serials generated during current execution
+    2. Other Purchase Orders
+    3. Actual Serial No DocType
+    """
+
+    if allocated_serials is None:
+        allocated_serials = set()
+
+    max_attempts = 10000
+
+    for _ in range(max_attempts):
+
         serial = make_autoname(series_prefix)
 
-        exists = frappe.db.exists(
-            "Purchase Order Item",
-            {
-                "custom_generated_serials": ["like", f"%{serial}%"]
-            }
+        # -----------------------------------------------------
+        # Already generated in current execution
+        # -----------------------------------------------------
+
+        if serial in allocated_serials:
+            continue
+
+        # -----------------------------------------------------
+        # Already allocated in another Purchase Order
+        # -----------------------------------------------------
+
+        if is_serial_allocated_in_other_po(
+            serial,
+            current_po=current_po
+        ):
+            continue
+
+        # -----------------------------------------------------
+        # Already exists as actual Serial No
+        # -----------------------------------------------------
+
+        if is_serial_exists_in_serial_no(serial):
+            continue
+
+        return serial
+
+    frappe.throw(
+        f"""
+        Unable to generate a unique serial number for series
+        <b>{series_prefix}</b>.
+
+        Please check the Serial No series and existing Purchase
+        Order allocations.
+        """
+    )
+
+
+def validate_existing_serials(
+    serials,
+    current_po,
+    current_row_serials=None
+):
+    """
+    Validate serials already present on the current PO item.
+
+    Serial can belong to current PO itself.
+
+    Serial cannot already belong to another PO.
+    """
+
+    current_row_serials = set(current_row_serials or [])
+
+    valid_serials = []
+
+    for serial in serials:
+
+        serial = serial.strip()
+
+        if not serial:
+            continue
+
+        # -----------------------------------------------------
+        # Duplicate inside same row
+        # -----------------------------------------------------
+
+        if serial in valid_serials:
+            continue
+
+        # -----------------------------------------------------
+        # If this serial belongs to another PO → reject
+        # -----------------------------------------------------
+
+        if is_serial_allocated_in_other_po(
+            serial,
+            current_po=current_po
+        ):
+            continue
+
+        valid_serials.append(serial)
+
+    return valid_serials
+
+
+def generate_serials_on_po_submit(doc, method):
+    """
+    Generate / maintain serial numbers on Purchase Order submit.
+
+    IMPORTANT:
+    Actual Serial No documents are NOT created here.
+    Generated serials are stored only in:
+        Purchase Order Item.custom_generated_serials
+
+    Actual Serial No creation happens later during GRN/Purchase Receipt.
+    """
+
+    # =========================================================
+    # ALL SERIALS ALREADY PRESENT IN CURRENT PO
+    # =========================================================
+
+    allocated_serials = set()
+
+    for row in doc.items:
+
+        existing = normalize_serials(
+            row.custom_generated_serials
         )
 
-        if not exists:
-            return serial
-def generate_serials_on_po_submit(doc, method):
+        allocated_serials.update(existing)
+
+    # =========================================================
+    # PROCESS EACH ITEM ROW
+    # =========================================================
 
     for item in doc.items:
 
-        # ===============================
-        # EXISTING SERIALS (AMEND CASE)
-        # ===============================
-        existing_serials = []
-        if item.custom_generated_serials:
-            existing_serials = item.custom_generated_serials.split("\n")
+        existing_serials = normalize_serials(
+            item.custom_generated_serials
+        )
 
-        serials_to_save = existing_serials.copy()
+        # -----------------------------------------------------
+        # Remove duplicates inside the current row
+        # -----------------------------------------------------
 
-        # =================================================
-        # 🔹 NORMAL PO → OLD LOGIC (NO CHANGE)
-        # =================================================
+        unique_existing = []
+
+        for serial in existing_serials:
+
+            if serial not in unique_existing:
+                unique_existing.append(serial)
+
+        existing_serials = unique_existing
+
+        # =====================================================
+        # NORMAL PO
+        # =====================================================
+
         if not doc.is_subcontracted:
-
-            serials_to_save = []
 
             item_info = frappe.db.get_value(
                 "Item",
                 item.item_code,
-                ["has_serial_no", "serial_no_series"],
+                [
+                    "has_serial_no",
+                    "serial_no_series"
+                ],
                 as_dict=True
             )
 
-            if item_info and item_info.has_serial_no:
-                series_prefix = (
-                    item_info.serial_no_series
-                    if item_info.serial_no_series
-                    else f"{item.item_code}-.#####"
+            if not item_info or not item_info.has_serial_no:
+                continue
+
+            series_prefix = (
+                item_info.serial_no_series
+                if item_info.serial_no_series
+                else f"{item.item_code}-.#####"
+            )
+
+            qty_required = int(item.qty)
+
+            # -------------------------------------------------
+            # Validate existing copied / existing serials
+            # -------------------------------------------------
+
+            valid_existing = []
+
+            for serial in existing_serials:
+
+                if serial in valid_existing:
+                    continue
+
+                # Serial already allocated to another PO
+                if is_serial_allocated_in_other_po(
+                    serial,
+                    current_po=doc.name
+                ):
+                    continue
+
+                valid_existing.append(serial)
+
+            serials_to_save = valid_existing[:qty_required]
+
+            # -------------------------------------------------
+            # Generate missing serials
+            # -------------------------------------------------
+
+            diff = qty_required - len(serials_to_save)
+
+            for _ in range(max(0, diff)):
+
+                serial = get_next_available_serial(
+                    series_prefix,
+                    allocated_serials=allocated_serials,
+                    current_po=doc.name
                 )
 
-                for _ in range(int(item.qty)):
-                    serials_to_save.append(make_autoname(series_prefix))
+                serials_to_save.append(serial)
 
-        # =================================================
-        # 🔥 SUBCONTRACTED PO → SMART LOGIC
-        # =================================================
+                allocated_serials.add(serial)
+
+            # -------------------------------------------------
+            # Rebuild allocation set
+            # -------------------------------------------------
+
+            allocated_serials.update(serials_to_save)
+
+        # =====================================================
+        # SUBCONTRACTED PO
+        # =====================================================
+
         else:
-            if not (item.fg_item and item.fg_item_qty):
+
+            if not item.fg_item or not item.fg_item_qty:
                 continue
 
             fg_item_info = frappe.db.get_value(
                 "Item",
                 item.fg_item,
-                ["has_serial_no", "serial_no_series"],
+                [
+                    "has_serial_no",
+                    "serial_no_series"
+                ],
                 as_dict=True
             )
 
@@ -315,158 +323,75 @@ def generate_serials_on_po_submit(doc, method):
             )
 
             qty_required = int(item.fg_item_qty)
-            current_qty = len(existing_serials)
 
-            # 🔻 Qty reduced → trim
-            if qty_required < current_qty:
-                serials_to_save = serials_to_save[:qty_required]
+            # -------------------------------------------------
+            # Validate copied/existing serials
+            # -------------------------------------------------
 
-            # 🔺 Qty increased → add safe serials
-            elif qty_required > current_qty:
-                diff = qty_required - current_qty
+            valid_existing = []
 
-                for _ in range(diff):
-                    serials_to_save.append(
-                        get_next_available_serial(fg_series_prefix)
-                    )
+            for serial in existing_serials:
 
-        # =================================================
-        # 🔥 FORCE SAVE
-        # =================================================
-        if serials_to_save:
-            frappe.db.set_value(
-                "Purchase Order Item",
-                item.name,
-                "custom_generated_serials",
-                "\n".join(serials_to_save)
-            )
+                if serial in valid_existing:
+                    continue
 
+                # -------------------------------------------------
+                # IMPORTANT:
+                #
+                # If duplicate PO copied this serial from another PO,
+                # it will be removed here.
+                # -------------------------------------------------
 
-# def apply_purchase_term(doc, method):
-#     if not doc.custom_purchase_term:
-#         return
+                if is_serial_allocated_in_other_po(
+                    serial,
+                    current_po=doc.name
+                ):
+                    continue
 
-#     term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
+                valid_existing.append(serial)
 
-#     total_flat_discount = 0.0
-#     header_discount_percent = 0.0
+            # -------------------------------------------------
+            # Keep only required quantity
+            # -------------------------------------------------
 
-#     # -------------------------------
-#     # 1️⃣ ITEM LEVEL : RATE DIFF ONLY
-#     # -------------------------------
-#     for item in doc.items:
+            serials_to_save = valid_existing[:qty_required]
 
-#         # store base rate once (idempotent)
-#         if not item.custom_base_rate_new:
-#             item.custom_base_rate_new = item.rate
+            # -------------------------------------------------
+            # Generate missing serials
+            # -------------------------------------------------
 
-#         adjusted_rate = item.custom_base_rate_new
+            diff = qty_required - len(serials_to_save)
 
-#         for row in term.purchase_term_charges:
-#             if row.charge_type == "Rate Diff":
-#                 adjusted_rate -= row.value
+            for _ in range(max(0, diff)):
 
-#         item.rate = adjusted_rate
+                serial = get_next_available_serial(
+                    fg_series_prefix,
+                    allocated_serials=allocated_serials,
+                    current_po=doc.name
+                )
 
+                serials_to_save.append(serial)
 
-#     # -----------------------------------
-#     # 2️⃣ DOCUMENT LEVEL : DISCOUNT ONLY
-#     # -----------------------------------
-#     for row in term.purchase_term_charges:
-#         if row.charge_type == "Discount":
+                allocated_serials.add(serial)
 
-#             # Percentage discount on Net Total / Grand Total
-#             if row.value_type == "Percentage":
-#                 header_discount_percent = row.value
+            # -------------------------------------------------
+            # Rebuild allocation set
+            # -------------------------------------------------
 
-#             # Flat amount discount
-#             elif row.value_type == "Amount":
-#                 total_flat_discount += row.value
+            allocated_serials.update(serials_to_save)
 
+        # =====================================================
+        # SAVE
+        # =====================================================
 
-#     # -----------------------------------
-#     # 3️⃣ PUSH TO ERPNext STANDARD FIELDS
-#     # -----------------------------------
-#     if header_discount_percent:
-#         doc.apply_discount_on = "Net Total"
-#         doc.additional_discount_percentage = header_discount_percent
-
-
-#     elif total_flat_discount:
-#         doc.apply_discount_on = "Net Total"
-#         doc.discount_amount = total_flat_discount
-
-# def apply_purchase_term(doc, method):
-
-#     if not doc.custom_purchase_term:
-#         return
-
-#     term = frappe.get_doc("Purchase Term Template", doc.custom_purchase_term)
-
-#     # -------------------------------
-#     # 🔥 STEP 0: RESET ITEM DISTRIBUTED DISCOUNT
-#     # -------------------------------
-#     for item in doc.items:
-#         item.distributed_discount_amount = 0
-
-#     # -------------------------------
-#     # 🔥 RESET DOC LEVEL
-#     # -------------------------------
-#     doc.additional_discount_percentage = 0
-#     doc.discount_amount = 0
-#     doc.apply_discount_on = None
-
-#     doc.ignore_pricing_rule = 1
-
-#     total_flat_discount = 0.0
-#     header_discount_percent = 0.0
-
-#     # -------------------------------
-#     # 1️⃣ ITEM LEVEL (RATE DIFF)
-#     # -------------------------------
-#     for item in doc.items:
-
-#         base_rate = item.price_list_rate or item.rate
-#         adjusted_rate = base_rate
-
-#         for row in term.purchase_term_charges:
-#             if row.charge_type == "Rate Diff":
-#                 adjusted_rate -= row.value
-
-#         item.rate = adjusted_rate
-
-
-#     # -------------------------------
-#     # 2️⃣ DOCUMENT LEVEL (DISCOUNT)
-#     # -------------------------------
-#     for row in term.purchase_term_charges:
-
-#         if row.charge_type == "Discount":
-
-#             if row.value_type == "Percentage":
-#                 header_discount_percent += row.value
-
-#             elif row.value_type == "Amount":
-#                 total_flat_discount += row.value
-
-
-#     # -------------------------------
-#     # 3️⃣ APPLY DISCOUNT
-#     # -------------------------------
-#     if header_discount_percent:
-#         doc.apply_discount_on = "Net Total"
-#         doc.additional_discount_percentage = header_discount_percent
-
-#     elif total_flat_discount:
-#         doc.apply_discount_on = "Net Total"
-#         doc.discount_amount = total_flat_discount
-
-
-#     # -----------------------------------
-#     # 🔥 FINAL RECALCULATION (MANDATORY)
-#     # -----------------------------------
-#     doc.run_method("calculate_taxes_and_totals")
-
+        frappe.db.set_value(
+            "Purchase Order Item",
+            item.name,
+            "custom_generated_serials",
+            "\n".join(serials_to_save)
+        )
+        
+        
 def apply_purchase_term(doc, method):
 
     if not doc.custom_purchase_term:
@@ -597,116 +522,7 @@ def get_items_from_gate_entry(gate_entry_name):
     return items
 
 
-
-# import frappe
-# import json
-# from frappe.model.mapper import get_mapped_doc
-# from frappe.utils import flt
-
-# @frappe.whitelist()
-# def make_purchase_receipt_with_gate_entry(source_name, target_doc=None, args=None):
-#     if args is None:
-#         args = {}
-#     if isinstance(args, str):
-#         args = json.loads(args)
-
-#     # 🔥 VALIDATION: Submitted Gate Entry must exist
-#     gate_entries = frappe.get_all(
-#         "Gate Entry",
-#         filters={
-#             "purchase_order": source_name,
-#             "docstatus": 1
-#         },
-#         pluck="name"
-#     )
-
-#     if not gate_entries:
-#         frappe.throw(
-#             f"No Submitted Gate Entry found for Purchase Order {source_name}"
-#         )
-
-#     has_unit_price_items = frappe.db.get_value(
-#         "Purchase Order",
-#         source_name,
-#         "has_unit_price_items"
-#     )
-
-#     def is_unit_price_row(source):
-#         return has_unit_price_items and source.qty == 0
-
-#     def update_item(obj, target, source_parent):
-#         remaining_qty = flt(obj.qty) - flt(obj.received_qty)
-
-#         if remaining_qty <= 0:
-#             return
-
-#         target.qty = remaining_qty
-#         target.stock_qty = remaining_qty * flt(obj.conversion_factor)
-#         target.amount = remaining_qty * flt(obj.rate)
-#         target.base_amount = (
-#             remaining_qty * flt(obj.rate) * flt(source_parent.conversion_rate)
-#         )
-
-#     def select_item(d):
-#         filtered_items = args.get("filtered_children", [])
-#         return d.name in filtered_items if filtered_items else True
-
-#     doc = get_mapped_doc(
-#         "Purchase Order",
-#         source_name,
-#         {
-#             "Purchase Order": {
-#                 "doctype": "Purchase Receipt",
-#                 "field_map": {
-#                     "supplier_warehouse": "supplier_warehouse",
-#                 },
-#                 "validation": {
-#                     "docstatus": ["=", 1],
-#                 },
-#             },
-#             "Purchase Order Item": {
-#                 "doctype": "Purchase Receipt Item",
-#                 "field_map": {
-#                     "name": "purchase_order_item",
-#                     "parent": "purchase_order",
-#                 },
-#                 "postprocess": update_item,
-#                 "condition": lambda doc: (
-#                     True if is_unit_price_row(doc)
-#                     else abs(doc.received_qty) < abs(doc.qty)
-#                 )
-#                 and doc.delivered_by_supplier != 1
-#                 and select_item(doc),
-#             },
-#         },
-#         target_doc,
-#     )
-
-#     # 🔥 PASS GATE ENTRY ID (first submitted one)
-#     doc.custom_gate_entry = gate_entries[0]
-
-#     return doc
-
-
-# @frappe.whitelist()
-# def get_purchase_orders_with_gate_entry():
-#     return frappe.db.sql("""
-#         SELECT DISTINCT po.name
-#         FROM `tabPurchase Order` po
-#         INNER JOIN `tabGate Entry` ge
-#             ON ge.purchase_order = po.name
-#         WHERE
-#             ge.docstatus = 1
-#             AND po.docstatus = 1
-#             AND po.per_received < 99.99
-#             AND po.status NOT IN ('Closed', 'On Hold')
-#     """, as_dict=True)
-
-
 #service cost updated
-import frappe
-from frappe.utils import flt
-
 @frappe.whitelist()
 def update_po_cost_and_sco(docname, items):
     items = frappe.parse_json(items)
