@@ -828,7 +828,6 @@ def create_single_sales_invoice_return(doc, rows):
     if not rows:
         return None
 
-
     # =========================================================================
     # COMBINE DUPLICATE SALES INVOICE ITEM ROWS
     # =========================================================================
@@ -966,6 +965,10 @@ def create_single_sales_invoice_return(doc, rows):
             source_si.currency
         )
 
+    # =========================================================================
+    # VALIDATE CUSTOMER
+    # =========================================================================
+
     if len(customers) > 1:
 
         frappe.throw(
@@ -973,12 +976,20 @@ def create_single_sales_invoice_return(doc, rows):
             "must belong to the same Customer."
         )
 
+    # =========================================================================
+    # VALIDATE COMPANY
+    # =========================================================================
+
     if len(companies) > 1:
 
         frappe.throw(
             "All Sales Invoice items in one Bulk Sales Return "
             "must belong to the same Company."
         )
+
+    # =========================================================================
+    # VALIDATE CURRENCY
+    # =========================================================================
 
     if len(currencies) > 1:
 
@@ -1069,6 +1080,19 @@ def create_single_sales_invoice_return(doc, rows):
 
     for sales_invoice_item, selected_row in selected.items():
 
+        # ---------------------------------------------------------------------
+        # GET ORIGINAL SUBMITTED SALES INVOICE ITEM
+        #
+        # IMPORTANT:
+        # RATE MUST COME FROM THIS DATABASE RECORD.
+        #
+        # DO NOT TRUST:
+        # - Current Item MRP
+        # - Current Item Price
+        # - Price List
+        # - Scanned row rate
+        # ---------------------------------------------------------------------
+
         original_data = frappe.db.get_value(
             "Sales Invoice Item",
             sales_invoice_item,
@@ -1079,6 +1103,7 @@ def create_single_sales_invoice_return(doc, rows):
                 "item_name",
                 "qty",
                 "rate",
+                "price_list_rate",
                 "warehouse",
                 "uom",
                 "stock_uom",
@@ -1101,6 +1126,10 @@ def create_single_sales_invoice_return(doc, rows):
                 f"Sales Invoice Item {sales_invoice_item} not found."
             )
 
+        # ---------------------------------------------------------------------
+        # VALIDATE SOURCE SALES INVOICE
+        # ---------------------------------------------------------------------
+
         selected_source_si = selected_row.get(
             "sales_invoice"
         )
@@ -1115,6 +1144,10 @@ def create_single_sales_invoice_return(doc, rows):
                 f"does not belong to Sales Invoice "
                 f"{selected_source_si}."
             )
+
+        # ---------------------------------------------------------------------
+        # CREATE RETURN ITEM
+        # ---------------------------------------------------------------------
 
         item = return_doc.append(
             "items",
@@ -1148,13 +1181,44 @@ def create_single_sales_invoice_return(doc, rows):
             or 1
         )
 
-        item.rate = (
+        # ---------------------------------------------------------------------
+        # ORIGINAL TRANSACTION RATE
+        # ---------------------------------------------------------------------
+
+        item.rate = flt(
             original_data.rate
         )
+
+        # ---------------------------------------------------------------------
+        # ORIGINAL PRICE LIST RATE
+        #
+        # Keep source value if available.
+        # This prevents current Item Price / MRP from becoming the basis
+        # of the return calculation.
+        # ---------------------------------------------------------------------
+
+        if hasattr(
+            item,
+            "price_list_rate"
+        ):
+
+            item.price_list_rate = flt(
+                original_data.price_list_rate
+                if original_data.price_list_rate is not None
+                else original_data.rate
+            )
+
+        # ---------------------------------------------------------------------
+        # WAREHOUSE
+        # ---------------------------------------------------------------------
 
         item.warehouse = (
             original_data.warehouse
         )
+
+        # ---------------------------------------------------------------------
+        # RETURN QTY
+        # ---------------------------------------------------------------------
 
         item.qty = -abs(
             flt(
@@ -1198,7 +1262,7 @@ def create_single_sales_invoice_return(doc, rows):
             )
 
         # ---------------------------------------------------------------------
-        # REMOVE DN LINK FROM SI RETURN
+        # REMOVE DELIVERY NOTE LINK FROM RETURN SI
         # ---------------------------------------------------------------------
 
         if hasattr(
@@ -1346,18 +1410,304 @@ def create_single_sales_invoice_return(doc, rows):
     )
 
     # =========================================================================
-    # CALCULATE
+    # IMPORTANT:
+    # STORE ORIGINAL RATE USING SOURCE SI ITEM NAME
+    #
+    # DO NOT use return item name as the key because item rows may be
+    # modified/rebuilt by ERPNext during set_missing_values().
+    # =========================================================================
+
+    source_rates = {}
+
+    for item in return_doc.items:
+
+        source_item = (
+            item.get("sales_invoice_item")
+            if hasattr(item, "sales_invoice_item")
+            else None
+        )
+
+        if not source_item:
+            continue
+
+        source_data = frappe.db.get_value(
+            "Sales Invoice Item",
+            source_item,
+            [
+                "rate",
+                "price_list_rate"
+            ],
+            as_dict=True
+        )
+
+        if not source_data:
+            continue
+
+        source_rates[source_item] = {
+            "rate": flt(
+                source_data.rate
+            ),
+            "price_list_rate": (
+                flt(
+                    source_data.price_list_rate
+                )
+                if source_data.price_list_rate is not None
+                else None
+            )
+        }
+
+    # =========================================================================
+    # HELPER:
+    # RESTORE ORIGINAL SOURCE RATE
+    # =========================================================================
+    #
+    # This function intentionally gets the source item using
+    # item.sales_invoice_item.
+    #
+    # This means even if ERPNext changes the item rate during
+    # set_missing_values(), we put back the exact rate from the submitted
+    # Sales Invoice Item.
+    # =========================================================================
+
+    def restore_original_rates():
+
+        for item in return_doc.items:
+
+            source_item = (
+                item.get("sales_invoice_item")
+                if hasattr(item, "sales_invoice_item")
+                else None
+            )
+
+            if not source_item:
+                continue
+
+            original_data = source_rates.get(
+                source_item
+            )
+
+            if not original_data:
+                continue
+
+            original_rate = flt(
+                original_data["rate"]
+            )
+
+            # -------------------------------------------------------------
+            # FORCE ORIGINAL TRANSACTION RATE
+            # -------------------------------------------------------------
+
+            item.rate = original_rate
+
+            # -------------------------------------------------------------
+            # FORCE SOURCE PRICE LIST RATE
+            #
+            # If source has a price_list_rate, preserve it.
+            # Otherwise use original transaction rate.
+            # -------------------------------------------------------------
+
+            if hasattr(
+                item,
+                "price_list_rate"
+            ):
+
+                source_price_list_rate = (
+                    original_data["price_list_rate"]
+                )
+
+                if source_price_list_rate is not None:
+
+                    item.price_list_rate = (
+                        source_price_list_rate
+                    )
+
+                else:
+
+                    item.price_list_rate = (
+                        original_rate
+                    )
+
+            # -------------------------------------------------------------
+            # DO NOT ALLOW DISCOUNT LOGIC TO ALTER THE RATE
+            #
+            # Keep transaction rate equal to original source rate.
+            # -------------------------------------------------------------
+
+            if hasattr(
+                item,
+                "discount_percentage"
+            ):
+
+                price_list_rate = flt(
+                    getattr(
+                        item,
+                        "price_list_rate",
+                        original_rate
+                    )
+                    or original_rate
+                )
+
+                if price_list_rate:
+
+                    discount = (
+                        (
+                            price_list_rate
+                            - original_rate
+                        )
+                        / price_list_rate
+                    ) * 100
+
+                    item.discount_percentage = (
+                        discount
+                    )
+
+            # -------------------------------------------------------------
+            # AMOUNT
+            # -------------------------------------------------------------
+
+            item.amount = (
+                flt(item.qty)
+                * original_rate
+            )
+
+            # -------------------------------------------------------------
+            # BASE RATE
+            # -------------------------------------------------------------
+
+            if hasattr(
+                item,
+                "base_rate"
+            ):
+
+                item.base_rate = (
+                    original_rate
+                    * flt(
+                        return_doc.conversion_rate
+                        or 1
+                    )
+                )
+
+            # -------------------------------------------------------------
+            # BASE AMOUNT
+            # -------------------------------------------------------------
+
+            if hasattr(
+                item,
+                "base_amount"
+            ):
+
+                item.base_amount = (
+                    flt(item.qty)
+                    * flt(
+                        item.base_rate
+                        or 0
+                    )
+                )
+
+    # =========================================================================
+    # SET MISSING VALUES
+    # =========================================================================
+    #
+    # ERPNext can fetch current Item / Price List values here.
+    #
+    # Therefore this MUST NOT be the final rate state.
     # =========================================================================
 
     return_doc.set_missing_values()
 
+    # =========================================================================
+    # RESTORE ORIGINAL RATE AFTER SET MISSING VALUES
+    # =========================================================================
+
+    restore_original_rates()
+
+    # =========================================================================
+    # CALCULATE TAXES AND TOTALS
+    # =========================================================================
+    #
+    # At this point the original source rate is already restored.
+    # =========================================================================
+
     return_doc.calculate_taxes_and_totals()
 
     # =========================================================================
-    # CLEAR RETURN AGAIN
+    # RESTORE ORIGINAL RATE AGAIN
+    # =========================================================================
+    #
+    # Extra protection because tax/total calculation or pricing logic can
+    # modify item values.
+    # =========================================================================
+
+    restore_original_rates()
+
+    # =========================================================================
+    # CALCULATE TOTALS ONE MORE TIME
+    #
+    # Amount/base_amount are already based on original rate.
+    # This keeps parent totals synchronized with item amounts.
+    # =========================================================================
+
+    return_doc.calculate_taxes_and_totals()
+
+    # =========================================================================
+    # FINAL RATE RESTORE
+    # =========================================================================
+    #
+    # This is the final protection immediately before insert.
+    #
+    # The value saved in the database must be the ORIGINAL SUBMITTED
+    # SALES INVOICE ITEM RATE.
+    # =========================================================================
+
+    restore_original_rates()
+
+    # =========================================================================
+    # CLEAR RETURN AGAINST
     # =========================================================================
 
     return_doc.return_against = None
+
+    # =========================================================================
+    # FINAL DEBUG LOG
+    # =========================================================================
+    #
+    # This will make it very easy to confirm in bench logs:
+    #
+    # Original SI Item rate
+    # vs
+    # Return SI rate
+    #
+    # If both are same here, ERPNext is receiving the correct rate.
+    # =========================================================================
+
+    for item in return_doc.items:
+
+        source_item = (
+            item.get("sales_invoice_item")
+            if hasattr(item, "sales_invoice_item")
+            else None
+        )
+
+        if not source_item:
+            continue
+
+        original_data = source_rates.get(
+            source_item
+        )
+
+        if not original_data:
+            continue
+
+        frappe.logger().info(
+            (
+                f"Bulk Sales Return {doc.name}: "
+                f"SI Item {source_item} | "
+                f"Original Rate={original_data['rate']} | "
+                f"Return Rate={item.rate} | "
+                f"Qty={item.qty} | "
+                f"Amount={item.amount}"
+            )
+        )
 
     # =========================================================================
     # INSERT AS DRAFT
@@ -1366,6 +1716,122 @@ def create_single_sales_invoice_return(doc, rows):
     return_doc.insert(
         ignore_permissions=True
     )
+
+    # =========================================================================
+    # IMPORTANT:
+    # VERIFY DATABASE RATE AFTER INSERT
+    #
+    # insert() / document hooks may still modify values.
+    # Therefore read the actual saved Sales Invoice Item and correct it
+    # directly from the ORIGINAL submitted SI Item.
+    # =========================================================================
+
+    for return_item in return_doc.items:
+
+        source_item = (
+            return_item.get("sales_invoice_item")
+            if hasattr(return_item, "sales_invoice_item")
+            else None
+        )
+
+        if not source_item:
+            continue
+
+        original_data = source_rates.get(
+            source_item
+        )
+
+        if not original_data:
+            continue
+
+        original_rate = flt(
+            original_data["rate"]
+        )
+
+        # ---------------------------------------------------------------------
+        # CHECK ACTUAL DATABASE VALUE
+        # ---------------------------------------------------------------------
+
+        db_rate = frappe.db.get_value(
+            "Sales Invoice Item",
+            return_item.name,
+            "rate"
+        )
+
+        # ---------------------------------------------------------------------
+        # FORCE DATABASE RATE IF ERPNext HOOK CHANGED IT
+        # ---------------------------------------------------------------------
+
+        if flt(db_rate) != original_rate:
+
+            frappe.db.set_value(
+                "Sales Invoice Item",
+                return_item.name,
+                "rate",
+                original_rate,
+                update_modified=False
+            )
+
+            # -------------------------------------------------------------
+            # Amount
+            # -------------------------------------------------------------
+
+            frappe.db.set_value(
+                "Sales Invoice Item",
+                return_item.name,
+                "amount",
+                flt(return_item.qty) * original_rate,
+                update_modified=False
+            )
+
+            # -------------------------------------------------------------
+            # Base rate / base amount
+            # -------------------------------------------------------------
+
+            if hasattr(
+                return_item,
+                "base_rate"
+            ):
+
+                base_rate = (
+                    original_rate
+                    * flt(
+                        return_doc.conversion_rate
+                        or 1
+                    )
+                )
+
+                frappe.db.set_value(
+                    "Sales Invoice Item",
+                    return_item.name,
+                    "base_rate",
+                    base_rate,
+                    update_modified=False
+                )
+
+                if hasattr(
+                    return_item,
+                    "base_amount"
+                ):
+
+                    frappe.db.set_value(
+                        "Sales Invoice Item",
+                        return_item.name,
+                        "base_amount",
+                        flt(return_item.qty) * base_rate,
+                        update_modified=False
+                    )
+
+            frappe.logger().warning(
+                (
+                    f"Bulk Sales Return {doc.name}: "
+                    f"Sales Invoice Return {return_doc.name}, "
+                    f"Item {return_item.name}: "
+                    f"DB rate was {db_rate}, "
+                    f"forced back to original rate {original_rate} "
+                    f"from source SI Item {source_item}."
+                )
+            )
 
     # =========================================================================
     # FORCE RETURN AGAINST BLANK
@@ -1398,6 +1864,44 @@ def create_single_sales_invoice_return(doc, rows):
     return_doc.flags.ignore_permissions = True
 
     frappe.db.commit()
+
+    # =========================================================================
+    # FINAL VERIFICATION
+    # =========================================================================
+
+    for return_item in return_doc.items:
+
+        source_item = (
+            return_item.get("sales_invoice_item")
+            if hasattr(return_item, "sales_invoice_item")
+            else None
+        )
+
+        if not source_item:
+            continue
+
+        original_rate = frappe.db.get_value(
+            "Sales Invoice Item",
+            source_item,
+            "rate"
+        )
+
+        actual_return_rate = frappe.db.get_value(
+            "Sales Invoice Item",
+            return_item.name,
+            "rate"
+        )
+
+        frappe.logger().info(
+            (
+                f"Bulk Sales Return {doc.name}: "
+                f"FINAL RATE CHECK | "
+                f"Source SI Item={source_item} | "
+                f"Original Rate={original_rate} | "
+                f"Return SI Item={return_item.name} | "
+                f"Return Rate={actual_return_rate}"
+            )
+        )
 
     return return_doc.name
 
