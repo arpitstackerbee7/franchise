@@ -213,36 +213,39 @@ def execute(filters=None):
         party_type = sample_row.get("party_type", "Customer")
 
         # ── Sort all rows by posting_date ascending ────────────────────────
+        # ── Group rows by voucher type (date-wise within each group) ───────
         rows.sort(key=lambda r: r.get("posting_date") or date.min)
 
-        # ── Voucher type buckets for subtotals ────────────────────────────
-        vtype_buckets = defaultdict(lambda: {"invoiced": 0.0, "paid": 0.0, "outstanding": 0.0})
+        vgroup_rows = defaultdict(list)
+        for row in rows:
+            vgroup_rows[get_group(row)].append(row)
 
         party_invoiced    = 0.0
         party_paid        = 0.0
         party_outstanding = 0.0
 
-        for row in rows:
-            outstanding     = flt(row.get("outstanding"))
-            running_balance += outstanding
-            row["running_balance"] = running_balance
+        ordered_groups = [vg for vg in VOUCHER_TYPE_ORDER if vg in vgroup_rows]
+        ordered_groups += [vg for vg in vgroup_rows if vg not in VOUCHER_TYPE_ORDER]
 
-            vg = get_group(row)
-            vtype_buckets[vg]["invoiced"]    += flt(row.get("invoiced"))
-            vtype_buckets[vg]["paid"]        += flt(row.get("paid"))
-            vtype_buckets[vg]["outstanding"] += outstanding
+        for vg in ordered_groups:
+            vg_invoiced = vg_paid = vg_outstanding = 0.0
 
-            party_invoiced    += flt(row.get("invoiced"))
-            party_paid        += flt(row.get("paid"))
-            party_outstanding += outstanding
+            for row in vgroup_rows[vg]:
+                outstanding = flt(row.get("outstanding"))
+                running_balance += outstanding
+                row["running_balance"] = running_balance
 
-            output.append(row)
+                vg_invoiced    += flt(row.get("invoiced"))
+                vg_paid        += flt(row.get("paid"))
+                vg_outstanding += outstanding
 
-        # ── Voucher type subtotals at end of party ────────────────────────
-        for vg in VOUCHER_TYPE_ORDER:
-            if vg not in vtype_buckets:
-                continue
-            vg_data = vtype_buckets[vg]
+                party_invoiced    += flt(row.get("invoiced"))
+                party_paid        += flt(row.get("paid"))
+                party_outstanding += outstanding
+
+                output.append(row)
+
+            # ── Voucher type subtotal, right after its own entries ─────────
             output.append({
                 "party":              party,
                 "party_type":         party_type,
@@ -255,9 +258,9 @@ def execute(filters=None):
                 "due_date":           None,
                 "reference_no":       None,
                 "reference_date":     None,
-                "invoiced":           vg_data["invoiced"],
-                "paid":               vg_data["paid"],
-                "outstanding":        vg_data["outstanding"],
+                "invoiced":           vg_invoiced,
+                "paid":               vg_paid,
+                "outstanding":        vg_outstanding,
                 "running_balance":    running_balance,
                 "is_group":           1,
             })
