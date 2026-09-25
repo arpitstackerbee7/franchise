@@ -1268,9 +1268,9 @@ def get_data(filters, companies):
 		as_dict=True
 	)
 	first_delivery_map = {
-		d.customer: d.first_date
-		for d in first_delivery_data
-	}
+    (d.customer or "").strip().lower(): d.first_date
+    for d in first_delivery_data
+    }
 
 	# -----------------------------------------------------
 	# Customer rows ke liye
@@ -1323,7 +1323,7 @@ def get_data(filters, companies):
 			# PREVIOUS PERIOD (From Date -> Last 15 Days start - 1)
 			# -------------------------------------------------
 
-			first_delivery_date = first_delivery_map.get(customer)
+			first_delivery_date = first_delivery_map.get((customer or "").strip().lower())
 			previous_period_end = add_days(from_date, -1)
 
 			if first_delivery_date and getdate(first_delivery_date) <= previous_period_end:
@@ -1481,7 +1481,7 @@ def get_data(filters, companies):
 			FROM `tabDelivery Note`
 			WHERE docstatus = 1
 			GROUP BY company
-		) fd ON fd.company = gle.party
+		) fd ON LOWER(TRIM(fd.company)) = LOWER(TRIM(gle.party))
 
 		WHERE
 			gle.is_cancelled = 0
@@ -1546,7 +1546,7 @@ def get_data(filters, companies):
 			FROM `tabDelivery Note`
 			WHERE docstatus = 1
 			GROUP BY customer
-		) fd ON fd.customer = gle.party
+		) fd ON LOWER(TRIM(fd.customer)) = LOWER(TRIM(gle.party))
 
 		WHERE
 			gle.is_cancelled = 0
@@ -1841,3 +1841,28 @@ def get_data(filters, companies):
 
 
 	return data
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def customer_query(doctype, txt, searchfield, start, page_len, filters):
+	return frappe.db.sql(
+		"""
+		SELECT name, customer_name
+		FROM `tabCustomer`
+		WHERE disabled = 0
+			AND (
+				name LIKE %(txt)s
+				OR customer_name LIKE %(txt)s
+			)
+		ORDER BY
+			CASE WHEN customer_name LIKE %(start_txt)s THEN 0 ELSE 1 END,
+			customer_name
+		LIMIT %(start)s, %(page_len)s
+		""",
+		{
+			"txt": f"%{txt}%",
+			"start_txt": f"{txt}%",
+			"start": start,
+			"page_len": page_len
+		}
+	)

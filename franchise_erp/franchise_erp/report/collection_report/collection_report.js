@@ -45,7 +45,12 @@ frappe.query_reports["Collection Report"] = {
 			fieldname: "customer",
 			label: __("Customer"),
 			fieldtype: "Link",
-			options: "Customer"
+			options: "Customer",
+			get_query: function() {
+				return {
+					query: "franchise_erp.franchise_erp.report.collection_report.collection_report.customer_query"
+				};
+			}
 		},
 
 		{
