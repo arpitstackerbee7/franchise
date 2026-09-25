@@ -388,7 +388,7 @@ doctype_js = {
     # "Subcontracting Order": "public/js/job_work_order.js",
     "Full and Final Statement": "public/js/full_and_final_statement.js",
     "Role Profile": "public/js/role_profile.js",
-    "Module Profile": "public/js/module_profile.js"
+    # "Module Profile": "public/js/module_profile.js"
 }
 
 
