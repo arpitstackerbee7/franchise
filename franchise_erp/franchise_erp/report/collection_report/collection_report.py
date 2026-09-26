@@ -1091,63 +1091,63 @@ def get_columns():
 		},
 
 		{
-			"label": _("Credit Note"),
+			"label": _("Previous Credit Note"),
 			"fieldname": "credit_note",
 			"fieldtype": "Currency",
 			"width": 85
 		},
 
 		{
-			"label": _("Debit Note"),
+			"label": _("Previous Debit Note"),
 			"fieldname": "debit_note",
 			"fieldtype": "Currency",
 			"width": 85
 		},
 
 		{
-			"label": _("Payment Receivable"),
+			"label": _("Previous Payment Receivable"),
 			"fieldname": "payment_received",
 			"fieldtype": "Currency",
 			"width": 90
 		},
 
 		{
-			"label": _("Collectable Amount"),
+			"label": _("Previous Collectable Amount"),
 			"fieldname": "collectable_amount",
 			"fieldtype": "Currency",
 			"width": 100
 		},
 
 		{
-			"label": _("Last 15 Days Sale Qty"),
+			"label": _("Current Sale Qty"),
 			"fieldname": "sale_qty_15",
 			"fieldtype": "Float",
 			"width": 90
 		},
 
 		{
-			"label": _("Last 15 Days Sale Amount"),
+			"label": _("Current Sale Amount"),
 			"fieldname": "amount_15",
 			"fieldtype": "Currency",
 			"width": 100
 		},
 
 		{
-			"label": _("Credit Note (Last 15 Days)"),
+			"label": _("Current Credit Note"),
 			"fieldname": "credit_note_15",
 			"fieldtype": "Currency",
 			"width": 90
 		},
 
 		{
-			"label": _("Debit Note (Last 15 Days)"),
+			"label": _("Current Debit Note"),
 			"fieldname": "debit_note_15",
 			"fieldtype": "Currency",
 			"width": 90
 		},
 
 		{
-			"label": _("Collectable Amount Last 15 Days"),
+			"label": _("Current Collectable Amount"),
 			"fieldname": "collectable_amount_15",
 			"fieldtype": "Currency",
 			"width": 100
@@ -1433,6 +1433,71 @@ def get_data(filters, companies):
 	if customer_filter:
 		journal_note_customer_condition = " AND gle.party = %(customer)s"
 
+	# journal_note_data = frappe.db.sql(
+	# 	f"""
+	# 	SELECT
+	# 		gle.party AS customer,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN gle.posting_date >= fd.first_date
+	# 					AND gle.posting_date <= %(prev_to_date)s
+	# 				THEN gle.credit
+	# 				ELSE 0
+	# 			END
+	# 		) AS credit_note,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN gle.posting_date >= %(last_15_start)s
+	# 				THEN gle.credit
+	# 				ELSE 0
+	# 			END
+	# 		) AS credit_note_15,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN gle.posting_date >= fd.first_date
+	# 					AND gle.posting_date <= %(prev_to_date)s
+	# 				THEN gle.debit
+	# 				ELSE 0
+	# 			END
+	# 		) AS debit_note,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN gle.posting_date >= %(last_15_start)s
+	# 				THEN gle.debit
+	# 				ELSE 0
+	# 			END
+	# 		) AS debit_note_15
+
+	# 	FROM `tabGL Entry` gle
+
+	# 	INNER JOIN (
+	# 		SELECT
+	# 			company,
+	# 			MIN(posting_date) AS first_date
+	# 		FROM `tabDelivery Note`
+	# 		WHERE docstatus = 1
+	# 		GROUP BY company
+	# 	) fd ON LOWER(TRIM(fd.company)) = LOWER(TRIM(gle.party))
+
+	# 	WHERE
+	# 		gle.is_cancelled = 0
+	# 		AND gle.company IN %(companies)s
+	# 		AND gle.posting_date >= fd.first_date
+	# 		AND gle.posting_date <= %(to_date)s
+	# 		AND gle.party_type = 'Customer'
+	# 		AND IFNULL(gle.party, '') != ''
+	# 		AND gle.voucher_type = 'Journal Entry'
+	# 		{journal_note_customer_condition}
+
+	# 	GROUP BY gle.party
+	# 	""",
+	# 	sales_values,
+	# 	as_dict=True
+	# )
 	journal_note_data = frappe.db.sql(
 		f"""
 		SELECT
@@ -1440,8 +1505,8 @@ def get_data(filters, companies):
 
 			SUM(
 				CASE
-					WHEN gle.posting_date >= fd.first_date
-						AND gle.posting_date <= %(prev_to_date)s
+					WHEN gle.posting_date <= %(prev_to_date)s
+						AND gle.voucher_subtype = 'Credit Note'
 					THEN gle.credit
 					ELSE 0
 				END
@@ -1450,6 +1515,8 @@ def get_data(filters, companies):
 			SUM(
 				CASE
 					WHEN gle.posting_date >= %(last_15_start)s
+						AND gle.posting_date <= %(to_date)s
+						AND gle.voucher_subtype = 'Credit Note'
 					THEN gle.credit
 					ELSE 0
 				END
@@ -1457,8 +1524,8 @@ def get_data(filters, companies):
 
 			SUM(
 				CASE
-					WHEN gle.posting_date >= fd.first_date
-						AND gle.posting_date <= %(prev_to_date)s
+					WHEN gle.posting_date <= %(prev_to_date)s
+						AND gle.voucher_subtype = 'Debit Note'
 					THEN gle.debit
 					ELSE 0
 				END
@@ -1467,6 +1534,8 @@ def get_data(filters, companies):
 			SUM(
 				CASE
 					WHEN gle.posting_date >= %(last_15_start)s
+						AND gle.posting_date <= %(to_date)s
+						AND gle.voucher_subtype = 'Debit Note'
 					THEN gle.debit
 					ELSE 0
 				END
@@ -1474,23 +1543,14 @@ def get_data(filters, companies):
 
 		FROM `tabGL Entry` gle
 
-		INNER JOIN (
-			SELECT
-				company,
-				MIN(posting_date) AS first_date
-			FROM `tabDelivery Note`
-			WHERE docstatus = 1
-			GROUP BY company
-		) fd ON LOWER(TRIM(fd.company)) = LOWER(TRIM(gle.party))
-
 		WHERE
 			gle.is_cancelled = 0
 			AND gle.company IN %(companies)s
-			AND gle.posting_date >= fd.first_date
 			AND gle.posting_date <= %(to_date)s
 			AND gle.party_type = 'Customer'
 			AND IFNULL(gle.party, '') != ''
 			AND gle.voucher_type = 'Journal Entry'
+			AND gle.voucher_subtype IN ('Credit Note', 'Debit Note')
 			{journal_note_customer_condition}
 
 		GROUP BY gle.party
@@ -1649,17 +1709,62 @@ def get_data(filters, companies):
 		payment_received_customer_condition = " AND pe.party = %(customer)s"
 		payment_received_values["customer"] = customer_filter
 
+	# payment_received_data = frappe.db.sql(
+	# 	f"""
+	# 	SELECT
+	# 		pe.party AS customer,
+	# 		SUM(pe.paid_amount) AS payment_received
+
+	# 	FROM `tabPayment Entry` pe
+
+	# 	WHERE
+	# 		pe.docstatus = 1
+	# 		AND pe.payment_type = 'Receive'
+	# 		AND pe.party_type = 'Customer'
+	# 		AND pe.company IN %(companies)s
+	# 		AND pe.creation <= %(now)s
+	# 		{payment_received_customer_condition}
+
+	# 	GROUP BY pe.party
+	# 	""",
+	# 	payment_received_values,
+	# 	as_dict=True
+	# )
 	payment_received_data = frappe.db.sql(
 		f"""
 		SELECT
 			pe.party AS customer,
-			SUM(pe.paid_amount) AS payment_received
+
+			SUM(
+				CASE
+					WHEN pe.payment_type = 'Pay'
+					THEN pe.paid_amount
+					ELSE 0
+				END
+			) AS payment_pay,
+
+			SUM(
+				CASE
+					WHEN pe.payment_type = 'Receive'
+					THEN pe.paid_amount
+					ELSE 0
+				END
+			) AS payment_receive,
+
+			SUM(
+				CASE
+					WHEN pe.payment_type = 'Receive'
+					THEN pe.paid_amount
+					WHEN pe.payment_type = 'Pay'
+					THEN -pe.paid_amount
+					ELSE 0
+				END
+			) AS payment_received
 
 		FROM `tabPayment Entry` pe
 
 		WHERE
 			pe.docstatus = 1
-			AND pe.payment_type = 'Receive'
 			AND pe.party_type = 'Customer'
 			AND pe.company IN %(companies)s
 			AND pe.creation <= %(now)s
@@ -1841,6 +1946,8 @@ def get_data(filters, companies):
 
 
 	return data
+
+
 
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
