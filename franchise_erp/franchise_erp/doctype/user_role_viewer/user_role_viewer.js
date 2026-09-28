@@ -11,6 +11,10 @@ frappe.ui.form.on("User Role Viewer", {
 });
 
 
+/* =========================================================
+   ROLE PROFILE -> ROLES
+   ========================================================= */
+
 function load_roles_from_profile(frm) {
 
     if (!frm.doc.role_profile) {
@@ -50,6 +54,11 @@ function load_roles_from_profile(frm) {
     });
 }
 
+
+/* =========================================================
+   MODULE PROFILE -> ALLOWED MODULES
+   ========================================================= */
+
 function load_roles_from_module_profile(frm) {
 
     if (!frm.doc.module_profile) {
@@ -68,11 +77,11 @@ function load_roles_from_module_profile(frm) {
 
         callback(r) {
 
-            const roles = r.message || [];
+            const modules = r.message || [];
 
             frm.clear_table("module_profile_role");
 
-            roles.forEach(d => {
+            modules.forEach(d => {
 
                 if (!d.role) {
                     return;
