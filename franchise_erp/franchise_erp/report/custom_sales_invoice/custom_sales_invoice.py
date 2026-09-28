@@ -237,7 +237,11 @@ def get_data(filters):
 			# =========================================
 			item.custom_sup_design_no.as_("sup_design_no"),
 		)
-		.where(si.docstatus == 1)
+		.where(
+			(si.docstatus == 1)
+			& (item.is_stock_item == 1)
+			& (item.has_serial_no == 1)
+		)
 	)
 
 	# =========================================
@@ -525,7 +529,6 @@ def get_supplier_from_purchase_receipt_serial(
 # ============================================================
 # SERIAL DOCUMENT FIELD
 # ============================================================
-
 def get_supplier_from_serial_document_field(
 	serial_no,
 	fieldname
@@ -551,8 +554,6 @@ def get_supplier_from_serial_document_field(
 	return get_supplier_from_document_no(
 		document_no
 	)
-
-
 # ============================================================
 # DOCUMENT SUPPLIER
 # ============================================================
@@ -582,10 +583,7 @@ def get_supplier_from_document_no(document_no):
 	):
 		return frappe.db.get_value(
 			"Subcontracting Receipt",
-			{
-				"name": document_no,
-				"docstatus": 1,
-			},
+			document_no,
 			"supplier"
 		)
 
