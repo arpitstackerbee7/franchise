@@ -405,7 +405,9 @@ override_doctype_class = {
     "Payment Entry": "franchise_erp.custom.payment_entry.CustomPaymentEntry",
     "Full and Final Statement": "franchise_erp.overrides.full_and_final_statement.CustomFullandFinalStatement",
     "Role Profile": "franchise_erp.overrides.role_profile.CustomRoleProfile",
-    "Purchase Receipt": "franchise_erp.overrides.purchase_receipt.PurchaseReceipt"
+    "Purchase Receipt": "franchise_erp.overrides.purchase_receipt.PurchaseReceipt",
+    "Module Profile": "franchise_erp.overrides.module_profile.CustomModuleProfile",
+
 }
 
 override_whitelisted_methods = {
