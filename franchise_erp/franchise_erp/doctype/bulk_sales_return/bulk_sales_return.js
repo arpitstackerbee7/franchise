@@ -13,31 +13,50 @@ frappe.ui.form.on("Bulk Sales Return", {
         if (frm.is_new() || frm.doc.docstatus !== 0) {
             return;
         }
-
         frm.add_custom_button(
             "Get Items from SI / DN",
             () => {
                 open_si_dn_dialog(frm);
             }
         );
+        
+        // frm.add_custom_button(
+        //     "Get Items from Sales Invoice",
+        //     () => {
+        //         open_sales_invoice_dialog(frm);
+        //     }
+        // );
 
-        frm.add_custom_button(
-            "Get Items from Sales Invoice",
-            () => {
-                open_sales_invoice_dialog(frm);
-            }
-        );
-
-        frm.add_custom_button(
-            "Get Items from Delivery Notes",
-            () => {
-                open_return_items_dialog(frm);
-            }
-        );
+        // frm.add_custom_button(
+        //     "Get Items from Delivery Notes",
+        //     () => {
+        //         open_return_items_dialog(frm);
+        //     }
+        // );
 
         update_total_quantity(frm);
+                hide_items_add_row(frm);
+    },
+
+    onload_post_render(frm) {
+        hide_items_add_row(frm);
     }
 });
+
+function hide_items_add_row(frm) {
+    const field = frm.get_field("items");
+
+    if (!field || !field.grid) {
+        return;
+    }
+
+    // Disable adding new rows
+    field.grid.cannot_add_rows = true;
+
+    // Exact button from your HTML
+    field.grid.wrapper.find(".grid-add-row").hide();
+}
+
 
 
 // =============================================================
@@ -122,32 +141,32 @@ frappe.ui.form.on("Bulk Sales Return", {
                 si_res.message
             ) {
 
-                frm.add_custom_button(
-                    "Submit Returns",
-                    async function() {
+                // frm.add_custom_button(
+                //     "Submit Returns",
+                //     async function() {
 
-                        await frappe.call({
+                //         await frappe.call({
 
-                            method:
-                                "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.submit_created_returns",
+                //             method:
+                //                 "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.submit_created_returns",
 
-                            args: {
-                                docname: frm.doc.name
-                            },
+                //             args: {
+                //                 docname: frm.doc.name
+                //             },
 
-                            freeze: true,
+                //             freeze: true,
 
-                            freeze_message:
-                                "Submitting in background..."
-                        });
+                //             freeze_message:
+                //                 "Submitting in background..."
+                //         });
 
-                        frappe.msgprint(
-                            "Submission started in background."
-                        );
+                //         frappe.msgprint(
+                //             "Submission started in background."
+                //         );
 
-                        frm.reload_doc();
-                    }
-                );
+                //         frm.reload_doc();
+                //     }
+                // );
             }
         });
     }

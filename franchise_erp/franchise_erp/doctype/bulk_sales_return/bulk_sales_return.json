@@ -71,6 +71,7 @@
    "default": "Not Started",
    "fieldname": "submit_status",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Return Submission Status",
    "options": "Not Started\nQueued\nIn Progress\nCompleted\nFailed",
    "read_only": 1
@@ -80,6 +81,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
@@ -105,7 +107,7 @@
    "link_fieldname": "custom_bulk_sales_return"
   }
  ],
- "modified": "2026-06-30 18:50:02.816410",
+ "modified": "2026-09-29 10:53:53.671014",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Bulk Sales Return",
