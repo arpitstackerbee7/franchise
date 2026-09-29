@@ -2803,49 +2803,69 @@ def has_draft_return_sis(docname):
 # =============================================================================
 # DELIVERY NOTE RETURNABLE ITEMS
 # =============================================================================
-
 @frappe.whitelist()
 def get_returnable_items(
     customer,
     company,
     item_code=None
 ):
+    items = []
 
-    conditions = """
+    # ============================================================
+    # 1. DELIVERY NOTE ITEMS
+    #    DN has FIRST PRIORITY
+    # ============================================================
+
+    dn_conditions = """
         AND dn.customer = %(customer)s
         AND dn.company = %(company)s
     """
 
     if item_code:
-
-        conditions += """
+        dn_conditions += """
             AND dni.item_code = %(item_code)s
         """
 
-    items = frappe.db.sql(
+    delivery_note_items = frappe.db.sql(
         f"""
         SELECT
             dni.parent AS delivery_note,
             dni.name AS delivery_note_item,
+
             dni.item_code,
+            dni.item_name,
+
             dni.qty AS delivered_qty,
+            dni.rate AS rate,
+
             IFNULL(dni.returned_qty, 0) AS returned_qty,
+
             (
                 dni.qty -
                 IFNULL(dni.returned_qty, 0)
             ) AS returnable_qty,
+
             0 AS return_qty,
+
             i.has_serial_no
+
         FROM `tabDelivery Note Item` dni
+
         INNER JOIN `tabDelivery Note` dn
             ON dn.name = dni.parent
+
         LEFT JOIN `tabItem` i
             ON i.name = dni.item_code
+
         WHERE dn.docstatus = 1
         AND dn.is_return = 0
         AND dni.qty > IFNULL(dni.returned_qty, 0)
-        {conditions}
-        ORDER BY dn.posting_date DESC
+
+        {dn_conditions}
+
+        ORDER BY
+            dn.posting_date DESC,
+            dn.posting_time DESC
         """,
         {
             "customer": customer,
@@ -2854,6 +2874,98 @@ def get_returnable_items(
         },
         as_dict=1
     )
+
+    # ------------------------------------------------------------
+    # Keep track of items which already have a returnable DN
+    # ------------------------------------------------------------
+
+    dn_item_codes = set()
+
+    for row in delivery_note_items:
+
+        row["source_type"] = "Delivery Note"
+
+        dn_item_codes.add(
+            row.item_code
+        )
+
+        items.append(row)
+
+
+    # ============================================================
+    # 2. SALES INVOICE ITEMS
+    #    Only if NO returnable DN exists for that item
+    # ============================================================
+
+    si_conditions = """
+        AND si.customer = %(customer)s
+        AND si.company = %(company)s
+    """
+
+    if item_code:
+        si_conditions += """
+            AND sii.item_code = %(item_code)s
+        """
+
+    sales_invoice_items = frappe.db.sql(
+        f"""
+        SELECT
+            sii.parent AS sales_invoice,
+            sii.name AS sales_invoice_item,
+
+            sii.item_code,
+            sii.item_name,
+
+            sii.qty AS delivered_qty,
+            sii.rate AS rate,
+
+            0 AS returned_qty,
+
+            sii.qty AS returnable_qty,
+
+            0 AS return_qty,
+
+            i.has_serial_no
+
+        FROM `tabSales Invoice Item` sii
+
+        INNER JOIN `tabSales Invoice` si
+            ON si.name = sii.parent
+
+        LEFT JOIN `tabItem` i
+            ON i.name = sii.item_code
+
+        WHERE si.docstatus = 1
+        AND si.is_return = 0
+        AND sii.qty > 0
+
+        {si_conditions}
+
+        ORDER BY
+            si.posting_date DESC,
+            si.posting_time DESC
+        """,
+        {
+            "customer": customer,
+            "company": company,
+            "item_code": item_code
+        },
+        as_dict=1
+    )
+
+    for row in sales_invoice_items:
+
+        # ========================================================
+        # DN HAS PRIORITY
+        # ========================================================
+
+        if row.item_code in dn_item_codes:
+            continue
+
+        row["source_type"] = "Sales Invoice"
+
+        items.append(row)
+
 
     return items
 
@@ -3356,7 +3468,6 @@ def get_sales_invoice_items(
 
     return items
 
-
 # =============================================================================
 # SALES INVOICE RETURNABLE ITEMS
 # =============================================================================
@@ -3368,20 +3479,17 @@ def get_sales_invoice_returnable_items(
     sales_invoice=None,
     item_code=None
 ):
-
     conditions = """
         AND si.customer = %(customer)s
         AND si.company = %(company)s
     """
 
     if sales_invoice:
-
         conditions += """
             AND si.name = %(sales_invoice)s
         """
 
     if item_code:
-
         conditions += """
             AND sii.item_code = %(item_code)s
         """
@@ -3393,51 +3501,28 @@ def get_sales_invoice_returnable_items(
             sii.name AS sales_invoice_item,
             sii.item_code,
             sii.item_name,
+
             sii.qty AS billed_qty,
 
             CASE
                 WHEN si.update_stock = 1
                     THEN sii.qty
-                ELSE sii.delivered_qty
+                ELSE IFNULL(sii.delivered_qty, 0)
             END AS delivered_qty,
 
-            IFNULL(
-                (
-                    SELECT
-                        SUM(ABS(sii2.qty))
-                    FROM `tabSales Invoice Item` sii2
-                    INNER JOIN `tabSales Invoice` si2
-                        ON si2.name = sii2.parent
-                    WHERE si2.docstatus = 1
-                    AND si2.is_return = 1
-                    AND sii2.sales_invoice_item = sii.name
-                ),
-                0
-            ) AS returned_qty,
+            IFNULL(ret.returned_qty, 0) AS returned_qty,
 
             (
                 CASE
                     WHEN si.update_stock = 1
                         THEN sii.qty
-                    ELSE sii.delivered_qty
+                    ELSE IFNULL(sii.delivered_qty, 0)
                 END
-                -
-                IFNULL(
-                    (
-                        SELECT
-                            SUM(ABS(sii2.qty))
-                        FROM `tabSales Invoice Item` sii2
-                        INNER JOIN `tabSales Invoice` si2
-                            ON si2.name = sii2.parent
-                        WHERE si2.docstatus = 1
-                        AND si2.is_return = 1
-                        AND sii2.sales_invoice_item = sii.name
-                    ),
-                    0
-                )
+                - IFNULL(ret.returned_qty, 0)
             ) AS returnable_qty,
 
             0 AS return_qty,
+
             i.has_serial_no,
             sii.rate,
             sii.warehouse
@@ -3450,30 +3535,67 @@ def get_sales_invoice_returnable_items(
         LEFT JOIN `tabItem` i
             ON i.name = sii.item_code
 
+        LEFT JOIN (
+            SELECT
+                sii_return.sales_invoice_item,
+                SUM(ABS(sii_return.qty)) AS returned_qty
+
+            FROM `tabSales Invoice Item` sii_return
+
+            INNER JOIN `tabSales Invoice` si_return
+                ON si_return.name = sii_return.parent
+
+            WHERE si_return.docstatus = 1
+              AND si_return.is_return = 1
+              AND sii_return.sales_invoice_item IS NOT NULL
+
+            GROUP BY sii_return.sales_invoice_item
+        ) ret
+            ON ret.sales_invoice_item = sii.name
+
         WHERE si.docstatus = 1
-        AND si.is_return = 0
+          AND si.is_return = 0
 
         {conditions}
 
         AND (
-            sii.delivered_qty > 0
-            OR si.update_stock = 1
+            si.update_stock = 1
+
+            OR IFNULL(sii.delivered_qty, 0) > 0
+
+            OR (
+                sii.dn_detail IS NOT NULL
+                AND EXISTS (
+                    SELECT 1
+                    FROM `tabDelivery Note Item` dni
+
+                    INNER JOIN `tabDelivery Note` dn
+                        ON dn.name = dni.parent
+
+                    WHERE dni.name = sii.dn_detail
+                      AND dn.docstatus = 1
+                      AND dn.is_return = 0
+                )
+            )
         )
 
         HAVING returnable_qty > 0
 
-        ORDER BY si.posting_date DESC
+        ORDER BY
+            si.posting_date DESC,
+            si.name DESC
         """,
         {
-            "sales_invoice": sales_invoice,
             "customer": customer,
             "company": company,
+            "sales_invoice": sales_invoice,
             "item_code": item_code
         },
         as_dict=1
     )
 
     return items
+
 
 
 # =============================================================================

@@ -1,11 +1,3 @@
-// Copyright (c) 2026, Franchise Erp and contributors
-// For license information, please see license.txt
-
-
-// =============================================================
-// BULK SALES RETURN FORM
-// =============================================================
-
 frappe.ui.form.on("Bulk Sales Return", {
 
     refresh(frm) {
@@ -57,12 +49,6 @@ function hide_items_add_row(frm) {
     field.grid.wrapper.find(".grid-add-row").hide();
 }
 
-
-
-// =============================================================
-// BULK SALES RETURN ITEM TABLE
-// =============================================================
-
 frappe.ui.form.on("Bulk Sales Return Item Table", {
 
     qty(frm) {
@@ -77,11 +63,6 @@ frappe.ui.form.on("Bulk Sales Return Item Table", {
         update_total_quantity(frm);
     }
 });
-
-
-// =============================================================
-// TOTAL QUANTITY
-// =============================================================
 
 function update_total_quantity(frm) {
 
@@ -102,11 +83,6 @@ function update_total_quantity(frm) {
         "total_quantity"
     );
 }
-
-
-// =============================================================
-// SUBMITTED BULK RETURN - SUBMIT CREATED RETURNS BUTTON
-// =============================================================
 
 frappe.ui.form.on("Bulk Sales Return", {
 
@@ -173,10 +149,6 @@ frappe.ui.form.on("Bulk Sales Return", {
 });
 
 
-// =============================================================
-// SALES INVOICE DIALOG TOTAL
-// =============================================================
-
 function update_scan_total_quantity(
     dialog,
     selected_rows
@@ -206,11 +178,6 @@ function update_scan_total_quantity(
         total
     );
 }
-
-
-// =============================================================
-// SALES INVOICE DIALOG
-// =============================================================
 
 function open_sales_invoice_dialog(frm) {
 
@@ -1130,161 +1097,151 @@ function open_sales_invoice_dialog(frm) {
     );
 }
 
-
-// =============================================================
-// LOAD SALES INVOICE ITEMS
-// =============================================================
-
 function load_sales_invoice_items(
     frm,
     dialog,
     selected_rows
 ) {
-
-    let customer =
-        dialog.get_value(
-            "customer"
-        );
-
-    let item_code =
-        dialog.get_value(
-            "item_code"
-        );
+    const customer = dialog.get_value("customer");
+    const item_code = dialog.get_value("item_code");
 
     if (!customer) {
         return;
     }
 
     frappe.call({
-
         method:
             "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_sales_invoice_returnable_items",
 
         args: {
-
-            customer:
-                customer,
-
-            item_code:
-                item_code,
-
-            company:
-                frm.doc.company
+            customer: customer,
+            company: frm.doc.company,
+            item_code: item_code || null
         },
 
-        callback(r) {
+        freeze: true,
+        freeze_message: __("Loading returnable items..."),
 
+        callback(r) {
             if (!r.message) {
                 return;
             }
 
-            let old_rows =
-                dialog.fields_dict
-                    .items_table
-                    .df
-                    .data || [];
+            const old_rows =
+                dialog.fields_dict.items_table.df.data || [];
 
-            let new_rows =
-                r.message || [];
+            const new_rows = r.message || [];
 
-            let row_map = {};
+            const row_map = {};
 
-            old_rows.forEach(
-                row => {
-
-                    if (
-                        selected_rows[
-                            row.sales_invoice_item
-                        ]
-                    ) {
-
-                        row_map[
-                            row.sales_invoice_item
-                        ] = row;
-                    }
+            /*
+             * Preserve already selected rows
+             */
+            old_rows.forEach(row => {
+                if (
+                    selected_rows &&
+                    selected_rows[row.sales_invoice_item]
+                ) {
+                    row_map[row.sales_invoice_item] = row;
                 }
-            );
+            });
 
-            new_rows.forEach(
-                row => {
+            /*
+             * Add / update rows returned from server
+             */
+            new_rows.forEach(row => {
 
-                    if (
-                        row_map[
-                            row.sales_invoice_item
-                        ]
-                    ) {
+                const old_row =
+                    row_map[row.sales_invoice_item];
 
-                        row.return_qty =
-                            row_map[
-                                row.sales_invoice_item
-                            ].return_qty;
+                if (old_row) {
 
-                        row.serial_nos =
-                            row_map[
-                                row.sales_invoice_item
-                            ].serial_nos;
-                    }
+                    /*
+                     * Preserve user entered return qty
+                     */
+                    row.return_qty =
+                        old_row.return_qty || 0;
 
-                    row_map[
-                        row.sales_invoice_item
-                    ] = row;
+                    /*
+                     * Preserve scanned serials
+                     */
+                    row.serial_nos =
+                        old_row.serial_nos || "";
+
+                    /*
+                     * Preserve checkbox state
+                     */
+                    row.__checked = true;
                 }
-            );
 
-            dialog.fields_dict
-                .items_table
-                .df
-                .data =
-                Object.values(
-                    row_map
-                );
+                /*
+                 * Make sure these values are always present
+                 */
+                row.billed_qty =
+                    flt(row.billed_qty);
 
-            let grid =
-                dialog.fields_dict
-                    .items_table
-                    .grid;
+                row.delivered_qty =
+                    flt(row.delivered_qty);
+
+                row.returned_qty =
+                    flt(row.returned_qty);
+
+                row.returnable_qty =
+                    flt(row.returnable_qty);
+
+                row.return_qty =
+                    flt(row.return_qty || 0);
+
+                row_map[row.sales_invoice_item] = row;
+            });
+
+            /*
+             * Replace dialog table data
+             */
+            dialog.fields_dict.items_table.df.data =
+                Object.values(row_map);
+
+            /*
+             * Refresh grid
+             */
+            const grid =
+                dialog.fields_dict.items_table.grid;
 
             grid.refresh();
 
-            frappe.after_ajax(
-                () => {
+            /*
+             * Restore checkbox state after refresh
+             */
+            frappe.after_ajax(() => {
 
-                    let grid =
-                        dialog.fields_dict
-                            .items_table
-                            .grid;
+                const grid =
+                    dialog.fields_dict.items_table.grid;
 
-                    grid.grid_rows.forEach(
-                        row => {
+                grid.grid_rows.forEach(grid_row => {
 
-                            row.wrapper
-                                .find(
-                                    ".grid-row-check"
-                                )
-                                .prop(
-                                    "checked",
-                                    !!selected_rows[
-                                        row.doc
-                                            .sales_invoice_item
-                                    ]
-                                );
-                        }
-                    );
+                    const doc = grid_row.doc;
 
-                    update_scan_total_quantity(
-                        dialog,
-                        selected_rows
-                    );
-                }
-            );
+                    const checked =
+                        !!(
+                            selected_rows &&
+                            selected_rows[
+                                doc.sales_invoice_item
+                            ]
+                        );
+
+                    grid_row.wrapper
+                        .find(".grid-row-check")
+                        .prop("checked", checked);
+                });
+
+                update_scan_total_quantity(
+                    dialog,
+                    selected_rows || {}
+                );
+            });
         }
     });
 }
-
-
-// =============================================================
-// DELIVERY NOTE RETURN DIALOG
-// =============================================================
 
 function open_return_items_dialog(frm) {
 
@@ -2096,26 +2053,19 @@ function open_return_items_dialog(frm) {
 }
 
 
-// =============================================================
-// LOAD DELIVERY NOTE ITEMS
-// =============================================================
-
 function load_returnable_items(
     frm,
-    dialog
+    dialog,
+    selected_rows
 ) {
 
     let customer =
-        dialog.get_value(
-            "customer"
-        );
+        dialog.get_value("customer");
 
     let item_code =
-        dialog.get_value(
-            "item_code"
-        );
+        dialog.get_value("item_code");
 
-    if (!customer) {
+    if (!customer || !item_code) {
         return;
     }
 
@@ -2136,31 +2086,405 @@ function load_returnable_items(
                 frm.doc.company
         },
 
+        freeze: true,
+
+        freeze_message:
+            "Loading returnable items...",
+
         callback: function(r) {
+
+            console.log(
+                "get_returnable_items RESPONSE:",
+                r.message
+            );
 
             if (!r.message) {
                 return;
             }
 
-            dialog.fields_dict
-                .items_table
-                .df
-                .data =
-                r.message;
+            let table_field =
+                dialog.fields_dict.items_table;
 
-            dialog.fields_dict
-                .items_table
-                .grid
-                .refresh();
+            if (!table_field) {
+                return;
+            }
+
+            let old_rows =
+                table_field.df.data || [];
+
+            let new_rows =
+                r.message || [];
+
+            let row_map = {};
+
+            // =====================================================
+            // PRESERVE EXISTING ROWS
+            // =====================================================
+
+            old_rows.forEach(
+                row => {
+
+                    let key =
+                        row._common_key;
+
+                    if (!key) {
+
+                        if (
+                            row.source_type ===
+                            "Sales Invoice" &&
+                            row.sales_invoice_item
+                        ) {
+
+                            key =
+                                `SI::${row.sales_invoice_item}`;
+
+                        } else if (
+                            row.source_type ===
+                            "Delivery Note" &&
+                            row.delivery_note_item
+                        ) {
+
+                            key =
+                                `DN::${row.delivery_note_item}`;
+                        }
+                    }
+
+                    if (!key) {
+
+                        key =
+                            row._scanned_serial
+                                ? `SCANNED::${row._scanned_serial}`
+                                : `ROW::${frappe.utils.get_random(8)}`;
+                    }
+
+                    row_map[key] =
+                        row;
+                }
+            );
+
+
+            // =====================================================
+            // ADD API ROWS
+            // =====================================================
+
+            new_rows.forEach(
+                row => {
+
+                    console.log(
+                        "RETURNABLE ROW:",
+                        row
+                    );
+
+                    // =================================================
+                    // DETERMINE SOURCE
+                    // =================================================
+
+                    let is_si =
+                        !!row.sales_invoice_item;
+
+                    let is_dn =
+                        !!row.delivery_note_item &&
+                        !row.sales_invoice_item;
+
+
+                    if (
+                        is_si
+                    ) {
+
+                        row.source_type =
+                            "Sales Invoice";
+
+                    } else if (
+                        is_dn
+                    ) {
+
+                        row.source_type =
+                            "Delivery Note";
+                    }
+
+
+                    // =================================================
+                    // COMMON KEY
+                    // =================================================
+
+                    let common_key = null;
+
+                    if (
+                        row.source_type ===
+                        "Sales Invoice"
+                    ) {
+
+                        if (
+                            row.sales_invoice_item
+                        ) {
+
+                            common_key =
+                                `SI::${row.sales_invoice_item}`;
+                        }
+
+                    } else if (
+                        row.source_type ===
+                        "Delivery Note"
+                    ) {
+
+                        if (
+                            row.delivery_note_item
+                        ) {
+
+                            common_key =
+                                `DN::${row.delivery_note_item}`;
+                        }
+                    }
+
+
+                    // =================================================
+                    // DEBUG
+                    // =================================================
+
+                    console.log(
+                        "SOURCE:",
+                        row.source_type,
+                        "SI ITEM:",
+                        row.sales_invoice_item,
+                        "DN ITEM:",
+                        row.delivery_note_item,
+                        "KEY:",
+                        common_key
+                    );
+
+
+                    // =================================================
+                    // INVALID SOURCE
+                    // =================================================
+
+                    if (!common_key) {
+
+                        console.warn(
+                            "Skipping row because source key missing:",
+                            row
+                        );
+
+                        return;
+                    }
+
+
+                    row._common_key =
+                        common_key;
+
+
+                    // =================================================
+                    // RATE
+                    // =================================================
+
+                    row.rate =
+                        flt(row.rate);
+
+
+                    // =================================================
+                    // NON-SERIALIZED
+                    // =================================================
+
+                    if (
+                        !row.has_serial_no
+                    ) {
+
+                        let returnable =
+                            flt(
+                                row.returnable_qty
+                            );
+
+                        if (
+                            returnable <= 0
+                        ) {
+                            return;
+                        }
+
+
+                        // ---------------------------------------------
+                        // Default Return Qty
+                        // ---------------------------------------------
+
+                        row.return_qty =
+                            1;
+
+
+                        // ---------------------------------------------
+                        // Automatically select
+                        // ---------------------------------------------
+
+                        selected_rows[
+                            common_key
+                        ] = true;
+
+
+                        // ---------------------------------------------
+                        // Existing row
+                        // ---------------------------------------------
+
+                        if (
+                            row_map[
+                                common_key
+                            ]
+                        ) {
+
+                            let existing =
+                                row_map[
+                                    common_key
+                                ];
+
+                            existing.return_qty =
+                                flt(
+                                    existing.return_qty
+                                ) || 1;
+
+                            existing.rate =
+                                flt(
+                                    existing.rate
+                                ) || flt(
+                                    row.rate
+                                );
+
+                            selected_rows[
+                                common_key
+                            ] = true;
+
+                        } else {
+
+                            row_map[
+                                common_key
+                            ] =
+                                row;
+                        }
+
+                        return;
+                    }
+
+
+                    // =================================================
+                    // SERIALIZED
+                    // =================================================
+
+                    if (
+                        row.has_serial_no
+                    ) {
+
+                        // Item search se serialized row
+                        // auto-add/select nahi karni.
+                        return;
+                    }
+                }
+            );
+
+
+            // =====================================================
+            // SET TABLE DATA
+            // =====================================================
+
+            table_field.df.data =
+                Object.values(
+                    row_map
+                );
+
+
+            // =====================================================
+            // REFRESH
+            // =====================================================
+
+            table_field.grid.refresh();
+
+
+            // =====================================================
+            // AUTO CHECK
+            // =====================================================
+
+            setTimeout(
+                () => {
+
+                    let grid =
+                        table_field.grid;
+
+                    if (
+                        !grid ||
+                        !grid.grid_rows
+                    ) {
+                        return;
+                    }
+
+
+                    grid.grid_rows.forEach(
+                        gr => {
+
+                            let row =
+                                gr.doc;
+
+                            if (!row) {
+                                return;
+                            }
+
+                            let key =
+                                row._common_key;
+
+
+                            if (!key) {
+
+                                if (
+                                    row.source_type ===
+                                    "Sales Invoice" &&
+                                    row.sales_invoice_item
+                                ) {
+
+                                    key =
+                                        `SI::${row.sales_invoice_item}`;
+
+                                } else if (
+                                    row.source_type ===
+                                    "Delivery Note" &&
+                                    row.delivery_note_item
+                                ) {
+
+                                    key =
+                                        `DN::${row.delivery_note_item}`;
+                                }
+                            }
+
+
+                            if (!key) {
+                                return;
+                            }
+
+
+                            let checkbox =
+                                gr.wrapper.find(
+                                    ".grid-row-check"
+                                );
+
+
+                            if (
+                                checkbox.length
+                            ) {
+
+                                checkbox.prop(
+                                    "checked",
+                                    !!selected_rows[
+                                        key
+                                    ]
+                                );
+                            }
+                        }
+                    );
+
+
+                    update_common_scan_total(
+                        dialog,
+                        selected_rows
+                    );
+
+                },
+                150
+            );
         }
     });
 }
-
-
-
-// =============================================================
-// COMMON SI / DN SCAN DIALOG
-// =============================================================
 
 function open_si_dn_dialog(frm) {
 
@@ -2563,28 +2887,29 @@ function open_si_dn_dialog(frm) {
                 // ITEM FILTER
                 // =================================================
 
-                {
-                    fieldname:
-                        "item_code",
+                
+              {
+    fieldname: "item_code",
+    label: "Item",
+    fieldtype: "Link",
+    options: "Item",
 
-                    label:
-                        "Item",
+    onchange() {
 
-                    fieldtype:
-                        "Link",
+        let item_code =
+            dialog.get_value("item_code");
 
-                    options:
-                        "Item",
+        if (!item_code) {
+            return;
+        }
 
-                    onchange() {
-
-                        load_common_si_dn_items(
-                            frm,
-                            dialog,
-                            selected_rows
-                        );
-                    }
-                },
+        load_returnable_items(
+            frm,
+            dialog,
+            selected_rows
+        );
+    }
+},
 
                 // =================================================
                 // SERIAL SCAN
@@ -4182,12 +4507,6 @@ function open_si_dn_dialog(frm) {
     );
 }
 
-
-
-// =============================================================
-// LOAD COMMON SI/DN ITEMS
-// =============================================================
-
 function load_common_si_dn_items(
     frm,
     dialog,
@@ -4195,16 +4514,12 @@ function load_common_si_dn_items(
 ) {
 
     let customer =
-        dialog.get_value(
-            "customer"
-        );
+        dialog.get_value("customer");
 
     let item_code =
-        dialog.get_value(
-            "item_code"
-        );
+        dialog.get_value("item_code");
 
-    if (!customer) {
+    if (!customer || !item_code) {
         return;
     }
 
@@ -4214,22 +4529,25 @@ function load_common_si_dn_items(
             "franchise_erp.franchise_erp.doctype.bulk_sales_return.bulk_sales_return.get_sales_invoice_returnable_items",
 
         args: {
-
-            customer:
-                customer,
-
-            item_code:
-                item_code,
-
-            company:
-                frm.doc.company
+            customer: customer,
+            item_code: item_code,
+            company: frm.doc.company
         },
+
+        freeze: true,
+
+        freeze_message:
+            "Loading returnable items...",
 
         callback(r) {
 
             if (!r.message) {
                 return;
             }
+
+            // =====================================================
+            // OLD TABLE ROWS
+            // =====================================================
 
             let old_rows =
                 dialog.fields_dict
@@ -4242,96 +4560,153 @@ function load_common_si_dn_items(
 
             let row_map = {};
 
-            // ---------------------------------------------------------
-            // PRESERVE SCANNED ROWS
-            // ---------------------------------------------------------
+            // =====================================================
+            // PRESERVE OLD / SCANNED ROWS
+            // =====================================================
 
-            old_rows.forEach(
-                row => {
+            old_rows.forEach(row => {
 
-                    if (
-                        row._common_key
-                    ) {
+                let key =
+                    get_row_key(row);
 
-                        row_map[
-                            row._common_key
-                        ] = row;
-                    }
+                if (key) {
+                    row_map[key] = row;
                 }
-            );
+            });
 
-            // ---------------------------------------------------------
-            // ADD SI ROWS
-            // ---------------------------------------------------------
+            // =====================================================
+            // ADD API ROWS
+            // =====================================================
 
-            new_rows.forEach(
-                row => {
+            new_rows.forEach(row => {
 
-                    row.source_type =
-                        "Sales Invoice";
+                row.source_type =
+                    "Sales Invoice";
 
-                    row._common_key =
-                        `SI::${row.sales_invoice_item}`;
+                // =================================================
+                // COMMON KEY
+                // =================================================
+
+                let key =
+                    `SI::${row.sales_invoice_item}`;
+
+                // -------------------------------------------------
+                // For serialized item, keep serial-specific key
+                // -------------------------------------------------
+
+                if (
+                    row.has_serial_no &&
+                    row.serial_nos
+                ) {
+
+                    key =
+                        `SI::${row.sales_invoice_item}::SERIAL::${row.serial_nos}`;
+                }
+
+                row._common_key =
+                    key;
+
+                // =================================================
+                // AUTO SELECT + RETURN QTY = 1
+                // =================================================
+
+                if (
+                    flt(row.returnable_qty) > 0
+                ) {
+
+                    row.return_qty = 1;
+
+                    selected_rows[key] =
+                        true;
+                }
+
+                // =================================================
+                // EXISTING ROW
+                // =================================================
+
+                let old =
+                    row_map[key];
+
+                if (old) {
+
+                    // ---------------------------------------------
+                    // Preserve return quantity
+                    // ---------------------------------------------
 
                     if (
-                        row_map[
-                            row._common_key
-                        ]
+                        flt(old.return_qty) > 0
                     ) {
 
                         row.return_qty =
-                            row_map[
-                                row._common_key
-                            ].return_qty;
-
-                        row.serial_nos =
-                            row_map[
-                                row._common_key
-                            ].serial_nos;
-
-                        // ---------------------------------------------
-                        // IMPORTANT:
-                        // Preserve DN reference of scanned row.
-                        // ---------------------------------------------
-
-                        if (
-                            row_map[
-                                row._common_key
-                            ].delivery_note
-                        ) {
-
-                            row.delivery_note =
-                                row_map[
-                                    row._common_key
-                                ].delivery_note;
-                        }
-
-                        if (
-                            row_map[
-                                row._common_key
-                            ].delivery_note_item
-                        ) {
-
-                            row.delivery_note_item =
-                                row_map[
-                                    row._common_key
-                                ].delivery_note_item;
-                        }
+                            old.return_qty;
                     }
 
-                    row_map[
-                        row._common_key
-                    ] = row;
+                    // ---------------------------------------------
+                    // Preserve serial numbers
+                    // ---------------------------------------------
+
+                    if (
+                        old.serial_nos
+                    ) {
+
+                        row.serial_nos =
+                            old.serial_nos;
+                    }
+
+                    // ---------------------------------------------
+                    // Preserve Delivery Note
+                    // ---------------------------------------------
+
+                    if (
+                        old.delivery_note
+                    ) {
+
+                        row.delivery_note =
+                            old.delivery_note;
+                    }
+
+                    if (
+                        old.delivery_note_item
+                    ) {
+
+                        row.delivery_note_item =
+                            old.delivery_note_item;
+                    }
+
+                    // ---------------------------------------------
+                    // Preserve selected state
+                    // ---------------------------------------------
+
+                    if (
+                        selected_rows[key]
+                    ) {
+
+                        selected_rows[key] =
+                            true;
+                    }
                 }
-            );
+
+                // =================================================
+                // ADD / UPDATE ROW
+                // =================================================
+
+                row_map[key] =
+                    row;
+            });
+
+            // =====================================================
+            // SET TABLE DATA
+            // =====================================================
 
             dialog.fields_dict
                 .items_table
                 .df
                 .data =
-                Object.values(
-                    row_map
-                );
+                Object.values(row_map);
+
+            // =====================================================
+            // REFRESH GRID
+            // =====================================================
 
             let grid =
                 dialog.fields_dict
@@ -4340,70 +4715,72 @@ function load_common_si_dn_items(
 
             grid.refresh();
 
-            frappe.after_ajax(
-                () => {
+            // =====================================================
+            // AUTO CHECK SELECTED ROWS
+            // =====================================================
 
-                    setTimeout(
-                        () => {
+            frappe.after_ajax(() => {
 
-                            grid.grid_rows.forEach(
-                                gr => {
+                setTimeout(() => {
 
-                                    let key =
-                                        gr.doc
-                                            ._common_key;
+                    if (
+                        !grid.grid_rows
+                    ) {
+                        return;
+                    }
 
-                                    let checkbox =
-                                        gr.wrapper
-                                            .find(
-                                                ".grid-row-check"
-                                            );
+                    grid.grid_rows.forEach(
+                        gr => {
 
-                                    let should_check =
-                                        !!selected_rows[
-                                            key
-                                        ];
+                            let row =
+                                gr.doc;
 
-                                    if (
-                                        should_check &&
-                                        !checkbox.prop(
-                                            "checked"
-                                        )
-                                    ) {
+                            let key =
+                                get_row_key(
+                                    row
+                                );
 
-                                        checkbox.click();
-                                    }
+                            if (!key) {
+                                return;
+                            }
 
-                                    else if (
-                                        !should_check &&
-                                        checkbox.prop(
-                                            "checked"
-                                        )
-                                    ) {
+                            let checkbox =
+                                gr.wrapper.find(
+                                    ".grid-row-check"
+                                );
 
-                                        checkbox.click();
-                                    }
-                                }
+                            if (
+                                !checkbox.length
+                            ) {
+                                return;
+                            }
+
+                            let should_check =
+                                !!selected_rows[
+                                    key
+                                ];
+
+                            checkbox.prop(
+                                "checked",
+                                should_check
                             );
-
-                            update_common_scan_total(
-                                dialog,
-                                selected_rows
-                            );
-
-                        },
-                        100
+                        }
                     );
-                }
-            );
+
+                    // =============================================
+                    // UPDATE TOTAL QUANTITY
+                    // =============================================
+
+                    update_common_scan_total(
+                        dialog,
+                        selected_rows
+                    );
+
+                }, 150);
+            });
         }
     });
 }
-
-
-// =============================================================
-// COMMON SI/DN TOTAL
-// =============================================================
 
 function update_common_scan_total(
     dialog,
