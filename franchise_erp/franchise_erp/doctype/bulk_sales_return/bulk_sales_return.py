@@ -2026,6 +2026,15 @@ def activate_sales_invoice_only_stock(
             if warehouse:
                 values["warehouse"] = warehouse
 
+                warehouse_company = frappe.db.get_value(
+                    "Warehouse",
+                    warehouse,
+                    "company"
+                )
+
+                if warehouse_company:
+                    values["company"] = warehouse_company
+
             frappe.db.set_value(
                 "Serial No",
                 serial_no,
@@ -2041,7 +2050,8 @@ def activate_sales_invoice_only_stock(
                 )
             )
 
-    frappe.db.commit()
+        frappe.db.commit()
+
 # =============================================================================
 # DELIVERY NOTE RETURNS
 # =============================================================================
