@@ -9,6 +9,9 @@ class UserRoleViewer(Document):
     pass
 
 
+# =========================================================
+# ROLE PROFILE -> ROLES
+# =========================================================
 
 @frappe.whitelist()
 def get_roles_from_profile(role_profile):
@@ -27,6 +30,9 @@ def get_roles_from_profile(role_profile):
     )
 
 
+# =========================================================
+# MODULE PROFILE -> ALLOWED MODULES
+# =========================================================
 
 @frappe.whitelist()
 def get_roles_from_module_profile(module_profile):
@@ -39,34 +45,42 @@ def get_roles_from_module_profile(module_profile):
         module_profile
     )
 
+    # -----------------------------------------------------
+    # Modules blocked in selected Module Profile
+    # -----------------------------------------------------
+
     blocked_modules = {
         row.module
-        for row in (module_profile_doc.block_modules or [])
+        for row in module_profile_doc.block_modules
         if row.module
     }
 
+    # -----------------------------------------------------
+    # All Module Def
+    # -----------------------------------------------------
+
     all_modules = frappe.get_all(
         "Module Def",
-        pluck="name",
+        fields=["name"],
         order_by="name asc"
     )
 
-
-    allowed_modules = [
-        module
-        for module in all_modules
-        if module not in blocked_modules
-    ]
-
+    # -----------------------------------------------------
+    # Return allowed modules
+    # -----------------------------------------------------
 
     return [
         {
-            "role": module
+            "role": module.name
         }
-        for module in allowed_modules
+        for module in all_modules
+        if module.name not in blocked_modules
     ]
 
 
+# =========================================================
+# REMOVE RESTRICTED ROLES FROM USER
+# =========================================================
 
 def remove_user_roles(doc, method=None):
 
@@ -93,6 +107,10 @@ def remove_user_roles(doc, method=None):
     user.save(ignore_permissions=True)
 
 
+# =========================================================
+# GET HIDDEN ROLES
+# =========================================================
+
 @frappe.whitelist()
 def get_hidden_roles_for_user(user=None):
 
@@ -117,6 +135,10 @@ def get_hidden_roles_for_user(user=None):
 
     for viewer in viewer_docs:
 
+        # ---------------------------------------------
+        # Role Profile roles
+        # ---------------------------------------------
+
         rows = frappe.get_all(
             "User Role Viewer Detail",
             filters={
@@ -134,7 +156,9 @@ def get_hidden_roles_for_user(user=None):
     return list(hidden_roles)
 
 
-
+# =========================================================
+# GET HIDDEN MODULES
+# =========================================================
 @frappe.whitelist()
 def get_hidden_modules_for_user(user=None):
 
@@ -143,6 +167,9 @@ def get_hidden_modules_for_user(user=None):
     if current_user == "Administrator":
         return []
 
+    # ---------------------------------------------------------
+    # Current user's User Role Viewer records
+    # ---------------------------------------------------------
 
     viewer_docs = frappe.get_all(
         "User Role Viewer",
@@ -155,6 +182,14 @@ def get_hidden_modules_for_user(user=None):
 
     if not viewer_docs:
         return []
+
+    # ---------------------------------------------------------
+    # Get restricted modules from User Role Viewer
+    #
+    # module_profile_role:
+    #     role = Module Def name
+    #     check = 1
+    # ---------------------------------------------------------
 
     restricted_modules = set()
 
@@ -177,6 +212,9 @@ def get_hidden_modules_for_user(user=None):
     return list(restricted_modules)
 
 
+# =========================================================
+# GET HIDDEN MODULE PROFILES
+# =========================================================
 
 @frappe.whitelist()
 def get_hidden_module_profiles_for_user():
@@ -200,6 +238,16 @@ def get_hidden_module_profiles_for_user():
 
     hidden_modules = set()
 
+    # -----------------------------------------------------
+    # module_profile_role contains allowed Module Def
+    # names.
+    #
+    # Example:
+    #
+    # Accounts ✓
+    # HR ✓
+    # Stock ✓
+    # -----------------------------------------------------
 
     for viewer in viewer_docs:
 
@@ -220,6 +268,9 @@ def get_hidden_module_profiles_for_user():
     if not hidden_modules:
         return []
 
+    # -----------------------------------------------------
+    # Get all Module Profiles
+    # -----------------------------------------------------
 
     module_profiles = frappe.get_all(
         "Module Profile",
@@ -228,6 +279,9 @@ def get_hidden_module_profiles_for_user():
 
     hidden_module_profiles = set()
 
+    # -----------------------------------------------------
+    # Check every Module Profile
+    # -----------------------------------------------------
 
     for profile in module_profiles:
 
@@ -236,24 +290,28 @@ def get_hidden_module_profiles_for_user():
             profile.name
         )
 
-
+        # Modules blocked in this Module Profile
         blocked_modules = {
             row.module
-            for row in (profile_doc.block_modules or [])
+            for row in profile_doc.block_modules
             if row.module
         }
 
-
+        # All Module Def
         all_modules = frappe.get_all(
             "Module Def",
             pluck="name"
         )
 
-
+        # Modules available in this Module Profile
         allowed_modules = (
             set(all_modules) - blocked_modules
         )
 
+        # -------------------------------------------------
+        # If this profile contains ANY restricted module,
+        # hide this Module Profile from User.
+        # -------------------------------------------------
 
         if hidden_modules.intersection(allowed_modules):
 

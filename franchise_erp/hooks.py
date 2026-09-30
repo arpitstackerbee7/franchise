@@ -104,11 +104,7 @@ doc_events = {
             ],
         "before_submit": [
             "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
-        ],
-        "on_submit": (
-            "franchise_erp.franchise_erp.doctype.bulk_sales_return."
-            "bulk_sales_return.auto_submit_linked_delivery_note_return"
-        )
+        ]
         # "on_submit": "franchise_erp.custom.sales_invoice.update_serial_no_mrp"
     },
     "Purchase Order": {
@@ -388,7 +384,7 @@ doctype_js = {
     # "Subcontracting Order": "public/js/job_work_order.js",
     "Full and Final Statement": "public/js/full_and_final_statement.js",
     "Role Profile": "public/js/role_profile.js",
-    # "Module Profile": "public/js/module_profile.js"
+    "Module Profile": "public/js/module_profile.js"
 }
 
 
@@ -405,27 +401,12 @@ override_doctype_class = {
     "Payment Entry": "franchise_erp.custom.payment_entry.CustomPaymentEntry",
     "Full and Final Statement": "franchise_erp.overrides.full_and_final_statement.CustomFullandFinalStatement",
     "Role Profile": "franchise_erp.overrides.role_profile.CustomRoleProfile",
-    "Purchase Receipt": "franchise_erp.overrides.purchase_receipt.PurchaseReceipt",
-    "Module Profile": "franchise_erp.overrides.module_profile.CustomModuleProfile",
-
+    "Purchase Receipt": "franchise_erp.overrides.purchase_receipt.PurchaseReceipt"
 }
 
 override_whitelisted_methods = {
     "erpnext.stock.doctype.delivery_note.delivery_note.make_sales_invoice":
-        "franchise_erp.api.make_sales_invoice",
-        
-    "frappe.core.page.permission_manager.permission_manager.add":
-        "franchise_erp.custom.permission_audit.add",
-
-    "frappe.core.page.permission_manager.permission_manager.update":
-        "franchise_erp.custom.permission_audit.update",
-
-    "frappe.core.page.permission_manager.permission_manager.remove":
-        "franchise_erp.custom.permission_audit.remove",
-
-    "frappe.core.page.permission_manager.permission_manager.reset":
-        "franchise_erp.custom.permission_audit.reset",
-
+        "franchise_erp.api.make_sales_invoice"
 }
 
 # override_whitelisted_methods = {
