@@ -40,7 +40,6 @@ frappe.query_reports["Collection Report"] = {
 			default: frappe.datetime.get_today(),
 			reqd: 1
 		},
-
 		{
 			fieldname: "customer",
 			label: __("Customer"),
