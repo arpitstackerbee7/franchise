@@ -465,12 +465,258 @@ def get_supplier_for_item(item_code, serial_no):
 		item_code
 	)
 
-	if supplier:
+	# 9. Sales Return / Warehouse Company Fallback
+	# ------------------------------------------------
+	# Apply this only when the serial was created through
+	# a Sales Return and no actual Purchase Supplier could
+	# be traced from the normal purchase sources.
+	for serial in serial_numbers:
+		supplier = get_supplier_from_sales_return_company(
+			item_code,
+			serial
+		)
+
+		if supplier:
+			return supplier
+
+	return None
+
+# ============================================================
+# SALES RETURN -> WAREHOUSE COMPANY -> SUPPLIER
+# ============================================================
+
+def get_supplier_from_sales_return_company(
+	item_code,
+	serial_no
+):
+	if not item_code or not serial_no:
+		return None
+
+	# --------------------------------------------------------
+	# 1. Check Serial No creation document
+	# --------------------------------------------------------
+
+	if not frappe.db.exists(
+		"Serial No",
+		serial_no
+	):
+		return None
+
+	creation_document = frappe.db.get_value(
+		"Serial No",
+		serial_no,
+		"purchase_document_no"
+	)
+
+	if not creation_document:
+		return None
+
+	# --------------------------------------------------------
+	# 2. Creation document must be a Sales Return
+	# --------------------------------------------------------
+
+	sales_return = frappe.db.get_value(
+		"Sales Invoice",
+		{
+			"name": creation_document,
+			"docstatus": 1,
+			"is_return": 1,
+		},
+		[
+			"name",
+			"company",
+			"return_against",
+		],
+		as_dict=True,
+	)
+
+	if not sales_return:
+		return None
+
+	# --------------------------------------------------------
+	# 3. Find the relevant Sales Return Item
+	# --------------------------------------------------------
+
+	return_item = frappe.db.get_value(
+		"Sales Invoice Item",
+		{
+			"parent": sales_return.name,
+			"item_code": item_code,
+		},
+		[
+			"name",
+			"serial_and_batch_bundle",
+			"delivery_note",
+			"dn_detail",
+			"sales_order",
+			"so_detail",
+		],
+		as_dict=True,
+	)
+
+	if not return_item:
+		return None
+
+	# --------------------------------------------------------
+	# 4. This fallback is only for the same situation where
+	#    original transaction linkage is missing.
+	# --------------------------------------------------------
+
+	if sales_return.return_against:
+		return None
+
+	if return_item.delivery_note:
+		return None
+
+	if return_item.dn_detail:
+		return None
+
+	if return_item.sales_order:
+		return None
+
+	if return_item.so_detail:
+		return None
+
+	# --------------------------------------------------------
+	# 5. Find current/relevant warehouse for this serial
+	# --------------------------------------------------------
+
+	warehouse = get_warehouse_for_serial(
+		item_code,
+		serial_no
+	)
+
+	if not warehouse:
+		return None
+
+	# --------------------------------------------------------
+	# 6. Get Company from Warehouse
+	# --------------------------------------------------------
+
+	company = frappe.db.get_value(
+		"Warehouse",
+		warehouse,
+		"company"
+	)
+
+	if not company:
+		return None
+
+	# --------------------------------------------------------
+	# 7. Apply ONLY for TZU Lifestyle company
+	# --------------------------------------------------------
+
+	if company != "TZU Lifestyle Private Limited":
+		return None
+
+	# --------------------------------------------------------
+	# 8. Return only if this Supplier actually exists
+	# --------------------------------------------------------
+
+	supplier = "TZU Lifestyle Pvt Ltd"
+
+	if frappe.db.exists(
+		"Supplier",
+		supplier
+	):
 		return supplier
 
 	return None
 
 
+# ============================================================
+# SERIAL -> WAREHOUSE
+# ============================================================
+
+def get_warehouse_for_serial(
+	item_code,
+	serial_no
+):
+	if not item_code or not serial_no:
+		return None
+
+	# --------------------------------------------------------
+	# 1. First check Serial No master
+	# --------------------------------------------------------
+
+	warehouse = frappe.db.get_value(
+		"Serial No",
+		{
+			"serial_no": serial_no,
+			"item_code": item_code,
+		},
+		"warehouse"
+	)
+
+	if warehouse:
+		return warehouse
+
+	# --------------------------------------------------------
+	# 2. Find latest Stock Entry movement for this serial
+	# --------------------------------------------------------
+
+	entries = frappe.db.sql(
+		"""
+		SELECT
+			se.name,
+			se.posting_date,
+			se.posting_time,
+			sed.s_warehouse,
+			sed.t_warehouse,
+			se.stock_entry_type
+		FROM
+			`tabStock Entry` se
+		INNER JOIN
+			`tabStock Entry Detail` sed
+			ON sed.parent = se.name
+		WHERE
+			se.docstatus = 1
+			AND sed.item_code = %(item_code)s
+			AND (
+				sed.serial_no = %(serial_no)s
+				OR FIND_IN_SET(
+					%(serial_no)s,
+					REPLACE(
+						REPLACE(
+							IFNULL(sed.serial_no, ''),
+							'\\n',
+							','
+						),
+						'\\r',
+						''
+					)
+				) > 0
+			)
+		ORDER BY
+			se.posting_date DESC,
+			se.posting_time DESC,
+			se.creation DESC
+		LIMIT 20
+		""",
+		{
+			"item_code": item_code,
+			"serial_no": serial_no,
+		},
+		as_dict=True,
+	)
+
+	# --------------------------------------------------------
+	# Prefer target warehouse for Material Receipt / transfer
+	# --------------------------------------------------------
+
+	for entry in entries:
+		if entry.get("t_warehouse"):
+			return entry.get("t_warehouse")
+
+	# --------------------------------------------------------
+	# Otherwise use source warehouse
+	# --------------------------------------------------------
+
+	for entry in entries:
+		if entry.get("s_warehouse"):
+			return entry.get("s_warehouse")
+
+	return None
 # ============================================================
 # PURCHASE RECEIPT SERIAL
 # ============================================================
