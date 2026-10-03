@@ -114,6 +114,13 @@ class SellingDashboard {
                     class="selling-dashboard-section">
                 </div>
 
+                <!-- EXPORT / DOWNLOAD BUTTONS -->
+
+                <div
+                    id="block-export"
+                    class="selling-dashboard-section">
+                </div>
+
 
                 <!-- SALES TREND / SALES PROGRESS -->
 
@@ -310,6 +317,10 @@ class SellingDashboard {
                 this.load_html_block(
                     "Sales vs Stock",
                     "#block-sales-vs-stock"
+                ),
+                this.load_html_block(
+                    "Export Dashboard",
+                    "#block-export"
                 )
 
             ]);
