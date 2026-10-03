@@ -49,6 +49,8 @@ frappe.ui.form.on("Promotional Scheme Price Discount", {
         }
     }
 });
+
+
 frappe.ui.form.on("Promotional Scheme", {
     refresh(frm) {
         setTimeout(() => {
@@ -180,28 +182,308 @@ function download_restricted_item_code(frm) {
     URL.revokeObjectURL(url);
 }
 
-
 /* =========================================================
-   UPLOAD
+   UPLOAD CSV AND ADD DATA TO CHILD TABLE
    ========================================================= */
 
 function upload_restricted_item_code(frm) {
 
-    new frappe.ui.FileUploader({
+    // Create hidden file input
+    const input = document.createElement("input");
 
-        doctype: frm.doctype,
-        docname: frm.docname,
+    input.type = "file";
+    input.accept = ".csv,text/csv";
 
-        restrictions: {
-            allowed_file_types: [".csv"]
-        },
+    input.onchange = function (event) {
 
-        on_success(file) {
+        const file = event.target.files[0];
 
-            frappe.msgprint(
-                __("File uploaded successfully.")
-            );
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+
+            const csv_text = e.target.result;
+
+            try {
+
+                const rows = parse_csv(csv_text);
+
+                if (!rows.length) {
+                    frappe.msgprint({
+                        title: __("No Data"),
+                        message: __("No valid data found in the CSV file."),
+                        indicator: "orange"
+                    });
+
+                    return;
+                }
+
+
+                let added_rows = 0;
+
+
+                rows.forEach(row => {
+
+                    // Skip empty rows
+                    if (!row.item_code) {
+                        return;
+                    }
+
+
+                    // Add child row
+                    const child = frm.add_child(
+                        "custom_restricted_item_code"
+                    );
+
+
+                    // Set Item Code
+                    child.item_code = row.item_code;
+
+
+                    // Set Item Name if available
+                    if (row.item_name) {
+                        child.item_name = row.item_name;
+                    }
+
+
+                    added_rows++;
+
+                });
+
+
+                // Refresh child table
+                frm.refresh_field(
+                    "custom_restricted_item_code"
+                );
+
+
+                frappe.show_alert({
+                    message: __(
+                        "{0} row(s) added successfully",
+                        [added_rows]
+                    ),
+                    indicator: "green"
+                });
+
+
+                // Remove file input
+                input.remove();
+
+            } catch (error) {
+
+                console.error(
+                    "Restricted Item Code CSV Error:",
+                    error
+                );
+
+                frappe.msgprint({
+                    title: __("Upload Error"),
+                    message: __(
+                        "Could not read the CSV file. Please check the CSV format."
+                    ),
+                    indicator: "red"
+                });
+
+            }
+
+        };
+
+
+        reader.onerror = function () {
+
+            frappe.msgprint({
+                title: __("File Error"),
+                message: __("Unable to read the selected file."),
+                indicator: "red"
+            });
+
+        };
+
+
+        // Read CSV
+        reader.readAsText(file);
+
+    };
+
+
+    // Open file picker
+    input.click();
+}
+
+
+/* =========================================================
+   CSV PARSER
+   ========================================================= */
+
+function parse_csv(text) {
+
+    const lines = [];
+    let current = "";
+    let inside_quotes = false;
+
+
+    // Parse CSV character by character
+    for (let i = 0; i < text.length; i++) {
+
+        const char = text[i];
+        const next_char = text[i + 1];
+
+
+        // Handle quotes
+        if (char === '"') {
+
+            if (inside_quotes && next_char === '"') {
+
+                current += '"';
+                i++;
+
+            } else {
+
+                inside_quotes = !inside_quotes;
+
+            }
 
         }
-    });
+
+
+        // Handle new line
+        else if (
+            (char === "\n" || char === "\r") &&
+            !inside_quotes
+        ) {
+
+            if (current.trim() !== "") {
+                lines.push(current);
+            }
+
+            current = "";
+
+            // Handle Windows \r\n
+            if (
+                char === "\r" &&
+                next_char === "\n"
+            ) {
+                i++;
+            }
+
+        }
+
+
+        else {
+
+            current += char;
+
+        }
+
+    }
+
+
+    // Last line
+    if (current.trim() !== "") {
+        lines.push(current);
+    }
+
+
+    if (!lines.length) {
+        return [];
+    }
+
+
+    // First row = headers
+    const headers = parse_csv_line(lines[0]);
+
+
+    const data = [];
+
+
+    for (let i = 1; i < lines.length; i++) {
+
+        const values = parse_csv_line(lines[i]);
+
+        if (!values.length) {
+            continue;
+        }
+
+
+        const row = {};
+
+
+        headers.forEach((header, index) => {
+
+            row[header.trim()] =
+                values[index] !== undefined
+                    ? values[index].trim()
+                    : "";
+
+        });
+
+
+        data.push(row);
+
+    }
+
+
+    return data;
+}
+
+
+/* =========================================================
+   PARSE SINGLE CSV LINE
+   ========================================================= */
+
+function parse_csv_line(line) {
+
+    const values = [];
+
+    let current = "";
+    let inside_quotes = false;
+
+
+    for (let i = 0; i < line.length; i++) {
+
+        const char = line[i];
+        const next_char = line[i + 1];
+
+
+        if (char === '"') {
+
+            if (inside_quotes && next_char === '"') {
+
+                current += '"';
+                i++;
+
+            } else {
+
+                inside_quotes = !inside_quotes;
+
+            }
+
+        }
+
+
+        else if (char === "," && !inside_quotes) {
+
+            values.push(current);
+            current = "";
+
+        }
+
+
+        else {
+
+            current += char;
+
+        }
+
+    }
+
+
+    values.push(current);
+
+
+    return values;
 }
