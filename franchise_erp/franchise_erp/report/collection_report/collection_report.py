@@ -468,7 +468,68 @@ def get_data(filters, companies):
 	if customer_filter:
 		journal_note_customer_condition = " AND gle.party = %(customer)s"
 
-	journal_note_data = frappe.db.sql(
+	# journal_note_data = frappe.db.sql(
+	# 	f"""
+	# 	SELECT
+	# 		gle.party AS customer,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN gle.posting_date <= %(prev_to_date)s
+	# 					AND gle.voucher_subtype = 'Credit Note'
+	# 				THEN gle.credit
+	# 				ELSE 0
+	# 			END
+	# 		) AS credit_note,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN gle.posting_date >= %(last_15_start)s
+	# 					AND gle.posting_date <= %(to_date)s
+	# 					AND gle.voucher_subtype = 'Credit Note'
+	# 				THEN gle.credit
+	# 				ELSE 0
+	# 			END
+	# 		) AS credit_note_15,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN gle.posting_date <= %(prev_to_date)s
+	# 					AND gle.voucher_subtype = 'Debit Note'
+	# 				THEN gle.debit
+	# 				ELSE 0
+	# 			END
+	# 		) AS debit_note,
+
+	# 		SUM(
+	# 			CASE
+	# 				WHEN gle.posting_date >= %(last_15_start)s
+	# 					AND gle.posting_date <= %(to_date)s
+	# 					AND gle.voucher_subtype = 'Debit Note'
+	# 				THEN gle.debit
+	# 				ELSE 0
+	# 			END
+	# 		) AS debit_note_15
+
+	# 	FROM `tabGL Entry` gle
+
+	# 	WHERE
+	# 		gle.is_cancelled = 0
+	# 		AND gle.company IN %(companies)s
+	# 		AND gle.posting_date <= %(to_date)s
+	# 		AND gle.party_type = 'Customer'
+	# 		AND IFNULL(gle.party, '') != ''
+	# 		AND gle.voucher_type = 'Journal Entry'
+	# 		AND gle.voucher_subtype IN ('Credit Note', 'Debit Note')
+	# 		{journal_note_customer_condition}
+
+	# 	GROUP BY gle.party
+	# 	""",
+	# 	sales_values,
+	# 	as_dict=True
+	# )
+
+		journal_note_data = frappe.db.sql(
 		f"""
 		SELECT
 			gle.party AS customer,
@@ -476,7 +537,7 @@ def get_data(filters, companies):
 			SUM(
 				CASE
 					WHEN gle.posting_date <= %(prev_to_date)s
-						AND gle.voucher_subtype = 'Credit Note'
+						AND gle.voucher_subtype IN ('Credit Note', 'Journal Entry')
 					THEN gle.credit
 					ELSE 0
 				END
@@ -486,7 +547,7 @@ def get_data(filters, companies):
 				CASE
 					WHEN gle.posting_date >= %(last_15_start)s
 						AND gle.posting_date <= %(to_date)s
-						AND gle.voucher_subtype = 'Credit Note'
+						AND gle.voucher_subtype IN ('Credit Note', 'Journal Entry')
 					THEN gle.credit
 					ELSE 0
 				END
@@ -495,7 +556,7 @@ def get_data(filters, companies):
 			SUM(
 				CASE
 					WHEN gle.posting_date <= %(prev_to_date)s
-						AND gle.voucher_subtype = 'Debit Note'
+						AND gle.voucher_subtype IN ('Debit Note', 'Journal Entry')
 					THEN gle.debit
 					ELSE 0
 				END
@@ -505,7 +566,7 @@ def get_data(filters, companies):
 				CASE
 					WHEN gle.posting_date >= %(last_15_start)s
 						AND gle.posting_date <= %(to_date)s
-						AND gle.voucher_subtype = 'Debit Note'
+						AND gle.voucher_subtype IN ('Debit Note', 'Journal Entry')
 					THEN gle.debit
 					ELSE 0
 				END
@@ -520,7 +581,7 @@ def get_data(filters, companies):
 			AND gle.party_type = 'Customer'
 			AND IFNULL(gle.party, '') != ''
 			AND gle.voucher_type = 'Journal Entry'
-			AND gle.voucher_subtype IN ('Credit Note', 'Debit Note')
+			AND gle.voucher_subtype IN ('Credit Note', 'Debit Note', 'Journal Entry')
 			{journal_note_customer_condition}
 
 		GROUP BY gle.party
