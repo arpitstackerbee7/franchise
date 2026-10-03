@@ -48,6 +48,32 @@ def get_counter_companies(filters):
 	)
 
 
+# def get_sis_company_map(customer_filter=None):
+
+# 	customer_filters = {
+# 		"disabled": 0
+# 	}
+
+# 	if customer_filter:
+# 		customer_filters["name"] = customer_filter
+
+# 	rows = frappe.get_all(
+# 		"Customer",
+# 		filters=customer_filters,
+# 		fields=["name", "customer_name", "represents_company"]
+# 	)
+
+# 	result = {}
+
+# 	for r in rows:
+
+# 		sis_company = r.represents_company or r.customer_name
+
+# 		if frappe.db.exists("Company", sis_company):
+# 			result[r.name] = sis_company
+
+# 	return result
+
 def get_sis_company_map(customer_filter=None):
 
 	customer_filters = {
@@ -63,16 +89,32 @@ def get_sis_company_map(customer_filter=None):
 		fields=["name", "customer_name", "represents_company"]
 	)
 
-	result = {}
+	chosen = {}
 
 	for r in rows:
 
 		sis_company = r.represents_company or r.customer_name
 
-		if frappe.db.exists("Company", sis_company):
-			result[r.name] = sis_company
+		if not frappe.db.exists("Company", sis_company):
+			continue
 
-	return result
+		# lower number = higher priority
+		if r.represents_company:
+			priority = 0
+		elif r.name == sis_company:
+			priority = 1
+		else:
+			priority = 2
+
+		prev = chosen.get(sis_company)
+
+		if not prev or priority < prev[0]:
+			chosen[sis_company] = (priority, r.name)
+
+	return {
+		name: company
+		for company, (priority, name) in chosen.items()
+	}
 
 def get_customer_extra_fields(customers, filters=None):
 	if not customers:
@@ -244,12 +286,16 @@ def get_data(filters, companies):
 	customer_filter = filters.get("customer")
 
 	if customer_filter:
-
-		customer_filter = frappe.db.get_value(
-			"Customer",
-			{"customer_name": customer_filter},
-			"name"
-		) or customer_filter
+		customer_filter = (
+			frappe.db.exists("Customer", customer_filter)
+			or frappe.db.get_value(
+				"Customer",
+				{"customer_name": customer_filter, "disabled": 0},
+				"name",
+				order_by="IFNULL(represents_company, '') = '' asc, creation asc"
+			)
+			or customer_filter
+		)
 
 	sis_map = get_sis_company_map(customer_filter)
 
@@ -468,68 +514,7 @@ def get_data(filters, companies):
 	if customer_filter:
 		journal_note_customer_condition = " AND gle.party = %(customer)s"
 
-	# journal_note_data = frappe.db.sql(
-	# 	f"""
-	# 	SELECT
-	# 		gle.party AS customer,
-
-	# 		SUM(
-	# 			CASE
-	# 				WHEN gle.posting_date <= %(prev_to_date)s
-	# 					AND gle.voucher_subtype = 'Credit Note'
-	# 				THEN gle.credit
-	# 				ELSE 0
-	# 			END
-	# 		) AS credit_note,
-
-	# 		SUM(
-	# 			CASE
-	# 				WHEN gle.posting_date >= %(last_15_start)s
-	# 					AND gle.posting_date <= %(to_date)s
-	# 					AND gle.voucher_subtype = 'Credit Note'
-	# 				THEN gle.credit
-	# 				ELSE 0
-	# 			END
-	# 		) AS credit_note_15,
-
-	# 		SUM(
-	# 			CASE
-	# 				WHEN gle.posting_date <= %(prev_to_date)s
-	# 					AND gle.voucher_subtype = 'Debit Note'
-	# 				THEN gle.debit
-	# 				ELSE 0
-	# 			END
-	# 		) AS debit_note,
-
-	# 		SUM(
-	# 			CASE
-	# 				WHEN gle.posting_date >= %(last_15_start)s
-	# 					AND gle.posting_date <= %(to_date)s
-	# 					AND gle.voucher_subtype = 'Debit Note'
-	# 				THEN gle.debit
-	# 				ELSE 0
-	# 			END
-	# 		) AS debit_note_15
-
-	# 	FROM `tabGL Entry` gle
-
-	# 	WHERE
-	# 		gle.is_cancelled = 0
-	# 		AND gle.company IN %(companies)s
-	# 		AND gle.posting_date <= %(to_date)s
-	# 		AND gle.party_type = 'Customer'
-	# 		AND IFNULL(gle.party, '') != ''
-	# 		AND gle.voucher_type = 'Journal Entry'
-	# 		AND gle.voucher_subtype IN ('Credit Note', 'Debit Note')
-	# 		{journal_note_customer_condition}
-
-	# 	GROUP BY gle.party
-	# 	""",
-	# 	sales_values,
-	# 	as_dict=True
-	# )
-
-		journal_note_data = frappe.db.sql(
+	journal_note_data = frappe.db.sql(
 		f"""
 		SELECT
 			gle.party AS customer,
