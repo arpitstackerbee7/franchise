@@ -2819,3 +2819,88 @@ def make_sales_invoice(source_name, target_doc=None, args=None):
             item.serial_and_batch_bundle = dn_item.serial_and_batch_bundle
 
     return si
+
+# ---------------------------------------------------------------
+# Export Charts
+# ---------------------------------------------------------------
+
+EXPORT_CHARTS = [
+    # (label, report name)
+    ("Sales Trend", "Sales Trend"),
+    ("Sales Progress", "Sales Progress"),
+    ("Top Selling Items", "Top Selling Items 1"),
+    ("Least Selling Items", "Least Selling Items"),
+    ("Sales vs Stock", "Sales vs Stock"),
+]
+
+
+def _export_filters(label, from_date, to_date, company, view_type):
+    is_amt = view_type in ("amt", "amount")
+
+    filters = {
+        "from_date": from_date,
+        "to_date": to_date,
+        "company": company,
+    }
+
+    if label in ("Sales Trend", "Sales Progress"):
+        filters["view_type"] = "amt" if is_amt else "qty"
+    else:
+        filters["metric"] = "amt" if is_amt else "qty"
+
+    return filters
+
+
+@frappe.whitelist()
+def get_counter_wise_export_data(from_date, to_date, view_type="qty", company=None):
+    """
+    Get export data for all charts in the dashboard for the given date range and view type.
+
+    Returns:
+    {
+        "<company>": {
+            "<chart label>": {"columns": [...], "rows": [...]}
+        }
+    }
+    """
+    from frappe.desk.query_report import run
+
+    permitted = frappe.get_list("Company", pluck="name")
+
+    if company:
+        if company not in permitted:
+            frappe.throw(_("Not permitted for company {0}").format(company), frappe.PermissionError)
+        companies = [company]
+    else:
+        companies = permitted
+
+    output = {}
+
+    for comp in companies:
+        company_data = {}
+
+        for label, report_name in EXPORT_CHARTS:
+            try:
+                res = run(
+                    report_name,
+                    filters=_export_filters(label, from_date, to_date, comp, view_type),
+                    ignore_prepared_report=1,
+                )
+            except Exception:
+                frappe.log_error(
+                    frappe.get_traceback(),
+                    "Dashboard export failed: {0} / {1}".format(label, comp),
+                )
+                continue
+
+            rows = res.get("result") or []
+            if rows:
+                company_data[label] = {
+                    "columns": res.get("columns") or [],
+                    "rows": rows,
+                }
+
+        if company_data:
+            output[comp] = company_data
+
+    return output

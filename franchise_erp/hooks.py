@@ -858,7 +858,8 @@ fixtures = [
             ["name", "in", [
                 "Selling Items",
                 "Sales vs Stock",
-                "Date Range"
+                "Date Range",
+                "Export Dashboard"
             ]]
         ]
     },
