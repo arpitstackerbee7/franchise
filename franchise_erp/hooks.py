@@ -34,7 +34,9 @@ on_session_creation = [
      
 ]
 
-
+before_request = [
+    "franchise_erp.overrides.helpdesk_permissions.apply_helpdesk_permission_patch"
+]
 # before_job = [
 #     "franchise_erp.custom.attendance_patch.load_patch"
 # ]
@@ -614,7 +616,8 @@ scheduler_events = {
 permission_query_conditions = {
     "Daily Checklist": "franchise_erp.franchise_erp.doctype.daily_checklist.daily_checklist.get_permission_query_conditions",
     "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.get_permission_query_conditions",
-    "Leave Application": "franchise_erp.overrides.custom_leave_application.get_permission_query_conditions"
+    "Leave Application": "franchise_erp.overrides.custom_leave_application.get_permission_query_conditions",
+    "HD Ticket": "franchise_erp.overrides.hd_ticket.permission_query",
 
 }
 
