@@ -14,6 +14,7 @@
   "supplier",
   "door_no",
   "column_break_pqmw",
+  "customer_name",
   "document_nos",
   "no_of_parcels",
   "purchase_invoice",
@@ -351,6 +352,12 @@
    "fieldtype": "Data",
    "label": "Purchase Invoice",
    "read_only": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Link",
+   "label": "Customer Name",
+   "options": "Customer"
   }
  ],
  "grid_page_length": 50,
@@ -366,7 +373,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-09-21 16:25:01.756405",
+ "modified": "2026-10-06 10:27:34.518186",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",
