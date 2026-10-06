@@ -136,52 +136,137 @@ function add_restricted_item_code_buttons(frm) {
    DOWNLOAD
    ========================================================= */
 
+// function download_restricted_item_code(frm) {
+
+//     const rows = frm.doc.custom_restricted_item_code || [];
+
+//     if (!rows.length) {
+//         frappe.msgprint(__("No Restricted Item Code rows found."));
+//         return;
+//     }
+
+//     const data = rows.map(row => ({
+//         item_code: row.item_code || "",
+//         item_name: row.item_name || ""
+//     }));
+
+//     const headers = Object.keys(data[0]);
+
+//     let csv = headers.join(",") + "\n";
+
+//     data.forEach(row => {
+//         csv += headers.map(field => {
+//             const value = String(row[field] ?? "")
+//                 .replace(/"/g, '""');
+
+//             return `"${value}"`;
+//         }).join(",") + "\n";
+//     });
+
+//     const blob = new Blob(
+//         [csv],
+//         { type: "text/csv;charset=utf-8;" }
+//     );
+
+//     const url = URL.createObjectURL(blob);
+
+//     const link = document.createElement("a");
+
+//     link.href = url;
+//     link.download = "restricted_item_code.csv";
+
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+
+//     URL.revokeObjectURL(url);
+// }
+/* =========================================================
+   DOWNLOAD SAMPLE / EXISTING DATA
+   ========================================================= */
+
 function download_restricted_item_code(frm) {
 
     const rows = frm.doc.custom_restricted_item_code || [];
 
-    if (!rows.length) {
-        frappe.msgprint(__("No Restricted Item Code rows found."));
-        return;
+    const headers = [
+        "item_code",
+        "item_name"
+    ];
+
+    let data = [];
+
+
+    // If child table has data, download existing data
+    if (rows.length) {
+
+        data = rows.map(row => ({
+            item_code: row.item_code || "",
+            item_name: row.item_name || ""
+        }));
+
     }
 
-    const data = rows.map(row => ({
-        item_code: row.item_code || "",
-        item_name: row.item_name || ""
-    }));
+    // If child table is empty, download sample row
+    else {
 
-    const headers = Object.keys(data[0]);
+        data = [
+            {
+                item_code: "ITEM-001",
+                item_name: "Sample Item"
+            }
+        ];
 
+    }
+
+
+    // CSV Header
     let csv = headers.join(",") + "\n";
 
+
+    // CSV Data
     data.forEach(row => {
+
         csv += headers.map(field => {
+
             const value = String(row[field] ?? "")
                 .replace(/"/g, '""');
 
             return `"${value}"`;
+
         }).join(",") + "\n";
+
     });
 
+
+    // Create CSV file
     const blob = new Blob(
         [csv],
-        { type: "text/csv;charset=utf-8;" }
+        {
+            type: "text/csv;charset=utf-8;"
+        }
     );
+
 
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = "restricted_item_code.csv";
+
+    link.download = rows.length
+        ? "restricted_item_code.csv"
+        : "restricted_item_code_template.csv";
+
 
     document.body.appendChild(link);
+
     link.click();
+
     document.body.removeChild(link);
 
     URL.revokeObjectURL(url);
 }
-
 /* =========================================================
    UPLOAD CSV AND ADD DATA TO CHILD TABLE
    ========================================================= */
