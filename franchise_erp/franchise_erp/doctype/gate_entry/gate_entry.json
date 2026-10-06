@@ -304,7 +304,8 @@
    "fieldtype": "Link",
    "label": "Transporter",
    "link_filters": "[[\"Supplier\",\"is_transporter\",\"=\",1]]",
-   "options": "Supplier"
+   "options": "Supplier",
+   "reqd": 1
   },
   {
    "fieldname": "invoice_value",
@@ -319,7 +320,8 @@
    "fieldname": "supplier",
    "fieldtype": "Link",
    "label": "Vendor Name",
-   "options": "Supplier"
+   "options": "Supplier",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_pqmw",
@@ -328,7 +330,8 @@
   {
    "fieldname": "document_nos",
    "fieldtype": "Data",
-   "label": "Bilty No"
+   "label": "Bilty No",
+   "reqd": 1
   },
   {
    "fieldname": "no_of_parcels",
@@ -345,7 +348,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Doer",
-   "options": "User"
+   "options": "User",
+   "reqd": 1
   },
   {
    "fieldname": "purchase_invoice",
@@ -357,7 +361,8 @@
    "fieldname": "customer_name",
    "fieldtype": "Link",
    "label": "Customer Name",
-   "options": "Customer"
+   "options": "Customer",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -373,7 +378,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-10-06 10:27:34.518186",
+ "modified": "2026-10-06 17:03:45.973069",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

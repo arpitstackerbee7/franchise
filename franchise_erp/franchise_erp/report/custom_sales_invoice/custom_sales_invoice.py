@@ -241,6 +241,8 @@ def get_data(filters):
 			(si.docstatus == 1)
 			& (item.is_stock_item == 1)
 			& (item.has_serial_no == 1)
+			& (sii.serial_no.isnotnull())
+			& (sii.serial_no != "")
 		)
 	)
 
@@ -485,144 +487,249 @@ def get_supplier_for_item(item_code, serial_no):
 # SALES RETURN -> WAREHOUSE COMPANY -> SUPPLIER
 # ============================================================
 
-def get_supplier_from_sales_return_company(
-	item_code,
-	serial_no
-):
-	if not item_code or not serial_no:
-		return None
+# def get_supplier_from_sales_return_company(
+# 	item_code,
+# 	serial_no
+# ):
+# 	if not item_code or not serial_no:
+# 		return None
 
-	# --------------------------------------------------------
-	# 1. Check Serial No creation document
-	# --------------------------------------------------------
+# 	# --------------------------------------------------------
+# 	# 1. Check Serial No creation document
+# 	# --------------------------------------------------------
 
-	if not frappe.db.exists(
-		"Serial No",
-		serial_no
-	):
-		return None
+# 	if not frappe.db.exists(
+# 		"Serial No",
+# 		serial_no
+# 	):
+# 		return None
 
-	creation_document = frappe.db.get_value(
-		"Serial No",
-		serial_no,
-		"purchase_document_no"
-	)
+# 	creation_document = frappe.db.get_value(
+# 		"Serial No",
+# 		serial_no,
+# 		"purchase_document_no"
+# 	)
 
-	if not creation_document:
-		return None
+# 	if not creation_document:
+# 		return None
 
-	# --------------------------------------------------------
-	# 2. Creation document must be a Sales Return
-	# --------------------------------------------------------
+# 	# --------------------------------------------------------
+# 	# 2. Creation document must be a Sales Return
+# 	# --------------------------------------------------------
 
-	sales_return = frappe.db.get_value(
-		"Sales Invoice",
-		{
-			"name": creation_document,
-			"docstatus": 1,
-			"is_return": 1,
-		},
-		[
-			"name",
-			"company",
-			"return_against",
-		],
-		as_dict=True,
-	)
+# 	sales_return = frappe.db.get_value(
+# 		"Sales Invoice",
+# 		{
+# 			"name": creation_document,
+# 			"docstatus": 1,
+# 			"is_return": 1,
+# 		},
+# 		[
+# 			"name",
+# 			"company",
+# 			"return_against",
+# 		],
+# 		as_dict=True,
+# 	)
 
-	if not sales_return:
-		return None
+# 	if not sales_return:
+# 		return None
 
-	# --------------------------------------------------------
-	# 3. Find the relevant Sales Return Item
-	# --------------------------------------------------------
+# 	# --------------------------------------------------------
+# 	# 3. Find the relevant Sales Return Item
+# 	# --------------------------------------------------------
 
-	return_item = frappe.db.get_value(
-		"Sales Invoice Item",
-		{
-			"parent": sales_return.name,
-			"item_code": item_code,
-		},
-		[
-			"name",
-			"serial_and_batch_bundle",
-			"delivery_note",
-			"dn_detail",
-			"sales_order",
-			"so_detail",
-		],
-		as_dict=True,
-	)
+# 	return_item = frappe.db.get_value(
+# 		"Sales Invoice Item",
+# 		{
+# 			"parent": sales_return.name,
+# 			"item_code": item_code,
+# 		},
+# 		[
+# 			"name",
+# 			"serial_and_batch_bundle",
+# 			"delivery_note",
+# 			"dn_detail",
+# 			"sales_order",
+# 			"so_detail",
+# 		],
+# 		as_dict=True,
+# 	)
 
-	if not return_item:
-		return None
+# 	if not return_item:
+# 		return None
 
-	# --------------------------------------------------------
-	# 4. This fallback is only for the same situation where
-	#    original transaction linkage is missing.
-	# --------------------------------------------------------
+# 	# --------------------------------------------------------
+# 	# 4. This fallback is only for the same situation where
+# 	#    original transaction linkage is missing.
+# 	# --------------------------------------------------------
 
-	if sales_return.return_against:
-		return None
+# 	if sales_return.return_against:
+# 		return None
 
-	if return_item.delivery_note:
-		return None
+# 	if return_item.delivery_note:
+# 		return None
 
-	if return_item.dn_detail:
-		return None
+# 	if return_item.dn_detail:
+# 		return None
 
-	if return_item.sales_order:
-		return None
+# 	if return_item.sales_order:
+# 		return None
 
-	if return_item.so_detail:
-		return None
+# 	if return_item.so_detail:
+# 		return None
 
-	# --------------------------------------------------------
-	# 5. Find current/relevant warehouse for this serial
-	# --------------------------------------------------------
+# 	# --------------------------------------------------------
+# 	# 5. Find current/relevant warehouse for this serial
+# 	# --------------------------------------------------------
 
-	warehouse = get_warehouse_for_serial(
-		item_code,
-		serial_no
-	)
+# 	warehouse = get_warehouse_for_serial(
+# 		item_code,
+# 		serial_no
+# 	)
 
-	if not warehouse:
-		return None
+# 	if not warehouse:
+# 		return None
 
-	# --------------------------------------------------------
-	# 6. Get Company from Warehouse
-	# --------------------------------------------------------
+# 	# --------------------------------------------------------
+# 	# 6. Get Company from Warehouse
+# 	# --------------------------------------------------------
 
-	company = frappe.db.get_value(
-		"Warehouse",
-		warehouse,
-		"company"
-	)
+# 	company = frappe.db.get_value(
+# 		"Warehouse",
+# 		warehouse,
+# 		"company"
+# 	)
 
-	if not company:
-		return None
+# 	if not company:
+# 		return None
 
-	# --------------------------------------------------------
-	# 7. Apply ONLY for TZU Lifestyle company
-	# --------------------------------------------------------
+# 	# --------------------------------------------------------
+# 	# 7. Apply ONLY for TZU Lifestyle company
+# 	# --------------------------------------------------------
 
-	if company != "TZU Lifestyle Private Limited":
-		return None
+# 	if company != "TZU Lifestyle Private Limited":
+# 		return None
 
-	# --------------------------------------------------------
-	# 8. Return only if this Supplier actually exists
-	# --------------------------------------------------------
+# 	# --------------------------------------------------------
+# 	# 8. Return only if this Supplier actually exists
+# 	# --------------------------------------------------------
 
-	supplier = "TZU Lifestyle Pvt Ltd"
+# 	supplier = "TZU Lifestyle Pvt Ltd"
 
-	if frappe.db.exists(
-		"Supplier",
-		supplier
-	):
-		return supplier
+# 	if frappe.db.exists(
+# 		"Supplier",
+# 		supplier
+# 	):
+# 		return supplier
 
-	return None
+# 	return None
+def get_supplier_from_sales_return_company(item_code, serial_no):
+    if not item_code or not serial_no:
+        return None
 
+    # 1. Serial No se purchase document nikalo
+    purchase_document_no = frappe.db.get_value(
+        "Serial No",
+        {
+            "serial_no": serial_no,
+            "item_code": item_code,
+        },
+        "purchase_document_no"
+    )
+
+    if not purchase_document_no:
+        return None
+
+    # 2. Purchase document submitted Sales Return hona chahiye
+    sales_return = frappe.db.get_value(
+        "Sales Invoice",
+        {
+            "name": purchase_document_no,
+            "docstatus": 1,
+            "is_return": 1,
+        },
+        [
+            "name",
+            "return_against",
+            "set_warehouse",
+        ],
+        as_dict=True,
+    )
+
+    if not sales_return:
+        return None
+
+    # 3. Sales Return ke andar same item nikalo
+    return_item = frappe.db.get_value(
+        "Sales Invoice Item",
+        {
+            "parent": sales_return.name,
+            "item_code": item_code,
+        },
+        [
+            "name",
+            "warehouse",
+            "delivery_note",
+            "dn_detail",
+            "sales_order",
+            "so_detail",
+        ],
+        as_dict=True,
+    )
+
+    if not return_item:
+        return None
+
+    # 4. Agar original DN/SO se linked hai to ye special case nahi hai
+    if return_item.delivery_note:
+        return None
+
+    if return_item.dn_detail:
+        return None
+
+    if return_item.sales_order:
+        return None
+
+    if return_item.so_detail:
+        return None
+
+    # 5. Warehouse find karo
+    # Priority:
+    # 1. Sales Invoice Item warehouse
+    # 2. Sales Return set warehouse
+    # 3. Existing serial warehouse logic
+    warehouse = return_item.warehouse
+
+    if not warehouse:
+        warehouse = sales_return.set_warehouse
+
+    if not warehouse:
+        warehouse = get_warehouse_for_serial(
+            item_code,
+            serial_no
+        )
+
+    if not warehouse:
+        return None
+
+    # 6. Warehouse ki company check karo
+    company = frappe.db.get_value(
+        "Warehouse",
+        warehouse,
+        "company"
+    )
+
+    if company != "TZU Lifestyle Private Limited":
+        return None
+
+    # 7. Special supplier
+    supplier = "TZU Lifestyle Pvt Ltd"
+
+    if frappe.db.exists("Supplier", supplier):
+        return supplier
+
+    return None
 
 # ============================================================
 # SERIAL -> WAREHOUSE
