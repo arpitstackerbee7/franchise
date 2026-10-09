@@ -146,9 +146,10 @@ frappe.ui.form.on("Gate Entry", {
             // clear route options after use
             frappe.route_options._barcodes = null;
         }
+        toggle_consignor_fields(frm);
     },
-
-    type(frm) {
+    refresh(frm) { toggle_consignor_fields(frm); },
+    types(frm) {
         toggle_consignor_fields(frm);
     },
 
@@ -526,42 +527,63 @@ frappe.ui.form.on("Gate Entry", {
     }
 });
 function toggle_consignor_fields(frm) {
-    if (!frm.doc.type) return;
+// Initially hide both fields until Types is selected
+if (!frm.doc.types) {
+frm.set_df_property("supplier", "hidden", 1);
+frm.set_df_property("supplier", "reqd", 0);
 
-    frappe.db.get_value(
-        "Incoming Logistics Type",
-        frm.doc.type,
-        ["is_customer", "is_supplier"],
-        function (r) {
-            if (!r) return;
+    frm.set_df_property("customer_name", "hidden", 1);
+    frm.set_df_property("customer_name", "reqd", 0);
 
-            // 👉 Customer case
-            if (r.is_customer) {
-                frm.set_df_property("consignor_customer", "hidden", 0);
-                frm.set_df_property("consignor_customer", "reqd", 1);
+    return;
+}
 
-                frm.set_df_property("consignor", "hidden", 1);
-                frm.set_df_property("consignor", "reqd", 0);
-                frm.set_value("consignor", null);
-            }
+frappe.db.get_value(
+    "Incoming Logistics Type",
+    frm.doc.types,
+    ["is_customer", "is_supplier"]
+).then((r) => {
+    if (!r || !r.message) return;
 
-            // 👉 Supplier case
-            else if (r.is_supplier) {
-                frm.set_df_property("consignor", "hidden", 0);
-                frm.set_df_property("consignor", "reqd", 1);
+    const is_customer = r.message.is_customer;
+    const is_supplier = r.message.is_supplier;
 
-                frm.set_df_property("consignor_customer", "hidden", 1);
-                frm.set_df_property("consignor_customer", "reqd", 0);
-                frm.set_value("consignor_customer", null);
-            }
+    // Customer type
+    if (is_customer) {
+        frm.set_df_property("customer_name", "hidden", 0);
+        frm.set_df_property("customer_name", "reqd", 1);
 
-            // 👉 Safety fallback
-            else {
-                frm.set_df_property("consignor", "hidden", 1);
-                frm.set_df_property("consignor_customer", "hidden", 1);
-                frm.set_value("consignor", null);
-                frm.set_value("consignor_customer", null);
-            }
-        }
-    );
+        frm.set_df_property("supplier", "hidden", 1);
+        frm.set_df_property("supplier", "reqd", 0);
+
+        frm.set_value("supplier", "");
+    }
+
+    // Supplier type
+    else if (is_supplier) {
+        frm.set_df_property("supplier", "hidden", 0);
+        frm.set_df_property("supplier", "reqd", 1);
+
+        frm.set_df_property("customer_name", "hidden", 1);
+        frm.set_df_property("customer_name", "reqd", 0);
+
+        frm.set_value("customer_name", "");
+    }
+
+    // Neither customer nor supplier
+    else {
+        frm.set_df_property("supplier", "hidden", 1);
+        frm.set_df_property("supplier", "reqd", 0);
+
+        frm.set_df_property("customer_name", "hidden", 1);
+        frm.set_df_property("customer_name", "reqd", 0);
+
+        frm.set_value("supplier", "");
+        frm.set_value("customer_name", "");
+    }
+
+    frm.refresh_field("supplier");
+    frm.refresh_field("customer_name");
+});
+
 }
