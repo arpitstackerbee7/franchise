@@ -408,7 +408,7 @@ override_doctype_class = {
     "Full and Final Statement": "franchise_erp.overrides.full_and_final_statement.CustomFullandFinalStatement",
     "Role Profile": "franchise_erp.overrides.role_profile.CustomRoleProfile",
     "Purchase Receipt": "franchise_erp.overrides.purchase_receipt.PurchaseReceipt",
-    "HD Team": "franchise_erp.overrides.hd_team.CustomHDTeam"
+    # "HD Team": "franchise_erp.overrides.hd_team.CustomHDTeam"
 
 }
 
