@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.utils import flt
+from sqlalchemy import label
 
 
 # ------------------------------------------------
@@ -2823,7 +2824,82 @@ def make_sales_invoice(source_name, target_doc=None, args=None):
 # ---------------------------------------------------------------
 # Export Charts
 # ---------------------------------------------------------------
+def _attach_item_images(rows, columns):
+	"""Sales vs Stock rows mein item image jodta hai.
+	Item ka column label/fieldname se khud dhundta hai (Style No., Item, Item Code...).
+	Rows dict ya list, dono chalenge."""
 
+	if not rows:
+		return rows, columns
+
+	def col_key(c):
+		if isinstance(c, dict):
+			return c.get("fieldname") or c.get("label") or ""
+		return str(c).split(":")[0]
+
+	def col_label(c):
+		if isinstance(c, dict):
+			return c.get("label") or c.get("fieldname") or ""
+		return str(c).split(":")[0]
+
+	# Report ne already image column diya ho to chhod do
+	for c in columns:
+		if "image" in col_key(c).lower():
+			return rows, columns
+
+	item_names = ("item_code", "item", "style_no", "style", "item_name")
+	item_labels = ("style no.", "style no", "item code", "item", "style")
+
+	idx = None
+	for i, c in enumerate(columns):
+		if col_key(c).lower() in item_names or col_label(c).lower().strip() in item_labels:
+			idx = i
+			key = col_key(c)
+			break
+
+	if idx is None:
+		frappe.log_error(
+			"Item column not found. Columns: {0}".format(columns),
+			"Dashboard export: image skipped",
+		)
+		return rows, columns
+
+	is_dict = isinstance(rows[0], dict)
+
+	def code_of(r):
+		return (r.get(key) if is_dict else r[idx]) or None
+
+	codes = list({code_of(r) for r in rows if code_of(r)})
+	if not codes:
+		return rows, columns
+
+	images = {
+		d.name: d.image
+		for d in frappe.get_all(
+			"Item", filters={"name": ["in", codes]}, fields=["name", "image"]
+		)
+	}
+
+	# Jo code item name se match nahi hue, unhe item_name se try karo
+	missing = [c for c in codes if c not in images]
+	if missing:
+		for d in frappe.get_all(
+			"Item", filters={"item_name": ["in", missing]}, fields=["item_name", "image"]
+		):
+			images.setdefault(d.item_name, d.image)
+
+	for r in rows:
+		img = images.get(code_of(r)) or ""
+		if is_dict:
+			r["image"] = img
+		else:
+			r.append(img)
+
+	columns = list(columns) + [
+		{"fieldname": "image", "label": "Image", "fieldtype": "Data"}
+	]
+
+	return rows, columns
 EXPORT_CHARTS = [
     # (label, report name)
     ("Sales Trend", "Sales Trend"),
@@ -2893,12 +2969,24 @@ def get_counter_wise_export_data(from_date, to_date, view_type="qty", company=No
                 )
                 continue
 
+            # rows = res.get("result") or []
+            # if rows:
+            #     company_data[label] = {
+            #         "columns": res.get("columns") or [],
+            #         "rows": rows,
+            #     }
+
             rows = res.get("result") or []
+            columns = res.get("columns") or []
+
+            if label == "Sales vs Stock":
+                rows, columns = _attach_item_images(rows, columns)
+
             if rows:
                 company_data[label] = {
-                    "columns": res.get("columns") or [],
-                    "rows": rows,
-                }
+					"columns": columns,
+					"rows": rows,
+				}
 
         if company_data:
             output[comp] = company_data
