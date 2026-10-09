@@ -10,6 +10,8 @@
   "for_guard_section",
   "transporter",
   "invoice_value",
+  "posting_date",
+  "posting_time",
   "column_break_nprm",
   "types",
   "door_no",
@@ -369,6 +371,20 @@
    "label": "Type",
    "options": "Incoming Logistics Type",
    "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -384,7 +400,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-10-09 13:52:13.815550",
+ "modified": "2026-10-09 15:48:21.202952",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

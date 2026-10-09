@@ -15,6 +15,7 @@
   "transporter",
   "c_transporter",
   "invoice_date",
+  "invoice_time",
   "gate_entry",
   "gate_entry_no",
   "select_gate_entry",
@@ -424,6 +425,13 @@
    "fieldtype": "Data",
    "label": "Scan Box Barcode",
    "options": "Barcode"
+  },
+  {
+   "default": "Now",
+   "fieldname": "invoice_time",
+   "fieldtype": "Time",
+   "label": "Invoice Time",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -435,7 +443,7 @@
    "link_fieldname": "incoming_logistics"
   }
  ],
- "modified": "2026-06-01 16:34:16.907270",
+ "modified": "2026-10-09 15:50:03.185363",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Incoming Logistics",
