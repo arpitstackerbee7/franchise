@@ -41,13 +41,39 @@ frappe.query_reports["Collection Report"] = {
 			reqd: 1
 		},
 		{
+			fieldname: "customer_group",
+			label: __("Customer Group"),
+			fieldtype: "Link",
+			options: "Customer Group",
+			default: "Distributor",
+			on_change: function() {
+				
+				frappe.query_report.set_filter_value("customer", "");
+				frappe.query_report.refresh();
+			}
+		},
+		// {
+		// 	fieldname: "customer",
+		// 	label: __("Customer"),
+		// 	fieldtype: "Link",
+		// 	options: "Customer",
+		// 	get_query: function() {
+		// 		return {
+		// 			query: "franchise_erp.franchise_erp.report.collection_report.collection_report.customer_query"
+		// 		};
+		// 	}
+		// },
+		{
 			fieldname: "customer",
 			label: __("Customer"),
 			fieldtype: "Link",
 			options: "Customer",
 			get_query: function() {
 				return {
-					query: "franchise_erp.franchise_erp.report.collection_report.collection_report.customer_query"
+					query: "franchise_erp.franchise_erp.report.collection_report.collection_report.customer_query",
+					filters: {
+						customer_group: frappe.query_report.get_filter_value("customer_group")
+					}
 				};
 			}
 		},
@@ -153,6 +179,21 @@ function inject_print_heading_style() {
 	let style = document.createElement("style");
 	style.id = "collection-report-print-style";
 	style.innerHTML = `
+		.page-form.form-inline,
+		.page-form {
+			display: flex !important;
+			flex-wrap: nowrap !important;
+			gap: 8px;
+			overflow: visible !important;
+		}
+
+		.page-form .form-group,
+		.page-form .frappe-control {
+			flex: 1 1 0;
+			min-width: 100px;
+			margin-bottom: 0 !important;
+		}
+
 		.print-heading, .print-heading h2, .print-format-container h2 {
 			font-weight: bold !important;
 		}

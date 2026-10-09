@@ -16,7 +16,7 @@ def execute(filters=None):
 		return [], []
 
 	columns = get_columns()
-	data = get_data(filters, companies)
+	data = get_data(filters, companies) or []
 
 	return columns, data
 
@@ -74,14 +74,19 @@ def get_counter_companies(filters):
 
 # 	return result
 
-def get_sis_company_map(customer_filter=None):
+def get_sis_company_map(customer_filter=None, customer_group=None):
 
 	customer_filters = {
-		"disabled": 0
+		"disabled": 0,
+		"is_internal_customer": 1
 	}
 
 	if customer_filter:
 		customer_filters["name"] = customer_filter
+
+	if customer_group:
+		customer_filters["customer_group"] = customer_group
+
 
 	rows = frappe.get_all(
 		"Customer",
@@ -297,7 +302,7 @@ def get_data(filters, companies):
 			or customer_filter
 		)
 
-	sis_map = get_sis_company_map(customer_filter)
+	sis_map = get_sis_company_map(customer_filter, filters.get("customer_group"))
 
 	sales_values = {
 		"companies": companies,
@@ -769,16 +774,33 @@ def get_data(filters, companies):
 	# ALL CUSTOMERS
 	# =====================================================
 
-	customers = sorted(
-		set(
-			list(opening_map)
-			+ list(qty_map)
-			+ list(franchise_map)
-			+ list(journal_note_map)
-			+ list(payment_map)
-			+ list(payment_received_map)
-		)
-	)
+	# customers = sorted(
+	# 	set(
+	# 		list(opening_map)
+	# 		+ list(qty_map)
+	# 		+ list(franchise_map)
+	# 		+ list(journal_note_map)
+	# 		+ list(payment_map)
+	# 		+ list(payment_received_map)
+	# 	)
+	# )
+	# if filters.get("customer_group"):
+	# 	group_customers = set(
+	# 		frappe.get_all(
+	# 			"Customer",
+	# 			filters={
+	# 				"customer_group": filters.get("customer_group"),
+	# 				"disabled": 0
+	# 			},
+	# 			pluck="name"
+	# 		)
+	# 	)
+
+	# 	customers = [c for c in customers if c in group_customers]
+
+	# if not customers:
+	# 	return []
+	customers = sorted(sis_map.keys())
 
 	if not customers:
 		return []
@@ -931,11 +953,50 @@ def get_data(filters, companies):
 
 	return data
 
+# @frappe.whitelist()
+# @frappe.validate_and_sanitize_search_inputs
+# def customer_query(doctype, txt, searchfield, start, page_len, filters):
+# 	return frappe.db.sql(
+# 		"""
+# 		SELECT name, customer_name
+# 		FROM `tabCustomer`
+# 		WHERE disabled = 0
+# 			AND (
+# 				name LIKE %(txt)s
+# 				OR customer_name LIKE %(txt)s
+# 			)
+# 		ORDER BY
+# 			CASE WHEN customer_name LIKE %(start_txt)s THEN 0 ELSE 1 END,
+# 			customer_name
+# 		LIMIT %(start)s, %(page_len)s
+# 		""",
+# 		{
+# 			"txt": f"%{txt}%",
+# 			"start_txt": f"{txt}%",
+# 			"start": start,
+# 			"page_len": page_len
+# 		}
+# 	)
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def customer_query(doctype, txt, searchfield, start, page_len, filters):
+	conditions = ""
+	values = {
+		"txt": f"%{txt}%",
+		"start_txt": f"{txt}%",
+		"start": start,
+		"page_len": page_len
+	}
+
+	if isinstance(filters, str):
+		filters = frappe.parse_json(filters)
+
+	if filters and filters.get("customer_group"):
+		conditions = " AND customer_group = %(customer_group)s"
+		values["customer_group"] = filters.get("customer_group")
+
 	return frappe.db.sql(
-		"""
+		f"""
 		SELECT name, customer_name
 		FROM `tabCustomer`
 		WHERE disabled = 0
@@ -943,15 +1004,11 @@ def customer_query(doctype, txt, searchfield, start, page_len, filters):
 				name LIKE %(txt)s
 				OR customer_name LIKE %(txt)s
 			)
+			{conditions}
 		ORDER BY
 			CASE WHEN customer_name LIKE %(start_txt)s THEN 0 ELSE 1 END,
 			customer_name
 		LIMIT %(start)s, %(page_len)s
 		""",
-		{
-			"txt": f"%{txt}%",
-			"start_txt": f"{txt}%",
-			"start": start,
-			"page_len": page_len
-		}
+		values
 	)
