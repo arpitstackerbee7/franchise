@@ -11,9 +11,10 @@
   "transporter",
   "invoice_value",
   "column_break_nprm",
-  "supplier",
+  "types",
   "door_no",
   "column_break_pqmw",
+  "supplier",
   "customer_name",
   "document_nos",
   "no_of_parcels",
@@ -304,7 +305,8 @@
    "fieldtype": "Link",
    "label": "Transporter",
    "link_filters": "[[\"Supplier\",\"is_transporter\",\"=\",1]]",
-   "options": "Supplier"
+   "options": "Supplier",
+   "reqd": 1
   },
   {
    "fieldname": "invoice_value",
@@ -328,7 +330,8 @@
   {
    "fieldname": "document_nos",
    "fieldtype": "Data",
-   "label": "Bilty No"
+   "label": "Bilty No",
+   "reqd": 1
   },
   {
    "fieldname": "no_of_parcels",
@@ -345,7 +348,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Doer",
-   "options": "User"
+   "options": "User",
+   "reqd": 1
   },
   {
    "fieldname": "purchase_invoice",
@@ -358,6 +362,13 @@
    "fieldtype": "Link",
    "label": "Customer Name",
    "options": "Customer"
+  },
+  {
+   "fieldname": "types",
+   "fieldtype": "Link",
+   "label": "Type",
+   "options": "Incoming Logistics Type",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -373,7 +384,7 @@
    "link_fieldname": "custom_gate_entry"
   }
  ],
- "modified": "2026-10-08 11:06:00.291822",
+ "modified": "2026-10-09 13:52:13.815550",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Gate Entry",

@@ -356,8 +356,9 @@ frappe.ui.form.on("Incoming Logistics", {
                                 console.log("Gate Entry Doc:", doc);
 
                                 // ✅ Set values
+                                frm.set_value("type", doc.types || "");
                                 frm.set_value("consignor", doc.supplier || "");
-
+                                frm.set_value("consignor_customer", doc.customer_name || "");
                                 frm.set_value("lr_quantity", doc.no_of_parcels || 0);
 
                                 frm.set_value("lr_document_no", doc.document_nos || "");
