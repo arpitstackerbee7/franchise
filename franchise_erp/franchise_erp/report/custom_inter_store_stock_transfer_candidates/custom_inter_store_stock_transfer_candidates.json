@@ -16,7 +16,7 @@
  "name": "Custom Inter-store Stock Transfer Candidates",
  "owner": "Administrator",
  "prepared_report": 0,
- "ref_doctype": "Stock Ledger Entry",
+ "ref_doctype": "Item",
  "reference_report": "",
  "report_name": "Custom Inter-store Stock Transfer Candidates",
  "report_type": "Script Report",

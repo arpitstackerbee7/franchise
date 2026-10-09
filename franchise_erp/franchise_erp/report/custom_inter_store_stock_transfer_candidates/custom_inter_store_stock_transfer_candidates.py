@@ -8,8 +8,7 @@ from the stores' own data up to the As On Date. For each style in each store:
 In = accepted qty of its Purchase Receipts, Out = qty of its Delivery Notes (returns
 excluded), sell-through = Out / In, balance = the stock it holds.
 
-Hot (needs stock): sell-through 85%+ and nothing left. Qty Sold is what those
-stores sold of the style (Delivery Note qty).
+Hot (needs stock): sell-through 85%+ and nothing left.
 Dead (stock stuck): part of what the store received never sold (In - Out > 0),
 e.g. 5 received, 3 sold: 2 stuck. Qty Stuck is that never-sold qty.
 A style is listed when it is dead in at least one store and hot in another, so the
@@ -39,7 +38,6 @@ def get_columns():
 		{"label": _("Qty Stuck in Dead Stores"), "fieldname": "stuck_qty", "fieldtype": "Int", "width": 170},
 		{"label": _("Dead Store Count"), "fieldname": "dead_count", "fieldtype": "Int", "width": 140},
 		{"label": _("Top Dead Stores (store qty)"), "fieldname": "dead_stores", "fieldtype": "Data", "width": 420},
-		{"label": _("Qty Sold in Hot Stores"), "fieldname": "sold_qty", "fieldtype": "Int", "width": 170},
 		{"label": _("Stockout Hot Store Count"), "fieldname": "hot_count", "fieldtype": "Int", "width": 180},
 		{"label": _("Hot Stores Needing Stock (store qty sold)"), "fieldname": "hot_stores", "fieldtype": "Data", "width": 420},
 	]
@@ -137,7 +135,6 @@ def get_data(as_on_date):
 				"stuck_qty": sum(qty for _store, qty in dead),
 				"dead_count": len(dead),
 				"dead_stores": ", ".join(f"{store} ({qty:g})" for store, qty in dead[:TOP_DEAD_STORES]),
-				"sold_qty": sum(sold for _store, sold in hot),
 				"hot_count": len(hot),
 				"hot_stores": ", ".join(f"{store} ({sold:g})" for store, sold in hot),
 			}
