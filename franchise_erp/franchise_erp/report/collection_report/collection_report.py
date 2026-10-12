@@ -209,63 +209,63 @@ def get_columns():
 		},
 
 		{
-			"label": _("Credit Note"),
+			"label": _("Previous Credit Note"),
 			"fieldname": "credit_note",
 			"fieldtype": "Currency",
 			"width": 85
 		},
 
 		{
-			"label": _("Debit Note"),
+			"label": _("Previous Debit Note"),
 			"fieldname": "debit_note",
 			"fieldtype": "Currency",
 			"width": 85
 		},
 
 		{
-			"label": _("Payment Receivable"),
+			"label": _("Previous Payment Receivable"),
 			"fieldname": "payment_received",
 			"fieldtype": "Currency",
 			"width": 90
 		},
 
 		{
-			"label": _("Collectable Amount"),
+			"label": _("Previous Collectable Amount"),
 			"fieldname": "collectable_amount",
 			"fieldtype": "Currency",
 			"width": 100
 		},
 
 		{
-			"label": _("Last 15 Days Sale Qty"),
+			"label": _("Current Sale Qty"),
 			"fieldname": "sale_qty_15",
 			"fieldtype": "Float",
 			"width": 90
 		},
 
 		{
-			"label": _("Last 15 Days Sale Amount"),
+			"label": _("Current Sale Amount"),
 			"fieldname": "amount_15",
 			"fieldtype": "Currency",
 			"width": 100
 		},
 
 		{
-			"label": _("Credit Note (Last 15 Days)"),
+			"label": _("Current Credit Note"),
 			"fieldname": "credit_note_15",
 			"fieldtype": "Currency",
 			"width": 90
 		},
 
 		{
-			"label": _("Debit Note (Last 15 Days)"),
+			"label": _("Current Debit Note"),
 			"fieldname": "debit_note_15",
 			"fieldtype": "Currency",
 			"width": 90
 		},
 
 		{
-			"label": _("Collectable Amount Last 15 Days"),
+			"label": _("Current Collectable Amount"),
 			"fieldname": "collectable_amount_15",
 			"fieldtype": "Currency",
 			"width": 100
