@@ -476,12 +476,19 @@ def process_barcode(scan_barcode, existing_gate_entry=None):
         FROM `tabGate Entry` ge
         JOIN `tabGate Entry Box Barcode` gei ON ge.name = gei.parent
         WHERE gei.box_barcode = %s
+        AND ge.docstatus = 1
+          AND gei.docstatus = 1
         LIMIT 1
     """, (scan_barcode,), as_dict=1)
 
+    # if not result:
+    #     frappe.throw("❌ Barcode not found in any Gate Entry")
+        
     if not result:
-        frappe.throw("❌ Barcode not found in any Gate Entry")
-
+        frappe.throw(
+            "❌ Barcode not found in any Submitted Gate Entry. "
+            "Draft or Cancelled Gate Entry barcode cannot be scanned."
+        )
     data = result[0]
 
     # ❌ Status check
