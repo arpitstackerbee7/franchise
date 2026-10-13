@@ -372,7 +372,427 @@ def get_data(filters, companies):
 	# SALE QUANTITY
 
 
-	from franchise_erp.franchise_erp.doctype.sis_debit_note_log.sis_debit_note_log import fetch_invoices
+
+
+	#from franchise_erp.franchise_erp.doctype.sis_debit_note_log.sis_debit_note_log import fetch_invoices
+	from franchise_erp.franchise_erp.doctype.sis_debit_note_log.sis_debit_note_log import get_item_input_gst
+
+	from decimal import Decimal, ROUND_HALF_UP
+
+
+	def R2(val):
+		return val.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+	@frappe.whitelist()
+	def fetch_invoices(company, from_date=None, to_date=None):
+
+		import frappe
+		from decimal import Decimal
+		from frappe.utils import getdate
+
+
+		# -------------------------------------------------------------------
+		# SMALL HELPER → ALWAYS RETURN DECIMAL
+		# -------------------------------------------------------------------
+
+		def D(val):
+			return Decimal(str(val or 0))
+
+
+		# -------------------------------------------------------------------
+		# FETCH CONFIG VALUES
+		# -------------------------------------------------------------------
+
+		config = frappe.db.get_value(
+			"SIS Configuration",
+			{"company": company},
+			[
+				"fresh_margin",
+				"discounted_margin",
+				"sis_debit_note_creation_period",
+				"auto_credit_note_percent",
+				"discount_threshold",
+				"output_gst_min_net_rate",
+				"input_gst_for_opening_stock"
+			],
+			as_dict=True
+		)
+
+		if not config or not config.sis_debit_note_creation_period:
+			frappe.throw("Please set Debit Note Creation Period in SIS Configuration")
+
+		fresh_margin = D(config.fresh_margin)
+		discounted_margin = D(config.discounted_margin)
+		period_type = config.sis_debit_note_creation_period
+		auto_credit_note_percent = D(config.auto_credit_note_percent)
+		discount_threshold = D(config.discount_threshold)
+		output_gst_min_net_rate = D(config.output_gst_min_net_rate)
+		input_gst_for_opening_stock = D(config.input_gst_for_opening_stock)
+
+
+		# -------------------------------------------------------------------
+		# CLEAN DATE INPUTS
+		# -------------------------------------------------------------------
+
+		from_date = None if not from_date or from_date in ["", "null"] else from_date
+		to_date = None if not to_date or to_date in ["", "null"] else to_date
+
+
+		# 🔥 If frontend sent dates → ALWAYS use them
+		if from_date and to_date:
+			pass
+
+		# fallback to config (only if frontend empty)
+		elif period_type == "Date Range":
+			from_date, to_date = frappe.db.get_value(
+				"SIS Configuration",
+				{"company": company},
+				["from_date", "to_date"]
+			)
+
+		# fallback to period type
+		else:
+			from_date, to_date = get_period_dates(period_type)
+
+		if not from_date or not to_date:
+			frappe.throw("Please select From Date and To Date")
+
+		from_date = getdate(from_date)
+		to_date = getdate(to_date)
+
+		if from_date > to_date:
+			frappe.throw("From Date cannot be greater than To Date")
+
+
+		# -------------------------------------------------------------------
+		# FETCH DELIVERY NOTE DATA
+		# -------------------------------------------------------------------
+
+		invoices = frappe.db.sql("""
+			SELECT
+				dn.name AS name,
+				dn.posting_date,
+				dn.posting_time,
+				dn.customer,
+				dn.is_return,              -- ✅ CORRECT
+				dni.name AS sii_name,
+				dni.item_code,
+				dni.item_name,
+				dni.serial_no,
+				dni.qty,
+				dni.rate,
+				dni.price_list_rate,
+				dni.discount_percentage,
+				dni.custom_is_promo_scheme,
+				dni.custom_promo_discount_percent,
+				(dni.qty * dni.price_list_rate) AS total_amount
+			FROM `tabDelivery Note` dn
+			JOIN `tabDelivery Note Item` dni ON dni.parent = dn.name
+			WHERE
+				dn.company = %s
+				AND dn.posting_date BETWEEN %s AND %s
+				AND dn.docstatus = 1
+			ORDER BY dn.posting_date DESC, dn.posting_time DESC, dn.name, dni.idx
+		""", (company, from_date, to_date), as_dict=True)
+
+		processed = []
+
+
+		# -------------------------------------------------------------------
+		# PROCESS EACH ITEM
+		# -------------------------------------------------------------------
+
+		for r in invoices:
+
+			total_amount = D(r.total_amount)
+
+			discount_percentage = D(0)
+			promo_discount = D(0)
+			is_promo = r.custom_is_promo_scheme
+
+			# 🔥 PROMO DISCOUNT OVERRIDE
+			if is_promo and promo_discount > 0:
+				discount_percentage = promo_discount
+
+			discount_amount = (total_amount * discount_percentage) / D(100)
+			net_amount = total_amount - discount_amount
+
+
+			# -------------------------------------------------------------------
+			# OUTPUT GST
+			# -------------------------------------------------------------------
+
+			# gst_percent = D(5) if net_amount <= D(2500) else D(18)
+			# out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
+			# out_put_gst_value = R2(out_put_gst_value)
+			# net_sale_value = net_amount - out_put_gst_value
+
+			# gst_percent = D(5) if net_amount <= output_gst_min_net_rate else D(18)
+			# out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
+			# out_put_gst_value = R2(out_put_gst_value)
+			# net_sale_value = net_amount - out_put_gst_value
+
+			# -------------------------------
+			# OUTPUT GST (FINAL FIX)
+			# -------------------------------
+
+			is_return = r.is_return or 0
+
+			# 🔥 IMPORTANT: use absolute value for GST decision
+			check_amount = abs(net_amount)
+
+			if is_return == 1:
+				if check_amount > output_gst_min_net_rate:
+					gst_percent = D(18)
+				else:
+					gst_percent = D(5)
+			else:
+				gst_percent = D(5) if check_amount <= output_gst_min_net_rate else D(18)
+
+			# GST calculation (original net_amount use karo, sign same rahega)
+			out_put_gst_value = net_amount * gst_percent / (D(100) + gst_percent)
+			out_put_gst_value = R2(out_put_gst_value)
+
+			net_sale_value = net_amount - out_put_gst_value
+
+
+			# -------------------------------------------------------------------
+			# MARGIN LOGIC
+			# -------------------------------------------------------------------
+
+			# if is_promo or discount_percentage > 0:
+			#     margin_percent = discounted_margin
+			# else:
+			#     margin_percent = fresh_margin
+
+			if is_promo and promo_discount > 0:
+				# Promo scheme with actual promo discount → discounted margin
+				margin_percent = discounted_margin
+			elif not is_promo and discount_percentage > 0:
+				# Normal discount → discounted margin
+				margin_percent = discounted_margin
+			else:
+				# Promo scheme with 0 promo discount OR no discount → fresh margin
+				margin_percent = fresh_margin
+
+			margin_amount = (net_amount * margin_percent) / D(100)
+			inv_base_value = net_sale_value - margin_amount
+			inv_base_value = R2(inv_base_value)
+
+
+			# -------------------------------------------------------------------
+			# INPUT GST
+			# -------------------------------------------------------------------
+
+			st_percent, gst_amount_per_item, single_item_rate = get_item_input_gst(
+				r.item_code, company
+			)
+
+
+			# -------------------------------------------------------------------
+			# CONDITION: Only when GST is 0
+			# -------------------------------------------------------------------
+
+			if gst_amount_per_item == 0:
+
+				# STEP 1: MRP
+				mrp1 = D(r.price_list_rate or 0)
+
+				# STEP 2: OUTPUT GST %
+				if abs(mrp1) <= output_gst_min_net_rate:
+					output_gst_percent1 = D(5)
+				else:
+					output_gst_percent1 = D(18)
+
+				# STEP 3: OUTPUT GST VALUE (INCLUSIVE)
+				output_gst_value1 = (mrp1 * output_gst_percent1) / (D(100) + output_gst_percent1)
+				output_gst_value1 = R2(output_gst_value1)
+
+				# NET SALE
+				net_sale_value1 = mrp1 - output_gst_value1
+				net_sale_value1 = R2(net_sale_value1)
+
+				# STEP 4: MARGIN
+				margin_amount1 = (mrp1 * fresh_margin) / D(100)
+				margin_amount1 = R2(margin_amount1)
+
+				# STEP 5: INVENTORY BASE VALUE
+				inv_base_value1 = net_sale_value1 - margin_amount1
+				inv_base_value1 = R2(inv_base_value1)
+
+				# STEP 6: INPUT GST %
+				if abs(inv_base_value1) <= input_gst_for_opening_stock:
+					st_percent1 = D(5)
+				else:
+					st_percent1 = D(18)
+
+				# STEP 7: INPUT GST VALUE (EXCLUSIVE) ✅ IMPORTANT
+				input_gst1 = (inv_base_value1 * st_percent1) / D(100)
+				input_gst1 = R2(input_gst1)
+
+				# STEP 8: FINAL
+				invoice_value1 = inv_base_value1 + input_gst1
+				invoice_value1 = R2(invoice_value1)
+
+				# print("MRP:", mrp1)
+
+				# print("Output GST %:", output_gst_percent1)
+
+				# print("Output GST Value:", output_gst_value1)
+
+				# print("Net Sale Value:", net_sale_value1)
+
+				# print("Margin %:", fresh_margin)
+				# print("Margin Value:", margin_amount1)
+
+				# print("Inventory Base Value:", inv_base_value1)
+
+				# print("Input GST %:", st_percent1)
+
+				# print("Input GST Value:", input_gst1)
+
+				# print("Final Invoice Value:", invoice_value1)
+
+				gst_amount_per_item = D(input_gst1)
+				single_item_rate = D(invoice_value1)
+				total_serial_invoice_value = single_item_rate + gst_amount_per_item
+				invoice_value1 = inv_base_value + gst_amount_per_item
+
+				if discount_percentage == 0:
+					debit_note_value = 0
+				else:
+					debit_note_value = single_item_rate - invoice_value1
+
+				# Return case → GST negative
+				is_return = r.is_return or 0   # 0 or 1
+
+				if is_return == 1:
+					gst_amount_per_item1 = -gst_amount_per_item
+					single_item_rate1 = -single_item_rate
+					invoice_value1 = inv_base_value + gst_amount_per_item1
+
+					if discount_percentage == 0:
+						debit_note_value = 0
+					else:
+						debit_note_value = single_item_rate1 - (invoice_value1)
+
+					# print("0:", gst_amount_per_item1)
+
+
+			else:
+				gst_amount_per_item = D(gst_amount_per_item)
+				single_item_rate = D(single_item_rate)
+				total_serial_invoice_value = single_item_rate + gst_amount_per_item
+				invoice_value1 = inv_base_value + gst_amount_per_item
+
+				if discount_percentage == 0:
+					debit_note_value = 0
+				else:
+					debit_note_value = total_serial_invoice_value - invoice_value1
+
+				# Return case → GST negative
+				is_return = r.is_return or 0   # 0 or 1
+
+				if is_return == 1:
+					gst_amount_per_item1 = -gst_amount_per_item
+					single_item_rate1 = -single_item_rate
+					invoice_value1 = inv_base_value + gst_amount_per_item1
+					debit_note_value1 = single_item_rate1 - (invoice_value1)
+
+					if discount_percentage == 0:
+						debit_note_value = 0
+					else:
+						debit_note_value = debit_note_value1 + (gst_amount_per_item1)
+
+					# print("0:", gst_amount_per_item1)
+
+
+			#    total_serial_invoice_value = single_item_rate1 + gst_amount_per_item1
+			#    invoice_value1 = inv_base_value + gst_amount_per_item1
+			#    if discount_percentage == 0:
+			#         debit_note_value = 0
+			#    else:
+			#         debit_note_value = invoice_value1 - total_serial_invoice_value
+
+
+			if is_return == 1:
+				gst_amount_per_item_1 = -gst_amount_per_item
+			else:
+				gst_amount_per_item_1 = gst_amount_per_item
+
+
+			# -------------------------------------------------------------------
+			# FINAL UPDATE
+			# -------------------------------------------------------------------
+
+			r.update({
+				"total_amount": float(total_amount),
+				"discount_percentage": float(discount_percentage),
+				"discount_amount": float(discount_amount),
+				"net_amount": float(net_amount),
+				"gst_percent": float(gst_percent),
+				"gst_amount": float(out_put_gst_value),
+				"net_sale_value": float(net_sale_value),
+				"margin_percent": float(margin_percent),
+				"margin_amount": float(margin_amount),
+				"inv_base_value": float(inv_base_value),
+				"in_put_gst_value": float(gst_amount_per_item_1),
+				"invoice_value": float(invoice_value1),
+				"debit_note": float(debit_note_value),
+				"serial_no": r.serial_no or ""
+			})
+
+			processed.append(r)
+
+
+		# -------------------------------------------------------------------
+		# RETURN
+		# -------------------------------------------------------------------
+
+		return {
+			"invoice_list": processed,
+			"period_type": period_type,
+			"from_date": str(from_date),
+			"to_date": str(to_date),
+		}
+
+
+	# ======================================================
+	#       PERIOD DATE CALCULATION LOGIC
+	# ======================================================
+
+	def get_period_dates(period_type):
+		today = getdate(nowdate())
+		import calendar
+
+
+		# WEEKLY -- Monday to Sunday
+		if period_type == "Weekly":
+			weekday = today.weekday()
+			start = add_days(today, -weekday)
+			end = add_days(start, 6)
+			return start, end
+
+
+		# FORTNIGHTLY
+		elif period_type == "Fortnightly":
+			first_day = today.replace(day=1)
+			last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+
+			if today.day <= 15:
+				return first_day, first_day.replace(day=15)
+			else:
+				return first_day.replace(day=16), last_day
+
+
+		# MONTHLY
+		elif period_type == "Monthly":
+			first_day = today.replace(day=1)
+			last_day = today.replace(day=calendar.monthrange(today.year, today.month)[1])
+			return first_day, last_day
+
+		return today, today
 
 	qty_map = {}
 	first_delivery_data = frappe.db.sql(
@@ -423,7 +843,7 @@ def get_data(filters, companies):
 
 		for row in (previous_result.get("invoice_list") or []):
 			qty_map[customer]["qty_ytd"] += float(row.get("qty") or 0)
-			qty_map[customer]["amount_ytd"] += float(row.get("invoice_value") or 0)
+			qty_map[customer]["amount_ytd"] += float(row.get("inv_base_value") or 0)
 
 
 		# -------------------------------------------------
@@ -438,7 +858,7 @@ def get_data(filters, companies):
 
 		for row in (last_15_result.get("invoice_list") or []):
 			qty_map[customer]["qty_15"] += float(row.get("qty") or 0)
-			qty_map[customer]["amount_15"] += float(row.get("invoice_value") or 0)
+			qty_map[customer]["amount_15"] += float(row.get("inv_base_value") or 0)
 
 
 	# =====================================================
