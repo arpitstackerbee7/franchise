@@ -502,7 +502,8 @@ function open_purchase_order_mapper(frm) {
                     ["docstatus", "=", 1],
                     ["supplier", "=", frm.doc.consignor],
                     ["company", "=", frm.doc.owner_site],
-                    ["status", "!=", "Closed"]
+                    // ["status", "!=", "Closed"],
+                    ["status", "!=", "Completed"]
                 ]
             };
         },
