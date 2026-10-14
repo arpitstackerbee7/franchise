@@ -511,56 +511,78 @@ def process_barcode(scan_barcode, existing_gate_entry=None):
 from frappe.utils import flt
 
 
+
 @frappe.whitelist()
 def get_available_purchase_orders(supplier, company):
+    # Fetch submitted Purchase Orders for the selected supplier and company.
     purchase_orders = frappe.get_all(
         "Purchase Order",
         filters={
             "docstatus": 1,
             "supplier": supplier,
             "company": company,
-            "status": ["!=", "Completed"],
         },
-        fields=["name", "total_qty"],
+        fields=["name"],
     )
 
-    available_orders = []
+    if not purchase_orders:
+        return []
 
-    for po in purchase_orders:
-        # Find Incoming Logistics records referencing this Purchase Order
-        references = frappe.get_all(
-            "Outgoing Logistics Reference",
-            filters={
-                "parenttype": "Incoming Logistics",
-                "parentfield": "references",
-                "source_doctype": "Purchase Order",
-                "source_name": po.name,
-            },
-            fields=["parent"],
-        )
+    po_names = [po.name for po in purchase_orders]
 
-        # Avoid counting the same Incoming Logistics document more than once
-        incoming_names = list(set(row.parent for row in references))
+    # Fetch all individual PO item rows.
+    po_items = frappe.get_all(
+        "Purchase Order Item",
+        filters={
+            "parent": ["in", po_names],
+            "parenttype": "Purchase Order",
+            "parentfield": "items",
+        },
+        fields=["name", "parent", "stock_qty"],
+    )
 
-        total_received = 0
+    if not po_items:
+        return []
 
-        if incoming_names:
-            incoming_records = frappe.get_all(
-                "Incoming Logistics",
-                filters={
-                    "name": ["in", incoming_names],
-                    "docstatus": 1,
-                },
-                fields=["name", "received_qty"],
-            )
+    po_item_names = [item.name for item in po_items]
 
-            total_received = sum(
-                flt(row.received_qty or 0)
-                for row in incoming_records
-            )
+    # Calculate actual received stock quantity from submitted,
+    # non-return Purchase Receipts linked to each PO item row.
+    grn_rows = frappe.db.sql(
+        """
+        SELECT
+            pri.purchase_order_item,
+            SUM(pri.stock_qty) AS received_stock_qty
+        FROM `tabPurchase Receipt Item` pri
+        INNER JOIN `tabPurchase Receipt` pr
+            ON pr.name = pri.parent
+        WHERE pri.purchase_order_item IN %(po_item_names)s
+          AND pr.docstatus = 1
+          AND IFNULL(pr.is_return, 0) = 0
+        GROUP BY pri.purchase_order_item
+        """,
+        {"po_item_names": tuple(po_item_names)},
+        as_dict=True,
+    )
 
-        # Hide PO if received quantity reaches or exceeds PO total quantity
-        if total_received < flt(po.total_qty):
-            available_orders.append(po.name)
+    received_by_po_item = {
+        row.purchase_order_item: flt(row.received_stock_qty)
+        for row in grn_rows
+    }
 
-    return available_orders
+    # A PO remains available if ANY item has pending quantity.
+    # Hide it only when EVERY item is fully received.
+    pending_po_names = set()
+
+    for item in po_items:
+        ordered_qty = flt(item.stock_qty)
+        received_qty = received_by_po_item.get(item.name, 0)
+
+        if received_qty < ordered_qty - 0.000001:
+            pending_po_names.add(item.parent)
+
+    return [
+        po.name
+        for po in purchase_orders
+        if po.name in pending_po_names
+    ]

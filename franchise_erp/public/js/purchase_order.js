@@ -351,10 +351,15 @@ frappe.ui.form.on("Purchase Order", {
                             docname: frm.doc.name,
                             items: values.items
                         },
-                        callback: function() {
-                            frappe.msgprint("✅ Cost Updated Successfully");
-                            dialog.hide();
-                            frm.reload_doc();
+                        freeze: true,
+                        freeze_message: __("Updating Purchase Order and Subcontracting Order costs..."),
+
+                        callback: function(r) {
+                            if (r.message) {
+                                frappe.msgprint(__(r.message));
+                                dialog.hide();
+                                frm.reload_doc();
+                            }
                         }
                     });
                 }
