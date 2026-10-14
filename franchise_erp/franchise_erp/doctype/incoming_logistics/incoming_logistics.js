@@ -483,33 +483,82 @@ function open_incoming_mapper_by_type(frm) {
 // ===================================================
 // PURCHASE ORDER
 // ===================================================
-function open_purchase_order_mapper(frm) {
 
+// function open_purchase_order_mapper(frm) {
+
+//     if (!frm.doc.consignor) {
+//         frappe.throw("Please select Supplier first");
+//     }
+
+//     new frappe.ui.form.MultiSelectDialog({
+//         doctype: "Purchase Order",
+//         target: frm,
+//         setters: {
+//             supplier: frm.doc.consignor,
+//             company: frm.doc.owner_site
+//         },
+//         get_query() {
+//             return {
+//                 filters: [
+//                     ["docstatus", "=", 1],
+//                     ["supplier", "=", frm.doc.consignor],
+//                     ["company", "=", frm.doc.owner_site],
+//                     // ["status", "!=", "Closed"],
+//                     ["status", "!=", "Completed"]
+//                 ]
+//             };
+//         },
+//         action(selections) {
+//             add_reference_rows(frm, selections);
+//             this.dialog.hide();
+//         }
+//     });
+// }
+
+function open_purchase_order_mapper(frm) {
     if (!frm.doc.consignor) {
         frappe.throw("Please select Supplier first");
     }
 
-    new frappe.ui.form.MultiSelectDialog({
-        doctype: "Purchase Order",
-        target: frm,
-        setters: {
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_available_purchase_orders",
+        args: {
             supplier: frm.doc.consignor,
             company: frm.doc.owner_site
         },
-        get_query() {
-            return {
-                filters: [
-                    ["docstatus", "=", 1],
-                    ["supplier", "=", frm.doc.consignor],
-                    ["company", "=", frm.doc.owner_site],
-                    // ["status", "!=", "Closed"],
-                    ["status", "!=", "Completed"]
-                ]
-            };
-        },
-        action(selections) {
-            add_reference_rows(frm, selections);
-            this.dialog.hide();
+        callback(r) {
+            const available_orders = r.message || [];
+
+            if (!available_orders.length) {
+                frappe.msgprint(
+                    "No Purchase Orders available. All matching orders have been fully received."
+                );
+                return;
+            }
+
+            new frappe.ui.form.MultiSelectDialog({
+                doctype: "Purchase Order",
+                target: frm,
+                setters: {
+                    supplier: frm.doc.consignor,
+                    company: frm.doc.owner_site
+                },
+                get_query() {
+                    return {
+                        filters: [
+                            ["Purchase Order", "name", "in", available_orders],
+                            ["Purchase Order", "docstatus", "=", 1],
+                            ["Purchase Order", "supplier", "=", frm.doc.consignor],
+                            ["Purchase Order", "company", "=", frm.doc.owner_site],
+                            ["Purchase Order", "status", "!=", "Completed"]
+                        ]
+                    };
+                },
+                action(selections) {
+                    add_reference_rows(frm, selections);
+                    this.dialog.hide();
+                }
+            });
         }
     });
 }
