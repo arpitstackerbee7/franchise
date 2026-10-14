@@ -549,7 +549,7 @@ def get_available_purchase_orders(supplier, company):
                 "Incoming Logistics",
                 filters={
                     "name": ["in", incoming_names],
-                    "docstatus": ["!=", 2],
+                    "docstatus": 1,
                 },
                 fields=["name", "received_qty"],
             )
