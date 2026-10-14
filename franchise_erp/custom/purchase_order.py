@@ -585,26 +585,44 @@ def update_po_cost_and_sco(docname, items):
 
     # -------------------------
     # UPDATE SCO
+    # Only update non-cancelled Subcontracting Orders
     # -------------------------
     sco_list = frappe.get_all(
         "Subcontracting Order",
-        filters={"purchase_order": docname},
-        fields=["name"]
+        filters={
+            "purchase_order": docname,
+            "docstatus": ["!=", 2],
+        },
+        fields=["name", "docstatus"],
     )
 
     for sco in sco_list:
         sco_doc = frappe.get_doc("Subcontracting Order", sco.name)
 
+        # Extra safety: never update cancelled SCO
+        if sco_doc.docstatus == 2:
+            continue
+
         sco_doc.flags.ignore_validate = True
         sco_doc.flags.ignore_validate_update_after_submit = True
 
+        changed = False
+
         for row in sco_doc.items:
-            if row.purchase_order_item in item_map:
-                rate_val = item_map[row.purchase_order_item].get("rate")
+            po_item_name = row.purchase_order_item
+
+            if po_item_name in item_map:
+                rate_val = item_map[po_item_name].get("rate")
 
                 if rate_val is not None:
-                    row.service_cost_per_qty = flt(rate_val)
+                    rate_val = flt(rate_val)
 
-        sco_doc.save(ignore_permissions=True)
+                    if flt(row.service_cost_per_qty) != rate_val:
+                        row.service_cost_per_qty = rate_val
+                        changed = True
 
-    return "✅ Cost Updated Successfully"
+        # Save only if at least one service cost changed
+        if changed:
+            sco_doc.save(ignore_permissions=True)
+
+    return "Cost Updated Successfully"

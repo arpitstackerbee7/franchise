@@ -484,84 +484,143 @@ function open_incoming_mapper_by_type(frm) {
 // PURCHASE ORDER
 // ===================================================
 
-function open_purchase_order_mapper(frm) {
-
-    if (!frm.doc.consignor) {
-        frappe.throw("Please select Supplier first");
-    }
-
-    new frappe.ui.form.MultiSelectDialog({
-        doctype: "Purchase Order",
-        target: frm,
-        setters: {
-            supplier: frm.doc.consignor,
-            company: frm.doc.owner_site
-        },
-        get_query() {
-            return {
-                filters: [
-                    ["docstatus", "=", 1],
-                    ["supplier", "=", frm.doc.consignor],
-                    ["company", "=", frm.doc.owner_site],
-                    // ["status", "!=", "Closed"],
-                    ["status", "!=", "Completed"]
-                ]
-            };
-        },
-        action(selections) {
-            add_reference_rows(frm, selections);
-            this.dialog.hide();
-        }
-    });
-}
-
 // function open_purchase_order_mapper(frm) {
+
 //     if (!frm.doc.consignor) {
 //         frappe.throw("Please select Supplier first");
 //     }
 
-//     frappe.call({
-//         method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_available_purchase_orders",
-//         args: {
+//     new frappe.ui.form.MultiSelectDialog({
+//         doctype: "Purchase Order",
+//         target: frm,
+//         setters: {
 //             supplier: frm.doc.consignor,
 //             company: frm.doc.owner_site
 //         },
-//         callback(r) {
-//             const available_orders = r.message || [];
-
-//             if (!available_orders.length) {
-//                 frappe.msgprint(
-//                     "No Purchase Orders available. All matching orders have been fully received."
-//                 );
-//                 return;
-//             }
-
-//             new frappe.ui.form.MultiSelectDialog({
-//                 doctype: "Purchase Order",
-//                 target: frm,
-//                 setters: {
-//                     supplier: frm.doc.consignor,
-//                     company: frm.doc.owner_site
-//                 },
-//                 get_query() {
-//                     return {
-//                         filters: [
-//                             ["Purchase Order", "name", "in", available_orders],
-//                             ["Purchase Order", "docstatus", "=", 1],
-//                             ["Purchase Order", "supplier", "=", frm.doc.consignor],
-//                             ["Purchase Order", "company", "=", frm.doc.owner_site],
-//                             ["Purchase Order", "status", "!=", "Completed"]
-//                         ]
-//                     };
-//                 },
-//                 action(selections) {
-//                     add_reference_rows(frm, selections);
-//                     this.dialog.hide();
-//                 }
-//             });
+//         get_query() {
+//             return {
+//                 filters: [
+//                     ["docstatus", "=", 1],
+//                     ["supplier", "=", frm.doc.consignor],
+//                     ["company", "=", frm.doc.owner_site],
+//                     // ["status", "!=", "Closed"],
+//                     ["status", "!=", "Completed"]
+//                 ]
+//             };
+//         },
+//         action(selections) {
+//             add_reference_rows(frm, selections);
+//             this.dialog.hide();
 //         }
 //     });
 // }
+
+function open_purchase_order_mapper(frm) {
+    if (!frm.doc.consignor) {
+        frappe.throw("Please select Supplier first");
+    }
+
+    if (!frm.doc.owner_site) {
+        frappe.throw("Please select Company first");
+    }
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_available_purchase_orders",
+        args: {
+            supplier: frm.doc.consignor,
+            company: frm.doc.owner_site
+        },
+        freeze: true,
+        freeze_message: __("Checking pending GRN quantities..."),
+
+        callback(r) {
+            if (r.exc) {
+                return;
+            }
+
+            const available_orders = r.message || [];
+
+            if (!available_orders.length) {
+                frappe.msgprint({
+                    title: __("No Pending Purchase Orders"),
+                    message: __(
+                        "No Purchase Orders with pending GRN quantity were found for the selected Supplier and Company."
+                    ),
+                    indicator: "orange"
+                });
+                return;
+            }
+
+            new frappe.ui.form.MultiSelectDialog({
+                doctype: "Purchase Order",
+                target: frm,
+
+                setters: {
+                    supplier: frm.doc.consignor,
+                    company: frm.doc.owner_site
+                },
+
+                add_filters_group: 1,
+
+                get_query() {
+                    return {
+                        filters: [
+                            [
+                                "Purchase Order",
+                                "name",
+                                "in",
+                                available_orders
+                            ],
+                            [
+                                "Purchase Order",
+                                "docstatus",
+                                "=",
+                                1
+                            ],
+                            [
+                                "Purchase Order",
+                                "supplier",
+                                "=",
+                                frm.doc.consignor
+                            ],
+                            [
+                                "Purchase Order",
+                                "company",
+                                "=",
+                                frm.doc.owner_site
+                            ]
+                        ]
+                    };
+                },
+
+                action(selections) {
+                    if (!selections || !selections.length) {
+                        frappe.msgprint(
+                            __("Please select at least one Purchase Order.")
+                        );
+                        return;
+                    }
+
+                    add_reference_rows(frm, selections);
+
+                    this.dialog.hide();
+                }
+            });
+        },
+
+        error() {
+            frappe.msgprint({
+                title: __("Error"),
+                message: __(
+                    "Unable to fetch Purchase Orders. Please try again."
+                ),
+                indicator: "red"
+            });
+        }
+    });
+}
+
+
 
 
 // ===================================================
