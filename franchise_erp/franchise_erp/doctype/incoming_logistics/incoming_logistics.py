@@ -505,3 +505,62 @@ def process_barcode(scan_barcode, existing_gate_entry=None):
         "gate_entry": data.gate_entry,
         "scan_date_time": frappe.utils.now_datetime()
     }
+    
+    
+
+from frappe.utils import flt
+
+
+@frappe.whitelist()
+def get_available_purchase_orders(supplier, company):
+    purchase_orders = frappe.get_all(
+        "Purchase Order",
+        filters={
+            "docstatus": 1,
+            "supplier": supplier,
+            "company": company,
+            "status": ["!=", "Completed"],
+        },
+        fields=["name", "total_qty"],
+    )
+
+    available_orders = []
+
+    for po in purchase_orders:
+        # Find Incoming Logistics records referencing this Purchase Order
+        references = frappe.get_all(
+            "Outgoing Logistics Reference",
+            filters={
+                "parenttype": "Incoming Logistics",
+                "parentfield": "references",
+                "source_doctype": "Purchase Order",
+                "source_name": po.name,
+            },
+            fields=["parent"],
+        )
+
+        # Avoid counting the same Incoming Logistics document more than once
+        incoming_names = list(set(row.parent for row in references))
+
+        total_received = 0
+
+        if incoming_names:
+            incoming_records = frappe.get_all(
+                "Incoming Logistics",
+                filters={
+                    "name": ["in", incoming_names],
+                    "docstatus": ["!=", 2],
+                },
+                fields=["name", "received_qty"],
+            )
+
+            total_received = sum(
+                flt(row.received_qty or 0)
+                for row in incoming_records
+            )
+
+        # Hide PO if received quantity reaches or exceeds PO total quantity
+        if total_received < flt(po.total_qty):
+            available_orders.append(po.name)
+
+    return available_orders
