@@ -9,7 +9,6 @@ app_license = "mit"
 # ------------------
 
 # required_apps = []
-
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
@@ -35,6 +34,18 @@ on_session_creation = [
      
 ]
 
+before_request = [
+    "franchise_erp.overrides.helpdesk_permissions.apply_helpdesk_permission_patch"
+]
+# before_job = [
+#     "franchise_erp.custom.attendance_patch.load_patch"
+# ]
+
+# after_migrate = [
+#     "franchise_erp.custom.attendance_patch.load_patch"
+# ]
+
+before_migrate = ["franchise_erp.overrides.migrate_hooks.pause_jobs_before_migrate"]
 
 doc_events = {
 
@@ -44,20 +55,31 @@ doc_events = {
     # "*": {
     #     "before_validate": "franchise_erp.utils.fy_naming.short_fy_naming"
     # },
-
+    "User Role Viewer": {
+        "after_insert": "franchise_erp.franchise_erp.doctype.user_role_viewer.user_role_viewer.remove_user_roles",
+        "on_update": "franchise_erp.franchise_erp.doctype.user_role_viewer.user_role_viewer.remove_user_roles"
+    },
    "Purchase Invoice": {
-       "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+        "on_submit": "franchise_erp.custom.purchase_invoice.update_gate_entry_purchase_invoice",
+       "autoname": [
+           "franchise_erp.utils.fy_naming.company_fy_autoname",
+       ],
        "validate": [
                     "franchise_erp.custom.purchase_invoice.set_buffer_due_date",
+                    "franchise_erp.custom.back_date_validation.validate_back_date",
                     # "franchise_erp.custom.purchase_invoice.sync_merged_discounts"
                     
                     ],
         "before_save": [  
             "franchise_erp.custom.purchase_invoice.sync_merged_discounts"
-        ]
+        ],
+        # "before_insert": "franchise_erp.custom.purchase_invoice.set_spl_purchase_invoice_name"
     },
     "Journal Entry": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+        "validate": [
+            "franchise_erp.custom.back_date_validation.validate_back_date",
+],
         "on_submit": "franchise_erp.custom.processed_sales_invoice.process_journal_entry",
     },
    
@@ -66,32 +88,51 @@ doc_events = {
         "validate":[
             # "franchise_erp.custom.promotional_scheme.apply_promotions",
                     # "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
-                    "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return",
+                    "franchise_erp.custom.back_date_validation.validate_back_date", 
+                    "franchise_erp.custom.sales_invoice.validate_gate_entry_qty_on_sales_return", 
                     ],
 
-        "before_save": ["franchise_erp.custom.sales_invoice.apply_sis_pricing",
+        "before_save": [
+            # "franchise_erp.custom.sales_invoice.apply_sis_pricing",
         # "franchise_erp.custom.sales_invoice.update_packed_items_serial_no",
         "franchise_erp.custom.sales_invoice.validate_item_from_so",
         "franchise_erp.custom.sales_invoice.validate_sales_invoice",
         ],
         "before_validate": [
+            "franchise_erp.custom.sales_invoice.apply_sis_pricing",
             "franchise_erp.custom.sales_invoice.apply_sales_term",
             # "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
             
             ],
-        "before_submit": "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+        "before_submit": [
+            "franchise_erp.custom.sales_invoice.validate_overdue_invoice",
+        ],
+        "on_submit": (
+            "franchise_erp.franchise_erp.doctype.bulk_sales_return."
+            "bulk_sales_return.auto_submit_linked_delivery_note_return"
+        )
+        # "on_submit": "franchise_erp.custom.sales_invoice.update_serial_no_mrp"
     },
     "Purchase Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+        "validate": [
+            "franchise_erp.custom.back_date_validation.validate_back_date",
+           ],
         # "before_insert": "franchise_erp.custom.purchase_order.generate_serials_on_po_submit",
         "on_submit": ["franchise_erp.api.create_selling_price_from_po","franchise_erp.custom.purchase_order.generate_serials_on_po_submit"],
-        "before_save": ["franchise_erp.custom.purchase_order.apply_purchase_term"],
+        "before_save": [
+            "franchise_erp.custom.purchase_order.apply_purchase_term",
+            ],
+        "on_update": [
+            "franchise_erp.send_whatsapp_notification.po_workflow_notification"
+        ]
         # "on_change": "franchise_erp.api.on_change"
     },
     "Purchase Receipt": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate":[
             "franchise_erp.custom.purchase_reciept.validate_item",
+                    "franchise_erp.custom.back_date_validation.validate_back_date", 
                     "franchise_erp.custom.purchase_reciept.validate_gate_entry",
                     "franchise_erp.custom.purchase_reciept.validate_gate_entry_qty_on_grn"
                     ],
@@ -108,6 +149,24 @@ doc_events = {
                        ],
         "on_trash": "franchise_erp.custom.purchase_reciept.clear_si_grn_flags",        
     },
+
+    "Material Request": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+
+    "Stock Reconciliation": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
+
+    "Payroll Entry": {
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+    ]
+},
 
    "Item": {
         "before_insert": "franchise_erp.custom.item_master.generate_item_code",
@@ -136,7 +195,11 @@ doc_events = {
     "Payment Entry":{
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "on_submit":"franchise_erp.custom.payment_entry.apply_early_payment_discount",
-        "validate": "franchise_erp.custom.payment_entry.validate_duplicate_cheque_no"
+        "validate": [
+            "franchise_erp.custom.back_date_validation.validate_back_date",
+            "franchise_erp.custom.payment_entry.validate_duplicate_cheque_no",
+            "franchise_erp.custom.payment_entry.set_invoice_total"
+            ]
     },
     "BOM": {
         "on_submit": "franchise_erp.custom.bom.create_subcontracting_bom"
@@ -149,8 +212,9 @@ doc_events = {
     },
     "Sales Order":{
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-        "before_validate": "franchise_erp.custom.sales_order.apply_sales_term"
-    },    "Item Price": {
+        "before_validate": "franchise_erp.custom.sales_order.apply_sales_term",
+    },
+    "Item Price": {
         "validate": "franchise_erp.custom.item_price.validate_item_price",
         "on_update": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",
         "after_insert": "franchise_erp.custom.item_master.sync_item_price_to_custom_table",
@@ -158,7 +222,18 @@ doc_events = {
     },
 
     "Delivery Note": {
-
+        "validate": ["franchise_erp.custom.back_date_validation.validate_back_date",
+                    "franchise_erp.custom.delivery_note.disable_eway_notification",
+                    "franchise_erp.custom.delivery_note.apply_sales_person_rules",
+                    "franchise_erp.custom.delivery_note.validate_internal_customer_credit",
+                    # "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note_for_stock_take",
+                    # "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note",
+                    ],
+        "before_validate" : [
+            "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note",
+             "franchise_erp.custom.delivery_note.apply_sis_pricing_delivery_note_for_stock_take",
+            
+        ],
         "before_save": [
             "franchise_erp.custom.delivery_note_promotional_scheme.apply_promotions",
             "franchise_erp.custom.delivery_note.set_promo_group_id",
@@ -166,10 +241,7 @@ doc_events = {
         ],
         # "before_naming": "franchise_erp.custom.delivery_note.set_delivery_note_name",        
         "before_insert": "franchise_erp.custom.delivery_note.set_dn_naming_series",
-        "validate": ["franchise_erp.custom.delivery_note.disable_eway_notification",
-        "franchise_erp.custom.delivery_note.apply_sales_person_rules",
-        "franchise_erp.custom.delivery_note.validate_internal_customer_credit"
-        ],
+        
         "on_submit": "franchise_erp.custom.delivery_note.create_credit_note_from_dn",
         
         # "after_save": [
@@ -181,39 +253,73 @@ doc_events = {
     "Sales Person":{
         "validate": "franchise_erp.custom.sales_person.validate_unique_custom_user"
     },
-    "Stock Entry":{
-        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-        "validate": [
-            "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
-            # "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_wip_return_stock_entry"
-             "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_transfer_in_stock_entry"
-        ],
-        "on_submit": "franchise_erp.custom.stock_entry.on_submit_stock_entry"
-    },
-    "Subcontracting Receipt": {
-        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-        "validate": "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
-         "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
-         "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel"
-    },
+"Stock Entry": {
+    "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+
+    "before_validate": [
+        "franchise_erp.custom.subcontracting_order.set_tax_rows_on_net_total"
+    ],
+
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+        "franchise_erp.custom.stock_entry.validate_intercompany_transfer",
+        "franchise_erp.custom.stock_entry.validate_gate_entry_qty_on_transfer_in_stock_entry"
+    ],
+
+    "on_submit": [
+            "franchise_erp.custom.stock_entry.on_submit_stock_entry",
+            # "franchise_erp.custom.stock_entry.create_stock_settlement"
+    ]
+},
+"Subcontracting Receipt": {
+    "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+
+    "validate": [
+        "franchise_erp.custom.back_date_validation.validate_back_date",
+        "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
+    ],
+
+    "before_save": [
+        "franchise_erp.custom.subcontracting_receipt.recalculate_tax_on_service_cost",
+    ],
+
+    "before_submit": "franchise_erp.custom.subcontracting_receipt.assign_fifo_serials",
+
+    "on_cancel": "franchise_erp.custom.subcontracting_receipt.restore_serials_on_cancel",
+},
     "Leave Application":{
-        "on_submit": "franchise_erp.custom.leave_application.update_late_log_on_short_leave"
+        "on_submit":[
+        "franchise_erp.custom.leave_application.update_late_log_on_short_leave",
+        "franchise_erp.custom.attendance_helpers.check_sandwich_on_leave_submit"
+        ]
     },
     "Leave Type":{
         "validate": "franchise_erp.custom.leave_type.validate_only_one_short_leave"
     },
     "Employee Checkin":{
-        "after_insert": "franchise_erp.custom.employee_checkin.process_late_entry"
+        "after_insert": [
+        "franchise_erp.custom.employee_checkin.process_late_entry",
+        "franchise_erp.custom.attendance.update_last_sync",
+        "franchise_erp.custom.leave_application.update_attendance_on_checkin",
+    ],
+    "validate": "franchise_erp.overrides.employee_checkin.fix_shift_for_paired_checkin",
     },
     "Salary Component":{
         "validate": "franchise_erp.custom.salary_component.validate_short_leave_component"
     },
-    "Salary Slip":{
-        "before_validate": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions",
-        "on_submit": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions"
+    "Salary Slip": {
+    "before_validate": [
+        "franchise_erp.custom.salary_slip.apply_leave_rule_deductions"
+    ],
+    "validate": [
+        "franchise_erp.custom.salary_slip.apply_payment_days_adjustment"
+    ],
+    "on_submit": "franchise_erp.custom.salary_slip.apply_leave_rule_deductions"
     },
+
     "Subcontracting Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
+        "before_validate": "franchise_erp.custom.subcontracting_order.set_tax_rows_on_net_total"
     },
     "Supplier": {
         "after_insert": "franchise_erp.custom.supplier.create_supplier_warehouse",
@@ -225,7 +331,28 @@ doc_events = {
     "User": {
         "validate": "franchise_erp.custom.user.validate_user_roles",
         "before_save": "franchise_erp.custom.user.validate_user_roles"
-    }
+    },
+    "Compensatory Leave Request": {
+        "validate": "franchise_erp.custom.comp_off.validate_comp_off_submission",
+        "on_submit": "franchise_erp.custom.comp_off.set_comp_off_expiry"
+    },
+    "Attendance": {
+        # "on_update": "franchise_erp.custom.working_hours.fix_working_hours",
+        "on_submit": [
+        "franchise_erp.custom.attendance_helpers.check_sandwich_on_attendance_submit",
+        "franchise_erp.overrides.scheduler.on_attendance_submit",
+    ]
+    },
+    "Attendance Request": {
+    "validate": "franchise_erp.custom.attendance.validate_attendance_request",
+    "on_submit": "franchise_erp.custom.attendance.on_attendance_request_submit"
+    },
+    # "Leave Encashment": {
+    #     "validate": "franchise_erp.custom.custom_leave_encashment.override_leave_encashment_calculation"
+    # },
+    
+
+
 }
    
 
@@ -257,16 +384,52 @@ doctype_js = {
     "Stock Reconciliation": "public/js/stock_reconciliation.js",
     "Employee": "public/js/employee.js",
     "Shipment": "public/js/shipment.js",
-    "Serial No": "public/js/serial_no.js",
-
+    # "Serial No": "public/js/serial_no.js",    
+    "Employee Checkin": "public/js/employee_checkin.js",
+    "Leave Application": "public/js/leave_application.js",
+    # "Subcontracting Order": "public/js/job_work_order.js",
+    "Full and Final Statement": "public/js/full_and_final_statement.js",
+    "Role Profile": "public/js/role_profile.js",
+    # "Module Profile": "public/js/module_profile.js"
 }
 
 
 # franchise_erp/hooks.py
 override_doctype_class = {
     "Sales Invoice": "franchise_erp.custom.sales_invoice.CustomSalesInvoice",
-    "Purchase Invoice": "franchise_erp.custom.purchase_invoice.CustomPurchaseInvoice"
+    "Purchase Invoice": "franchise_erp.custom.purchase_invoice.CustomPurchaseInvoice",
+    "Subcontracting Receipt": "franchise_erp.custom.subcontracting_receipt.CustomSubcontractingReceipt",
+    "Leave Policy Assignment": "franchise_erp.custom.leave_policy_assignment.CustomLeavePolicyAssignment",
+    "Attendance Request": "franchise_erp.overrides.attendance_request.CustomAttendanceRequest",
+    "Leave Encashment": "franchise_erp.overrides.custom_leave_encashment.CustomLeaveEncashment",
+    "Leave Application": "franchise_erp.overrides.custom_leave_application.CustomLeaveApplication",
+    "Auto Repeat": "franchise_erp.overrides.auto_repeat.CustomAutoRepeat",
+    "Payment Entry": "franchise_erp.custom.payment_entry.CustomPaymentEntry",
+    "Full and Final Statement": "franchise_erp.overrides.full_and_final_statement.CustomFullandFinalStatement",
+    "Role Profile": "franchise_erp.overrides.role_profile.CustomRoleProfile",
+    "Purchase Receipt": "franchise_erp.overrides.purchase_receipt.PurchaseReceipt",
+    # "HD Team": "franchise_erp.overrides.hd_team.CustomHDTeam"
+
 }
+
+override_whitelisted_methods = {
+    "erpnext.stock.doctype.delivery_note.delivery_note.make_sales_invoice":
+        "franchise_erp.api.make_sales_invoice",
+        
+    "frappe.core.page.permission_manager.permission_manager.add":
+        "franchise_erp.custom.permission_audit.add",
+
+    "frappe.core.page.permission_manager.permission_manager.update":
+        "franchise_erp.custom.permission_audit.update",
+
+    "frappe.core.page.permission_manager.permission_manager.remove":
+        "franchise_erp.custom.permission_audit.remove",
+
+    "frappe.core.page.permission_manager.permission_manager.reset":
+        "franchise_erp.custom.permission_audit.reset",
+
+}
+
 # override_whitelisted_methods = {
 #     "frappe.desk.treeview.get_children": "franchise_erp.overrides.item_group_tree.get_children"
 # }
@@ -287,10 +450,17 @@ override_doctype_class = {
 # ]
 # after_migrate = "franchise_erp.event.add_user_custom_fields.create_custom_fields"
 
+after_migrate = [
+    "franchise_erp.overrides.migrate_hooks.resume_jobs_after_migrate",
+    "franchise_erp.overrides.scheduler.disable_core_hourly_job",
+    "franchise_erp.overrides.scheduler.enable_create_log_for_all_shifts_job",
+    "franchise_erp.overrides.scheduler.force_enable_scheduler",
+]
+
 # app_include_js = "public/js/back_date_disabled.js"
 
 app_include_js = [
-    
+    "/assets/franchise_erp/js/login.js",
     "/assets/franchise_erp/js/back_date_disabled.js",
     "/assets/franchise_erp/js/login_location.js?v=3.0",
     "/assets/franchise_erp/js/item_group_overrides.js",
@@ -300,7 +470,8 @@ app_include_js = [
     "/assets/franchise_erp/js/customer_quick_entry_patch.js",
     "/assets/franchise_erp/js/uploader_patch.js",
     "/assets/franchise_erp/js/barcode_scanner_override.js",
-    
+    "/assets/franchise_erp/js/list_settings_permission.js",
+    "/assets/franchise_erp/js/journal_entry_filter.js",
 ]
 
 
@@ -322,6 +493,7 @@ doctype_tree_js = {
 # web_include_css = "/assets/franchise_erp/css/franchise_erp.css"
 # web_include_js = "/assets/franchise_erp/js/franchise_erp.js"
 web_include_js = [
+    "/assets/franchise_erp/js/login.js",
     "/assets/franchise_erp/js/login_location.js?v=3.0"
 ]
 
@@ -342,8 +514,9 @@ doctype_list_js = {
     
     "Stock Entry" : "public/js/stock_entry_list.js",
     "Sales Invoice": "public/js/sales_invoice_list.js",
-    "Delivery Note": "public/js/delivery_note_list.js"
-    }
+    "Delivery Note": "public/js/delivery_note_list.js",
+    "Advance e-Waybill Log": "public/js/advance_ewaybill_log_list.js",
+}
 
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -381,11 +554,27 @@ jinja = {
 }
 
 scheduler_events = {
+    
     "cron": {
         "45 23 * * *": [
-            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales"
-        ]
-    }
+            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales",
+            "franchise_erp.send_whatsapp_notification.send_daily_counter_sales_group",
+        ],
+        "* * * * *": [
+            "franchise_erp.custom.serial_no.update_serial_custom_style",
+            "franchise_erp.overrides.scheduler.update_attendance_working_hours",
+        ],
+    },
+    "daily": [
+        "franchise_erp.custom.comp_off.expire_comp_off_allocations",
+        "franchise_erp.custom.attendance.mark_absent_for_missing_checkout",
+        "franchise_erp.overrides.scheduler.mark_absent_for_no_checkin",
+        "franchise_erp.custom.leave_application.scheduled_fix_short_leave_attendance", 
+    ],
+    "all": [
+        "franchise_erp.overrides.scheduler.process_auto_attendance_for_all_shifts_all",
+        "franchise_erp.custom.attendance_helpers.run_sandwich_check_for_all"
+    ]
 }
 # Installation
 # ------------
@@ -428,12 +617,15 @@ scheduler_events = {
 permission_query_conditions = {
     "Daily Checklist": "franchise_erp.franchise_erp.doctype.daily_checklist.daily_checklist.get_permission_query_conditions",
     "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.get_permission_query_conditions",
+    "Leave Application": "franchise_erp.overrides.custom_leave_application.get_permission_query_conditions",
+    "HD Ticket": "franchise_erp.overrides.hd_ticket.permission_query",
 
 }
 
 has_permission = {
     "Daily Checklist": "franchise_erp.franchise_erp.doctype.daily_checklist.daily_checklist.has_permission",
-    "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.has_permission"
+    "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.has_permission",
+    "Leave Application": "franchise_erp.overrides.custom_leave_application.has_permission"
 }
 
 # DocType Class
@@ -607,13 +799,15 @@ has_permission = {
 # ]
 
 
-fixtures = [
-    {"dt": "Workflow"},
-    {"dt": "Workflow Action Master"},
-    {"dt": "Workflow State"},
-    {"dt": "Role"}
+# fixtures = [
+#     {"dt": "Workflow"},
+#     {"dt": "Workflow Action Master"},
+#     {"dt": "Workflow State"},
+#     {"dt": "Role"},
+    
 
- ]
+#  ]
+
 # fixtures = [
 #     {
 #         "dt": "Custom Field",
@@ -631,3 +825,62 @@ fixtures = [
 #     ]
 # }
 # ]
+
+# fixtures = [
+#     {
+#         "dt": "Workflow",
+#         "filters": [["name", "=", "Leave Application"]]
+#     },
+#     {
+#         "dt": "Role",
+#         "filters": [["name", "in", ["Employee", "Report Manager", "HR Manager"]]]
+#     },
+#     {
+#         "dt": "Custom Field",
+#         "filters": [["dt", "=", "Leave Application"]]
+#     },
+#     {
+#         "dt": "Workflow State",
+#         "filters": [["name", "in", ["Draft", "Pending Report Manager", "Pending HR Approval", "Approved", "Rejected"]]]
+#     },
+#     {
+#         "dt": "Workflow Action Master",
+#         "filters": [["name", "in", ["Submit", "Approve", "Reject"]]]
+#     }
+# ]
+
+fixtures = [
+    {
+        "dt": "Client Script",
+        "filters": [
+            ["dt", "in", ["Leave Application", "Subcontracting Receipt","Journal Entry"]]
+        ]
+    },
+    {
+        "dt": "Custom HTML Block",
+        "filters": [
+            ["name", "in", [
+                "Selling Items",
+                "Sales vs Stock",
+                "Date Range",
+                "Export Dashboard"
+            ]]
+        ]
+    },
+    {"dt": "Workspace", "filters": [["name", "in", ["Home", "Selling"]]]},
+    {
+        "dt": "Workflow",
+        "filters": [
+            ["name", "in", ["Leave Application"]]
+        ]
+    },
+    {
+        "dt": "Server Script",
+        "filters": [
+            ["name", "in", ["Sync Mobile No from Employee"]]
+        ]
+    },
+    {
+    "dt": "Property Setter"
+},
+]

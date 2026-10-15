@@ -24,7 +24,13 @@
   "company_city",
   "column_break_eihm",
   "company_phone",
-  "company_address"
+  "company_address",
+  "dtdc_api_section",
+  "pincode_api",
+  "create_shipment_api",
+  "download_label_api",
+  "cancel_shipment_api",
+  "track_api"
  ],
  "fields": [
   {
@@ -123,13 +129,43 @@
    "fieldname": "tracking_token",
    "fieldtype": "Data",
    "label": "Tracking Token"
+  },
+  {
+   "fieldname": "dtdc_api_section",
+   "fieldtype": "Section Break",
+   "label": "DTDC API"
+  },
+  {
+   "fieldname": "pincode_api",
+   "fieldtype": "Data",
+   "label": "Pincode API"
+  },
+  {
+   "fieldname": "create_shipment_api",
+   "fieldtype": "Data",
+   "label": "Create Shipment API"
+  },
+  {
+   "fieldname": "download_label_api",
+   "fieldtype": "Data",
+   "label": "Download Label API"
+  },
+  {
+   "fieldname": "cancel_shipment_api",
+   "fieldtype": "Data",
+   "label": "Cancel Shipment API"
+  },
+  {
+   "fieldname": "track_api",
+   "fieldtype": "Data",
+   "label": "Track API"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-08 15:02:30.743383",
+ "modified": "2026-08-14 17:14:15.856996",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "DTDC Settings",

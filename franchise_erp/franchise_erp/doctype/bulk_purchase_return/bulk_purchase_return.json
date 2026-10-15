@@ -15,6 +15,7 @@
   "status",
   "submit_status",
   "section_break_awgd",
+  "total_quantity",
   "items",
   "amended_from"
  ],
@@ -90,6 +91,11 @@
    "label": "Return Submission Status",
    "options": "Not Started\nQueued\nIn Progress\nCompleted\nFailed",
    "read_only": 1
+  },
+  {
+   "fieldname": "total_quantity",
+   "fieldtype": "Data",
+   "label": "Total Quantity"
   }
  ],
  "grid_page_length": 50,
@@ -101,7 +107,7 @@
    "link_fieldname": "custom_bulk_purchase_return"
   }
  ],
- "modified": "2026-04-20 17:25:03.816090",
+ "modified": "2026-08-29 12:35:05.196711",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Bulk Purchase Return",

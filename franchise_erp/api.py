@@ -3,6 +3,7 @@
 
 import frappe
 from frappe.utils import flt
+from sqlalchemy import label
 
 
 # ------------------------------------------------
@@ -276,9 +277,17 @@ def create_item_price(
 import frappe
 from frappe.utils import flt, cint
 
+def is_price_list_enabled(price_list):
+    return cint(frappe.db.get_value("Price List", price_list, "enabled"))
 
 def create_selling_price_from_po(doc, method):
-
+    # Run only if enabled in TZU Setting
+    if not frappe.db.get_single_value("TZU Setting", "enable_pricing_rule"):
+        return
+    
+    mrp_enabled = is_price_list_enabled("MRP")
+    rsp_enabled = is_price_list_enabled("RSP")
+    wsp_enabled = is_price_list_enabled("WSP")
     pricing_rule = frappe.db.get_value(
         "Pricing Rule",
         {"disable": 0},
@@ -344,43 +353,46 @@ def create_selling_price_from_po(doc, method):
             continue
 
         # ===== MRP =====
-        mrp_cost = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
+        if mrp_enabled:
+            mrp_cost = calculate_cost(row, mrp_cost_type, mrp_tax_mode)
 
-        create_item_price(
-            item_code=row.item_code,
-            price_list="MRP",
-            cost=mrp_cost,
-            margin_type=mrp_margin_type,
-            margin_value=mrp_margin_val,
-            valid_from=doc.transaction_date,
-            apply_rounding=False
-        )
+            create_item_price(
+                item_code=row.item_code,
+                price_list="MRP",
+                cost=mrp_cost,
+                margin_type=mrp_margin_type,
+                margin_value=mrp_margin_val,
+                valid_from=doc.transaction_date,
+                apply_rounding=False
+            )
 
         # ===== RSP =====
-        rsp_cost = calculate_cost(row, rsp_cost_type, rsp_tax_mode)
+        if rsp_enabled:
+            rsp_cost = calculate_cost(row, rsp_cost_type, rsp_tax_mode)
 
-        create_item_price(
-            item_code=row.item_code,
-            price_list="RSP",
-            cost=rsp_cost,
-            margin_type=rsp_margin_type,
-            margin_value=rsp_margin_val,
-            valid_from=doc.transaction_date,
-            apply_rounding=False
-        )
+            create_item_price(
+                item_code=row.item_code,
+                price_list="RSP",
+                cost=rsp_cost,
+                margin_type=rsp_margin_type,
+                margin_value=rsp_margin_val,
+                valid_from=doc.transaction_date,
+                apply_rounding=False
+            )
 
         # ===== WSP =====
-        wsp_cost = calculate_cost(row, wsp_cost_type, wsp_tax_mode)
+        if wsp_enabled:
+            wsp_cost = calculate_cost(row, wsp_cost_type, wsp_tax_mode)
 
-        create_item_price(
-            item_code=row.item_code,
-            price_list="WSP",
-            cost=wsp_cost,
-            margin_type=wsp_margin_type,
-            margin_value=wsp_margin_val,
-            valid_from=doc.transaction_date,
-            apply_rounding=False
-        )
+            create_item_price(
+                item_code=row.item_code,
+                price_list="WSP",
+                cost=wsp_cost,
+                margin_type=wsp_margin_type,
+                margin_value=wsp_margin_val,
+                valid_from=doc.transaction_date,
+                apply_rounding=False
+            )
 
     frappe.db.commit()
 
@@ -2450,26 +2462,533 @@ def build_item(item, serial, warehouse):
 
 #     return data
 
+# @frappe.whitelist()
+# def get_used_delivery_notes():
+
+#     # DN used in Sales Invoice
+#     used_dn = frappe.db.sql("""
+#         SELECT DISTINCT delivery_note
+#         FROM `tabSales Invoice Item`
+#         WHERE delivery_note IS NOT NULL
+#     """, as_dict=1)
+
+#     # 🔥 DN used via serial number
+#     serial_used_dn = frappe.db.sql("""
+#         SELECT DISTINCT dni.parent AS delivery_note
+#         FROM `tabDelivery Note Item` dni
+#         JOIN `tabSales Invoice Item` sii
+#             ON sii.serial_no LIKE CONCAT('%', dni.serial_no, '%')
+#     """, as_dict=1)
+
+#     # merge दोनों
+#     all_dn = {d["delivery_note"] for d in used_dn if d["delivery_note"]}
+#     all_dn.update({d["delivery_note"] for d in serial_used_dn})
+
+#     return [{"delivery_note": dn} for dn in all_dn]
+
+
 @frappe.whitelist()
 def get_used_delivery_notes():
-
-    # DN used in Sales Invoice
-    used_dn = frappe.db.sql("""
+    return frappe.db.sql("""
         SELECT DISTINCT delivery_note
         FROM `tabSales Invoice Item`
         WHERE delivery_note IS NOT NULL
-    """, as_dict=1)
+          AND delivery_note != ''
+    """, as_dict=True)
+    
 
-    # 🔥 DN used via serial number
-    serial_used_dn = frappe.db.sql("""
-        SELECT DISTINCT dni.parent AS delivery_note
-        FROM `tabDelivery Note Item` dni
-        JOIN `tabSales Invoice Item` sii
-            ON sii.serial_no LIKE CONCAT('%', dni.serial_no, '%')
-    """, as_dict=1)
+import frappe
+from frappe import _
+from datetime import datetime
 
-    # merge दोनों
-    all_dn = {d["delivery_note"] for d in used_dn if d["delivery_note"]}
-    all_dn.update({d["delivery_note"] for d in serial_used_dn})
 
-    return [{"delivery_note": dn} for dn in all_dn]
+@frappe.whitelist()
+def get_chart_data(chart_name, from_date, to_date, view_type='qty', company='', month='', year=''):
+    """
+    Unified API — sab dashboard charts ke liye
+    view_type JS se: 'qty' ya 'amt'
+    """
+
+    report_map = {
+        'Sales Trend'              : 'Sales Trend',
+        'Sales Progress'           : 'Sales Progress',
+        'Sales vs Stock'           : 'Sales vs Stock',
+        'Top Selling Items Chart'  : 'Top Selling Items 1',
+        'Least Selling Items Chart': 'Least Selling Items',
+    }
+
+    report_name = report_map.get(chart_name)
+    if not report_name:
+        frappe.throw(_('Chart not found: {0}').format(chart_name))
+
+    # ── Date parse ────────────────────────────────────────────
+    def parse_date(d):
+        for f in ('%Y-%m-%d', '%d-%m-%Y'):
+            try:
+                return datetime.strptime(d, f)
+            except Exception:
+                pass
+        return None
+
+    from_dt = parse_date(from_date)
+    
+
+    # ── Company fallback ──────────────────────────────────────
+    resolved_company = (
+        company
+        or frappe.defaults.get_user_default('company')
+        or frappe.defaults.get_default('company')
+        or ''
+    )
+
+    # ── Base filters ──────────────────────────────────────────
+    filters = {
+        'from_date': from_date,
+        'to_date'  : to_date,
+        'company'  : resolved_company,
+    }
+
+    # ── view_type conversion helpers ──────────────────────────
+    # Sales Trend / Sales Progress  → 'qty' / 'amt'
+    # Top Selling / Least / Sale vs Stock → 'qty' / 'amount'
+
+    def as_amt(v):
+        
+        return 'amt' if v in ('amt', 'amount') else 'qty'
+
+    def as_amount(v):
+        
+        return 'amount' if v in ('amt', 'amount') else 'qty'
+
+    # ── Per-chart filters ─────────────────────────────────────
+    if chart_name == 'Sales Trend':
+        filters['view_type'] = as_amt(view_type)
+
+    elif chart_name == 'Sales Progress':
+        filters['view_type'] = as_amt(view_type)
+
+    elif chart_name in ('Top Selling Items Chart', 'Least Selling Items Chart'):
+        filters['metric'] = as_amount(view_type)
+
+    elif chart_name == 'Sales vs Stock':
+        filters['metric'] = as_amount(view_type)
+        
+        filters['month'] = month or (str(from_dt.month) if from_dt else '')
+        filters['year']  = year  or (str(from_dt.year)  if from_dt else '')
+
+    # ── Report run ────────────────────────────────────────────
+    from frappe.desk.query_report import run
+
+    try:
+        result = run(report_name, filters=filters, ignore_prepared_report=1)
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), 'get_chart_data failed: {0}'.format(chart_name))
+        frappe.throw(_('Report error ({0}): {1}').format(chart_name, str(e)))
+
+    return {
+        'chart'  : result.get('chart'),
+        'data'   : result.get('result'),
+        'columns': result.get('columns'),
+    }
+
+import frappe
+
+@frappe.whitelist()
+def get_catalogue_items(keyword=""):
+
+    if not keyword:
+        return []
+
+    items = frappe.get_all(
+        "Item",
+        filters={
+            "disabled": 0
+        },
+        or_filters=[
+            ["item_code", "like", f"%{keyword}%"],
+            ["item_name", "like", f"%{keyword}%"],
+            ["custom_barcode_code", "like", f"%{keyword}%"]
+        ],
+        fields=[
+            "name",
+            "item_code",
+            "item_name",
+            "image",
+            "custom_barcode_code",
+            "custom_departments",
+            "custom_silvet",
+            "custom_group_collection",
+            "item_group"
+        ]
+    )
+
+    result = []
+
+    for item in items:
+
+        files = frappe.get_all(
+            "File",
+            filters={
+                "attached_to_doctype": "Item",
+                "attached_to_name": item.name
+            },
+            fields=["file_url"]
+        )
+
+        item["gallery"] = [f.file_url for f in files]
+
+        result.append(item)
+
+    return result
+
+
+import frappe
+
+
+@frappe.whitelist(allow_guest=True)
+def send_mobile_otp(mobile_no):
+
+    from franchise_erp.send_whatsapp_notification import send_otp_whatsapp
+    import random
+    from frappe.utils import now_datetime, add_to_date
+
+    if not mobile_no.isdigit() or len(mobile_no) != 10:
+        return {
+            "success": False,
+            "message": "Please enter a valid 10 digit mobile number"
+        }
+    user = frappe.db.get_value(
+        "User",
+        {"mobile_no": mobile_no},
+        "name"
+    )
+
+    if not user:
+        return {
+            "success": False,
+            "message": "No User found with this Mobile Number"
+        }
+
+    otp = str(random.randint(100000, 999999))
+
+    expiry_time = add_to_date(
+        now_datetime(),
+        minutes=5
+    )
+
+    frappe.get_doc({
+        "doctype": "User Login OTP",
+        "mobile": mobile_no,
+        "user": user,
+        "otp": otp,
+        "created_on": now_datetime(),
+        "expiry_time": expiry_time,
+        "is_verified": 0
+    }).insert(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    frappe.logger().info(
+        f"OTP for {mobile_no} = {otp}"
+    )
+
+    send_otp_whatsapp(
+        mobile_no,
+        otp
+    )
+
+    return {
+        "success": True
+    }
+
+
+@frappe.whitelist(allow_guest=True)
+def verify_mobile_otp(mobile_no, otp):
+
+    from frappe.utils import now_datetime
+
+    otp_record = frappe.get_all(
+        "User Login OTP",
+        filters={
+            "mobile": mobile_no,
+            "is_verified": 0
+        },
+        fields=[
+            "name",
+            "otp",
+            "expiry_time",
+            "user"
+        ],
+        order_by="creation desc",
+        limit=1
+    )
+
+    if not otp_record:
+        return {
+            "success": False,
+            "message": "OTP Not Found"
+        }
+
+    record = otp_record[0]
+
+    if now_datetime() > record.expiry_time:
+        return {
+            "success": False,
+            "message": "OTP Expired"
+        }
+
+    if str(record.otp) != str(otp):
+        return {
+            "success": False,
+            "message": "Invalid OTP"
+        }
+
+    doc = frappe.get_doc(
+        "User Login OTP",
+        record.name
+    )
+
+    doc.is_verified = 1
+
+    doc.save(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    # Login User
+    frappe.set_user(record.user)
+
+    frappe.local.login_manager.user = record.user
+
+    frappe.local.login_manager.post_login()
+
+    return {
+        "success": True,
+        "user": record.user
+   }
+
+@frappe.whitelist(allow_guest=True)
+def is_otp_login_enabled():
+
+    enabled = frappe.db.get_single_value(
+        "TZU Setting",
+        "is_user_login_with_otp"
+    )
+
+    return 1 if enabled else 0
+    
+    
+    
+import frappe
+from erpnext.stock.doctype.delivery_note.delivery_note import (
+    make_sales_invoice as erpnext_make_sales_invoice,
+)
+
+
+@frappe.whitelist()
+def make_sales_invoice(source_name, target_doc=None, args=None):
+
+    si = erpnext_make_sales_invoice(
+        source_name,
+        target_doc=target_doc,
+        args=args,
+    )
+
+    for item in si.items:
+
+        if not item.dn_detail:
+            continue
+
+        dn_item = frappe.db.get_value(
+            "Delivery Note Item",
+            item.dn_detail,
+            [
+                "serial_no",
+                "serial_and_batch_bundle"
+            ],
+            as_dict=True
+        )
+
+        if not dn_item:
+            continue
+
+        # Old serial_no mechanism
+        if dn_item.serial_no:
+            item.serial_no = dn_item.serial_no
+
+        # New Serial and Batch Bundle mechanism
+        elif dn_item.serial_and_batch_bundle:
+            item.serial_and_batch_bundle = dn_item.serial_and_batch_bundle
+
+    return si
+
+# ---------------------------------------------------------------
+# Export Charts
+# ---------------------------------------------------------------
+def _attach_item_images(rows, columns):
+	"""Sales vs Stock rows mein item image jodta hai.
+	Item ka column label/fieldname se khud dhundta hai (Style No., Item, Item Code...).
+	Rows dict ya list, dono chalenge."""
+
+	if not rows:
+		return rows, columns
+
+	def col_key(c):
+		if isinstance(c, dict):
+			return c.get("fieldname") or c.get("label") or ""
+		return str(c).split(":")[0]
+
+	def col_label(c):
+		if isinstance(c, dict):
+			return c.get("label") or c.get("fieldname") or ""
+		return str(c).split(":")[0]
+
+	# Report ne already image column diya ho to chhod do
+	for c in columns:
+		if "image" in col_key(c).lower():
+			return rows, columns
+
+	item_names = ("item_code", "item", "style_no", "style", "item_name")
+	item_labels = ("style no.", "style no", "item code", "item", "style")
+
+	idx = None
+	for i, c in enumerate(columns):
+		if col_key(c).lower() in item_names or col_label(c).lower().strip() in item_labels:
+			idx = i
+			key = col_key(c)
+			break
+
+	if idx is None:
+		frappe.log_error(
+			"Item column not found. Columns: {0}".format(columns),
+			"Dashboard export: image skipped",
+		)
+		return rows, columns
+
+	is_dict = isinstance(rows[0], dict)
+
+	def code_of(r):
+		return (r.get(key) if is_dict else r[idx]) or None
+
+	codes = list({code_of(r) for r in rows if code_of(r)})
+	if not codes:
+		return rows, columns
+
+	images = {
+		d.name: d.image
+		for d in frappe.get_all(
+			"Item", filters={"name": ["in", codes]}, fields=["name", "image"]
+		)
+	}
+
+	# Jo code item name se match nahi hue, unhe item_name se try karo
+	missing = [c for c in codes if c not in images]
+	if missing:
+		for d in frappe.get_all(
+			"Item", filters={"item_name": ["in", missing]}, fields=["item_name", "image"]
+		):
+			images.setdefault(d.item_name, d.image)
+
+	for r in rows:
+		img = images.get(code_of(r)) or ""
+		if is_dict:
+			r["image"] = img
+		else:
+			r.append(img)
+
+	columns = list(columns) + [
+		{"fieldname": "image", "label": "Image", "fieldtype": "Data"}
+	]
+
+	return rows, columns
+EXPORT_CHARTS = [
+    # (label, report name)
+    ("Sales Trend", "Sales Trend"),
+    ("Sales Progress", "Sales Progress"),
+    ("Top Selling Items", "Top Selling Items 1"),
+    ("Least Selling Items", "Least Selling Items"),
+    ("Sales vs Stock", "Sales vs Stock"),
+]
+
+
+def _export_filters(label, from_date, to_date, company, view_type):
+    is_amt = view_type in ("amt", "amount")
+
+    filters = {
+        "from_date": from_date,
+        "to_date": to_date,
+        "company": company,
+    }
+
+    if label in ("Sales Trend", "Sales Progress"):
+        filters["view_type"] = "amt" if is_amt else "qty"
+    else:
+        filters["metric"] = "amt" if is_amt else "qty"
+
+    return filters
+
+
+@frappe.whitelist()
+def get_counter_wise_export_data(from_date, to_date, view_type="qty", company=None):
+    """
+    Get export data for all charts in the dashboard for the given date range and view type.
+
+    Returns:
+    {
+        "<company>": {
+            "<chart label>": {"columns": [...], "rows": [...]}
+        }
+    }
+    """
+    from frappe.desk.query_report import run
+
+    permitted = frappe.get_list("Company", pluck="name")
+
+    if company:
+        if company not in permitted:
+            frappe.throw(_("Not permitted for company {0}").format(company), frappe.PermissionError)
+        companies = [company]
+    else:
+        companies = permitted
+
+    output = {}
+
+    for comp in companies:
+        company_data = {}
+
+        for label, report_name in EXPORT_CHARTS:
+            try:
+                res = run(
+                    report_name,
+                    filters=_export_filters(label, from_date, to_date, comp, view_type),
+                    ignore_prepared_report=1,
+                )
+            except Exception:
+                frappe.log_error(
+                    frappe.get_traceback(),
+                    "Dashboard export failed: {0} / {1}".format(label, comp),
+                )
+                continue
+
+            # rows = res.get("result") or []
+            # if rows:
+            #     company_data[label] = {
+            #         "columns": res.get("columns") or [],
+            #         "rows": rows,
+            #     }
+
+            rows = res.get("result") or []
+            columns = res.get("columns") or []
+
+            if label == "Sales vs Stock":
+                rows, columns = _attach_item_images(rows, columns)
+
+            if rows:
+                company_data[label] = {
+					"columns": columns,
+					"rows": rows,
+				}
+
+        if company_data:
+            output[comp] = company_data
+
+    return output

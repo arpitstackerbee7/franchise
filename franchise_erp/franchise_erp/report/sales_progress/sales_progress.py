@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+from franchise_erp.utils.dashboard_permissions import resolve_dashboard_source
 
 def execute(filters=None):
     filters = filters or {}
@@ -36,32 +37,68 @@ def get_columns():
 # ---------------------------
 # DATA
 # ---------------------------
+# def get_data(filters):
+#     conditions = "WHERE docstatus = 1"
+#     params = {}
+
+#     if filters.get("from_date") and filters.get("to_date"):
+#         conditions += " AND posting_date BETWEEN %(from_date)s AND %(to_date)s"
+#         params["from_date"] = filters["from_date"]
+#         params["to_date"] = filters["to_date"]
+
+#     if filters.get("company"):
+#         conditions += " AND company = %(company)s"
+#         params["company"] = filters["company"]
+
+#     view_type = filters.get("view_type") or "qty"
+
+#     if view_type == "qty":
+#         select_field = "SUM(total_qty) AS total_sales"
+#     else:
+#         select_field = "SUM(grand_total) AS total_sales"
+
+#     return frappe.db.sql(f"""
+#         SELECT 
+#             DATE_FORMAT(posting_date, '%%Y-%%m') AS month,
+#             {select_field}
+#         FROM `tabSales Invoice`
+#         {conditions}
+#         GROUP BY DATE_FORMAT(posting_date, '%%Y-%%m')
+#         ORDER BY month
+#     """, params, as_dict=True)
+
 def get_data(filters):
-    conditions = "WHERE docstatus = 1"
-    params = {}
+    company, doctype = resolve_dashboard_source(filters)
+    table = "tabSales Invoice" if doctype == "Sales Invoice" else "tabDelivery Note"
+
+    conditions = "WHERE docstatus = 1 AND company = %(company)s"
+    params = {"company": company}
 
     if filters.get("from_date") and filters.get("to_date"):
         conditions += " AND posting_date BETWEEN %(from_date)s AND %(to_date)s"
         params["from_date"] = filters["from_date"]
         params["to_date"] = filters["to_date"]
 
+    view_type = filters.get("view_type") or "qty"
+    select_field = "SUM(total_qty) AS total_sales" if view_type == "qty" else "SUM(grand_total) AS total_sales"
+
     return frappe.db.sql(f"""
         SELECT 
             DATE_FORMAT(posting_date, '%%Y-%%m') AS month,
-            SUM(grand_total) AS total_sales
-        FROM `tabSales Invoice`
+            {select_field}
+        FROM `{table}`
         {conditions}
         GROUP BY DATE_FORMAT(posting_date, '%%Y-%%m')
         ORDER BY month
     """, params, as_dict=True)
 
-
 # ---------------------------
 # CHART
 # ---------------------------
 def get_chart_data(data):
+    
     if not data:
-        return None
+        return empty_chart()
 
     labels = [d.get("month") for d in data]
     values = [float(d.get("total_sales") or 0) for d in data]
@@ -79,7 +116,25 @@ def get_chart_data(data):
         "type": "line",
         "colors": ["#ff5858"],
 
-        # IMPORTANT for proper hover + points
+        "lineOptions": {
+            "hideDots": 0
+        }
+    }
+
+
+def empty_chart():
+    return {
+        "data": {
+            "labels": [],
+            "datasets": [
+                {
+                    "name": "Sales Progress",
+                    "values": []
+                }
+            ]
+        },
+        "type": "line",
+        "colors": ["#ff5858"],
         "lineOptions": {
             "hideDots": 0
         }

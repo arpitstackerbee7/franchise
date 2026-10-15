@@ -91,3 +91,277 @@ def get_subcontracting_order_city(subcontracting_order):
             return city
 
     return None
+
+
+import frappe
+from frappe.utils import flt
+
+
+@frappe.whitelist()
+def get_item_tax_template(item_code, rate, company):
+    if not item_code or not company:
+        return None
+
+    rate = flt(rate)
+
+    company_abbr = frappe.db.get_value(
+        "Company",
+        company,
+        "abbr"
+    )
+
+    if not company_abbr:
+        return None
+
+    taxes = frappe.get_all(
+        "Item Tax",
+        filters={
+            "parent": item_code,
+            "parenttype": "Item",
+            "parentfield": "taxes",
+        },
+        fields=[
+            "item_tax_template",
+            "minimum_net_rate",
+            "maximum_net_rate",
+        ],
+        order_by="idx asc",
+    )
+
+    for tax in taxes:
+        template = tax.item_tax_template
+
+        if not template:
+            continue
+
+        min_rate = flt(tax.minimum_net_rate)
+        max_rate = flt(tax.maximum_net_rate)
+
+        rate_matches = (
+            (not min_rate or rate >= min_rate)
+            and
+            (not max_rate or rate <= max_rate)
+        )
+
+        company_matches = template.endswith(
+            f"- {company_abbr}"
+        )
+
+        if rate_matches and company_matches:
+            return template
+
+    return None
+
+
+@frappe.whitelist()
+def get_job_work_order_taxes_and_charges(purchase_order, company):
+    if not purchase_order or not company:
+        return None
+
+    po_template = frappe.db.get_value(
+        "Purchase Order",
+        purchase_order,
+        "taxes_and_charges"
+    )
+
+    if not po_template:
+        return None
+
+    company_abbr = frappe.db.get_value(
+        "Company",
+        company,
+        "abbr"
+    )
+
+    if not company_abbr:
+        return None
+
+    if "RCM Out-state" in po_template:
+        template = f"Output GST RCM Out-state - {company_abbr}"
+
+    elif "RCM In-state" in po_template:
+        template = f"Output GST RCM In-state - {company_abbr}"
+
+    elif "Out-state" in po_template:
+        template = f"Output GST Out-state - {company_abbr}"
+
+    elif "In-state" in po_template:
+        template = f"Output GST In-state - {company_abbr}"
+
+    else:
+        return None
+
+    if frappe.db.exists(
+        "Sales Taxes and Charges Template",
+        template
+    ):
+        return template
+
+    return None
+
+
+def set_tax_rows_on_net_total(doc, method=None):
+    for tax in doc.get("taxes") or []:
+        if tax.charge_type in ("Actual", "On Previous Row Total"):
+            tax.charge_type = "On Net Total"
+        
+
+@frappe.whitelist()
+def update_wastage_qty(subcontracting_order, wastage_data):
+
+    import json
+
+    if not subcontracting_order:
+        frappe.throw(_("Subcontracting Order is required."))
+
+    doc = frappe.get_doc(
+        "Subcontracting Order",
+        subcontracting_order
+    )
+
+    # ---------------------------------------------------------
+    # Only Submitted Job Work Order
+    # ---------------------------------------------------------
+
+    if doc.docstatus != 1:
+        frappe.throw(
+            _("Wastage Qty can only be updated for a Submitted Job Work Order.")
+        )
+
+    rows = json.loads(wastage_data or "[]")
+
+    # ---------------------------------------------------------
+    # Update Wastage Qty Directly
+    # ---------------------------------------------------------
+
+    for row in rows:
+
+        item_code = row.get("item_code")
+
+        if not item_code:
+            continue
+
+        wastage_qty = frappe.utils.flt(
+            row.get("custom_wastage_qty")
+        )
+
+        if wastage_qty < 0:
+            frappe.throw(
+                _("Wastage Qty cannot be negative for Item {0}.").format(
+                    item_code
+                )
+            )
+
+        # Find matching item row
+        item_row = next(
+            (
+                item
+                for item in doc.items
+                if item.item_code == item_code
+            ),
+            None
+        )
+
+        if not item_row:
+            frappe.throw(
+                _("Item {0} was not found in Job Work Order.").format(
+                    item_code
+                )
+            )
+
+        received_qty = frappe.utils.flt(
+            item_row.received_qty
+        )
+
+        ordered_qty = frappe.utils.flt(
+            item_row.qty
+        )
+
+        # -----------------------------------------------------
+        # Validate Qty
+        # -----------------------------------------------------
+
+        if received_qty + wastage_qty > ordered_qty:
+            frappe.throw(
+                _(
+                    "For Item {0}, Received Qty ({1}) + "
+                    "Wastage Qty ({2}) cannot be greater than "
+                    "Ordered Qty ({3})."
+                ).format(
+                    item_code,
+                    received_qty,
+                    wastage_qty,
+                    ordered_qty
+                )
+            )
+
+        # -----------------------------------------------------
+        # IMPORTANT:
+        # Submitted child row cannot be changed using doc.save()
+        # Direct DB update is required.
+        # -----------------------------------------------------
+
+        frappe.db.set_value(
+            "Subcontracting Order Item",
+            item_row.name,
+            "custom_wastage_qty",
+            wastage_qty,
+            update_modified=False
+        )
+
+    # ---------------------------------------------------------
+    # Check Completion
+    # ---------------------------------------------------------
+
+    all_items_completed = True
+
+    for item in doc.items:
+
+        ordered_qty = frappe.utils.flt(
+            item.qty
+        )
+
+        received_qty = frappe.utils.flt(
+            item.received_qty
+        )
+
+        # Get latest value from DB
+        wastage_qty = frappe.utils.flt(
+            frappe.db.get_value(
+                "Subcontracting Order Item",
+                item.name,
+                "custom_wastage_qty"
+            )
+        )
+
+        total_completed_qty = (
+            received_qty + wastage_qty
+        )
+
+        if total_completed_qty < ordered_qty:
+            all_items_completed = False
+            break
+
+    # ---------------------------------------------------------
+    # Update Status Only When All Items Completed
+    # ---------------------------------------------------------
+
+    if all_items_completed:
+
+        frappe.db.set_value(
+            "Subcontracting Order",
+            doc.name,
+            "status",
+            "Completed",
+            update_modified=True
+        )
+
+    frappe.db.commit()
+
+    return {
+        "status": (
+            "Completed"
+            if all_items_completed
+            else doc.status
+        )
+    }

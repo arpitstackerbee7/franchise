@@ -11,9 +11,12 @@
   "user",
   "full_name",
   "column_break_ezdn",
-  "role_profile",
   "section_break_jedb",
-  "table_vjxt"
+  "role_profile",
+  "table_vjxt",
+  "column_break_qvyz",
+  "module_profile",
+  "module_profile_role"
  ],
  "fields": [
   {
@@ -52,6 +55,7 @@
   {
    "fieldname": "table_vjxt",
    "fieldtype": "Table",
+   "label": "Role Profile",
    "options": "User Role Viewer Detail",
    "read_only": 1
   },
@@ -61,12 +65,30 @@
    "fieldtype": "Data",
    "label": "Full Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_qvyz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "module_profile_role",
+   "fieldtype": "Table",
+   "label": "Module Profile Role",
+   "options": "User Module Profile Viewer Detail",
+   "read_only": 1
+  },
+  {
+   "fieldname": "module_profile",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Module Profile",
+   "options": "Module Profile"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-16 13:22:41.988707",
+ "modified": "2026-08-25 17:21:41.141679",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "User Role Viewer",

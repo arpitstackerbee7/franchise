@@ -7,6 +7,8 @@ from erpnext.accounts.utils import get_fiscal_year
 from frappe.model.document import Document
 from franchise_erp.send_whatsapp_notification import send_sales_invoice_pdf_from_outgoing_logistics
 from franchise_erp.utils.fy_naming import company_fy_autoname
+from franchise_erp.custom.back_date_validation import validate_back_date
+
 class OutgoingLogistics(Document):
 
     def autoname(self):
@@ -19,9 +21,10 @@ class OutgoingLogistics(Document):
         company_fy_autoname(self)
 
     def validate(self):
+        validate_back_date(self)
+
         if not self.references or len(self.references) == 0:
             frappe.throw("Reference ID is mandatory. Please add at least one row.")
-
     # def autoname(self):
     #     """
     #     Custom autoname for Outgoing Logistics
@@ -301,3 +304,319 @@ def get_send_to_subcontractor_entries(
         "page_len": page_len
 
     }, as_dict=1)
+
+
+
+@frappe.whitelist()
+def get_outgoing_logistics_match_from_pi(supplier):
+
+    used_ids = frappe.db.sql("""
+        SELECT DISTINCT pii.custom_outgoing_logistics
+        FROM `tabPurchase Invoice Item` pii
+        INNER JOIN `tabPurchase Invoice` pi
+            ON pi.name = pii.parent
+        WHERE pi.docstatus = 1
+        AND IFNULL(pii.custom_outgoing_logistics,'') != ''
+    """, pluck="custom_outgoing_logistics")
+
+    data = frappe.get_all(
+        "Outgoing Logistics",
+        filters={
+            "docstatus": 1,
+            "to_pay": "Yes"
+        },
+        fields=[
+            "name",
+            "type",
+            "transporter",
+            "s_transporter",
+            "transfer_out_transport",
+            "transport_service_item",
+            "total_amount",
+            "document_no"
+        ]
+    )
+
+    result = []
+
+    tzu_item = frappe.db.get_single_value(
+        "TZU Setting",
+        "transport_service_item"
+    )
+
+    for row in data:
+
+        if row.name in used_ids:
+            continue
+
+        ol_type = frappe.get_doc("Outgoing Logistics Type", row.type)
+
+        transporter_name = None
+
+        if ol_type.is_customer:
+            transporter_name = row.transporter
+
+        elif ol_type.is_supplier:
+            transporter_name = row.s_transporter
+
+        elif row.type == "Transfer Out":
+            transporter_name = row.transfer_out_transport
+
+        if transporter_name == supplier:
+
+            # Always use TZU Setting Item
+            row.transport_service_item = tzu_item
+
+            result.append(row)
+
+    return result
+
+
+
+
+
+
+# for dtdc
+# for dtdc
+@frappe.whitelist()
+def get_shipment_data_from_outgoing_logistics(outgoing_logistics):
+
+    ol = frappe.get_doc(
+        "Outgoing Logistics",
+        outgoing_logistics
+    )
+
+    # ---------------------------------------------------------
+    # VALIDATE OUTGOING LOGISTICS
+    # ---------------------------------------------------------
+
+    if ol.docstatus != 1:
+        frappe.throw(
+            "Outgoing Logistics must be submitted."
+        )
+
+    # ---------------------------------------------------------
+    # GET SALES INVOICES FROM REFERENCES
+    # ---------------------------------------------------------
+
+    sales_invoices = []
+
+    for row in ol.references or []:
+
+        if (
+            row.source_doctype == "Sales Invoice"
+            and row.source_name
+        ):
+
+            if row.source_name not in sales_invoices:
+                sales_invoices.append(
+                    row.source_name
+                )
+
+    if not sales_invoices:
+        frappe.throw(
+            "No Sales Invoice found in References table."
+        )
+
+    # ---------------------------------------------------------
+    # GET DELIVERY NOTES FROM SALES INVOICE ITEMS
+    # ---------------------------------------------------------
+
+    delivery_notes = []
+
+    # {
+    #     "DN-00001": 10500,
+    #     "DN-00002": 25000
+    # }
+    delivery_note_values = {}
+
+    for sales_invoice in sales_invoices:
+
+        items = frappe.get_all(
+            "Sales Invoice Item",
+            filters={
+                "parent": sales_invoice,
+                "delivery_note": ["is", "set"]
+            },
+            fields=[
+                "delivery_note"
+            ]
+        )
+
+        for item in items:
+
+            dn = item.delivery_note
+
+            if not dn:
+                continue
+
+            # -------------------------------------------------
+            # CHECK DELIVERY NOTE EXISTS AND IS SUBMITTED
+            # -------------------------------------------------
+
+            dn_docstatus = frappe.db.get_value(
+                "Delivery Note",
+                dn,
+                "docstatus"
+            )
+
+            if dn_docstatus != 1:
+                continue
+
+            # -------------------------------------------------
+            # AVOID DUPLICATE DELIVERY NOTE
+            # -------------------------------------------------
+
+            if dn in delivery_notes:
+                continue
+
+            delivery_notes.append(dn)
+
+            # -------------------------------------------------
+            # GET ROUNDED TOTAL FROM DELIVERY NOTE
+            # -------------------------------------------------
+
+            rounded_total = frappe.db.get_value(
+                "Delivery Note",
+                dn,
+                "rounded_total"
+            )
+
+            if rounded_total is None:
+                rounded_total = 0
+
+            delivery_note_values[dn] = rounded_total
+
+    # ---------------------------------------------------------
+    # VALIDATE DELIVERY NOTES
+    # ---------------------------------------------------------
+
+    if not delivery_notes:
+
+        frappe.throw(
+            "No submitted Delivery Note found against "
+            f"Sales Invoice(s): {', '.join(sales_invoices)}"
+        )
+
+    # ---------------------------------------------------------
+    # TOTAL VALUE OF GOODS
+    # ---------------------------------------------------------
+
+    value_of_goods = sum(
+        delivery_note_values.get(dn, 0)
+        for dn in delivery_notes
+    )
+
+    # ---------------------------------------------------------
+    # GET FIRST SALES INVOICE
+    # ---------------------------------------------------------
+
+    si = frappe.get_doc(
+        "Sales Invoice",
+        sales_invoices[0]
+    )
+
+    # ---------------------------------------------------------
+    # DELIVERY ADDRESS
+    # ---------------------------------------------------------
+
+    delivery_address = (
+        si.shipping_address_name
+        or si.customer_address
+    )
+
+    # ---------------------------------------------------------
+    # PREFER DELIVERY NOTE ADDRESS
+    # ---------------------------------------------------------
+
+    if delivery_notes:
+
+        first_dn = frappe.get_doc(
+            "Delivery Note",
+            delivery_notes[0]
+        )
+
+        delivery_address = (
+            first_dn.shipping_address_name
+            or first_dn.customer_address
+            or delivery_address
+        )
+
+    # ---------------------------------------------------------
+    # DEBUG LOG
+    # ---------------------------------------------------------
+
+    frappe.logger().info(
+        f"Outgoing Logistics: {ol.name}"
+    )
+
+    frappe.logger().info(
+        f"Sales Invoices: {sales_invoices}"
+    )
+
+    frappe.logger().info(
+        f"Delivery Notes: {delivery_notes}"
+    )
+
+    frappe.logger().info(
+        f"Delivery Note Values: {delivery_note_values}"
+    )
+
+    frappe.logger().info(
+        f"Total Value of Goods: {value_of_goods}"
+    )
+
+    # ---------------------------------------------------------
+    # RETURN DATA
+    # ---------------------------------------------------------
+
+    return {
+
+        # Shipment main fields
+        "company": si.company,
+
+        "customer": si.customer,
+
+        "pickup_date": (
+            ol.delivery_date
+            or ol.date
+        ),
+
+        "delivery_address_name": (
+            delivery_address
+        ),
+
+        # Sum of all Delivery Note rounded_total
+        "value_of_goods": (
+            value_of_goods
+        ),
+
+        "description_of_content": (
+            getattr(
+                ol,
+                "description_of_content",
+                None
+            )
+            or f"Shipment against {si.name}"
+        ),
+
+        # Sales Invoices
+        "sales_invoices": (
+            sales_invoices
+        ),
+
+        # Delivery Notes
+        "delivery_notes": (
+            delivery_notes
+        ),
+
+        # DN wise rounded_total
+        "delivery_note_values": (
+            delivery_note_values
+        ),
+
+        # Outgoing Logistics
+        "outgoing_logistics": (
+            ol.name
+        )
+    }

@@ -99,6 +99,25 @@ function fetch_and_update() {
     });
 }
 
+async function get_company_city(company) {
+    let res = await frappe.call({
+        method: "frappe.client.get_list",
+        args: {
+            doctype: "Address",
+            filters: [
+                ["Dynamic Link", "link_doctype", "=", "Customer"],
+                ["Dynamic Link", "link_name", "=", company],
+                ["is_primary_address", "=", 1]
+            ],
+            fields: ["city", "state"],
+            limit: 1
+        }
+    });
+    let addr = res?.message?.[0];
+    if (!addr) return "";
+    return addr.state || addr.city || "";
+}
+
 function show_invoice_dialog(frm) {
     let all_items = [];
     let current_filtered_data = [];
@@ -322,6 +341,7 @@ function show_invoice_dialog(frm) {
             <th>Input GST Value</th>
             <th>Collectable</th>
             <th>CD/DN</th>
+            <th>Serial No</th>
         </tr>
     </thead>
     <tbody>`;
@@ -351,6 +371,7 @@ function show_invoice_dialog(frm) {
                 <td>${r.in_put_gst_value}</td> 
                 <td>${(r.invoice_value).toFixed(2)}</td> 
                 <td>${(r.debit_note).toFixed(2)}</td>
+                <td>${(r.serial_no || "").replace(/\n/g, "<br>")}</td>
             </tr>`;
         });
 
@@ -372,6 +393,7 @@ function show_invoice_dialog(frm) {
             <td></td>
             <td>${total_collectable.toFixed(2)}</td>
             <td>${total_cd_dn.toFixed(2)}</td>
+            <td></td>
         </tr>`;
     }
 
@@ -397,7 +419,7 @@ function show_invoice_dialog(frm) {
     // -----------------------
     // PRINT
     // -----------------------
-   d.$wrapper.on("click", "#print_table_btn", function () {
+    d.$wrapper.on("click", "#print_table_btn", async function () {
     if (!current_filtered_data.length) {
         frappe.msgprint("No data to print");
         return;
@@ -447,10 +469,12 @@ function show_invoice_dialog(frm) {
                 <td>${r.in_put_gst_value}</td> 
                 <td>${(r.invoice_value).toFixed(2)}</td> 
                 <td>${(r.debit_note).toFixed(2)}</td>
+                <td>${(r.serial_no || "").replace(/\n/g, "<br>")}</td>
             </tr>
         `;
     }).join("");
 
+    let city = await get_company_city(frm.doc.company);
     let win = window.open("", "_blank");
     win.document.write(`
         <html><head>
@@ -459,7 +483,10 @@ function show_invoice_dialog(frm) {
             th,td{border:1px solid #000;padding:6px;font-size:12px}
         </style>
         </head><body>
-        <h3>Invoice Report</h3>
+        <div style="text-align:center; margin-bottom:15px;">
+            <h2 style="margin:0;">${frm.doc.company}${city ? " - " + city : ""}</h2>
+            <h3 style="margin:5px 0;">Invoice Report ${from_date_ctrl.get_value()} to ${to_date_ctrl.get_value()}</h3>
+        </div>
         <table>
             <thead>
                 <tr>
@@ -468,7 +495,7 @@ function show_invoice_dialog(frm) {
                     <th>Discount%</th><th>Realized Sale</th><th>Output GST%</th>
                     <th>Output GST Value</th><th>Taxable Value</th><th>Margin%</th>
                     <th>Margin Value</th><th>INV Base Value</th>
-                    <th>Input GST Value</th><th>Collectable</th><th>CD/DN</th>
+                    <th>Input GST Value</th><th>Collectable</th><th>CD/DN</th><th>Serial No</th>
                 </tr>
             </thead>
             <tbody>
@@ -489,6 +516,7 @@ function show_invoice_dialog(frm) {
                     <td></td>
                     <td>${total_collectable.toFixed(2)}</td>
                     <td>${total_cd_dn.toFixed(2)}</td>
+                    <td></td>
                 </tr>
             </tbody>
         </table>
@@ -502,13 +530,17 @@ function show_invoice_dialog(frm) {
     // -----------------------
     // EXPORT CSV
     // -----------------------
-    d.$wrapper.on("click", "#export_table_btn", function () {
+    d.$wrapper.on("click", "#export_table_btn", async function () {
     if (!current_filtered_data.length) {
         frappe.msgprint("No data to export");
         return;
     }
+    
+    let city = await get_company_city(frm.doc.company);
+    let csv = `Company,${frm.doc.company}${city ? " - " + city : ""}\n`;
+    csv += `Invoice Report ${from_date_ctrl.get_value()} to ${to_date_ctrl.get_value()}\n\n`;
 
-    let csv = "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN\n";
+    csv += "Invoice,Date,Customer,Item,Qty,MRP,Total,Discount%,Realized Sale,Output GST%,Output GST Value,Taxable Value,Margin%,Margin Value,INV Base Value,Input GST Value,Collectable,CD/DN,Serial No\n";
 
     let total_qty = 0;
     let total_mrp = 0;
@@ -521,10 +553,10 @@ function show_invoice_dialog(frm) {
 
     let total_collectable = 0;
     let total_cd_dn = 0;
-
+    
     current_filtered_data.forEach(r => {
         let row_total = (r.price_list_rate * r.qty);
-
+        let serial_no = (r.serial_no || "").replace(/\r?\n/g, "\n");
         total_qty += flt(r.qty);
         total_mrp += flt(r.price_list_rate);
         total_total += flt(row_total);
@@ -555,6 +587,7 @@ function show_invoice_dialog(frm) {
             r.in_put_gst_value,
             (r.invoice_value).toFixed(2),
             (r.debit_note).toFixed(2),
+             `"${serial_no}"`, 
         ].join(",") + "\n";
     });
 

@@ -620,6 +620,7 @@ def fetch_invoices(company, from_date=None, to_date=None):
             dni.name AS sii_name,
             dni.item_code,
             dni.item_name,
+            dni.serial_no,
             dni.qty,
             dni.rate,
             dni.price_list_rate,
@@ -695,9 +696,18 @@ def fetch_invoices(company, from_date=None, to_date=None):
         # -------------------------------------------------------------------
         # MARGIN LOGIC
         # -------------------------------------------------------------------
-        if is_promo or discount_percentage > 0:
+        # if is_promo or discount_percentage > 0:
+        #     margin_percent = discounted_margin
+        # else:
+        #     margin_percent = fresh_margin
+        if is_promo and promo_discount > 0:
+            # Promo scheme with actual promo discount → discounted margin
+            margin_percent = discounted_margin
+        elif not is_promo and discount_percentage > 0:
+            # Normal discount → discounted margin
             margin_percent = discounted_margin
         else:
+            # Promo scheme with 0 promo discount OR no discount → fresh margin
             margin_percent = fresh_margin
 
         margin_amount = (net_amount * margin_percent) / D(100)
@@ -836,9 +846,11 @@ def fetch_invoices(company, from_date=None, to_date=None):
 
         
 
-        
+        if is_return == 1:
+            gst_amount_per_item_1 = -gst_amount_per_item
+        else:
+            gst_amount_per_item_1 = gst_amount_per_item
       
-
         # -------------------------------------------------------------------
         # FINAL UPDATE
         # -------------------------------------------------------------------
@@ -853,9 +865,10 @@ def fetch_invoices(company, from_date=None, to_date=None):
             "margin_percent": float(margin_percent),
             "margin_amount": float(margin_amount),
             "inv_base_value": float(inv_base_value),
-            "in_put_gst_value": float(gst_amount_per_item),
+            "in_put_gst_value": float(gst_amount_per_item_1),
             "invoice_value": float(invoice_value1),
             "debit_note": float(debit_note_value),
+            "serial_no": r.serial_no or ""
         })
 
         processed.append(r)
@@ -1118,11 +1131,38 @@ def create_debit_note(company, period_type=None, invoices=None):
         )
 
     # Summary row
+    # je.append("accounts", {
+    #     "account": creditors_account,
+    #     "credit_in_account_currency": total_penalty,
+    #     "party_type": "Customer",
+    #     "party": company,
+    #     "custom_penalty_invoice": "Summary",
+    #     "remarks": "Total Penalty Summary"
+    # })
+    # ---------------------------------------------------------
+    # FIND CUSTOMER AGAINST SIS DEBIT NOTE LOG COMPANY
+    # ---------------------------------------------------------
+    customer = frappe.db.get_value(
+        "Customer",
+        {
+            "represents_company": company
+        },
+        "name"
+    )
+
+    if not customer:
+        frappe.throw(
+            f"No Customer found where Represents Company = {company}"
+        )
+
+    # ---------------------------------------------------------
+    # SUMMARY ROW
+    # ---------------------------------------------------------
     je.append("accounts", {
         "account": creditors_account,
         "credit_in_account_currency": total_penalty,
         "party_type": "Customer",
-        "party": company,
+        "party": customer,
         "custom_penalty_invoice": "Summary",
         "remarks": "Total Penalty Summary"
     })

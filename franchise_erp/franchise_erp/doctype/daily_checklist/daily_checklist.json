@@ -52,7 +52,8 @@
    "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "ASM/TL Name",
-   "options": "Employee"
+   "options": "Employee",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_qhmz",
@@ -103,8 +104,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-20 14:55:50.387745",
- "modified_by": "Administrator",
+ "modified": "2026-05-26 18:14:51.563815",
+ "modified_by": "arpit21092@gmail.com",
  "module": "Franchise Erp",
  "name": "Daily Checklist",
  "naming_rule": "Expression",

@@ -168,9 +168,285 @@ frappe.ui.form.on("Incoming Logistics", {
     //     ];
     //     const hide = frm.doc.to_pay === 'No';
     //     hide_fields.forEach(field => frm.set_df_property(field, 'hidden', hide));
-    }
-});
+    },
+    // scan_box_barcode: function(frm) {
 
+    //     let barcode = frm.doc.scan_box_barcode;
+    //     if (!barcode) return;
+
+    //     // ❌ Duplicate check
+    //     let exists = frm.doc.gate_entry_box_barcode.some(row => row.box_barcode === barcode);
+
+    //     if (exists) {
+    //         frappe.msgprint("❌ Barcode already scanned");
+    //         frm.set_value("scan_box_barcode", "");
+    //         return;
+    //     }
+
+    //     // 🔥 Get first row gate entry (LOCK)
+    //     let first_gate_entry = null;
+
+    //     if (frm.doc.gate_entry_box_barcode.length > 0) {
+    //         first_gate_entry = frm.doc.gate_entry_box_barcode[0].gate_entry;
+    //     }
+
+    //     frappe.call({
+    //         method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.process_barcode",
+    //         args: {
+    //             scan_barcode: barcode,
+    //             existing_gate_entry: first_gate_entry
+    //         },
+    //         callback: function(r) {
+    //             if (r.message) {
+
+    //                 let data = r.message;
+
+    //                 let row = frm.add_child("gate_entry_box_barcode");
+
+    //                 row.box_barcode = data.box_barcode;
+    //                 row.status = data.status;
+    //                 row.gate_entry = data.gate_entry;
+    //                 row.scan_date_time = data.scan_date_time;
+
+    //                 frm.refresh_field("gate_entry_box_barcode");
+
+    //                 // clear scan field
+    //                 frm.set_value("scan_box_barcode", "");
+    //             }
+    //         }
+    //     });
+    // }
+    // scan_box_barcode: function(frm) {
+
+    //     let barcode = frm.doc.scan_box_barcode;
+
+    //     if (!barcode) return;
+
+    //     // ❌ Duplicate check
+    //     let exists = frm.doc.gate_entry_box_barcode.some(
+    //         row => row.box_barcode === barcode
+    //     );
+
+    //     if (exists) {
+    //         frappe.msgprint("❌ Barcode already scanned");
+    //         frm.set_value("scan_box_barcode", "");
+    //         return;
+    //     }
+
+    //     // 🔥 First row gate entry lock
+    //     let first_gate_entry = null;
+
+    //     if (frm.doc.gate_entry_box_barcode.length > 0) {
+    //         first_gate_entry = frm.doc.gate_entry_box_barcode[0].gate_entry;
+    //     }
+
+    //     frappe.call({
+    //         method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.process_barcode",
+    //         args: {
+    //             scan_barcode: barcode,
+    //             existing_gate_entry: first_gate_entry
+    //         },
+    //         callback: function(r) {
+
+    //             if (r.message) {
+
+    //                 let data = r.message;
+
+    //                 // ✅ Add child row
+    //                 let row = frm.add_child("gate_entry_box_barcode");
+
+    //                 row.box_barcode = data.box_barcode;
+    //                 row.status = data.status;
+    //                 row.gate_entry = data.gate_entry;
+    //                 row.scan_date_time = data.scan_date_time;
+
+    //                 frm.refresh_field("gate_entry_box_barcode");
+
+    //                 // ✅ Clear scan field
+    //                 frm.set_value("scan_box_barcode", "");
+
+    //                 // ==================================================
+    //                 // 🔥 FETCH GATE ENTRY DETAILS FROM FIRST ROW
+    //                 // ==================================================
+
+    //                 let gate_entry = frm.doc.gate_entry_box_barcode[0].gate_entry;
+
+    //                 if (gate_entry) {
+
+    //                     frappe.db.get_doc("Gate Entry", gate_entry)
+    //                         .then(doc => {
+
+    //                             // ✅ Set values in Incoming Logistics
+    //                             frm.set_value("transporter", doc.transporter || "");
+    //                             frm.set_value("lr_quantity", doc.no_of_parcels || 0);
+    //                             frm.set_value("consignor", doc.supplier || "");
+    //                             frm.set_value("lr_document_no", doc.document_nos || "");
+    //                             frm.set_value("invoice_no", doc.document_nos || "");
+
+    //                         });
+
+    //                 }
+
+    //             }
+    //         }
+    //     });
+    // },
+    scan_box_barcode: function(frm) {
+
+    let barcode = frm.doc.scan_box_barcode;
+
+    if (!barcode) return;
+
+    // ❌ Duplicate check
+    let exists = frm.doc.gate_entry_box_barcode.some(
+        row => row.box_barcode === barcode
+    );
+
+    if (exists) {
+        frappe.msgprint("❌ Barcode already scanned");
+        frm.set_value("scan_box_barcode", "");
+        return;
+    }
+
+    // 🔥 First row gate entry lock
+    let first_gate_entry = null;
+
+    if (frm.doc.gate_entry_box_barcode.length > 0) {
+        first_gate_entry = frm.doc.gate_entry_box_barcode[0].gate_entry;
+    }
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.process_barcode",
+        args: {
+            scan_barcode: barcode,
+            existing_gate_entry: first_gate_entry
+        },
+        callback: function(r) {
+
+            if (r.message) {
+
+                let data = r.message;
+
+                // ✅ Add child row
+                let row = frm.add_child("gate_entry_box_barcode");
+
+                row.box_barcode = data.box_barcode;
+                row.status = data.status;
+                row.gate_entry = data.gate_entry;
+                row.scan_date_time = data.scan_date_time;
+
+                frm.refresh_field("gate_entry_box_barcode");
+
+                // ✅ Clear scan field
+                frm.set_value("scan_box_barcode", "");
+
+                // ==================================================
+                // 🔥 ONLY FIRST SCAN AUTO FILL
+                // ==================================================
+
+                if (frm.doc.gate_entry_box_barcode.length === 1) {
+
+                    let gate_entry = data.gate_entry;
+
+                    if (gate_entry) {
+
+                        frappe.db.get_doc("Gate Entry", gate_entry)
+                            .then(doc => {
+
+                                console.log("Gate Entry Doc:", doc);
+
+                                // ✅ Set values
+                                frm.set_value("type", doc.types || "");
+                                frm.set_value("consignor", doc.supplier || "");
+                                frm.set_value("consignor_customer", doc.customer_name || "");
+                                frm.set_value("lr_quantity", doc.no_of_parcels || 0);
+
+                                frm.set_value("lr_document_no", doc.document_nos || "");
+
+                                frm.set_value("invoice_no", doc.document_nos || "");
+
+                                // ==================================================
+                                // ✅ TRANSPORTER PRIORITY LOGIC
+                                // 1. Gate Entry transporter
+                                // 2. Supplier master transporter
+                                // 3. Empty
+                                // ==================================================
+
+                                // ✅ FIRST PRIORITY → Gate Entry transporter
+                                if (doc.transporter) {
+
+                                    frm.set_value("transporter", doc.transporter);
+
+                                    frm.refresh_field("transporter");
+
+                                }
+
+                                // ✅ SECOND PRIORITY → Supplier transporter
+                                else if (doc.supplier) {
+
+                                    frappe.db.get_value(
+                                        "Supplier",
+                                        doc.supplier,
+                                        "transporter"
+                                    ).then(res => {
+
+                                        if (
+                                            res.message &&
+                                            res.message.transporter
+                                        ) {
+
+                                            frm.set_value(
+                                                "transporter",
+                                                res.message.transporter
+                                            );
+
+                                            frm.refresh_field("transporter");
+
+                                        } else {
+
+                                            // ✅ THIRD PRIORITY → Empty
+                                            frm.set_value("transporter", "");
+
+                                        }
+
+                                    });
+
+                                }
+
+                                // ✅ No supplier also
+                                else {
+
+                                    frm.set_value("transporter", "");
+
+                                }
+
+                            });
+
+                    }
+                }
+
+            }
+        }
+    });
+},
+});
+frappe.ui.form.on("Gate Entry Box Barcode", {
+
+    gate_entry_box_barcode_remove: function(frm) {
+
+        // ✅ If no rows left
+        if (frm.doc.gate_entry_box_barcode.length === 0) {
+
+            frm.set_value("transporter", "");
+            frm.set_value("lr_quantity", "");
+            frm.set_value("consignor", "");
+            frm.set_value("lr_document_no", "");
+            frm.set_value("invoice_no", "");
+
+        }
+    }
+
+});
 // ===================================================
 // TYPE → DOCTYPE MAP
 // ===================================================
@@ -207,35 +483,144 @@ function open_incoming_mapper_by_type(frm) {
 // ===================================================
 // PURCHASE ORDER
 // ===================================================
-function open_purchase_order_mapper(frm) {
 
+// function open_purchase_order_mapper(frm) {
+
+//     if (!frm.doc.consignor) {
+//         frappe.throw("Please select Supplier first");
+//     }
+
+//     new frappe.ui.form.MultiSelectDialog({
+//         doctype: "Purchase Order",
+//         target: frm,
+//         setters: {
+//             supplier: frm.doc.consignor,
+//             company: frm.doc.owner_site
+//         },
+//         get_query() {
+//             return {
+//                 filters: [
+//                     ["docstatus", "=", 1],
+//                     ["supplier", "=", frm.doc.consignor],
+//                     ["company", "=", frm.doc.owner_site],
+//                     // ["status", "!=", "Closed"],
+//                     ["status", "!=", "Completed"]
+//                 ]
+//             };
+//         },
+//         action(selections) {
+//             add_reference_rows(frm, selections);
+//             this.dialog.hide();
+//         }
+//     });
+// }
+
+function open_purchase_order_mapper(frm) {
     if (!frm.doc.consignor) {
         frappe.throw("Please select Supplier first");
     }
 
-    new frappe.ui.form.MultiSelectDialog({
-        doctype: "Purchase Order",
-        target: frm,
-        setters: {
+    if (!frm.doc.owner_site) {
+        frappe.throw("Please select Company first");
+    }
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_available_purchase_orders",
+        args: {
             supplier: frm.doc.consignor,
             company: frm.doc.owner_site
         },
-        get_query() {
-            return {
-                filters: [
-                    ["docstatus", "=", 1],
-                    ["supplier", "=", frm.doc.consignor],
-                    ["company", "=", frm.doc.owner_site],
-                    ["status", "!=", "Closed"]
-                ]
-            };
+        freeze: true,
+        freeze_message: __("Checking pending GRN quantities..."),
+
+        callback(r) {
+            if (r.exc) {
+                return;
+            }
+
+            const available_orders = r.message || [];
+
+            if (!available_orders.length) {
+                frappe.msgprint({
+                    title: __("No Pending Purchase Orders"),
+                    message: __(
+                        "No Purchase Orders with pending GRN quantity were found for the selected Supplier and Company."
+                    ),
+                    indicator: "orange"
+                });
+                return;
+            }
+
+            new frappe.ui.form.MultiSelectDialog({
+                doctype: "Purchase Order",
+                target: frm,
+
+                setters: {
+                    supplier: frm.doc.consignor,
+                    company: frm.doc.owner_site
+                },
+
+                add_filters_group: 1,
+
+                get_query() {
+                    return {
+                        filters: [
+                            [
+                                "Purchase Order",
+                                "name",
+                                "in",
+                                available_orders
+                            ],
+                            [
+                                "Purchase Order",
+                                "docstatus",
+                                "=",
+                                1
+                            ],
+                            [
+                                "Purchase Order",
+                                "supplier",
+                                "=",
+                                frm.doc.consignor
+                            ],
+                            [
+                                "Purchase Order",
+                                "company",
+                                "=",
+                                frm.doc.owner_site
+                            ]
+                        ]
+                    };
+                },
+
+                action(selections) {
+                    if (!selections || !selections.length) {
+                        frappe.msgprint(
+                            __("Please select at least one Purchase Order.")
+                        );
+                        return;
+                    }
+
+                    add_reference_rows(frm, selections);
+
+                    this.dialog.hide();
+                }
+            });
         },
-        action(selections) {
-            add_reference_rows(frm, selections);
-            this.dialog.hide();
+
+        error() {
+            frappe.msgprint({
+                title: __("Error"),
+                message: __(
+                    "Unable to fetch Purchase Orders. Please try again."
+                ),
+                indicator: "red"
+            });
         }
     });
 }
+
+
 
 
 // ===================================================
@@ -578,3 +963,4 @@ frappe.ui.form.on('Incoming Logistics', {
         frm.refresh_field('references');
     }
 });
+

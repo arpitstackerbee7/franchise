@@ -198,6 +198,89 @@ def on_submit(doc, method):
 #         f"Serial No <b>{scanned_serial}</b> does not exist in linked Purchase Order"
 #     )
 
+
+# @frappe.whitelist()
+# def validate_po_serial(scanned_serial, po_items, is_return=0):
+#     """
+#     Validate Serial for Purchase Receipt & Return
+
+#     Normal PR:
+#         - Serial must be in generated list
+#         - Must NOT be already used
+
+#     Return PR:
+#         - Serial must exist
+#         - Allow already used serial
+#     """
+
+#     if isinstance(po_items, str):
+#         po_items = frappe.parse_json(po_items)
+
+#     # ✅ Check Serial exists (ERPNext standard)
+#     if not frappe.db.exists("Serial No", scanned_serial):
+#         frappe.throw(f"Invalid Serial No <b>{scanned_serial}</b>")
+
+#     for poi in po_items:
+
+#         values = frappe.db.get_value(
+#             "Purchase Order Item",
+#             poi,
+#             ["custom_generated_serials", "custom_used_serials"],
+#             as_dict=True
+#         )
+
+#         if not values or not values.custom_generated_serials:
+#             continue
+
+#         generated_serials = [
+#             s.strip() for s in values.custom_generated_serials.split("\n")
+#             if s.strip()
+#         ]
+
+#         used_serials = [
+#             s.strip() for s in (values.custom_used_serials or "").split("\n")
+#             if s.strip()
+#         ]
+
+#         # ==========================
+#         # 🔴 NORMAL PURCHASE
+#         # ==========================
+#         if not int(is_return):
+
+#             # ❌ Duplicate
+#             if scanned_serial in used_serials:
+#                 frappe.throw(
+#                     f"Duplicate scan detected. Serial No <b>{scanned_serial}</b> is already used"
+#                 )
+
+#             # ❌ Not in generated list
+#             if scanned_serial not in generated_serials:
+#                 continue
+
+#             # ✅ Valid
+#             return {
+#                 "purchase_order_item": poi
+#             }
+
+#         # ==========================
+#         # 🔵 RETURN PURCHASE
+#         # ==========================
+#         else:
+#             # ✔ Allow if serial was used OR exists in system
+#             if scanned_serial in used_serials or frappe.db.exists("Serial No", scanned_serial):
+#                 return {
+#                     "purchase_order_item": poi
+#                 }
+
+#             frappe.throw(
+#                 f"Serial No <b>{scanned_serial}</b> cannot be returned"
+#             )
+
+#     # ❌ Not found in PO
+#     frappe.throw(
+#         f"Serial No <b>{scanned_serial}</b> does not belong to this Purchase Order"
+#     )
+
 @frappe.whitelist()
 def validate_po_serial(scanned_serial, po_items, is_return=0):
 
@@ -260,8 +343,7 @@ def validate_po_serial(scanned_serial, po_items, is_return=0):
     frappe.throw(
         f"Serial No <b>{scanned_serial}</b> does not belong to this Purchase Order"
     )
-
-
+    
 def validate_item(doc, method=None):
     # 🔹 Check if ANY row has PO
     po_present = any(row.purchase_order for row in doc.items)
@@ -836,3 +918,46 @@ def clear_si_grn_flags(doc, method):
 #     pi.insert(ignore_permissions=True)
 
 #     frappe.msgprint(f"✅ Debit Note Created: {pi.name}")
+
+
+@frappe.whitelist()
+def get_items_from_job_work_orders(jobo_names):
+    import json
+    from frappe.utils import flt
+
+    if isinstance(jobo_names, str):
+        jobo_names = json.loads(jobo_names)
+
+    items = []
+
+    for jobo_name in jobo_names:
+        sco = frappe.get_doc("Subcontracting Order", jobo_name)
+        purchase_order = sco.purchase_order
+
+        po_item = frappe.db.get_value(
+            "Purchase Order Item",
+            {"parent": purchase_order},
+            ["name", "item_code", "rate", "item_name", "uom", "stock_uom"],  # ← add these
+            as_dict=True
+        )
+
+        if not po_item:
+            continue
+
+        total_qty = sum(flt(i.qty) for i in sco.items)
+
+        items.append({
+            "item_code": po_item.item_code,
+            "item_name": po_item.item_name,        
+            "uom": po_item.uom,                    
+            "stock_uom": po_item.stock_uom,       
+            "qty": total_qty,
+            "received_qty": total_qty,
+            "rate": po_item.rate,
+            "amount": flt(total_qty) * flt(po_item.rate),
+            "purchase_order": purchase_order,
+            "purchase_order_item": po_item.name,
+            "warehouse": "Finished Goods - TZUPL"
+        })
+
+    return items

@@ -1,0 +1,87 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2026-09-29 16:38:07.335880",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "json": "{\"columns\":[{\"label\":\"Contact\",\"options\":\"Contact\",\"fieldname\":\"contact\",\"fieldtype\":\"Link\",\"width\":200,\"id\":\"contact\",\"name\":\"Contact\",\"editable\":false,\"compareValue\":null},{\"label\":\"Cancel\",\"fieldname\":\"cancel\",\"fieldtype\":\"Int\",\"width\":80,\"id\":\"cancel\",\"name\":\"Cancel\",\"editable\":false,\"compareValue\":null},{\"label\":\"Open\",\"fieldname\":\"open\",\"fieldtype\":\"Int\",\"width\":80,\"id\":\"open\",\"name\":\"Open\",\"editable\":false,\"compareValue\":null},{\"label\":\"Replied\",\"fieldname\":\"replied\",\"fieldtype\":\"Int\",\"width\":80,\"id\":\"replied\",\"name\":\"Replied\",\"editable\":false,\"compareValue\":null},{\"label\":\"Resolved\",\"fieldname\":\"resolved\",\"fieldtype\":\"Int\",\"width\":80,\"id\":\"resolved\",\"name\":\"Resolved\",\"editable\":false,\"compareValue\":null},{\"label\":\"Closed\",\"fieldname\":\"closed\",\"fieldtype\":\"Int\",\"width\":80,\"id\":\"closed\",\"name\":\"Closed\",\"editable\":false,\"compareValue\":null},{\"label\":\"Total Ticket\",\"fieldname\":\"total_tickets\",\"fieldtype\":\"Int\",\"width\":100,\"id\":\"total_tickets\",\"name\":\"Total Ticket\",\"editable\":false,\"compareValue\":null},{\"label\":\"SLA Failed\",\"fieldname\":\"failed\",\"fieldtype\":\"Int\",\"width\":100,\"id\":\"failed\",\"name\":\"SLA Failed\",\"editable\":false,\"compareValue\":null},{\"label\":\"SLA Fulfilled\",\"fieldname\":\"fulfilled\",\"fieldtype\":\"Int\",\"width\":100,\"id\":\"fulfilled\",\"name\":\"SLA Fulfilled\",\"editable\":false,\"compareValue\":null},{\"label\":\"SLA Ongoing\",\"fieldname\":\"ongoing\",\"fieldtype\":\"Int\",\"width\":100,\"id\":\"ongoing\",\"name\":\"SLA Ongoing\",\"editable\":false,\"compareValue\":null},{\"label\":\"Avg First Response Time\",\"fieldname\":\"avg_first_response_time\",\"fieldtype\":\"Duration\",\"width\":170,\"id\":\"avg_first_response_time\",\"name\":\"Avg First Response Time\",\"editable\":false,\"compareValue\":null},{\"label\":\"Avg Response Time\",\"fieldname\":\"avg_response_time\",\"fieldtype\":\"Duration\",\"width\":170,\"id\":\"avg_response_time\",\"name\":\"Avg Response Time\",\"editable\":false,\"compareValue\":null},{\"label\":\"Avg Hold Time\",\"fieldname\":\"avg_hold_time\",\"fieldtype\":\"Duration\",\"width\":170,\"id\":\"avg_hold_time\",\"name\":\"Avg Hold Time\",\"editable\":false,\"compareValue\":null},{\"label\":\"Avg Resolution Time\",\"fieldname\":\"avg_resolution_time\",\"fieldtype\":\"Duration\",\"width\":170,\"id\":\"avg_resolution_time\",\"name\":\"Avg Resolution Time\",\"editable\":false,\"compareValue\":null},{\"label\":\"Avg User Resolution Time\",\"fieldname\":\"avg_user_resolution_time\",\"fieldtype\":\"Duration\",\"width\":170,\"id\":\"avg_user_resolution_time\",\"name\":\"Avg User Resolution Time\",\"editable\":false,\"compareValue\":null}],\"filters\":{\"based_on\":\"Contact\",\"from_date\":\"2026-09-02\",\"to_date\":\"2026-09-29\"}}",
+ "letter_head": null,
+ "modified": "2026-09-29 16:42:08.536488",
+ "modified_by": "Administrator",
+ "module": "Franchise Erp",
+ "name": "Custom Ticket Summary",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "HD Ticket",
+ "reference_report": "Ticket Summary",
+ "report_name": "Custom Ticket Summary",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "All"
+  },
+  {
+   "role": "Agent Manager"
+  },
+  {
+   "role": "Agent"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "HelpDesk User"
+  },
+  {
+   "role": "Production"
+  },
+  {
+   "role": "Guest"
+  },
+  {
+   "role": "Guest"
+  }
+ ],
+ "timeout": 0
+}

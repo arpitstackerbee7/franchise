@@ -1,5 +1,59 @@
 import frappe
 import requests
+import os
+import requests
+import frappe
+
+from frappe.utils import nowdate, formatdate
+from frappe.utils.pdf import get_pdf
+
+
+def send_otp_whatsapp(mobile_no, otp):
+
+    chatId = f"91{mobile_no}@c.us"
+
+    message = f"""
+Dear User,
+
+Your Login OTP is: {otp}
+
+This OTP is valid for 5 minutes.
+
+Team TZU
+"""
+
+    url = "https://7103.api.greenapi.com/waInstance7103539592/sendMessage/9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+
+    payload = {
+        "chatId": chatId,
+        "message": message
+    }
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.post(
+            url,
+            json=payload,
+            headers=headers
+        )
+
+        frappe.logger().info(
+            f"OTP WhatsApp Sent: {response.text}"
+        )
+
+        return response.json()
+
+    except Exception as e:
+
+        frappe.log_error(
+            str(e),
+            "OTP WhatsApp Error"
+        )
+
+        return None
 
 def send_text_msg_on_whatsapp_sales_invoice(doc, method=None):
 
@@ -45,10 +99,6 @@ def send_text_msg_on_whatsapp_sales_invoice(doc, method=None):
 
 
 
-
-import frappe
-import os
-import requests
 
 # --- PDF Generate function ---
 def generate_pdf(doc):
@@ -115,10 +165,6 @@ def send_pdf_on_whatsapp_sales_invoice(doc, method=None):
         if os.path.exists(file_path):
             os.remove(file_path)
 
-
-import frappe
-import os
-import requests
 
 def send_sales_invoice_pdf_from_outgoing_logistics(doc, method=None):
 
@@ -250,11 +296,6 @@ Thank you!"""
 
 
 # daily sales for countor send to directors
-import frappe
-from frappe.utils import nowdate, getdate, formatdate
-from frappe.utils.pdf import get_pdf
-import os
-import requests
 
 # for single field mobile no
 # @frappe.whitelist()
@@ -530,3 +571,897 @@ def send_daily_counter_sales():
 
     return "Sent Successfully"
 
+
+
+# send report to counter group
+@frappe.whitelist()
+def send_daily_counter_sales_group():
+
+    settings = frappe.get_single("TZU Setting")
+
+    if not settings.enable_whatsapp_group_notification:
+        return "WhatsApp Group Notification is Disabled"
+
+    today = nowdate()
+    formatted_date = formatdate(today, "dd-MMM-yy")
+
+    file_url = "https://7103.api.greenapi.com/waInstance7103539592/sendFileByUpload/9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+
+    # ----------------------------------------------------
+    # Get all companies having Internal Customer
+    # ----------------------------------------------------
+
+    companies = frappe.db.sql("""
+        SELECT DISTINCT
+            c.name,
+            c.company_name
+        FROM `tabCompany` c
+        INNER JOIN `tabCustomer` cust
+            ON cust.represents_company = c.name
+        WHERE cust.is_internal_customer = 1
+    """, as_dict=True)
+
+    if not companies:
+        return "No Company Found"
+
+    sent = 0
+
+    # ----------------------------------------------------
+    # Loop Company Wise
+    # ----------------------------------------------------
+
+    for company in companies:
+
+        # ----------------------------------------
+        # Delivery Note Summary
+        # ----------------------------------------
+
+        summary = frappe.db.sql("""
+            SELECT
+                IFNULL(q.qty, 0) AS total_qty,
+                IFNULL(a.amount, 0) AS total_amount
+            FROM
+            (
+                SELECT
+                    SUM(dni.qty) AS qty
+                FROM `tabDelivery Note` dn
+                INNER JOIN `tabDelivery Note Item` dni
+                    ON dni.parent = dn.name
+                WHERE
+                    dn.docstatus = 1
+                    AND dn.company = %s
+                    AND dn.posting_date = %s
+            ) q,
+            (
+                SELECT
+                    SUM(grand_total) AS amount
+                FROM `tabDelivery Note`
+                WHERE
+                    docstatus = 1
+                    AND company = %s
+                    AND posting_date = %s
+            ) a
+        """, (company.name, today, company.name, today), as_dict=True)
+
+        if not summary:
+            continue
+
+        total_qty = summary[0].total_qty or 0
+        total_amount = summary[0].total_amount or 0
+        rounded_total_amount = int(round(total_amount))
+        if total_qty == 0 and total_amount == 0:
+            continue
+
+        # ----------------------------------------
+        # PDF HTML
+        # ----------------------------------------
+
+        html = f"""
+        <div style="font-family:Arial;padding:20px;">
+        <h1 style="text-align:center; margin-bottom:5px;">
+            {company.company_name}
+        </h1>
+        <h2 style="text-align:center;">
+            Counter Sale Dt - {formatted_date}
+        </h2>
+
+        <table
+            border="1"
+            cellspacing="0"
+            cellpadding="8"
+            width="100%"
+            style="border-collapse:collapse;font-size:14px;">
+
+            <thead>
+
+                <tr>
+
+                    <th width="18%">Date</th>
+
+                    <th width="28%">Counter Name</th>
+
+                    <th width="22%">Net Sale Qty</th>
+
+                    <th width="32%">Net Sale Amount</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                <tr>
+
+                    <td>{formatted_date}</td>
+
+                    <td>{company.company_name}</td>
+
+                    <td>{int(total_qty)}</td>
+
+                    <td style="text-align:left;">{rounded_total_amount:,}</td>
+
+                </tr>
+
+               
+
+            </tbody>
+
+        </table>
+
+        </div>
+        """
+
+        pdf = get_pdf(html)
+
+        filename = f"Counter_Sales_{company.name}_{today}.pdf"
+
+        filepath = frappe.get_site_path(
+            "private",
+            "files",
+            filename
+        )
+
+        with open(filepath, "wb") as f:
+            f.write(pdf)
+
+        # ----------------------------------------
+        # Fetch WhatsApp Group IDs
+        # ----------------------------------------
+
+        groups = frappe.get_all(
+            "WhatsApp Group Id",
+            filters={
+                "parent": company.name
+            },
+            fields=["whatsapp_group_id"]
+        )
+        # Skip if no Group IDs configured
+        valid_groups = [
+            g for g in groups
+            if g.whatsapp_group_id and g.whatsapp_group_id.strip()
+        ]
+
+        if not valid_groups:
+            frappe.logger().info(
+                f"Skipping {company.name} - No WhatsApp Group ID Found"
+            )
+
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+            continue
+
+        if not valid_groups:
+
+            frappe.log_error(
+                f"No Group Found for {company.name}",
+                "Counter Sale WhatsApp"
+            )
+
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+            continue
+
+        # ----------------------------------------
+        # Send PDF
+        # ----------------------------------------
+
+        for g in valid_groups:
+
+            if not g.whatsapp_group_id:
+                continue
+
+            chatId = g.whatsapp_group_id.strip()
+
+            if "@g.us" not in chatId:
+                chatId += "@g.us"
+
+            data = {
+                "chatId": chatId,
+                "caption": f"Daily Counter Sales - {formatted_date}",
+                "fileName": filename
+            }
+
+            try:
+
+                with open(filepath, "rb") as pdf_file:
+
+                    response = requests.post(
+                        file_url,
+                        data=data,
+                        files={
+                            "file": pdf_file
+                        }
+                    )
+
+                if response.status_code == 200:
+
+                    sent += 1
+
+                else:
+
+                    frappe.log_error(
+                        response.text,
+                        f"WhatsApp Failed {chatId}"
+                    )
+
+            except Exception:
+
+                frappe.log_error(
+                    frappe.get_traceback(),
+                    f"WhatsApp Error {chatId}"
+                )
+
+        # ----------------------------------------
+        # Delete PDF
+        # ----------------------------------------
+
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+    return f"Successfully Sent to {sent} Group(s)"
+
+
+# PO workflow according notification
+
+import frappe
+import requests
+
+
+PO_DESK_ROUTE = "/app/purchase-order/{name}"
+
+
+# ============================================================
+# WORKFLOW TRANSITIONS
+# ============================================================
+PO_TRANSITION_CONFIG = {
+
+    ("Draft", "Pending Checker Approval"): {
+        "recipients": ["merchant"],
+        "label": "Sent to Checker",
+    },
+
+    ("Pending Checker Approval", "Pending Final Approval"): {
+        "recipients": ["agent_supplier"],
+        "label": "Sent to Approver",
+    },
+
+    ("Pending Final Approval", "Approved"): {
+    "recipients": ["maker", "merchant", "agent_supplier"],
+    "label": "Approved",
+    },
+
+    ("Pending Final Approval", "Rejected"): {
+        "recipients": ["maker", "merchant", "agent_supplier"],
+        "label": "Rejected",
+    },
+
+    ("Pending Final Approval", "Draft"): {
+        "recipients": ["maker", "merchant", "agent_supplier"],
+        "label": "Modify",
+    },
+}
+
+
+# ============================================================
+# CAPTURE WORKFLOW STATE
+# ============================================================
+
+def po_capture_workflow_state(doc, method=None):
+
+    try:
+
+        if doc.is_new():
+            doc._po_old_workflow_state = None
+            doc._po_workflow_state_changed = False
+            return
+
+        old_state = frappe.db.get_value(
+            "Purchase Order",
+            doc.name,
+            "workflow_state"
+        )
+
+        new_state = doc.get("workflow_state")
+
+        doc._po_old_workflow_state = old_state
+        doc._po_new_workflow_state = new_state
+
+        doc._po_workflow_state_changed = (
+            old_state != new_state
+        )
+
+        frappe.logger().info(
+            f"""
+PO WORKFLOW CAPTURE
+
+PO: {doc.name}
+
+OLD:
+{old_state}
+
+NEW:
+{new_state}
+
+CHANGED:
+{doc._po_workflow_state_changed}
+"""
+        )
+
+    except Exception:
+
+        frappe.log_error(
+            frappe.get_traceback(),
+            "PO WhatsApp - State Capture Error"
+        )
+
+
+# ============================================================
+# MAIN WORKFLOW NOTIFICATION
+# ============================================================
+
+def po_workflow_notification(doc, method=None):
+
+    try:
+
+        # ====================================================
+        # GET OLD DOCUMENT
+        # ====================================================
+
+        old_doc = doc.get_doc_before_save()
+
+        old_state = None
+
+        if old_doc:
+            old_state = old_doc.get("workflow_state")
+
+        new_state = doc.get("workflow_state")
+
+        frappe.log_error(
+            f"""
+PO WORKFLOW NOTIFICATION
+
+PO: {doc.name}
+Method: {method}
+
+OLD STATE:
+{old_state}
+
+NEW STATE:
+{new_state}
+
+OLD DOC EXISTS:
+{bool(old_doc)}
+""",
+            "PO WhatsApp - WORKFLOW DEBUG"
+        )
+
+        # ====================================================
+        # DRAFT KO IGNORE
+        # ====================================================
+
+        # New Draft me notification nahi
+        # Draft -> Pending Checker Approval allowed hai
+        if new_state == "Draft" and not old_state:
+            return
+
+        # ====================================================
+        # SAME STATE
+        # ====================================================
+
+        if old_state == new_state:
+            return
+
+        # ====================================================
+        # TRANSITION
+        # ====================================================
+
+        transition = (
+            old_state,
+            new_state
+        )
+
+        config = PO_TRANSITION_CONFIG.get(
+            transition
+        )
+
+        frappe.log_error(
+            f"""
+PO: {doc.name}
+
+Transition:
+{old_state} -> {new_state}
+
+Config:
+{config}
+""",
+            "PO WhatsApp - TRANSITION DEBUG"
+        )
+
+        if not config:
+            return
+
+        # ====================================================
+        # SETTINGS
+        # ====================================================
+
+        po_notification_enabled = frappe.db.get_single_value(
+            "TZU Setting",
+            "enable_po_notification"
+        )
+
+        if not po_notification_enabled:
+            return
+
+        # ====================================================
+        # RECIPIENTS
+        # ====================================================
+
+        recipients = _po_resolve_recipients(
+            doc,
+            config["recipients"]
+        )
+
+        frappe.log_error(
+            f"""
+PO: {doc.name}
+
+Transition:
+{old_state} -> {new_state}
+
+Recipient Types:
+{config["recipients"]}
+
+Resolved Recipients:
+{recipients}
+""",
+            "PO WhatsApp - RECIPIENT DEBUG"
+        )
+
+        if not recipients:
+            return
+
+        # ====================================================
+        # MESSAGE
+        # ====================================================
+
+        message = _po_build_message(
+            doc,
+            config["label"]
+        )
+
+        # ====================================================
+        # SEND
+        # ====================================================
+
+        for recipient in recipients:
+
+            mobile = recipient.get("mobile")
+
+            if not mobile:
+                continue
+
+            frappe.log_error(
+                f"""
+PO: {doc.name}
+
+Transition:
+{old_state} -> {new_state}
+
+Sending To:
+{recipient.get("name")}
+
+Mobile:
+{mobile}
+""",
+                "PO WhatsApp - SEND DEBUG"
+            )
+
+            _po_send_whatsapp_text(
+                mobile,
+                message
+            )
+
+    except Exception:
+
+        frappe.log_error(
+            frappe.get_traceback(),
+            "PO WhatsApp - Workflow Error"
+        )
+
+
+# ============================================================
+# RESOLVE RECIPIENTS
+# ============================================================
+def _po_resolve_recipients(
+    doc,
+    recipient_labels
+):
+
+    recipients = []
+
+    for label in recipient_labels:
+
+        # ----------------------------------------------------
+        # MERCHANT / CHECKER
+        # ----------------------------------------------------
+
+        if label == "merchant":
+
+            recipients.extend(
+                _po_get_merchant_recipients(doc)
+            )
+
+        # ----------------------------------------------------
+        # AGENT SUPPLIER / APPROVER
+        # ----------------------------------------------------
+
+        elif label == "agent_supplier":
+
+            recipients.extend(
+                _po_get_agent_supplier_recipients(doc)
+            )
+
+        # ----------------------------------------------------
+        # MAKER / PO CREATOR
+        # ----------------------------------------------------
+
+        elif label == "maker":
+
+            recipients.extend(
+                _po_get_maker_recipients(doc)
+            )
+
+    # --------------------------------------------------------
+    # REMOVE DUPLICATES
+    # --------------------------------------------------------
+
+    unique = {}
+
+    for recipient in recipients:
+
+        mobile = recipient.get("mobile")
+
+        if not mobile:
+            continue
+
+        normalized = _normalize_mobile(
+            mobile
+        )
+
+        if normalized:
+
+            unique[normalized] = {
+                "name": recipient.get("name"),
+                "mobile": normalized
+            }
+
+    return list(unique.values())
+
+# ============================================================
+# Maker RECIPIENTS
+# ============================================================
+def _po_get_maker_recipients(doc):
+
+    recipients = []
+
+    owner = doc.get("owner")
+
+    if not owner:
+        return recipients
+
+    user = frappe.db.get_value(
+        "User",
+        owner,
+        ["name", "full_name", "mobile_no"],
+        as_dict=True
+    )
+
+    if not user:
+        return recipients
+
+    if not user.mobile_no:
+        return recipients
+
+    recipients.append({
+        "name": user.full_name or user.name,
+        "mobile": user.mobile_no
+    })
+
+    return recipients
+
+# ============================================================
+# MERCHANT RECIPIENTS
+# ============================================================
+
+def _po_get_merchant_recipients(doc):
+
+    recipients = []
+
+    if not doc.supplier:
+        return recipients
+
+    # --------------------------------------------------------
+    # PO Supplier
+    # --------------------------------------------------------
+
+    supplier_doc = frappe.get_doc(
+        "Supplier",
+        doc.supplier
+    )
+
+    # --------------------------------------------------------
+    # Merchant Child Table
+    # custom_po_notification_for_merchant
+    # --------------------------------------------------------
+
+    merchant_rows = (
+        supplier_doc.get(
+            "custom_po_notification_for_merchant"
+        )
+        or []
+    )
+
+    for row in merchant_rows:
+
+        # ----------------------------------------------------
+        # merchant is User Link
+        # ----------------------------------------------------
+
+        merchant_user = row.get(
+            "merchant"
+        )
+
+        if not merchant_user:
+            continue
+
+        # ----------------------------------------------------
+        # User -> mobile_no
+        # ----------------------------------------------------
+
+        mobile = frappe.db.get_value(
+            "User",
+            merchant_user,
+            "mobile_no"
+        )
+
+        if not mobile:
+            continue
+
+        recipients.append({
+            "name": merchant_user,
+            "mobile": mobile
+        })
+
+    return recipients
+
+
+# ============================================================
+# AGENT SUPPLIER RECIPIENTS
+# ============================================================
+
+def _po_get_agent_supplier_recipients(doc):
+
+    recipients = []
+
+    if not doc.supplier:
+        return recipients
+
+    # --------------------------------------------------------
+    # PO Supplier
+    # --------------------------------------------------------
+
+    supplier_doc = frappe.get_doc(
+        "Supplier",
+        doc.supplier
+    )
+
+    # --------------------------------------------------------
+    # Supplier -> Supplier Group
+    # --------------------------------------------------------
+
+    supplier_group = supplier_doc.get(
+        "supplier_group"
+    )
+
+    if not supplier_group:
+        return recipients
+
+    # --------------------------------------------------------
+    # Supplier Group -> custom_user_email
+    # --------------------------------------------------------
+
+    user_email = frappe.db.get_value(
+        "Supplier Group",
+        supplier_group,
+        "custom_user_email"
+    )
+
+    if not user_email:
+        return recipients
+
+    # --------------------------------------------------------
+    # User -> mobile_no
+    # custom_user_email is User Link
+    # --------------------------------------------------------
+
+    user_mobile = frappe.db.get_value(
+        "User",
+        user_email,
+        "mobile_no"
+    )
+
+    if not user_mobile:
+        return recipients
+
+    # --------------------------------------------------------
+    # Add Recipient
+    # --------------------------------------------------------
+
+    recipients.append({
+        "name": user_email,
+        "mobile": user_mobile
+    })
+
+    return recipients
+
+
+# ============================================================
+# NORMALIZE MOBILE
+# ============================================================
+
+def _normalize_mobile(
+    mobile
+):
+
+    if not mobile:
+        return None
+
+    mobile = str(
+        mobile
+    ).strip()
+
+    mobile = "".join(
+        char
+        for char in mobile
+        if char.isdigit()
+    )
+
+    if not mobile:
+        return None
+
+    if not mobile.startswith("91"):
+        mobile = "91" + mobile
+
+    return mobile
+
+
+# ============================================================
+# BUILD MESSAGE
+# ============================================================
+
+def _po_build_message(
+    doc,
+    status_label
+):
+
+    total_qty = sum(
+        item.qty
+        for item in doc.items
+    ) if doc.items else 0
+
+    supplier_name = (
+        doc.supplier_name
+        or doc.supplier
+    )
+
+    link = (
+        frappe.utils.get_url()
+        + PO_DESK_ROUTE.format(
+            name=doc.name
+        )
+    )
+
+    return f"""Purchase Order Update
+
+PO No : {doc.name}
+Supplier : {supplier_name}
+Status : {status_label}
+Qty : {total_qty}
+Amount : ₹ {doc.rounded_total:.2f}
+
+Click to view/action:
+{link}"""
+
+
+# ============================================================
+# SEND WHATSAPP
+# ============================================================
+
+def _po_send_whatsapp_text(
+    mobile_no,
+    message
+):
+
+    mobile_no = _normalize_mobile(
+        mobile_no
+    )
+
+    if not mobile_no:
+        return
+
+    chat_id = (
+        f"{mobile_no}@c.us"
+    )
+
+    payload = {
+        "chatId": chat_id,
+        "message": message,
+    }
+
+    url = (
+        "https://7103.api.greenapi.com/"
+        "waInstance7103539592/"
+        "sendMessage/"
+        "9bd7cdb7db404e729b55044c571c040477707783b0da43dda5"
+    )
+
+    try:
+
+        response = requests.post(
+            url,
+            json=payload,
+            headers={
+                "Content-Type": "application/json"
+            },
+            timeout=30
+        )
+
+        frappe.logger().info(
+            f"""
+PO WhatsApp
+
+Mobile: {mobile_no}
+HTTP Status: {response.status_code}
+Response: {response.text}
+"""
+        )
+
+        if response.status_code >= 400:
+
+            frappe.log_error(
+                f"""
+Mobile: {mobile_no}
+HTTP Status: {response.status_code}
+Response: {response.text}
+""",
+                "PO WhatsApp - API Error"
+            )
+
+    except Exception:
+
+        frappe.log_error(
+            frappe.get_traceback(),
+            "PO WhatsApp - Send Error"
+        )

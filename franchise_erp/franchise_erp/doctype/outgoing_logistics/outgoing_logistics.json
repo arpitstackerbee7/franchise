@@ -16,6 +16,7 @@
   "transporter",
   "s_transporter",
   "transfer_out_transport",
+  "transport_service_item",
   "column_break_kknq",
   "date",
   "mode",
@@ -26,6 +27,9 @@
   "barcode_value",
   "barcode_html",
   "is_gate_out",
+  "purchase_invoice",
+  "awb_number",
+  "shipment",
   "transport_information_section",
   "quantity",
   "station_from",
@@ -355,13 +359,49 @@
    "fieldtype": "Check",
    "label": "Is Gate out",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.to_pay ==\"Yes\"",
+   "fieldname": "transport_service_item",
+   "fieldtype": "Link",
+   "label": "Transport Service Item",
+   "link_filters": "[[\"Item\",\"is_stock_item\",\"=\",0]]",
+   "options": "Item"
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Data",
+   "label": "Purchase Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "awb_number",
+   "fieldtype": "Data",
+   "label": "AWB Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shipment",
+   "fieldtype": "Link",
+   "label": "Shipment",
+   "options": "Shipment",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2026-04-20 10:16:21.476311",
+ "links": [
+  {
+   "link_doctype": "Purchase Invoice",
+   "link_fieldname": "custom_outgoing_logistics"
+  },
+  {
+   "link_doctype": "Shipment",
+   "link_fieldname": "custom_outgoing_logistics"
+  }
+ ],
+ "modified": "2026-08-24 22:07:14.227610",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",

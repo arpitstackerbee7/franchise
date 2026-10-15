@@ -5,6 +5,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from franchise_erp.utils.fy_naming import company_fy_autoname
+from franchise_erp.custom.back_date_validation import validate_back_date
+from frappe.utils import now
 
 class GateEntry(Document):
 
@@ -40,50 +42,110 @@ class GateEntry(Document):
     #     il_doc.status = "Issued"
     #     il_doc.gate_entry_no = None
     #     il_doc.save(ignore_permissions=True)
+    def validate(self):
+        validate_back_date(self)
 
-    def on_submit(self):
-        self.status = "Submitted"
-        self.db_update()
+        # if not self.references or len(self.references) == 0:
+        #     frappe.throw("At least one Reference is required before saving.")
 
-        if not self.incoming_logistics:
-            frappe.throw("Incoming Logistics is required")
+    # def before_submit(self):
 
-        # --- PURANA LOGIC (Header update) ---
-        il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
-        il_doc.gate_entry_no = self.name
-        il_doc.status = "Received" 
-        il_doc.save(ignore_permissions=True)
+    #         if not self.no_of_parcels:
+    #             return
 
-        # --- NAYA LOGIC (Boxes status update only on Submit) ---
-        for item in self.gate_entry_box_barcode:
-            frappe.db.set_value("Gate Entry Box Barcode", 
-                {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
-                "status", "Received")
+    #         self.set("gate_entry_box_barcode", [])
 
-    def on_cancel(self):
-        self.status = "Cancelled"
-        self.db_update()
+    #         parts = self.name.split("-")
 
-        if self.incoming_logistics:
-            # --- PURANA LOGIC (Header reset) ---
-            il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
-            il_doc.status = "Issued"
-            il_doc.gate_entry_no = None
-            il_doc.save(ignore_permissions=True)
+    #         try:
+    #             last = "%03d" % int(parts[-1])
+    #         except:
+    #             last = parts[-1]
 
-            # --- NAYA LOGIC (Boxes status reset) ---
-            for item in self.gate_entry_box_barcode:
-                frappe.db.set_value("Gate Entry Box Barcode", 
-                    {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
-                    "status", "Pending")
+    #         base_name = parts[0] + "-" + last
 
-    def on_trash(self):
-        # 🔥 NAYA LOGIC: Draft delete hone par boxes ko release karein
-        if self.incoming_logistics:
-            for item in self.gate_entry_box_barcode:
-                frappe.db.set_value("Gate Entry Box Barcode", 
-                    {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
-                    "status", "Pending")
+    #         for i in range(1, int(self.no_of_parcels) + 1):
+
+    #             serial = "%02d" % i
+    #             final_barcode = f"{base_name}-{serial}"
+
+    #             self.append("gate_entry_box_barcode", {
+    #                 "box_barcode": final_barcode,
+    #                 "total_barcode_qty": self.no_of_parcels,
+    #                 "status": "Received",
+    #                 "scan_date_time": now(),
+    #                 "gate_entry": self.name,
+    #             })
+    def before_submit(self):
+
+        if not self.no_of_parcels:
+            return
+
+        self.set("gate_entry_box_barcode", [])
+
+        # Remove financial year (26-27/) from name
+        base_name = self.name
+
+        if "/" in base_name:
+            parts = base_name.split("/")
+            if len(parts) >= 3:
+                base_name = f"{parts[0]}/{parts[-1]}"
+
+        for i in range(1, int(self.no_of_parcels) + 1):
+
+            serial = f"{i:02d}"
+            final_barcode = f"{base_name}-{serial}"
+
+            self.append("gate_entry_box_barcode", {
+                "box_barcode": final_barcode,
+                "total_barcode_qty": self.no_of_parcels,
+                "status": "Received",
+                "scan_date_time": now(),
+                "gate_entry": self.name,
+            })
+    # def on_submit(self):
+    #     self.status = "Submitted"
+    #     self.db_update()
+
+    #     if not self.incoming_logistics:
+    #         frappe.throw("Incoming Logistics is required")
+
+    #     # --- PURANA LOGIC (Header update) ---
+    #     il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
+    #     il_doc.gate_entry_no = self.name
+    #     il_doc.status = "Received" 
+    #     il_doc.save(ignore_permissions=True)
+
+    #     # --- NAYA LOGIC (Boxes status update only on Submit) ---
+    #     for item in self.gate_entry_box_barcode:
+    #         frappe.db.set_value("Gate Entry Box Barcode", 
+    #             {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
+    #             "status", "Received")
+
+    # def on_cancel(self):
+    #     self.status = "Cancelled"
+    #     self.db_update()
+
+    #     if self.incoming_logistics:
+    #         # --- PURANA LOGIC (Header reset) ---
+    #         il_doc = frappe.get_doc("Incoming Logistics", self.incoming_logistics)
+    #         il_doc.status = "Issued"
+    #         il_doc.gate_entry_no = None
+    #         il_doc.save(ignore_permissions=True)
+
+    #         # --- NAYA LOGIC (Boxes status reset) ---
+    #         for item in self.gate_entry_box_barcode:
+    #             frappe.db.set_value("Gate Entry Box Barcode", 
+    #                 {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
+    #                 "status", "Pending")
+
+    # def on_trash(self):
+    #     # 🔥 NAYA LOGIC: Draft delete hone par boxes ko release karein
+    #     if self.incoming_logistics:
+    #         for item in self.gate_entry_box_barcode:
+    #             frappe.db.set_value("Gate Entry Box Barcode", 
+    #                 {"box_barcode": item.box_barcode, "parent": self.incoming_logistics, "parenttype": "Incoming Logistics"}, 
+    #                 "status", "Pending")
 
 # fetch box barcode list
 # @frappe.whitelist()
@@ -578,24 +640,10 @@ def get_pending_gate_entries(supplier):
 
     return result
 
-
-def validate(self):
-    if not self.references or len(self.references) == 0:
-        frappe.throw("At least one Reference is required before saving.")
-
 @frappe.whitelist()
 def get_gate_entries_match_from_pi(supplier):
 
-    # 🔥 Step 1: Incoming Logistics filter (MAIN FIX HERE)
-    # incoming = frappe.get_all(
-    #     "Incoming Logistics",
-    #     filters={
-    #         "to_pay": "Yes",
-    #         "transporter": supplier,
-    #         "gate_entry_no": ["!=", ""]   # ✅ FIX APPLIED HERE
-    #     },
-    #     fields=["name", "transporter", "total_amount"]
-    # )
+    # Step 1: Incoming Logistics filter
     incoming = frappe.get_all(
         "Incoming Logistics",
         filters=[
@@ -606,19 +654,26 @@ def get_gate_entries_match_from_pi(supplier):
             ["Incoming Logistics", "transporter", "=", supplier],
             ["Incoming Logistics", "c_transporter", "=", supplier]
         ],
-        fields=["name", "transporter", "c_transporter", "total_amount"]
+        fields=[
+            "name",
+            "transporter",
+            "c_transporter",
+            "total_amount"
+        ]
     )
+
     if not incoming:
         return []
 
     logistics_map = {d.name: d for d in incoming}
     valid_logistics = list(logistics_map.keys())
 
-    # 🔥 Step 2: Already used Gate Entries
+    # Step 2: Already used Gate Entries
     used_gate_entries = frappe.db.sql("""
         SELECT DISTINCT pii.custom_gate_entry
         FROM `tabPurchase Invoice Item` pii
-        INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+        INNER JOIN `tabPurchase Invoice` pi
+            ON pi.name = pii.parent
         WHERE pi.docstatus = 1
         AND pi.supplier = %s
         AND pii.custom_gate_entry IS NOT NULL
@@ -627,7 +682,7 @@ def get_gate_entries_match_from_pi(supplier):
 
     used_list = [d.custom_gate_entry for d in used_gate_entries]
 
-    # 🔥 Step 3: Gate Entry filter
+    # Step 3: Gate Entry filter
     filters = {
         "docstatus": 1,
         "incoming_logistics": ["in", valid_logistics]
@@ -641,6 +696,7 @@ def get_gate_entries_match_from_pi(supplier):
         filters=filters,
         fields=[
             "name",
+            "document_nos",
             "incoming_logistics",
             "transport_service_item",
             "consignor",
@@ -648,21 +704,59 @@ def get_gate_entries_match_from_pi(supplier):
         ]
     )
 
-    # 🔥 Attach transporter + total_amount
+    # Step 4: Attach Incoming Logistics data
     for d in gate_entries:
+
         logistics = logistics_map.get(d["incoming_logistics"])
 
+        # Consignor
         consignor = d.get("consignor")
         consignor_customer = d.get("consignor_customer")
 
         if consignor not in (None, "", 0, "0"):
             d["consignor"] = consignor
+
         elif consignor_customer not in (None, "", 0, "0"):
             d["consignor"] = consignor_customer
-        else:
-            d["consignor"] = None  # better fallback
 
-        d["transporter"] = logistics.transporter or logistics.c_transporter
-        d["total_amount"] = logistics.total_amount if logistics else 0
+        else:
+            d["consignor"] = None
+
+        # Transporter
+        d["transporter"] = (
+            logistics.transporter or logistics.c_transporter
+            if logistics else None
+        )
+
+        # Total Amount
+        d["total_amount"] = (
+            logistics.total_amount
+            if logistics else 0
+        )
 
     return gate_entries
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_incoming_logistics_users(doctype, txt, searchfield, start, page_len, filters):
+
+    users = frappe.get_all(
+        "Incoming Logistics Users",
+        fields=["user"],
+        filters={
+            "parenttype": "TZU Setting"
+        }
+    )
+
+    user_list = [d.user for d in users]
+
+    return frappe.db.sql("""
+        SELECT name
+        FROM tabUser
+        WHERE name IN %(users)s
+        AND name LIKE %(txt)s
+    """, {
+        "users": tuple(user_list) if user_list else ("",),
+        "txt": f"%{txt}%"
+    })

@@ -19,11 +19,7 @@
     };
 
 })();
-frappe.ui.form.on("Sales Invoice", {
-    onload(frm) {
-        frm.__disable_scan_alerts = true;
-    }
-});
+
 /*************************************************
  * SALES INVOICE – ULTRA OPTIMIZED CLIENT SCRIPT
  *************************************************/
@@ -45,6 +41,9 @@ frappe.ui.form.on("Sales Invoice", {
 
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
+        if (frm.doc.custom_bulk_sales_return) {
+            frm.set_df_property("return_against", "hidden", 1);
+        }
 
         handle_inter_company_grn(frm);
         toggle_incoming_logistic_button(frm);
@@ -116,6 +115,7 @@ frappe.ui.form.on("Sales Invoice", {
 
         });
         make_total_qty_bold(frm);
+        
     },
     on_submit(frm) {
         // ✅ ensure button appears immediately after submit
@@ -125,6 +125,7 @@ frappe.ui.form.on("Sales Invoice", {
         check_delivery_note(frm);
     },
     onload(frm) {
+        frm.__disable_scan_alerts = true;
         make_total_qty_bold(frm);
 
         if (!frm.doc.is_return) return;
@@ -197,6 +198,37 @@ frappe.ui.form.on("Sales Invoice Item", {
 
         let row = locals[cdt][cdn];
         if (!row.item_code) return;
+        frappe.db.get_value("Item", row.item_code, [
+        "custom_count_of_pcs",
+        "custom_top_fabrics",
+        "custom_bottom_fabric",
+        "custom_dupatta_fabric",
+        ]).then(r => {
+
+        if (!r.message) return;
+
+        frappe.model.set_value(cdt, cdn, "custom_count_of_pcs", r.message.custom_count_of_pcs);
+        frappe.model.set_value(cdt, cdn, "custom_top_fabric", r.message.custom_top_fabrics);
+        frappe.model.set_value(cdt, cdn, "custom_bottom_fabric", r.message.custom_bottom_fabric);
+        frappe.model.set_value(cdt, cdn, "custom_dupatta_fabric", r.message.custom_dupatta_fabric);
+        
+        frappe.db.get_value(
+            "Item Price",
+          {
+                item_code: row.item_code,
+                price_list: "MRP"
+          },
+          "price_list_rate"
+      ).then(res => {
+          frappe.model.set_value(
+              cdt,
+              cdn,
+              "custom_mrp",
+              res.message ? res.message.price_list_rate : 0
+          );
+      });
+
+    });
 
         // 🔥 Add to queue instead of API call
         ITEM_FETCH_QUEUE.add(row.item_code);
@@ -736,6 +768,7 @@ let DISCOUNT_CACHE = {};
 function apply_discount_hide(frm, cdt, cdn) {
 
     let row = locals[cdt][cdn];
+    
     if (!row?.item_code) return;
 
     if (DISCOUNT_CACHE[row.item_code] !== undefined) {

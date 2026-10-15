@@ -127,7 +127,158 @@
 
 #new
 
+
+# import frappe
+
+
+# def execute(filters=None):
+#     if not filters:
+#         filters = {}
+
+#     columns = get_columns(filters)
+#     data = get_data(filters)
+#     chart = get_chart_data(data, filters)
+
+#     return columns, data, None, chart
+
+
+# # ------------------ COLUMNS ------------------
+# def get_columns(filters):
+#     metric = filters.get("metric") or "qty"
+#     period = filters.get("period") or "Monthly"
+
+#     cols = []
+
+#     # Period column
+#     if period in ["Monthly", "Quarterly", "Yearly"]:
+#         cols.append({
+#             "label": "Period",
+#             "fieldname": "period",
+#             "fieldtype": "Data",
+#             "width": 120
+#         })
+
+#     # Item Name
+#     cols.append({
+#         "label": "Item Name",
+#         "fieldname": "item_name",
+#         "fieldtype": "Data",
+#         "width": 250
+#     })
+
+#     # Metric column
+#     if metric == "qty":
+#         cols.append({
+#             "label": "Quantity",
+#             "fieldname": "qty",
+#             "fieldtype": "Float",
+#             "width": 150
+#         })
+#     elif metric == "amount":
+#         cols.append({
+#             "label": "Amount",
+#             "fieldname": "amount",
+#             "fieldtype": "Currency",
+#             "width": 150
+#         })
+
+#     return cols
+
+
+# # ------------------ DATA ------------------
+# def get_data(filters):
+#     limit = filters.get("limit") or 10
+#     metric = filters.get("metric") or "qty"
+#     period = filters.get("period") or "Monthly"
+
+#     from_date = filters.get("from_date")
+#     to_date = filters.get("to_date")
+#     company = filters.get("company")  
+
+#     if period == "Monthly":
+#         date_group = "DATE_FORMAT(si.posting_date, '%%Y-%%m')"
+#     elif period == "Quarterly":
+#         date_group = "CONCAT(YEAR(si.posting_date), '-Q', QUARTER(si.posting_date))"
+#     elif period == "Yearly":
+#         date_group = "YEAR(si.posting_date)"
+#     else:
+#         date_group = None
+
+#     select_fields = ["sii.item_name"]
+
+#     if metric == "qty":
+#         select_fields.append("SUM(sii.qty) AS qty")
+#     else:
+#         select_fields.append("SUM(sii.base_net_amount) AS amount")
+
+#     if date_group:
+#         select_fields.append(f"{date_group} AS period")
+
+#     group_by_fields = ["sii.item_name"]
+#     if date_group:
+#         group_by_fields.append(date_group)
+
+#     order_by = "qty DESC" if metric == "qty" else "amount DESC"
+
+#     conditions = "WHERE si.docstatus = 1 AND si.is_return = 0"
+#     params = []
+
+#     if from_date and to_date:
+#         conditions += " AND si.posting_date BETWEEN %s AND %s"
+#         params.extend([from_date, to_date])
+
+    
+#     if company:
+#         conditions += " AND si.company = %s"
+#         params.append(company)
+
+#     params.append(limit)
+
+#     data = frappe.db.sql(f"""
+#         SELECT {", ".join(select_fields)}
+#         FROM `tabSales Invoice Item` AS sii
+#         JOIN `tabSales Invoice` AS si
+#           ON sii.parent = si.name
+#         {conditions}
+#         GROUP BY {", ".join(group_by_fields)}
+#         ORDER BY {order_by}
+#         LIMIT %s
+#     """, tuple(params), as_dict=1)
+
+#     return data
+
+
+# # ------------------ CHART ------------------
+# def get_chart_data(data, filters):
+#     metric = filters.get("metric") or "qty"
+
+#     labels = [d["item_name"] for d in data]
+
+#     if metric == "qty":
+#         values = [d.get("qty", 0) for d in data]
+#         dataset_name = "Quantity"
+#     else:
+#         values = [d.get("amount", 0) for d in data]
+#         dataset_name = "Amount"
+
+#     return {
+#         "data": {
+#             "labels": labels,
+#             "datasets": [
+#                 {
+#                     "name": dataset_name,
+#                     "values": values
+#                 }
+#             ]
+#         },
+#         "type": "bar"
+#     }
+
+
+
 import frappe
+#from franchise_erp.utils.dashboard_permissions import get_allowed_company
+from franchise_erp.utils.dashboard_permissions import resolve_dashboard_source
 
 
 def execute(filters=None):
@@ -135,141 +286,228 @@ def execute(filters=None):
         filters = {}
 
     columns = get_columns(filters)
-    data = get_data(filters)
-    chart = get_chart_data(data, filters)
+    data    = get_data(filters)
+    chart   = get_chart_data(data, filters)
 
     return columns, data, None, chart
 
 
-# ------------------ COLUMNS ------------------
 def get_columns(filters):
     metric = filters.get("metric") or "qty"
     period = filters.get("period") or "Monthly"
 
     cols = []
 
-    # Period column
     if period in ["Monthly", "Quarterly", "Yearly"]:
         cols.append({
-            "label": "Period",
+            "label"    : "Period",
             "fieldname": "period",
             "fieldtype": "Data",
-            "width": 120
+            "width"    : 120
         })
 
-    # Item Name
     cols.append({
-        "label": "Item Name",
-        "fieldname": "item_name",
+        "label"    : "Style No.",
+        "fieldname": "style_no",
         "fieldtype": "Data",
-        "width": 250
+        "width"    : 150
     })
 
-    # Metric column
+    cols.append({
+        "label"    : "Department",
+        "fieldname": "department",
+        "fieldtype": "Data",
+        "width"    : 150
+    })
+
     if metric == "qty":
         cols.append({
-            "label": "Quantity",
+            "label"    : "Quantity",
             "fieldname": "qty",
             "fieldtype": "Float",
-            "width": 150
+            "width"    : 150
         })
-    elif metric == "amount":
+    else:  # amt
         cols.append({
-            "label": "Amount",
+            "label"    : "Amount",
             "fieldname": "amount",
             "fieldtype": "Currency",
-            "width": 150
+            "width"    : 150
         })
 
     return cols
 
 
-# ------------------ DATA ------------------
+# def get_data(filters):
+#     limit     = filters.get("limit") or 10
+#     metric    = filters.get("metric") or "qty"
+#     period    = filters.get("period") or "Monthly"
+#     from_date = filters.get("from_date")
+#     to_date   = filters.get("to_date")
+#     company   = get_allowed_company(filters)
+
+#     if period == "Monthly":
+#         date_group = "DATE_FORMAT(si.posting_date, '%%Y-%%m')"
+#     elif period == "Quarterly":
+#         date_group = "CONCAT(YEAR(si.posting_date), '-Q', QUARTER(si.posting_date))"
+#     elif period == "Yearly":
+#         date_group = "YEAR(si.posting_date)"
+#     else:
+#         date_group = None
+
+#     select_fields = [
+#         "i.custom_barcode_code AS style_no",
+#         "i.custom_departments  AS department",
+#         "i.image"
+#     ]
+
+#     if metric == "qty":
+#         select_fields.append("SUM(sii.qty) AS qty")
+#     else:
+#         select_fields.append("SUM(sii.base_net_amount) AS amount")
+
+#     if date_group:
+#         select_fields.append(f"{date_group} AS period")
+
+#     group_by_fields = ["i.custom_barcode_code"]
+#     if date_group:
+#         group_by_fields.append(date_group)
+
+#     order_by = "qty DESC" if metric == "qty" else "amount DESC"
+
+#     conditions = "WHERE si.docstatus = 1 AND si.is_return = 0"
+#     params = []
+
+#     if from_date and to_date:
+#         conditions += " AND si.posting_date BETWEEN %s AND %s"
+#         params.extend([from_date, to_date])
+
+#     if company:
+#         conditions += " AND si.company = %s"
+#         params.append(company)
+
+#     params.append(int(limit))
+
+#     data = frappe.db.sql(f"""
+#         SELECT {", ".join(select_fields)}
+#         FROM `tabSales Invoice Item` AS sii
+#         JOIN `tabSales Invoice` AS si
+#           ON sii.parent = si.name
+#         LEFT JOIN `tabItem` AS i
+#           ON i.item_code = sii.item_code
+#         {conditions}
+#         GROUP BY {", ".join(group_by_fields)}
+#         ORDER BY {order_by}
+#         LIMIT %s
+#     """, tuple(params), as_dict=1)
+
+#     for row in data:
+#         img = row.get("image")
+#         row["image_url"] = ("/" + img if img and not img.startswith("/") else img) or ""
+#         dept = row.get("department") or ""
+#         row["department"] = dept.split("-")[-1].strip() if dept else ""
+
+#     return data
+
 def get_data(filters):
-    limit = filters.get("limit") or 10
-    metric = filters.get("metric") or "qty"
-    period = filters.get("period") or "Monthly"
-
+    limit     = filters.get("limit") or 10
+    metric    = filters.get("metric") or "qty"
+    period    = filters.get("period") or "Monthly"
     from_date = filters.get("from_date")
-    to_date = filters.get("to_date")
+    to_date   = filters.get("to_date")
 
-    # Period grouping
+    company, doctype = resolve_dashboard_source(filters)
+
+    if doctype == "Sales Invoice":
+        parent_table, child_table, amount_field = "tabSales Invoice", "tabSales Invoice Item", "base_net_amount"
+    else:
+        parent_table, child_table, amount_field = "tabDelivery Note", "tabDelivery Note Item", "base_amount"
+
     if period == "Monthly":
-        date_group = "DATE_FORMAT(si.posting_date, '%%Y-%%m')"
+        date_group = "DATE_FORMAT(txn.posting_date, '%%Y-%%m')"
     elif period == "Quarterly":
-        date_group = "CONCAT(YEAR(si.posting_date), '-Q', QUARTER(si.posting_date))"
+        date_group = "CONCAT(YEAR(txn.posting_date), '-Q', QUARTER(txn.posting_date))"
     elif period == "Yearly":
-        date_group = "YEAR(si.posting_date)"
+        date_group = "YEAR(txn.posting_date)"
     else:
         date_group = None
 
-    # SELECT fields
-    select_fields = ["sii.item_name"]
+    select_fields = [
+        "i.custom_barcode_code AS style_no",
+        "i.custom_departments  AS department",
+        "i.image"
+    ]
 
     if metric == "qty":
-        select_fields.append("SUM(sii.qty) AS qty")
+        select_fields.append("SUM(item.qty) AS qty")
     else:
-        select_fields.append("SUM(sii.base_net_amount) AS amount")
+        select_fields.append(f"SUM(item.{amount_field}) AS amount")
 
     if date_group:
         select_fields.append(f"{date_group} AS period")
 
-    # GROUP BY
-    group_by_fields = ["sii.item_name"]
+    group_by_fields = ["i.custom_barcode_code"]
     if date_group:
         group_by_fields.append(date_group)
 
-    # ORDER BY
     order_by = "qty DESC" if metric == "qty" else "amount DESC"
 
-    # CONDITIONS
-    conditions = "WHERE si.docstatus = 1 AND si.is_return = 0"
-    params = []
+    conditions = "WHERE txn.docstatus = 1 AND txn.is_return = 0 AND txn.company = %s"
+    params = [company]
 
     if from_date and to_date:
-        conditions += " AND si.posting_date BETWEEN %s AND %s"
+        conditions += " AND txn.posting_date BETWEEN %s AND %s"
         params.extend([from_date, to_date])
 
-    # Add LIMIT param at end
-    params.append(limit)
+    params.append(int(limit))
 
-    # QUERY
     data = frappe.db.sql(f"""
         SELECT {", ".join(select_fields)}
-        FROM `tabSales Invoice Item` AS sii
-        JOIN `tabSales Invoice` AS si
-          ON sii.parent = si.name
+        FROM `{child_table}` AS item
+        JOIN `{parent_table}` AS txn
+          ON item.parent = txn.name
+        LEFT JOIN `tabItem` AS i
+          ON i.item_code = item.item_code
         {conditions}
         GROUP BY {", ".join(group_by_fields)}
         ORDER BY {order_by}
         LIMIT %s
     """, tuple(params), as_dict=1)
 
+    for row in data:
+        img = row.get("image")
+        row["image_url"] = ("/" + img if img and not img.startswith("/") else img) or ""
+        dept = row.get("department") or ""
+        row["department"] = dept.split("-")[-1].strip() if dept else ""
+
     return data
 
 
-# ------------------ CHART ------------------
 def get_chart_data(data, filters):
     metric = filters.get("metric") or "qty"
 
-    labels = [d["item_name"] for d in data]
+    if not data:
+        return {
+            "data": {
+                "labels"  : [],
+                "datasets": [{"name": "Top Items", "values": []}]
+            },
+            "type": "bar"
+        }
+
+    labels = [d.get("style_no") or "No Style" for d in data]
 
     if metric == "qty":
-        values = [d.get("qty", 0) for d in data]
+        values       = [float(d.get("qty") or 0) for d in data]
         dataset_name = "Quantity"
     else:
-        values = [d.get("amount", 0) for d in data]
+        values       = [float(d.get("amount") or 0) for d in data]
         dataset_name = "Amount"
 
     return {
         "data": {
-            "labels": labels,
-            "datasets": [
-                {
-                    "name": dataset_name,
-                    "values": values
-                }
-            ]
+            "labels"  : labels,
+            "datasets": [{"name": dataset_name, "values": values}]
         },
         "type": "bar"
     }

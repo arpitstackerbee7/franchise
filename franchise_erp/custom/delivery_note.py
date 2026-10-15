@@ -2,10 +2,16 @@ import frappe
 from frappe.model.naming import make_autoname
 import re
 from datetime import datetime
-from frappe.utils import nowdate, flt, getdate, today
+from frappe.utils import nowdate, flt, getdate, today, cstr
 
 #for 2 get 1 free item
 def set_promo_group_id(doc, method=None):
+    
+    if doc.get("custom_stock_taking"):
+        return
+    # Skip for Internal Customer
+    if doc.customer and frappe.db.get_value("Customer", doc.customer, "is_internal_customer"):
+        return
     # Agar koi free item hi nahi hai → koi promo nahi
     has_free_item = any(item.is_free_item for item in doc.items)
 
@@ -21,6 +27,13 @@ def set_promo_group_id(doc, method=None):
 #for 2 buy 1 item discount like 20%
 
 def set_percent_off_promo_flags(doc, method=None):
+    
+    if doc.get("custom_stock_taking"):
+        return
+    # Skip for Internal Customer
+    if doc.customer and frappe.db.get_value("Customer", doc.customer, "is_internal_customer"):
+        return
+    
     discounted_items = []
 
     for item in doc.items:
@@ -48,31 +61,81 @@ def set_percent_off_promo_flags(doc, method=None):
 
 
 
+# def set_dn_naming_series(doc, method=None):
+
+#     # Clean abbreviation (allow only letters & numbers)
+#     abbr = re.sub(r"[^A-Za-z0-9]", "", doc.custom_abbr or "")
+
+#     # ✅ Get Financial Year (26-27)
+#     fy = frappe.defaults.get_user_default("fiscal_year")
+
+#     if fy and "-" in fy:
+#         start, end = fy.split("-")
+#         fy_code = f"{start[-2:]}-{end[-2:]}"
+#     else:
+#         year = datetime.now().year
+#         fy_code = f"{str(year)[-2:]}-{str(year+1)[-2:]}"
+
+#     # ✅ Apply FY to ALL series
+#     if doc.is_return:
+#         series = f"DRET-{abbr}-{fy_code}-"
+#     elif abbr:
+#         series = f"DN-{abbr}-{fy_code}-"
+#     else:
+#         series = f"DN-{fy_code}-"
+
+#     doc.naming_series = series
 def set_dn_naming_series(doc, method=None):
 
-    # Clean abbreviation (allow only letters & numbers)
-    abbr = re.sub(r"[^A-Za-z0-9]", "", doc.custom_abbr or "")
+    # ---------------------------------------------------------
+    # CLEAN ABBREVIATION
+    # ---------------------------------------------------------
+    abbr = re.sub(
+        r"[^A-Za-z0-9]",
+        "",
+        doc.custom_abbr or ""
+    )
 
-    # ✅ Get Financial Year (26-27)
+    # ---------------------------------------------------------
+    # GET FINANCIAL YEAR
+    # ---------------------------------------------------------
     fy = frappe.defaults.get_user_default("fiscal_year")
 
     if fy and "-" in fy:
+
         start, end = fy.split("-")
         fy_code = f"{start[-2:]}-{end[-2:]}"
-    else:
-        year = datetime.now().year
-        fy_code = f"{str(year)[-2:]}-{str(year+1)[-2:]}"
 
-    # ✅ Apply FY to ALL series
-    if doc.is_return:
-        series = f"DRET-{abbr}-{fy_code}-"
-    elif abbr:
-        series = f"DN-{abbr}-{fy_code}-"
     else:
+
+        year = datetime.now().year
+        fy_code = f"{str(year)[-2:]}-{str(year + 1)[-2:]}"
+
+    # ---------------------------------------------------------
+    # RETURN DELIVERY NOTE
+    # ---------------------------------------------------------
+    if doc.is_return:
+
+        if abbr:
+            series = f"DRET-{abbr}-{fy_code}-"
+        else:
+            series = f"DRET-{fy_code}-"
+
+    # ---------------------------------------------------------
+    # NORMAL DELIVERY NOTE
+    # ---------------------------------------------------------
+    elif abbr:
+
+        series = f"DN-{abbr}-{fy_code}-"
+
+    else:
+
         series = f"DN-{fy_code}-"
 
-    doc.naming_series = series
-    
+    # ---------------------------------------------------------
+    # SET NAMING SERIES
+    # ---------------------------------------------------------
+    doc.naming_series = series   
 # def set_dn_naming_series(doc, method):
 #     if doc.is_return:
 #         doc.naming_series = "DRET-.YY.-"
@@ -198,20 +261,176 @@ def get_delivery_note_by_serial(serial):
     return [d[0] for d in invoices]
 
 
-def create_credit_note_from_dn(doc, method):
-    """Create Sales Invoice (Credit Note) from Delivery Note Return"""
+
+# def create_credit_note_from_dn(doc, method):
+#     """Create Sales Invoice (Credit Note) from Delivery Note Return"""
+
+#     if not doc.is_return:
+#         return
+#     if not doc.custom_bulk_sales_return:
+#         return
+#     if not doc.items:
+#         return
+
+#     # 🔹 Create Sales Invoice
+#     si = frappe.new_doc("Sales Invoice")
+
+#     # 🔹 Header fields
+#     si.is_return = 1
+#     si.company = doc.company
+#     si.customer = doc.customer
+#     si.update_billed_amount_in_delivery_note = 1
+#     si.posting_date = doc.posting_date
+#     si.posting_time = doc.posting_time
+#     si.currency = doc.currency
+#     si.conversion_rate = doc.conversion_rate
+#     si.update_stock = 0
+
+#     # 🔥 Add items
+#     for dn_item in doc.items:
+
+#         if not dn_item.qty:
+#             continue
+
+#         si.append("items", {
+#             "item_code": dn_item.item_code,
+#             "item_name": dn_item.item_name,
+#             "description": dn_item.description,
+#             "uom": dn_item.uom,
+#             "stock_uom": dn_item.stock_uom,
+
+#             # 🔥 Negative qty
+#             "qty": -abs(dn_item.qty),
+#             "stock_qty": -abs(dn_item.qty),
+
+#             "rate": dn_item.rate,
+#             "base_rate": dn_item.base_rate,
+
+#             # 🔗 Links
+#             "delivery_note": doc.name,
+#             "dn_detail": dn_item.name,
+#             "sales_order": dn_item.against_sales_order,
+
+#             "warehouse": dn_item.warehouse,
+#             "item_tax_template": dn_item.item_tax_template,
+#             # Amount
+#             "amount": -abs(dn_item.amount),
+#             "base_amount": -abs(dn_item.base_amount),
+#         })
+#     si.set_missing_values()
+#     si.insert(ignore_permissions=True)
+
+#     frappe.msgprint(f"✅ Credit Note Created: {si.name}")
+
+
+# =============================================================================
+# CREATE CREDIT NOTE FROM DELIVERY NOTE RETURN
+# =============================================================================
+
+def create_credit_note_from_dn(
+    doc,
+    method=None
+):
+    """
+    Create Sales Invoice Credit Note from Delivery Note Return.
+
+    IMPORTANT:
+
+    This legacy flow is preserved only when a Bulk Sales Return
+    does NOT already have a Sales Invoice Return.
+
+    For the current Bulk Sales Return flow:
+
+        Bulk Sales Return
+              ↓
+        Consolidated SI Return
+              ↓
+        DN Return
+              ↓
+        DN Return Submit
+
+    Therefore, when a Bulk-linked SI Return already exists,
+    this function must NOT create another Sales Invoice.
+    """
+
+    if not doc:
+        return
+
+    # -------------------------------------------------------------------------
+    # Must be a return DN
+    # -------------------------------------------------------------------------
 
     if not doc.is_return:
         return
-    if not doc.custom_bulk_sales_return:
+
+    # -------------------------------------------------------------------------
+    # Only Bulk Sales Return linked DN
+    # -------------------------------------------------------------------------
+
+    bulk_sales_return = doc.get(
+        "custom_bulk_sales_return"
+    )
+
+    if not bulk_sales_return:
         return
+
+    # -------------------------------------------------------------------------
+    # No items
+    # -------------------------------------------------------------------------
+
     if not doc.items:
         return
 
-    # 🔹 Create Sales Invoice
-    si = frappe.new_doc("Sales Invoice")
+    # =========================================================================
+    # CHECK EXISTING BULK SALES INVOICE RETURN
+    # =========================================================================
+    #
+    # The current Bulk flow already creates ONE consolidated SI Return.
+    #
+    # Therefore:
+    #
+    #     Bulk SI Return exists
+    #             +
+    #     DN Return submitted
+    #
+    # MUST NOT create another SI Return.
+    #
+    # =========================================================================
 
-    # 🔹 Header fields
+    existing_bulk_si_return = frappe.db.exists(
+        "Sales Invoice",
+        {
+            "custom_bulk_sales_return": bulk_sales_return,
+            "is_return": 1,
+            "docstatus": ["in", [0, 1]]
+        }
+    )
+
+    if existing_bulk_si_return:
+
+        frappe.logger().info(
+            (
+                f"Delivery Note Return {doc.name}: "
+                f"Skipping Credit Note creation. "
+                f"Bulk Sales Return {bulk_sales_return} already has "
+                f"Sales Invoice Return {existing_bulk_si_return}."
+            )
+        )
+
+        return
+
+    # =========================================================================
+    # LEGACY CREDIT NOTE CREATION
+    # =========================================================================
+    #
+    # Kept as fallback for old Bulk DN flow where no SI Return exists.
+    #
+    # =========================================================================
+
+    si = frappe.new_doc(
+        "Sales Invoice"
+    )
+
     si.is_return = 1
     si.company = doc.company
     si.customer = doc.customer
@@ -222,44 +441,62 @@ def create_credit_note_from_dn(doc, method):
     si.conversion_rate = doc.conversion_rate
     si.update_stock = 0
 
-    # 🔥 Add items
+    # -------------------------------------------------------------------------
+    # Add DN Return items
+    # -------------------------------------------------------------------------
+
     for dn_item in doc.items:
 
         if not dn_item.qty:
             continue
 
-        si.append("items", {
-            "item_code": dn_item.item_code,
-            "item_name": dn_item.item_name,
-            "description": dn_item.description,
-            "uom": dn_item.uom,
-            "stock_uom": dn_item.stock_uom,
+        si.append(
+            "items",
+            {
+                "item_code": dn_item.item_code,
+                "item_name": dn_item.item_name,
+                "description": dn_item.description,
+                "uom": dn_item.uom,
+                "stock_uom": dn_item.stock_uom,
+                "qty": -abs(
+                    dn_item.qty
+                ),
+                "stock_qty": -abs(
+                    dn_item.qty
+                ),
+                "rate": dn_item.rate,
+                "base_rate": dn_item.base_rate,
+                "delivery_note": doc.name,
+                "dn_detail": dn_item.name,
+                "sales_order": dn_item.against_sales_order,
+                "warehouse": dn_item.warehouse,
+                "item_tax_template": dn_item.item_tax_template,
+                "amount": -abs(
+                    dn_item.amount
+                ),
+                "base_amount": -abs(
+                    dn_item.base_amount
+                ),
+            }
+        )
 
-            # 🔥 Negative qty
-            "qty": -abs(dn_item.qty),
-            "stock_qty": -abs(dn_item.qty),
+    if not si.items:
+        return
 
-            "rate": dn_item.rate,
-            "base_rate": dn_item.base_rate,
-
-            # 🔗 Links
-            "delivery_note": doc.name,
-            "dn_detail": dn_item.name,
-            "sales_order": dn_item.against_sales_order,
-
-            "warehouse": dn_item.warehouse,
-            "item_tax_template": dn_item.item_tax_template,
-            # Amount
-            "amount": -abs(dn_item.amount),
-            "base_amount": -abs(dn_item.base_amount),
-        })
     si.set_missing_values()
-    si.insert(ignore_permissions=True)
 
-    frappe.msgprint(f"✅ Credit Note Created: {si.name}")
+    si.flags.ignore_permissions = True
 
+    si.insert(
+        ignore_permissions=True
+    )
 
-
+    frappe.logger().info(
+        (
+            f"Credit Note {si.name} created from "
+            f"Delivery Note Return {doc.name}."
+        )
+    )
 
 
 # def validate_internal_customer_credit(doc, method):
@@ -418,6 +655,9 @@ def validate_internal_customer_credit(doc, method):
     # Skip conditions
     if doc.is_return or not doc.customer:
         return
+    
+    if doc.get("custom_stock_taking"):
+        return
 
     # ===============================
     # ONLY INTERNAL CUSTOMER
@@ -567,3 +807,391 @@ def validate_internal_customer_credit(doc, method):
             title="Credit Validation Failed",
             msg="<br>".join(messages)
         )
+
+# # margin calculation code
+# def apply_sis_pricing_delivery_note(doc, method=None):
+
+#     if not frappe.db.get_single_value(
+#         "TZU Setting",
+#         "is_margin_calculate_on_dn"
+#     ):
+#         return
+
+#     if not doc.customer:
+#         return
+
+#     if not frappe.db.get_value(
+#         "Customer",
+#         doc.customer,
+#         "is_internal_customer"
+#     ):
+#         return
+
+#     if not doc.items or doc.get("packed_items"):
+#         return
+
+#     from franchise_erp.custom.sales_invoice import (
+#         calculate_sis_values,
+#         get_item_tax_template,
+#     )
+
+#     for item in doc.items:
+
+#         if not item.item_code:
+#             continue
+
+#         if abs(flt(item.rate)) <= 0:
+#             continue
+
+#         if item.get("custom_product_bundle"):
+#             continue
+
+#         original_rate = abs(flt(item.price_list_rate or item.rate))
+
+#         d = calculate_sis_values(doc.customer, original_rate)
+
+#         if not d:
+#             continue
+
+#         item.custom_output_gst_ = d["gst_percent"]
+#         item.custom_output_gst_value = d["output_gst_value"]
+#         item.custom_net_sale_value = d["net_sale_value"]
+#         item.custom_margins_ = d["margin_percent"]
+#         item.custom_margin_amount = d["margin_amount"]
+#         item.custom_total_invoice_amount = d["taxable_value"]
+
+#         item.rate = d["taxable_value"]
+
+#         item.discount_percentage = 0
+#         item.discount_amount = 0
+
+#         item.amount = flt(
+#             item.qty * item.rate,
+#             item.precision("amount")
+#         )
+
+#         template = get_item_tax_template(d["gst_percent"])
+
+#         if template:
+#             item.item_tax_template = template
+#             # item.item_tax_rate = "{}"   <-- REMOVE THIS
+
+#         item.custom_sis_calculated = 1
+#         item.custom_sis_done_calculated = 1
+
+#     # Loop ke baad
+#     doc.set_missing_values()
+
+#     if hasattr(doc, "calculate_taxes_and_totals"):
+#         doc.calculate_taxes_and_totals()
+
+#     for row in doc.items:
+#         row.discount_percentage = 0
+#         # row.discount_amount = 0
+
+
+def apply_sis_pricing_delivery_note(doc, method=None):
+
+    # Run only when enabled in TZU Settings
+    if not frappe.db.get_single_value(
+        "TZU Setting",
+        "is_margin_calculate_on_dn"
+    ):
+        return
+
+    if not doc.customer:
+        return
+
+    # Run only for Internal Customers
+    if not frappe.db.get_value(
+        "Customer",
+        doc.customer,
+        "is_internal_customer"
+    ):
+        return
+
+    if not doc.items:
+        return
+
+    if doc.get("packed_items"):
+        return
+
+    from franchise_erp.custom.sales_invoice import (
+        calculate_sis_values,
+        get_item_tax_template,
+    )
+
+    for item in doc.items:
+
+        if not item.item_code:
+            continue
+
+        if abs(flt(item.rate)) <= 0:
+            continue
+
+        if item.get("custom_product_bundle"):
+            continue
+
+        original_rate = abs(
+            flt(item.price_list_rate or item.rate)
+        )
+
+        d = calculate_sis_values(
+            doc.customer,
+            original_rate
+        )
+
+        if not d:
+            continue
+
+        # ==========================
+        # DISPLAY FIELDS
+        # ==========================
+
+        item.custom_output_gst_ = d["gst_percent"]
+        item.custom_output_gst_value = d["output_gst_value"]
+        item.custom_net_sale_value = d["net_sale_value"]
+        item.custom_margins_ = d["margin_percent"]
+        item.custom_margin_amount = d["margin_amount"]
+        item.custom_total_invoice_amount = d["taxable_value"]
+
+        # ==========================
+        # RATE
+        # ==========================
+
+        item.rate = d["taxable_value"]
+
+        # Discount fields
+        item.discount_percentage = 0
+        item.discount_amount = 0
+
+        # Amount ERPNext automatically calculate karega
+        # item.amount = flt(
+        #     item.qty * item.rate,
+        #     item.precision("amount")
+        # )
+
+        item.custom_sis_calculated = 1
+        item.custom_sis_done_calculated = 1
+
+    doc.set_missing_values()
+
+    if hasattr(doc, "calculate_taxes_and_totals"):
+     doc.calculate_taxes_and_totals()
+
+    # Force discount fields after all calculations
+    for item in doc.items:
+        item.discount_percentage = 0
+        # item.discount_amount = 0
+        
+        
+        
+def apply_sis_pricing_delivery_note_for_stock_take(
+    doc,
+    method=None
+):
+
+    # =====================================================
+    # CONDITION 1:
+    # Stock Taking Settings me
+    # is_margin_calculate_on_dn checked hona chahiye
+    # =====================================================
+
+    if not frappe.db.get_single_value(
+        "Stock Taking Settings",
+        "is_margin_calculate_on_dn"
+    ):
+        return
+
+    # =====================================================
+    # CONDITION 2:
+    # Customer required
+    # =====================================================
+
+    if not doc.customer:
+        return
+
+    # =====================================================
+    # CONDITION 3:
+    # Customer INTERNAL nahi hona chahiye
+    # =====================================================
+
+    is_internal_customer = frappe.db.get_value(
+        "Customer",
+        doc.customer,
+        "is_internal_customer"
+    )
+
+    if is_internal_customer:
+        return
+
+    # =====================================================
+    # CONDITION 4:
+    # Delivery Note Stock Taking se linked hona chahiye
+    # =====================================================
+
+    stock_taking = doc.get(
+        "custom_stock_taking"
+    )
+
+    if not stock_taking:
+        return
+
+    # =====================================================
+    # CONDITION 5:
+    # Stock Taking Reason filled hona chahiye
+    #
+    # Draft DN create hone ke time reason blank ho sakta hai.
+    # User reason fill karke Save karega.
+    # Us time before_validate me SIS calculation chalegi.
+    # =====================================================
+
+    if not doc.get(
+        "custom_stock_taking_reason"
+    ):
+        return
+
+    # =====================================================
+    # ITEMS REQUIRED
+    # =====================================================
+
+    if not doc.items:
+        return
+
+    # =====================================================
+    # PACKED ITEMS
+    # =====================================================
+
+    if doc.get("packed_items"):
+        return
+
+    # =====================================================
+    # IMPORT STOCK TAKING SIS FUNCTION
+    # =====================================================
+
+    from franchise_erp.custom.sales_invoice import (
+        calculate_sis_values_for_stock_take,
+    )
+
+    # =====================================================
+    # SIS CALCULATION
+    # =====================================================
+
+    for item in doc.items:
+
+        # -------------------------------------------------
+        # ITEM CODE REQUIRED
+        # -------------------------------------------------
+
+        if not item.item_code:
+            continue
+
+        # -------------------------------------------------
+        # PRODUCT BUNDLE SKIP
+        # -------------------------------------------------
+
+        if item.get(
+            "custom_product_bundle"
+        ):
+            continue
+
+        # -------------------------------------------------
+        # ORIGINAL RATE
+        #
+        # price_list_rate ko priority denge because
+        # item.rate SIS calculation ke baad change ho sakta hai.
+        # -------------------------------------------------
+
+        original_rate = abs(
+            flt(
+                item.price_list_rate
+                or item.rate
+            )
+        )
+
+        if original_rate <= 0:
+            continue
+
+        # -------------------------------------------------
+        # CALCULATE STOCK TAKING SIS
+        # -------------------------------------------------
+
+        d = calculate_sis_values_for_stock_take(
+            doc.customer,
+            original_rate,
+            stock_taking
+        )
+
+        if not d:
+            continue
+
+        # =================================================
+        # DISPLAY FIELDS
+        # =================================================
+
+        item.custom_output_gst_ = d[
+            "gst_percent"
+        ]
+
+        item.custom_output_gst_value = d[
+            "output_gst_value"
+        ]
+
+        item.custom_net_sale_value = d[
+            "net_sale_value"
+        ]
+
+        item.custom_margins_ = d[
+            "margin_percent"
+        ]
+
+        item.custom_margin_amount = d[
+            "margin_amount"
+        ]
+
+        item.custom_total_invoice_amount = d[
+            "taxable_value"
+        ]
+
+        # =================================================
+        # RATE
+        # =================================================
+
+        item.rate = d[
+            "taxable_value"
+        ]
+
+        # =================================================
+        # DISCOUNT
+        # =================================================
+
+        item.discount_percentage = 0
+        item.discount_amount = 0
+
+        # =================================================
+        # SIS FLAGS
+        # =================================================
+
+        item.custom_sis_calculated = 1
+        item.custom_sis_done_calculated = 1
+
+    # =====================================================
+    # ERPNext CALCULATIONS
+    # =====================================================
+
+    doc.set_missing_values()
+
+    if hasattr(
+        doc,
+        "calculate_taxes_and_totals"
+    ):
+        doc.calculate_taxes_and_totals()
+
+    # =====================================================
+    # FORCE DISCOUNT = 0
+    # =====================================================
+
+    for item in doc.items:
+
+        item.discount_percentage = 0
+        # item.discount_amount = 0

@@ -263,36 +263,50 @@ def apply_tzu_setting(doc, method):
 
     stock_uom = (doc.stock_uom or "").strip()
 
-    # RESET FLAGS
-    doc.has_serial_no = 0
-    doc.has_batch_no = 0
-    doc.create_new_batch = 0
-    doc.serial_no_series = ""
-    doc.batch_number_series = ""
-
+    # RESPECT MANUAL SELECTION OR AUTOMATICALLY ASSIGN BASED ON STOCK UOM
     prefix = tzu.serialno_series or "T"
     random_series = random.randint(100000, 999999)
 
-    # ✅ SERIAL MATCH
-    if stock_uom in serial_uom_list:
-        doc.has_serial_no = 1
-        doc.serial_no_series = f"{prefix}{random_series}.#####"
-
-    # ✅ BATCH MATCH
-    elif stock_uom in batch_uom_list:
-        doc.has_batch_no = 1
+    if doc.has_serial_no:
+        if not doc.serial_no_series:
+            doc.serial_no_series = f"{prefix}{random_series}.#####"
+        if doc.has_batch_no:
+            doc.create_new_batch = 1
+            if not doc.batch_number_series:
+                doc.batch_number_series = f"{prefix}{random_series}.#####"
+        else:
+            doc.has_batch_no = 0
+            doc.create_new_batch = 0
+            doc.batch_number_series = ""
+    elif doc.has_batch_no:
         doc.create_new_batch = 1
-        doc.batch_number_series = f"{prefix}{random_series}.#####"
-
-    #NOT CONFIGURED → BLOCK SAVE
+        if not doc.batch_number_series:
+            doc.batch_number_series = f"{prefix}{random_series}.#####"
+        doc.has_serial_no = 0
+        doc.serial_no_series = ""
     else:
-        frappe.throw(
-            f"""
-            Stock UOM <b>{stock_uom}</b> is not configured.<br><br>
-            <b>Serial No UOMs:</b> {", ".join(serial_uom_list) or "None"}<br>
-            <b>Batch UOMs:</b> {", ".join(batch_uom_list) or "None"}
-            """
-        )
+        # Automatic UOM matching if neither is manually checked
+        if stock_uom in serial_uom_list:
+            doc.has_serial_no = 1
+            doc.serial_no_series = f"{prefix}{random_series}.#####"
+            doc.has_batch_no = 0
+            doc.create_new_batch = 0
+            doc.batch_number_series = ""
+        elif stock_uom in batch_uom_list:
+            doc.has_batch_no = 1
+            doc.create_new_batch = 1
+            doc.batch_number_series = f"{prefix}{random_series}.#####"
+            doc.has_serial_no = 0
+            doc.serial_no_series = ""
+        else:
+            # NOT CONFIGURED → BLOCK SAVE
+            frappe.throw(
+                f"""
+                Stock UOM <b>{stock_uom}</b> is not configured.<br><br>
+                <b>Serial No UOMs:</b> {", ".join(serial_uom_list) or "None"}<br>
+                <b>Batch UOMs:</b> {", ".join(batch_uom_list) or "None"}
+                """
+            )
 
 
 def get_next_series(base_code):

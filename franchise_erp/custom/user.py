@@ -1,18 +1,22 @@
-
 import frappe
 from frappe import _
 
 
 def validate_user_roles(doc, method=None):
 
-    # current logged in user
+    # =====================================================
+    # Administrator bypass
+    # =====================================================
+
     current_user = frappe.session.user
 
-    # Administrator bypass
     if current_user == "Administrator":
         return
 
-    # get enabled User Role Viewer docs
+    # =====================================================
+    # Get User Role Viewer
+    # =====================================================
+
     viewer_docs = frappe.get_all(
         "User Role Viewer",
         filters={
@@ -25,36 +29,123 @@ def validate_user_roles(doc, method=None):
     if not viewer_docs:
         return
 
-    restricted_roles = []
+    # =====================================================
+    # ROLE PROFILE
+    # =====================================================
 
-    # get checked restricted roles
+    restricted_roles = set()
+
     for viewer in viewer_docs:
 
         rows = frappe.get_all(
             "User Role Viewer Detail",
             filters={
                 "parent": viewer,
+                "parenttype": "User Role Viewer",
                 "check": 1
             },
             pluck="role"
         )
 
-        restricted_roles.extend(rows)
+        restricted_roles.update(
+            role for role in rows if role
+        )
 
-    if not restricted_roles:
-        return
+    # =====================================================
+    # MODULE PROFILE
+    # =====================================================
 
-    # roles selected in User form
-    assigned_roles = [d.role for d in doc.roles]
+    restricted_modules = set()
 
-    # restricted roles match
-    blocked_roles = list(
-        set(assigned_roles) & set(restricted_roles)
+    for viewer in viewer_docs:
+
+        rows = frappe.get_all(
+            "User Module Profile Viewer Detail",
+            filters={
+                "parent": viewer,
+                "parenttype": "User Role Viewer",
+                "check": 1
+            },
+            pluck="role"
+        )
+
+        restricted_modules.update(
+            module for module in rows if module
+        )
+
+    # =====================================================
+    # CHECK USER ROLES
+    # =====================================================
+
+    assigned_roles = {
+        row.role
+        for row in doc.roles
+        if row.role
+    }
+
+    blocked_roles = assigned_roles.intersection(
+        restricted_roles
     )
 
     if blocked_roles:
 
         frappe.throw(
-            _("You are not allowed to assign these roles:<br><b>{0}</b>")
-            .format(", ".join(blocked_roles))
+            _(
+                "You are not allowed to assign these roles:<br><b>{0}</b>"
+            ).format(
+                ", ".join(sorted(blocked_roles))
+            )
         )
+
+    # =====================================================
+    # CHECK USER MODULE PROFILE
+    # =====================================================
+
+    user_module_profile = doc.module_profile
+
+    if (
+        user_module_profile
+        and restricted_modules
+    ):
+
+        # Get selected Module Profile
+        module_profile_doc = frappe.get_doc(
+            "Module Profile",
+            user_module_profile
+        )
+
+        # Modules blocked by selected Module Profile
+        blocked_modules = {
+            row.module
+            for row in module_profile_doc.block_modules
+            if row.module
+        }
+
+        # Modules allowed by selected Module Profile
+        all_modules = frappe.get_all(
+            "Module Def",
+            fields=["name"]
+        )
+
+        allowed_modules = {
+            row.name
+            for row in all_modules
+            if row.name not in blocked_modules
+        }
+
+        # Check whether restricted modules are accessible
+        restricted_access = (
+            allowed_modules.intersection(
+                restricted_modules
+            )
+        )
+
+        if restricted_access:
+
+            frappe.throw(
+                _(
+                    "You are not allowed to use these modules:<br><b>{0}</b>"
+                ).format(
+                    ", ".join(sorted(restricted_access))
+                )
+            )

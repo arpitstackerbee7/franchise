@@ -77,10 +77,6 @@ frappe.ui.form.on("Shipment", {
 
                 try {
 
-                    if (frm.is_new()) {
-                        await frm.save();
-                    }
-
                     let res = await frappe.call({
                         method: "franchise_erp.custom.dtdc.create_shipment",
                         args: {
@@ -89,111 +85,128 @@ frappe.ui.form.on("Shipment", {
                     });
 
                     if (res.message) {
-                        await frm.set_value("awb_number", res.message);
-                        await frm.save();
 
-                        frappe.msgprint("✅ AWB Generated Successfully");
+                        frappe.msgprint({
+                            title: __("Success"),
+                            message: __("AWB {0} generated successfully.", [
+                                res.message
+                            ]),
+                            indicator: "green"
+                        });
+
+                        // 🔥 Backend already saved AWB
+                        // Refresh form from database
+                        await frm.reload_doc();
                     }
 
                 } catch (e) {
-                    console.error(e);
-                    frappe.msgprint("❌ Failed to create shipment");
-                }
 
-                frappe.dom.unfreeze();
+                    console.error(e);
+
+                    frappe.msgprint({
+                        title: __("Error"),
+                        message: __("Failed to create DTDC shipment"),
+                        indicator: "red"
+                    });
+
+                } finally {
+                    frappe.dom.unfreeze();
+                }
             });
         }
 
-        // if (frm.doc.awb_number) {
+        if (frm.doc.awb_number) {
 
-        // frm.add_custom_button("Track Shipment", async () => {
+        frm.add_custom_button("Track Shipment", async () => {
 
-        //         let res = await frappe.call({
-        //             method: "franchise_erp.custom.dtdc.track",
-        //             args: {
-        //                 awb: frm.doc.awb_number
-        //             }
-        //         });
+                let res = await frappe.call({
+                    method: "franchise_erp.custom.dtdc.track",
+                    args: {
+                        awb: frm.doc.awb_number
+                    }
+                });
 
-        //         let data = res.message;
+                let data = res.message;
 
-        //         if (!data || !data.trackHeader) {
-        //             frappe.msgprint("❌ No tracking data found");
-        //             return;
-        //         }
+                if (!data || !data.trackHeader) {
+                    frappe.msgprint("❌ No tracking data found");
+                    return;
+                }
 
-        //         let header = data.trackHeader;
-        //         let details = data.trackDetails || [];
+                let header = data.trackHeader;
+                let details = data.trackDetails || [];
 
-        //         // 🔹 HEADER HTML
-        //         let html = `
-        //             <div style="padding:10px">
+                // 🔹 HEADER HTML
+                let html = `
+                    <div style="padding:10px">
 
-        //                 <b>AWB No:</b> ${header.strShipmentNo || "-"}<br>
-        //                 <b>Status:</b> <span style="color:green;font-weight:bold">
-        //                     ${header.strStatus || "-"}
-        //                 </span><br>
-        //                 <b>Origin:</b> ${header.strOrigin || "-"}<br>
-        //                 <b>Booking Date:</b> ${formatDTDCDate(header.strBookedDate)} ${header.strBookedTime || ""}<br>
-        //                 <b>Weight:</b> ${header.strWeight || "-"} ${header.strWeightUnit || ""}<br>
+                        <b>AWB No:</b> ${header.strShipmentNo || "-"}<br>
+                        <b>Status:</b> <span style="color:green;font-weight:bold">
+                            ${header.strStatus || "-"}
+                        </span><br>
+                        <b>Origin:</b> ${header.strOrigin || "-"}<br>
+                        <b>Booking Date:</b> ${formatDTDCDate(header.strBookedDate)} ${header.strBookedTime || ""}<br>
+                        <b>Weight:</b> ${header.strWeight || "-"} ${header.strWeightUnit || ""}<br>
 
-        //                 <hr>
-        //                 <h4>📍 Tracking Timeline</h4>
+                        <hr>
+                        <h4>📍 Tracking Timeline</h4>
 
-        //                 <table style="width:100%; border-collapse: collapse;">
-        //                     <thead>
-        //                         <tr style="background:#f5f5f5">
-        //                             <th style="padding:8px; border:1px solid #ddd;">Date</th>
-        //                             <th style="padding:8px; border:1px solid #ddd;">Time</th>
-        //                             <th style="padding:8px; border:1px solid #ddd;">Location</th>
-        //                             <th style="padding:8px; border:1px solid #ddd;">Status</th>
-        //                         </tr>
-        //                     </thead>
-        //                     <tbody>
-        //         `;
+                        <table style="width:100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background:#f5f5f5">
+                                    <th style="padding:8px; border:1px solid #ddd;">Date</th>
+                                    <th style="padding:8px; border:1px solid #ddd;">Time</th>
+                                    <th style="padding:8px; border:1px solid #ddd;">Location</th>
+                                    <th style="padding:8px; border:1px solid #ddd;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
 
-        //         // 🔹 LOOP DETAILS
-        //         details.forEach(d => {
-        //             html += `
-        //                 <tr>
-        //                     <td style="padding:8px; border:1px solid #ddd;">${d.strActionDate || "-"}</td>
-        //                     <td style="padding:8px; border:1px solid #ddd;">${d.strActionTime || "-"}</td>
-        //                     <td style="padding:8px; border:1px solid #ddd;">${d.strOrigin || "-"}</td>
-        //                     <td style="padding:8px; border:1px solid #ddd;">${d.strAction || "-"}</td>
-        //                 </tr>
-        //             `;
-        //         });
+                // 🔹 LOOP DETAILS
+                details.forEach(d => {
+                    html += `
+                        <tr>
+                            <td style="padding:8px; border:1px solid #ddd;">${d.strActionDate || "-"}</td>
+                            <td style="padding:8px; border:1px solid #ddd;">${d.strActionTime || "-"}</td>
+                            <td style="padding:8px; border:1px solid #ddd;">${d.strOrigin || "-"}</td>
+                            <td style="padding:8px; border:1px solid #ddd;">${d.strAction || "-"}</td>
+                        </tr>
+                    `;
+                });
 
-        //         html += `
-        //                     </tbody>
-        //                 </table>
-        //             </div>
-        //         `;
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
 
-        //         // 🔹 SHOW DIALOG
-        //         let d = new frappe.ui.Dialog({
-        //             title: "📦 Shipment Tracking",
-        //             size: "large",
-        //             fields: [
-        //                 {
-        //                     fieldtype: "HTML",
-        //                     fieldname: "tracking_html"
-        //                 }
-        //             ]
-        //         });
+                // 🔹 SHOW DIALOG
+                let d = new frappe.ui.Dialog({
+                    title: "📦 Shipment Tracking",
+                    size: "large",
+                    fields: [
+                        {
+                            fieldtype: "HTML",
+                            fieldname: "tracking_html"
+                        }
+                    ]
+                });
 
-        //         d.fields_dict.tracking_html.$wrapper.html(html);
-        //         d.show();
-        //     });
-        // }
+                d.fields_dict.tracking_html.$wrapper.html(html);
+                d.show();
+            });
+        }
 
         if (frm.doc.docstatus === 1 && frm.doc.awb_number) {
 
-            frm.add_custom_button("Download Label", () => {
+            frm.add_custom_button(__("Download Label"), function () {
 
-                window.open(
-                    `/api/method/franchise_erp.custom.dtdc.download_label?awb=${frm.doc.awb_number}`
-                );
+                const url =
+                    `/api/method/franchise_erp.custom.dtdc.download_label` +
+                    `?awb=${encodeURIComponent(frm.doc.awb_number)}`;
+
+                window.open(url, "_blank");
 
             });
         }
@@ -232,7 +245,9 @@ frappe.ui.form.on("Shipment", {
 
             });
         }
-    }
+    },
+
+    
 });
 
 function formatDTDCDate(dateStr) {
@@ -262,3 +277,148 @@ function formatDTDCTime(timeStr) {
 
     return `${hour}:${min} ${ampm}`;
 }
+
+
+frappe.ui.form.on("Shipment", {
+
+    // =====================================================
+    // DELIVERY TO TYPE
+    // =====================================================
+
+    delivery_to_type: function(frm) {
+
+        frm.set_value(
+            "delivery_customer",
+            ""
+        );
+
+        frm.set_value(
+            "delivery_address_name",
+            ""
+        );
+
+        frm.set_value(
+            "delivery_contact_name",
+            ""
+        );
+
+    },
+
+
+    // =====================================================
+    // CUSTOMER / SUPPLIER CHANGE
+    // =====================================================
+
+    delivery_customer: function(frm) {
+
+        if (!frm.doc.delivery_customer) {
+
+            frm.set_value(
+                "delivery_address_name",
+                ""
+            );
+
+            frm.set_value(
+                "delivery_contact_name",
+                ""
+            );
+
+            return;
+        }
+
+        // -------------------------------------------------
+        // DETERMINE PARTY TYPE
+        // -------------------------------------------------
+
+        let party_type = "";
+
+        if (frm.doc.delivery_to_type === "Customer") {
+
+            party_type = "Customer";
+
+        }
+        else if (frm.doc.delivery_to_type === "Supplier") {
+
+            party_type = "Supplier";
+
+        }
+        else {
+
+            frappe.msgprint(
+                __("Please select Delivery To Type first.")
+            );
+
+            return;
+        }
+
+
+        // -------------------------------------------------
+        // FETCH ADDRESS + CONTACT
+        // -------------------------------------------------
+
+        frappe.call({
+
+            method:
+                "franchise_erp.custom.shipment.get_delivery_address_contact",
+
+            args: {
+                party_type: party_type,
+                party_name: frm.doc.delivery_customer
+            },
+
+            callback: function(r) {
+
+                if (!r.message) {
+                    return;
+                }
+
+                // -----------------------------------------
+                // ADDRESS
+                // -----------------------------------------
+
+                if (r.message.address) {
+
+                    frm.set_value(
+                        "delivery_address_name",
+                        r.message.address
+                    );
+
+                }
+                else {
+
+                    frm.set_value(
+                        "delivery_address_name",
+                        ""
+                    );
+
+                }
+
+
+                // -----------------------------------------
+                // CONTACT
+                // -----------------------------------------
+
+                if (r.message.contact) {
+
+                    frm.set_value(
+                        "delivery_contact_name",
+                        r.message.contact
+                    );
+
+                }
+                else {
+
+                    frm.set_value(
+                        "delivery_contact_name",
+                        ""
+                    );
+
+                }
+
+            }
+
+        });
+
+    }
+
+});

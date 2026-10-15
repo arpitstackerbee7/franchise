@@ -20,6 +20,34 @@ frappe.ui.form.on("Item", {
         } else {
             frm.set_value("custom_colour_code", "");
         }
+    },
+    has_serial_no(frm) {
+        if (frm.doc.has_serial_no) {
+            if (!frm.doc.serial_no_series) {
+                frappe.db.get_single_value('TZU Setting', 'serialno_series').then(prefix => {
+                    if (!prefix) prefix = 'T';
+                    let random_series = Math.floor(100000 + Math.random() * 900000);
+                    frm.set_value('serial_no_series', `${prefix}${random_series}.#####`);
+                });
+            }
+        } else {
+            frm.set_value('serial_no_series', '');
+        }
+    },
+    has_batch_no(frm) {
+        if (frm.doc.has_batch_no) {
+            frm.set_value('create_new_batch', 1);
+            if (!frm.doc.batch_number_series) {
+                frappe.db.get_single_value('TZU Setting', 'serialno_series').then(prefix => {
+                    if (!prefix) prefix = 'T';
+                    let random_series = Math.floor(100000 + Math.random() * 900000);
+                    frm.set_value('batch_number_series', `${prefix}${random_series}.#####`);
+                });
+            }
+        } else {
+            frm.set_value('create_new_batch', 0);
+            frm.set_value('batch_number_series', '');
+        }
     }
 });
 

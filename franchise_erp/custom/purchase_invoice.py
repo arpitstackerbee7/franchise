@@ -7,6 +7,8 @@ from frappe.utils import today
 
 from frappe.utils import  getdate
 from erpnext.accounts.doctype.purchase_invoice.purchase_invoice import PurchaseInvoice
+from frappe.model.naming import make_autoname
+from frappe.utils import cint
 
 class CustomPurchaseInvoice(PurchaseInvoice):
 
@@ -27,17 +29,64 @@ class CustomPurchaseInvoice(PurchaseInvoice):
 
         else:
             super().set_expense_account(for_validate)
+    # def autoname(self):
+    #     if self.custom_is_credit_note:
+    #         from franchise_erp.utils.fy_naming import get_fy_short, get_doc_date
+
+    #         date = get_doc_date(self)
+    #         fy = get_fy_short(date)
+
+    #         if fy:
+    #             self.name = make_autoname(f"PDC/{fy}/.####")
     def autoname(self):
+        from franchise_erp.utils.fy_naming import get_fy_short, get_doc_date
+
+        date = get_doc_date(self)
+        fy = get_fy_short(date)
+
+        if not fy:
+            return
+
+        # Credit Note
         if self.custom_is_credit_note:
-            from frappe.model.naming import make_autoname
-            from franchise_erp.utils.fy_naming import get_fy_short, get_doc_date
+            self.name = make_autoname(f"PDC/{fy}/.####")
+            return
 
-            date = get_doc_date(self)
-            fy = get_fy_short(date)
+        has_gate_entry = any(
+            item.custom_gate_entry
+            for item in self.items
+        )
 
-            if fy:
-                self.name = make_autoname(f"PDC/{fy}/.####")
+        has_outgoing_logistics = any(
+            item.custom_outgoing_logistics
+            for item in self.items
+        )
+
+        if has_gate_entry or has_outgoing_logistics:
+            self.name = make_autoname(f"SPL/{fy}/.#####")
+            return
+
+    # otherwise default naming_series
     # else → do nothing, Frappe will auto-handle naming_series
+
+    # def set_naming_series(doc, method):
+    #     all_service = True
+
+    #     for d in doc.items:
+    #         item_group = frappe.db.get_value(
+    #             "Item",
+    #             d.item_code,
+    #             "item_group"
+    #         )
+
+    #         if item_group != "All Item Groups-Services":
+    #             all_service = False
+    #             break
+
+    #     if all_service:
+    #         doc.naming_series = "SPI/.FY./."
+    #     else:
+    #         doc.naming_series = "PI/.FY./."
 
 def set_buffer_due_date(doc, method):
     if not doc.supplier or not doc.due_date:
@@ -193,6 +242,28 @@ def create_pi_from_gate_entry(gate_entry):
     pi.save()
     return pi.name
 
+def update_gate_entry_purchase_invoice(doc, method=None):
+    updated_gate_entries = set()
+    updated_outgoing_logistics = set()
+
+    for item in doc.items:
+        if item.custom_gate_entry and item.custom_gate_entry not in updated_gate_entries:
+            frappe.db.set_value(
+                "Gate Entry",
+                item.custom_gate_entry,
+                "purchase_invoice",
+                doc.name
+            )
+            updated_gate_entries.add(item.custom_gate_entry)
+
+        if item.custom_outgoing_logistics and item.custom_outgoing_logistics not in updated_outgoing_logistics:
+            frappe.db.set_value(
+                "Outgoing Logistics",
+                item.custom_outgoing_logistics,
+                "purchase_invoice",
+                doc.name
+            )
+            updated_outgoing_logistics.add(item.custom_outgoing_logistics)
 
 import frappe
 from frappe.utils import flt
@@ -261,30 +332,70 @@ def get_purchase_invoice_city(purchase_invoice):
     return None
 
 
+# def sync_merged_discounts(doc, method=None):
+#     if not doc.items:
+#         return
+
+#     total_pr_discount = 0.0
+#     unique_prs = set()
+
+#     for item in doc.items:
+#         if item.purchase_receipt and item.purchase_receipt not in unique_prs:
+#             pr_discount = frappe.db.get_value("Purchase Receipt", item.purchase_receipt, "discount_amount")
+#             if pr_discount:
+#                 total_pr_discount += flt(pr_discount)
+#             unique_prs.add(item.purchase_receipt)
+
+#     if total_pr_discount > 0:
+#         final_discount = flt(total_pr_discount, 2)
+        
+#         doc.apply_discount_on = "Grand Total"
+#         doc.discount_amount = final_discount
+#         doc.base_discount_amount = final_discount * flt(doc.conversion_rate or 1)
+
+#         doc.set_missing_values()
+        
+#         for item in doc.items:
+#             item.run_method("calculate_net_amount") 
+
+#         doc.calculate_taxes_and_totals()
+
+from frappe.utils import flt
+import frappe
+
 def sync_merged_discounts(doc, method=None):
     if not doc.items:
         return
 
     total_pr_discount = 0.0
     unique_prs = set()
+    apply_discount_on = None
 
     for item in doc.items:
         if item.purchase_receipt and item.purchase_receipt not in unique_prs:
-            pr_discount = frappe.db.get_value("Purchase Receipt", item.purchase_receipt, "discount_amount")
-            if pr_discount:
-                total_pr_discount += flt(pr_discount)
+            pr_doc = frappe.get_doc("Purchase Receipt", item.purchase_receipt)
+
+            if pr_doc.discount_amount:
+                total_pr_discount += flt(pr_doc.discount_amount)
+
+            # First Purchase Receipt se Apply Discount On lo
+            if not apply_discount_on:
+                apply_discount_on = pr_doc.apply_discount_on
+
             unique_prs.add(item.purchase_receipt)
 
     if total_pr_discount > 0:
         final_discount = flt(total_pr_discount, 2)
-        
-        doc.apply_discount_on = "Grand Total"
+
+        # PR ka Apply Discount On preserve karo
+        doc.apply_discount_on = apply_discount_on or "Net Total"
+
         doc.discount_amount = final_discount
         doc.base_discount_amount = final_discount * flt(doc.conversion_rate or 1)
 
         doc.set_missing_values()
-        
+
         for item in doc.items:
-            item.run_method("calculate_net_amount") 
+            item.run_method("calculate_net_amount")
 
         doc.calculate_taxes_and_totals()

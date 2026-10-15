@@ -6,27 +6,45 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "for_items_section",
   "serialno_series",
   "serial_no_uom",
   "product_bundle_series",
   "box_barcode_series",
   "transport_service_item",
-  "sis_debit_note_company",
-  "sis_debit_note_supplier",
-  "sis_debit_note_creditors",
-  "whatsapp_no",
-  "incoming_logistics_users",
+  "all_counters_name_show_on_supplier",
+  "update_items_allowed_roles",
   "column_break_dltx",
   "item_name",
   "batch_uom",
   "enter_series_length",
   "box_barcode_series_length",
   "item_restricted_roles",
-  "update_items_allowed_roles",
-  "all_counters_name_show_on_supplier",
+  "enabled_features_section",
+  "is_user_login_with_otp",
   "enable_geo_location",
+  "enable_pricing_rule",
+  "column_break_qyul",
   "enable_whatsapp_notification",
-  "is_credit_note_account"
+  "enable_whatsapp_group_notification",
+  "is_margin_calculate_on_dn",
+  "enable_po_notification",
+  "dynamic_set_value_section",
+  "sis_debit_note_supplier",
+  "sis_debit_note_company",
+  "sis_debit_note_creditors",
+  "incoming_logistics_users",
+  "column_break_ahji",
+  "dashboard_company",
+  "is_credit_note_account",
+  "employee_payable_account",
+  "whatsapp_no",
+  "for_reports_section",
+  "counter_store_level_performance",
+  "column_break_evnp",
+  "individual_sales_representative_incentives",
+  "section_break_eiab",
+  "financial_statement_account_mapping"
  ],
  "fields": [
   {
@@ -162,13 +180,110 @@
    "fieldtype": "Table",
    "label": "Incoming Logistics Users",
    "options": "Incoming Logistics Users"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_user_login_with_otp",
+   "fieldtype": "Check",
+   "label": "Is User Login with OTP"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_whatsapp_group_notification",
+   "fieldtype": "Check",
+   "label": "Enable Whatsapp Group Notification"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_pricing_rule",
+   "fieldtype": "Check",
+   "label": "Enable Pricing Rule"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_margin_calculate_on_dn",
+   "fieldtype": "Check",
+   "label": "Is Margin Calculate On DN"
+  },
+  {
+   "fieldname": "individual_sales_representative_incentives",
+   "fieldtype": "Table",
+   "label": "Individual Sales Representative Incentives",
+   "options": "Individual Sales Representative Incentives"
+  },
+  {
+   "fieldname": "counter_store_level_performance",
+   "fieldtype": "Table",
+   "label": "Counter Store Level Performance",
+   "options": "Counter Store Level Performance"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_po_notification",
+   "fieldtype": "Check",
+   "label": "Enable PO Notification"
+  },
+  {
+   "fieldname": "dashboard_company",
+   "fieldtype": "Link",
+   "label": "Dashboard Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "section_break_eiab",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "fieldname": "financial_statement_account_mapping",
+   "fieldtype": "Table",
+   "label": "Financial Statement Account Mapping",
+   "options": "Financial Statement Account Mapping"
+  },
+  {
+   "fieldname": "employee_payable_account",
+   "fieldtype": "Link",
+   "label": "Employee Payable Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "for_items_section",
+   "fieldtype": "Section Break",
+   "label": "For Items"
+  },
+  {
+   "fieldname": "enabled_features_section",
+   "fieldtype": "Section Break",
+   "label": "Enabled Features"
+  },
+  {
+   "fieldname": "column_break_qyul",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dynamic_set_value_section",
+   "fieldtype": "Section Break",
+   "label": "Dynamic Set Value"
+  },
+  {
+   "fieldname": "column_break_ahji",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "for_reports_section",
+   "fieldtype": "Section Break",
+   "label": "For Reports"
+  },
+  {
+   "fieldname": "column_break_evnp",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-07 12:19:00.025085",
+ "modified": "2026-09-18 13:17:23.911657",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",

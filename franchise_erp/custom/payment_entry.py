@@ -13,12 +13,11 @@ def apply_early_payment_discount(doc, method):
 
         pi = frappe.get_doc("Purchase Invoice", ref.reference_name)
 
-        # ✅ Decide last eligible discount date
+        # Decide last eligible discount date
         discount_upto_date = (
             pi.custom_buffer_due_date or pi.due_date
         )
 
-        # Normalize & compare dates
         if getdate(doc.posting_date) > getdate(discount_upto_date):
             continue
 
@@ -34,7 +33,7 @@ def apply_early_payment_discount(doc, method):
 
         discount_percent = supplier.custom_allow_cash_discount_
 
-        # ✅ Decide discount base
+        # Decide discount base
         if supplier.custom_applied_on == "Taxable Amount":
             invoice_base = pi.net_total
         elif supplier.custom_applied_on == "Grand Total":
@@ -42,7 +41,7 @@ def apply_early_payment_discount(doc, method):
         else:
             continue
 
-        # ✅ Maximum discount allowed per invoice
+        # Maximum discount allowed
         max_discount = invoice_base * discount_percent / 100
 
         already_used = pi.custom_cash_discount_applied or 0
@@ -51,7 +50,7 @@ def apply_early_payment_discount(doc, method):
         if remaining <= 0:
             continue
 
-        # ✅ Proportional discount on this payment
+        # Discount on current payment
         eligible_base = ref.allocated_amount
         discount_on_payment = eligible_base * discount_percent / 100
 
@@ -60,20 +59,62 @@ def apply_early_payment_discount(doc, method):
         if discount <= 0:
             continue
 
-        # 🔒 Track discount usage (one-time, cumulative)
+        # Update PI
         pi.db_set(
             "custom_cash_discount_applied",
             already_used + discount,
             update_modified=False
         )
 
-        # 📘 Create Debit Note
-        create_discount_debit_note(pi, discount, pi.company)
+        # Create Discount Journal Entry
+        create_discount_debit_note(pi, discount, pi.company, doc)
 
+        # Store original values
+        original_invoice_total = doc.total_allocated_amount or 0
+        original_paid_amount = doc.paid_amount or 0
+        original_base_paid_amount = doc.base_paid_amount or 0
 
+        # Store original invoice amount
+        doc.db_set(
+            "custom_invoice_total",
+            original_invoice_total,
+            update_modified=False
+        )
 
+        # Store discount amount
+        doc.db_set(
+            "custom_discount_amount",
+            discount,
+            update_modified=False
+        )
 
-def create_discount_debit_note(pi, discount_amount, company):
+        # Update Total Allocated Amount
+        doc.db_set(
+            "total_allocated_amount",
+            original_invoice_total - discount,
+            update_modified=False
+        )
+
+        # Update Paid Amount
+        doc.db_set(
+            "paid_amount",
+            original_paid_amount - discount,
+            update_modified=False
+        )
+
+        # Update Base Paid Amount
+        doc.db_set(
+            "base_paid_amount",
+            original_base_paid_amount - discount,
+            update_modified=False
+        )
+
+def set_invoice_total(doc, method=None):
+    if not doc.custom_invoice_total:
+        doc.custom_invoice_total = doc.total_allocated_amount
+
+def create_discount_debit_note(pi, discount_amount, company, payment_entry):
+    frappe.msgprint(f"Payment Entry: {payment_entry.name}")
 
     template_name = frappe.db.get_value(
         "Journal Entry Template",
@@ -90,6 +131,7 @@ def create_discount_debit_note(pi, discount_amount, company):
     template = frappe.get_doc("Journal Entry Template", template_name)
 
     je = frappe.new_doc("Journal Entry")
+    je.custom_payment_entry = payment_entry.name
     je.voucher_type = "Debit Note"
     je.posting_date = today()
 
@@ -100,7 +142,6 @@ def create_discount_debit_note(pi, discount_amount, company):
             "account": row.account
         }
 
-        # ✅ Supplier Payable line
         if row.account == pi.credit_to:
             supplier_line_found = True
             acc.update({
@@ -111,7 +152,6 @@ def create_discount_debit_note(pi, discount_amount, company):
                 "reference_name": pi.name
             })
 
-        # ✅ Discount / Income line
         else:
             acc.update({
                 "credit_in_account_currency": discount_amount
@@ -128,22 +168,92 @@ def create_discount_debit_note(pi, discount_amount, company):
     je.submit()
 
 
+    return je.name
+
+
 # by mayuri
+# def validate_duplicate_cheque_no(doc, method=None):
+#     """
+#     Validation to prevent duplicate Cheque/Reference No for 'Pay' type Payment Entries.
+#     Checks against Draft (0) and Submitted (1) documents.
+#     """
+#     if doc.payment_type == "Pay" and doc.reference_no:
+#         duplicate = frappe.db.get_value("Payment Entry", {
+#             "reference_no": doc.reference_no,
+#             "payment_type": "Pay",
+#             "company": doc.company,
+#             "name": ["!=", doc.name],
+#             "docstatus": ["<", 2]  # 0 = Draft, 1 = Submitted
+#         }, "name")
+
+#         if duplicate:
+#             msg = _("The Cheque/Reference No {0} is already used in Payment Entry {1}. "
+#                     "Duplicate entries are not allowed for 'Pay' type unless the existing entry is cancelled.")
+#             frappe.throw(msg.format(frappe.bold(doc.reference_no), frappe.bold(duplicate)))
+
+import frappe
+from frappe import _
+from frappe.utils import cstr
+
 def validate_duplicate_cheque_no(doc, method=None):
     """
-    Validation to prevent duplicate Cheque/Reference No for 'Pay' type Payment Entries.
-    Checks against Draft (0) and Submitted (1) documents.
+    Prevent duplicate cheque/reference no for same bank account.
+    Same cheque no allowed in different banks.
     """
+
     if doc.payment_type == "Pay" and doc.reference_no:
-        duplicate = frappe.db.get_value("Payment Entry", {
-            "reference_no": doc.reference_no,
+
+        duplicate_filters = {
+            "reference_no": cstr(doc.reference_no).strip(),
             "payment_type": "Pay",
             "company": doc.company,
+            "paid_from": doc.paid_from,   # ✅ same bank account only
             "name": ["!=", doc.name],
-            "docstatus": ["<", 2]  # 0 = Draft, 1 = Submitted
-        }, "name")
+            "docstatus": ["<", 2]
+        }
+
+        duplicate = frappe.db.get_value(
+            "Payment Entry",
+            duplicate_filters,
+            "name"
+        )
 
         if duplicate:
-            msg = _("The Cheque/Reference No {0} is already used in Payment Entry {1}. "
-                    "Duplicate entries are not allowed for 'Pay' type unless the existing entry is cancelled.")
-            frappe.throw(msg.format(frappe.bold(doc.reference_no), frappe.bold(duplicate)))
+            frappe.throw(_(
+                "Cheque/Reference No {0} is already used in Payment Entry {1} "
+                "for the same Bank Account. Duplicate cheque no is not allowed "
+                "within the same bank account unless the existing entry is cancelled."
+            ).format(
+                frappe.bold(doc.reference_no),
+                frappe.bold(duplicate)
+            ))
+            
+            
+from erpnext.accounts.doctype.payment_entry.payment_entry import PaymentEntry
+
+
+class CustomPaymentEntry(PaymentEntry):
+
+    def validate(self):
+        super().validate()
+
+        # -----------------------------------------
+        # YOUR EXISTING CUSTOM VALIDATION CODE
+        # -----------------------------------------
+
+        # jo bhi aapka existing code hai,
+        # wo yahin rahega
+
+
+    def validate_transaction_reference(self):
+        # RTGS + specific ICICI account
+        # Reference No and Reference Date not mandatory
+
+        if (
+            self.mode_of_payment == "RTGS"
+            and self.paid_from == "ICICI BANK RTGS (TZULPL) - TZUPL"
+        ):
+            return
+
+        # Other cases -> ERPNext core validation
+        super().validate_transaction_reference()

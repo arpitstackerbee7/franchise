@@ -22,12 +22,25 @@
 #         )
 
 
+# import frappe
+
+# def set_session_company_from_user():
+#     user = frappe.session.user
+
+#     if user in ["Guest", "Administrator"]:
+#         return
+
+#     frappe.logger().info(
+#         f"Login successful for {user}"
+#     )
+
+
 import frappe
 
 def set_session_company_from_user():
     user = frappe.session.user
 
-    if user in ["Guest", "Administrator","System User"]:
+    if user in ["Guest", "Administrator"]:
         return
 
     # 🔥 User master se company uthao
@@ -45,5 +58,4 @@ def set_session_company_from_user():
     frappe.logger().info(
         f"✅ Session company force-set from User master: {user_company} for {user}"
     )
-
 

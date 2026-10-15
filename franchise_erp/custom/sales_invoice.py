@@ -1,27 +1,178 @@
 import frappe
 from frappe.utils import flt, cint
 
+# @frappe.whitelist()
+# def calculate_sis_values(customer, rate):
+#     # ---------------- BASIC CHECK ----------------
+#     if not customer or not rate:
+#         return None
+
+#     user_type = frappe.db.get_value(
+#         "User", frappe.session.user, "user_type"
+#     )
+#     if user_type == "Website User":
+#         return None
+
+#     # ---------------- CUSTOMER → COMPANY ----------------
+#     company = frappe.db.get_value(
+#         "Customer", customer, "represents_company"
+#     )
+#     if not company:
+#         return None
+
+#     # ---------------- SIS CONFIG ----------------
+#     c = frappe.get_value(
+#         "SIS Configuration",
+#         {"company": company},
+#         [
+#             "output_gst_min_net_rate",
+#             "output_gst_max_net_rate",
+#             "fresh_margin",
+#         ],
+#         as_dict=True,
+#     )
+
+#     if not c:
+#         return None
+
+#     rate = flt(rate)
+
+#     # ---------------- OUTPUT GST SLAB ----------------
+#     if rate <= flt(c.output_gst_min_net_rate):
+#         gst_percent = 5
+#     elif rate >= flt(c.output_gst_max_net_rate):
+#         gst_percent = 18
+#     else:
+#         gst_percent = 12
+
+#     # ---------------- GST INCLUSIVE SPLIT ----------------
+#     net_sale_value = flt((rate * 100) / (100 + gst_percent), 2)
+#     gst_value = flt(rate - net_sale_value, 2)
+
+#     # ---------------- MARGIN (ON MRP) ----------------
+#     margin_percent = flt(c.fresh_margin)
+#     margin_amount = flt((rate * margin_percent) / 100, 2)
+
+#     # ---------------- FINAL TAXABLE VALUE ----------------
+#     taxable_value = flt(net_sale_value - margin_amount, 2)
+
+#     return {
+#         "gst_percent": gst_percent,
+#         "output_gst_value": gst_value,
+#         "margin_percent": margin_percent,
+#         "margin_amount": margin_amount,
+#         "net_sale_value": net_sale_value,
+#         "taxable_value": taxable_value,
+#     }
+
+
+# def apply_sis_pricing(doc, method=None):
+
+#     # if doc.is_return:
+#     #     return
+    
+#     if not doc.customer or not doc.items:
+#         return
+
+#     # ❌ Product Bundle case skip
+#     if doc.get("packed_items"):
+#         return
+
+#     for item in doc.items:
+
+#         # Already calculated → skip
+#         if item.custom_sis_calculated:
+#             continue
+
+#         # Rate must exist
+#         if not item.rate or item.rate <= 0:
+#             continue
+
+#         # Product bundle line skip
+#         if item.custom_product_bundle:
+#             continue
+
+#         d = calculate_sis_values(doc.customer, item.rate)
+#         if not d:
+#             continue
+
+#         # -------- DISPLAY FIELDS --------
+#         item.custom_output_gst_ = d["gst_percent"]
+#         item.custom_output_gst_value = d["output_gst_value"]
+#         item.custom_net_sale_value = d["net_sale_value"]
+#         item.custom_margins_ = d["margin_percent"]
+#         item.custom_margin_amount = d["margin_amount"]
+#         item.custom_total_invoice_amount = d["taxable_value"]
+
+#         # -------- FINAL RATE --------
+#         item.rate = d["taxable_value"]
+
+#         # -------- TAX TEMPLATE --------
+#         item.item_tax_template = get_item_tax_template(
+#             d["gst_percent"]
+#         )
+
+#         item.custom_sis_calculated = 1
+
+#     doc.calculate_taxes_and_totals()
+
+
+# def get_item_tax_template(gst_percent):
+#     if gst_percent == 5:
+#         return "GST 5%"
+#     elif gst_percent == 18:
+#         return "GST 18%"
+#     elif gst_percent == 12:
+#         return "GST 12%"
+#     else:
+#         return "GST 0%"
+
+
+import frappe
+
+from frappe.utils import flt, cstr
+
+
 @frappe.whitelist()
 def calculate_sis_values(customer, rate):
-    # ---------------- BASIC CHECK ----------------
+
+    # ==================================================
+    # BASIC CHECK
+    # ==================================================
+
     if not customer or not rate:
         return None
 
+    if frappe.session.user == "Guest":
+        return None
+
     user_type = frappe.db.get_value(
-        "User", frappe.session.user, "user_type"
+        "User",
+        frappe.session.user,
+        "user_type"
     )
+
     if user_type == "Website User":
         return None
 
-    # ---------------- CUSTOMER → COMPANY ----------------
+    # ==================================================
+    # CUSTOMER → COMPANY
+    # ==================================================
+
     company = frappe.db.get_value(
-        "Customer", customer, "represents_company"
+        "Customer",
+        customer,
+        "represents_company"
     )
+
     if not company:
         return None
 
-    # ---------------- SIS CONFIG ----------------
-    c = frappe.get_value(
+    # ==================================================
+    # SIS CONFIG
+    # ==================================================
+
+    c = frappe.db.get_value(
         "SIS Configuration",
         {"company": company},
         [
@@ -35,26 +186,59 @@ def calculate_sis_values(customer, rate):
     if not c:
         return None
 
-    rate = flt(rate)
+    # ALWAYS POSITIVE FOR CALCULATION
 
-    # ---------------- OUTPUT GST SLAB ----------------
+    rate = abs(flt(rate))
+
+    # ==================================================
+    # GST SLAB
+    # ==================================================
+
     if rate <= flt(c.output_gst_min_net_rate):
+
         gst_percent = 5
+
     elif rate >= flt(c.output_gst_max_net_rate):
+
         gst_percent = 18
+
     else:
+
         gst_percent = 12
 
-    # ---------------- GST INCLUSIVE SPLIT ----------------
-    net_sale_value = flt((rate * 100) / (100 + gst_percent), 2)
-    gst_value = flt(rate - net_sale_value, 2)
+    # ==================================================
+    # GST SPLIT
+    # ==================================================
 
-    # ---------------- MARGIN (ON MRP) ----------------
+    net_sale_value = flt(
+        (rate * 100) / (100 + gst_percent),
+        2
+    )
+
+    gst_value = flt(
+        rate - net_sale_value,
+        2
+    )
+
+    # ==================================================
+    # MARGIN
+    # ==================================================
+
     margin_percent = flt(c.fresh_margin)
-    margin_amount = flt((rate * margin_percent) / 100, 2)
 
-    # ---------------- FINAL TAXABLE VALUE ----------------
-    taxable_value = flt(net_sale_value - margin_amount, 2)
+    margin_amount = flt(
+        (rate * margin_percent) / 100,
+        2
+    )
+
+    # ==================================================
+    # FINAL TAXABLE
+    # ==================================================
+
+    taxable_value = flt(
+        net_sale_value - margin_amount,
+        2
+    )
 
     return {
         "gst_percent": gst_percent,
@@ -68,63 +252,191 @@ def calculate_sis_values(customer, rate):
 
 def apply_sis_pricing(doc, method=None):
 
-    # if doc.is_return:
-    #     return
-    
-    if not doc.customer or not doc.items:
+    if not doc.customer:
         return
 
-    # ❌ Product Bundle case skip
+    if not doc.items:
+        return
+
+    # ==================================================
+    # PRODUCT BUNDLE SKIP
+    # ==================================================
+
     if doc.get("packed_items"):
         return
 
     for item in doc.items:
 
-        # Already calculated → skip
-        if item.custom_sis_calculated:
+        if not item.item_code:
             continue
 
-        # Rate must exist
-        if not item.rate or item.rate <= 0:
+        if abs(flt(item.rate)) <= 0:
             continue
 
-        # Product bundle line skip
-        if item.custom_product_bundle:
+        if item.get("custom_product_bundle"):
             continue
 
-        d = calculate_sis_values(doc.customer, item.rate)
+
+        # ==========================================
+        # SKIP IF MARGIN ALREADY APPLIED ON DELIVERY NOTE
+        # ==========================================
+
+        if item.dn_detail:
+            margin_done = frappe.db.get_value(
+                "Delivery Note Item",
+                item.dn_detail,
+                "custom_sis_calculated"
+            )
+
+            if margin_done:
+                continue
+        # ==================================================
+        # RUN ONLY FIRST TIME
+        # RUN AGAIN ONLY IF SERIAL NO CHANGED
+        # ==================================================
+
+        current_serial = cstr(
+            item.serial_no
+        ).strip()
+
+        old_serial = cstr(
+            item.get("custom_last_serial_no")
+        ).strip()
+
+        if (
+            item.get("custom_sis_done_calculated")
+            and current_serial == old_serial
+        ):
+            continue
+
+        # SAVE CURRENT SERIAL
+
+        item.custom_last_serial_no = current_serial
+
+        # ==================================================
+        # ORIGINAL RATE
+        # ==================================================
+
+        original_rate = abs(
+            flt(item.price_list_rate or item.rate)
+        )
+
+        d = calculate_sis_values(
+            doc.customer,
+            original_rate
+        )
+
         if not d:
             continue
 
-        # -------- DISPLAY FIELDS --------
+        # ==================================================
+        # DISPLAY FIELDS
+        # ==================================================
+
         item.custom_output_gst_ = d["gst_percent"]
+
         item.custom_output_gst_value = d["output_gst_value"]
+
         item.custom_net_sale_value = d["net_sale_value"]
+
         item.custom_margins_ = d["margin_percent"]
+
         item.custom_margin_amount = d["margin_amount"]
+
         item.custom_total_invoice_amount = d["taxable_value"]
 
-        # -------- FINAL RATE --------
-        item.rate = d["taxable_value"]
+        # ==================================================
+        # FINAL RATE
+        # ==================================================
 
-        # -------- TAX TEMPLATE --------
-        item.item_tax_template = get_item_tax_template(
+        final_rate = d["taxable_value"]
+
+        # RETURN INVOICE
+        # ONLY RATE NEGATIVE
+        # DO NOT TOUCH DISCOUNT FIELDS
+        # ERPNext handles remaining calculation
+
+        if doc.get("is_return"):
+
+            item.rate = final_rate
+
+        else:
+
+            item.rate = final_rate
+
+        # ==================================================
+        # IMPORTANT
+        # ==================================================
+
+        item.discount_percentage = 0
+        item.discount_amount = 0
+
+        # ==================================================
+        # AMOUNT
+        # ==================================================
+
+        item.amount = flt(
+            item.qty * item.rate,
+            item.precision("amount")
+        )
+
+        # ==================================================
+        # TAX TEMPLATE
+        # ==================================================
+
+        template = get_item_tax_template(
             d["gst_percent"]
         )
 
+        if template:
+            item.item_tax_template = template
+
+        # ==================================================
+        # FLAGS
+        # ==================================================
+
         item.custom_sis_calculated = 1
+
+        item.custom_sis_done_calculated = 1
+
+    # ==================================================
+    # IMPORTANT FOR V15
+    # ==================================================
+
+    doc.flags.ignore_validate_update_after_submit = True
+
+    doc.set_missing_values()
 
     doc.calculate_taxes_and_totals()
 
 
 def get_item_tax_template(gst_percent):
-    if gst_percent == 5:
-        return "GST 5%"
-    elif gst_percent == 18:
-        return "GST 18%"
-    else:
-        return "GST 0%"
 
+    gst_percent = flt(gst_percent)
+
+    template_map = {
+        5: "GST 5%",
+        12: "GST 12%",
+        18: "GST 18%"
+    }
+
+    template = template_map.get(gst_percent)
+
+    if not template:
+        return ""
+
+    if frappe.db.exists(
+        "Item Tax Template",
+        template
+    ):
+        return template
+
+    frappe.log_error(
+        f"Missing Item Tax Template: {template}",
+        "SIS TAX TEMPLATE ERROR"
+    )
+
+    return ""
 
 
 
@@ -923,6 +1235,14 @@ from frappe.utils import getdate, today, flt
 #         )
 def validate_overdue_invoice(doc, method):
 
+    # 🔥 ERPNext bypass
+    if doc.flags.get("ignore_credit_limit"):
+        return
+
+    # 🔥 Role based bypass
+    if "Credit Controller" in frappe.get_roles(frappe.session.user):
+        return
+    
     # 🔥 Disable ERPNext default validation (IMPORTANT)
     doc.ignore_credit_limit = True
     doc.flags.ignore_credit_limit = True
@@ -1031,179 +1351,132 @@ def validate_overdue_invoice(doc, method):
         )
 
 
-#discount and freight both showing in Sales Taxes and Charge
+
 # def apply_sales_term(doc, method):
 
-#     # ✅ only for external customers
+#     # =========================================
+#     # APPLY ONLY FOR EXTERNAL CUSTOMER
+#     # =========================================
 #     if doc.is_internal_customer:
 #         return
 
 #     if not doc.custom_sales_term or not doc.items:
 #         return
 
-#     term = frappe.get_doc("Sales Term Template", doc.custom_sales_term)
-
-#     total_discount = 0.0
-#     total_freight = 0.0
-
-#     discount_account = None
-#     freight_account = None
-
-#     # -------------------------------
-#     # 1️⃣ ITEM LEVEL DISCOUNT
-#     # -------------------------------
-#     for item in doc.items:
-
-#         base_amount = item.qty * item.rate
-#         item_discount = 0.0
-
-#         for row in term.sales_term_charges:
-
-#             if row.charge_type != "Discount":
-#                 continue
-
-#             discount_account = row.discount_account
-
-#             if row.value_type == "Percentage":
-#                 item_discount += (base_amount * row.value) / 100
-
-#             elif row.value_type == "Amount":
-#                 item_discount += row.value / len(doc.items)
-
-#         item.discount_amount = item_discount
-#         total_discount += item_discount
-
-#     # -------------------------------
-#     # 2️⃣ FREIGHT
-#     # -------------------------------
-#     for row in term.sales_term_charges:
-
-#         if row.charge_type != "Freight":
-#             continue
-
-#         freight_account = row.freight_account
-
-#         if row.value_type == "Amount":
-#             total_freight += row.value
-
-#         elif row.value_type == "Percentage":
-#             total_freight += (doc.net_total * row.value) / 100
-
-#     # -------------------------------
-#     # 3️⃣ REMOVE OLD ROWS
-#     # -------------------------------
-#     doc.taxes = [
-#         t for t in doc.taxes
-#         if t.description not in [
-#             "Discount as per Sales Term",
-#             "Freight as per Sales Term"
-#         ]
-#     ]
-
-#     # -------------------------------
-#     # 4️⃣ ADD DISCOUNT TAX ROW
-#     # -------------------------------
-#     if total_discount and discount_account:
-#         doc.append("taxes", {
-#             "charge_type": "Actual",
-#             "account_head": discount_account,
-#             "tax_amount": -1 * total_discount,
-#             "description": "Discount as per Sales Term"
-#         })
-
-#     # -------------------------------
-#     # 5️⃣ ADD FREIGHT TAX ROW
-#     # -------------------------------
-#     if total_freight and freight_account:
-#         doc.append("taxes", {
-#             "charge_type": "Actual",
-#             "account_head": freight_account,
-#             "tax_amount": total_freight,
-#             "description": "Freight as per Sales Term"
-#         })
-
-#     # -------------------------------
-#     # 6️⃣ FINAL CALCULATION
-#     # -------------------------------
-#     doc.calculate_taxes_and_totals()
-
-
-#discount showing in item table and freight showing in Sales Taxes and Charge
-import frappe
-
-
-# def apply_sales_term(doc, method):
-
-#     # ✅ apply only for external customers
-#     if doc.is_internal_customer:
-#         return
-
-#     if not doc.custom_sales_term or not doc.items:
-#         return
-
-#     term = frappe.get_doc("Sales Term Template", doc.custom_sales_term)
+#     term = frappe.get_doc(
+#         "Sales Term Template",
+#         doc.custom_sales_term
+#     )
 
 #     total_discount = 0.0
 #     total_freight = 0.0
 #     freight_account = None
 
-#     # --------------------------------
-#     # 1️⃣ ITEM LEVEL DISCOUNT (CORRECT)
-#     # --------------------------------
+#     # =========================================
+#     # 1️⃣ RESET OLD VALUES
+#     # =========================================
+#     doc.discount_amount = 0
+#     doc.additional_discount_percentage = 0
+#     doc.apply_discount_on = ""
+
+#     # reset old item discounts
 #     for item in doc.items:
 
-#         base_amount = item.qty * item.rate
-#         item_discount = 0.0
+#         item.discount_amount = 0
+#         item.distributed_discount_amount = 0
 
-#         for row in term.sales_term_charges:
-
-#             if row.charge_type != "Discount":
-#                 continue
-
-#             # Multiple discounts supported
-#             if row.value_type == "Percentage":
-#                 item_discount += (base_amount * row.value) / 100
-
-#             elif row.value_type == "Amount":
-#                 item_discount += row.value / len(doc.items)
-
-#         # ✅ ERPNext standard way
-#         item.discount_amount = item_discount
-#         total_discount += item_discount
-
-#     # --------------------------------
-#     # 2️⃣ FREIGHT (ONLY TAX ROW)
-#     # --------------------------------
-#     for row in term.sales_term_charges:
-
-#         if row.charge_type != "Freight":
-#             continue
-
-#         freight_account = row.freight_account
-
-#         if row.value_type == "Amount":
-#             total_freight += row.value
-
-#         elif row.value_type == "Percentage":
-#             total_freight += (doc.net_total * row.value) / 100
-
-#     # --------------------------------
-#     # 3️⃣ REMOVE OLD FREIGHT ROWS
-#     # --------------------------------
+#     # =========================================
+#     # 2️⃣ REMOVE OLD FREIGHT ROWS
+#     # =========================================
 #     doc.taxes = [
 #         t for t in doc.taxes
 #         if t.description != "Freight as per Sales Term"
 #     ]
 
-#     # --------------------------------
-#     # 4️⃣ ADD FREIGHT ROW (FIXED)
-#     # --------------------------------
-#     if total_freight and freight_account:
+#     # =========================================
+#     # 3️⃣ ITEM LEVEL DISCOUNT
+#     # =========================================
+#     for item in doc.items:
+
+#         base_amount = item.qty * item.rate
+
+#         item_discount = 0.0
+
+#         for row in term.sales_term_charges:
+
+#             if row.charge_type != "Discount":
+#                 continue
+
+#             # -----------------------------
+#             # PERCENTAGE DISCOUNT
+#             # -----------------------------
+#             if row.value_type == "Percentage":
+
+#                 item_discount += (
+#                     base_amount * row.value
+#                 ) / 100
+
+#             # -----------------------------
+#             # FIXED AMOUNT DISCOUNT
+#             # -----------------------------
+#             elif row.value_type == "Amount":
+
+#                 item_discount += (
+#                     row.value / len(doc.items)
+#                 )
+
+#         # -----------------------------
+#         # APPLY ITEM DISCOUNT
+#         # -----------------------------
+#         item.discount_amount = item_discount
+
+#         # IMPORTANT
+#         item.distributed_discount_amount = item_discount
+
+#         total_discount += item_discount
+
+#     # =========================================
+#     # 4️⃣ FREIGHT CALCULATION
+#     # =========================================
+#     for row in term.sales_term_charges:
+
+#         if row.charge_type != "Freight":
+#             continue
+
+#         freight_account = row.freight_account
+
+#         # -----------------------------
+#         # FIXED FREIGHT
+#         # -----------------------------
+#         if row.value_type == "Amount":
+
+#             total_freight += row.value
+
+#         # -----------------------------
+#         # PERCENTAGE FREIGHT
+#         # -----------------------------
+#         elif row.value_type == "Percentage":
+
+#             total_freight += (
+#                 doc.net_total * row.value
+#             ) / 100
+
+#     # =========================================
+#     # 5️⃣ ADD FREIGHT TAX ROW
+#     # =========================================
+#     if total_freight > 0 and freight_account:
 
 #         cost_center = (
 #             doc.cost_center
-#             or (doc.items[0].cost_center if doc.items else None)
-#             or frappe.db.get_value("Company", doc.company, "cost_center")
+#             or (
+#                 doc.items[0].cost_center
+#                 if doc.items else None
+#             )
+#             or frappe.db.get_value(
+#                 "Company",
+#                 doc.company,
+#                 "cost_center"
+#             )
 #         )
 
 #         doc.append("taxes", {
@@ -1214,22 +1487,31 @@ import frappe
 #             "cost_center": cost_center
 #         })
 
-#     # --------------------------------
-#     # 5️⃣ SHOW DISCOUNT INFO (HEADER)
-#     # --------------------------------
-#     if total_discount:
+#     # =========================================
+#     # 6️⃣ APPLY HEADER DISCOUNT
+#     # =========================================
+#     if total_discount > 0:
+
 #         doc.apply_discount_on = "Net Total"
+
 #         doc.discount_amount = total_discount
+
 #         doc.additional_discount_percentage = 0
 
-#     # --------------------------------
-#     # 6️⃣ FINAL RECALCULATION
-#     # --------------------------------
+#     # =========================================
+#     # 7️⃣ FINAL RECALCULATION
+#     # =========================================
 #     doc.calculate_taxes_and_totals()
+
+
+import frappe
+from frappe.utils import flt
+
+
 def apply_sales_term(doc, method):
 
     # =========================================
-    # APPLY ONLY FOR EXTERNAL CUSTOMER
+    # ONLY EXTERNAL CUSTOMER
     # =========================================
     if doc.is_internal_customer:
         return
@@ -1242,25 +1524,29 @@ def apply_sales_term(doc, method):
         doc.custom_sales_term
     )
 
+    # =========================================
+    # CHECK RETURN / CREDIT NOTE
+    # =========================================
+    is_return = cint(doc.is_return)
+
     total_discount = 0.0
     total_freight = 0.0
     freight_account = None
 
     # =========================================
-    # 1️⃣ RESET OLD VALUES
+    # 1. RESET OLD VALUES
     # =========================================
     doc.discount_amount = 0
     doc.additional_discount_percentage = 0
     doc.apply_discount_on = ""
 
-    # reset old item discounts
     for item in doc.items:
 
         item.discount_amount = 0
         item.distributed_discount_amount = 0
 
     # =========================================
-    # 2️⃣ REMOVE OLD FREIGHT ROWS
+    # 2. REMOVE OLD FREIGHT ROWS
     # =========================================
     doc.taxes = [
         t for t in doc.taxes
@@ -1268,11 +1554,14 @@ def apply_sales_term(doc, method):
     ]
 
     # =========================================
-    # 3️⃣ ITEM LEVEL DISCOUNT
+    # 3. ITEM LEVEL DISCOUNT
     # =========================================
     for item in doc.items:
 
-        base_amount = item.qty * item.rate
+        # Always calculate discount on positive base amount
+        base_amount = abs(
+            flt(item.qty) * flt(item.rate)
+        )
 
         item_discount = 0.0
 
@@ -1281,36 +1570,39 @@ def apply_sales_term(doc, method):
             if row.charge_type != "Discount":
                 continue
 
-            # -----------------------------
+            # ---------------------------------
             # PERCENTAGE DISCOUNT
-            # -----------------------------
+            # ---------------------------------
             if row.value_type == "Percentage":
 
                 item_discount += (
-                    base_amount * row.value
+                    base_amount * flt(row.value)
                 ) / 100
 
-            # -----------------------------
+            # ---------------------------------
             # FIXED AMOUNT DISCOUNT
-            # -----------------------------
+            # ---------------------------------
             elif row.value_type == "Amount":
 
                 item_discount += (
-                    row.value / len(doc.items)
+                    flt(row.value) / len(doc.items)
                 )
 
-        # -----------------------------
-        # APPLY ITEM DISCOUNT
-        # -----------------------------
-        item.discount_amount = item_discount
+        # ---------------------------------
+        # RETURN = NEGATIVE DISCOUNT
+        # ---------------------------------
+        if is_return:
+            item_discount = -abs(item_discount)
+        else:
+            item_discount = abs(item_discount)
 
-        # IMPORTANT
+        item.discount_amount = item_discount
         item.distributed_discount_amount = item_discount
 
         total_discount += item_discount
 
     # =========================================
-    # 4️⃣ FREIGHT CALCULATION
+    # 4. FREIGHT CALCULATION
     # =========================================
     for row in term.sales_term_charges:
 
@@ -1319,26 +1611,34 @@ def apply_sales_term(doc, method):
 
         freight_account = row.freight_account
 
-        # -----------------------------
+        # ---------------------------------
         # FIXED FREIGHT
-        # -----------------------------
+        # ---------------------------------
         if row.value_type == "Amount":
 
-            total_freight += row.value
+            total_freight += abs(flt(row.value))
 
-        # -----------------------------
+        # ---------------------------------
         # PERCENTAGE FREIGHT
-        # -----------------------------
+        # ---------------------------------
         elif row.value_type == "Percentage":
 
             total_freight += (
-                doc.net_total * row.value
+                abs(flt(doc.net_total)) * flt(row.value)
             ) / 100
 
+    # -----------------------------------------
+    # RETURN FREIGHT SHOULD BE NEGATIVE
+    # -----------------------------------------
+    if is_return:
+        total_freight = -abs(total_freight)
+    else:
+        total_freight = abs(total_freight)
+
     # =========================================
-    # 5️⃣ ADD FREIGHT TAX ROW
+    # 5. ADD FREIGHT TAX ROW
     # =========================================
-    if total_freight > 0 and freight_account:
+    if total_freight != 0 and freight_account:
 
         cost_center = (
             doc.cost_center
@@ -1362,9 +1662,9 @@ def apply_sales_term(doc, method):
         })
 
     # =========================================
-    # 6️⃣ APPLY HEADER DISCOUNT
+    # 6. APPLY HEADER DISCOUNT
     # =========================================
-    if total_discount > 0:
+    if total_discount != 0:
 
         doc.apply_discount_on = "Net Total"
 
@@ -1373,108 +1673,10 @@ def apply_sales_term(doc, method):
         doc.additional_discount_percentage = 0
 
     # =========================================
-    # 7️⃣ FINAL RECALCULATION
+    # 7. FINAL RECALCULATION
     # =========================================
     doc.calculate_taxes_and_totals()
-
-#freight calculate before gst 
-# def apply_sales_term(doc, method):
-
-#     # ✅ apply only for external customers
-#     if doc.is_internal_customer:
-#         return
-
-#     if not doc.custom_sales_term or not doc.items:
-#         return
-
-#     term = frappe.get_doc("Sales Term Template", doc.custom_sales_term)
-
-#     total_discount = 0.0
-#     total_freight = 0.0
-#     freight_account = None
-
-#     # --------------------------------
-#     # 1️⃣ ITEM LEVEL DISCOUNT (CORRECT)
-#     # --------------------------------
-#     for item in doc.items:
-
-#         base_amount = item.qty * item.rate
-#         item_discount = 0.0
-
-#         for row in term.sales_term_charges:
-
-#             if row.charge_type != "Discount":
-#                 continue
-
-#             # Multiple discounts supported
-#             if row.value_type == "Percentage":
-#                 item_discount += (base_amount * row.value) / 100
-
-#             elif row.value_type == "Amount":
-#                 item_discount += row.value / len(doc.items)
-
-#         # ✅ ERPNext standard way
-#         item.discount_amount = item_discount
-#         total_discount += item_discount
-
-#     # --------------------------------
-#     # 2️⃣ FREIGHT (ONLY TAX ROW)
-#     # --------------------------------
-#     for row in term.sales_term_charges:
-
-#         if row.charge_type != "Freight":
-#             continue
-
-#         freight_account = row.freight_account
-
-#         if row.value_type == "Amount":
-#             total_freight += row.value
-
-#         elif row.value_type == "Percentage":
-#             total_freight += (doc.net_total * row.value) / 100
-
-#     # --------------------------------
-#     # 3️⃣ REMOVE OLD FREIGHT ROWS
-#     # --------------------------------
-#     doc.taxes = [
-#         t for t in doc.taxes
-#         if t.description != "Freight as per Sales Term"
-#     ]
-
-#     # --------------------------------
-#     # 4️⃣ ADD FREIGHT ROW (GST BASE)
-#     # --------------------------------
-#     if total_freight and freight_account:
-
-#         cost_center = (
-#             doc.cost_center
-#             or (doc.items[0].cost_center if doc.items else None)
-#             or frappe.db.get_value("Company", doc.company, "cost_center")
-#         )
-
-#         # 1️⃣ Append properly (ERPNext way)
-#         freight_doc = doc.append("taxes", {})
-#         freight_doc.charge_type = "On Net Total"
-#         freight_doc.account_head = freight_account
-#         freight_doc.description = "Freight as per Sales Term"
-#         freight_doc.rate = total_freight
-#         freight_doc.tax_amount = total_freight
-#         freight_doc.cost_center = cost_center
-
-#         # 2️⃣ Find first GST row index
-#         gst_index = None
-#         for i, t in enumerate(doc.taxes):
-#             if t.account_head and "GST" in t.account_head:
-#                 gst_index = i
-#                 break
-
-#         # 3️⃣ Move freight before GST rows
-#         if gst_index is not None:
-#             doc.taxes.remove(freight_doc)
-#             doc.taxes.insert(gst_index, freight_doc)
-
-
-
+    
 @frappe.whitelist()
 def get_sales_invoice_city(sales_invoice):
     si = frappe.get_doc("Sales Invoice", sales_invoice)
@@ -1693,14 +1895,233 @@ def validate_sales_invoice(doc, method):
         )
 
 import frappe
+
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
+
+from franchise_erp.custom.sales_invoice_return import (
+    create_return_delivery_notes_for_sales_invoice,
+)
+
 
 class CustomSalesInvoice(SalesInvoice):
 
     def validate(self):
-        # 🔥 पहले qty fix करो
         if self.is_return:
             for item in self.items:
                 item.qty = -abs(item.qty or 0)
-                if item.stock_qty:
-                    item.stock_qty = -abs(item.stock_qty)
+                item.stock_qty = item.qty * (item.conversion_factor or 1)
+
+        super().validate()
+
+    def on_submit(self):
+        super().on_submit()
+
+        if self.is_return:
+            create_return_delivery_notes_for_sales_invoice(self)
+
+def update_serial_no_mrp(doc, method=None):
+    """
+    After Sales Invoice Submit:
+    Update Serial No custom_mrp field
+    from Sales Invoice Item rate
+    """
+
+    for item in doc.items:
+
+        # Skip if no serial no
+        if not item.serial_no:
+            continue
+
+        # Split serial numbers
+        serial_nos = []
+
+        if "\n" in item.serial_no:
+            serial_nos = item.serial_no.split("\n")
+        elif "," in item.serial_no:
+            serial_nos = item.serial_no.split(",")
+        else:
+            serial_nos = [item.serial_no]
+
+        # Clean spaces
+        serial_nos = [sn.strip() for sn in serial_nos if sn.strip()]
+
+        # Update each serial no
+        for serial_no in serial_nos:
+
+            if frappe.db.exists("Serial No", serial_no):
+
+                frappe.db.set_value(
+                    "Serial No",
+                    serial_no,
+                    "custom_mrp",
+                    item.rate
+                )
+
+    frappe.db.commit()
+
+
+
+@frappe.whitelist()
+def calculate_sis_values_for_stock_take(
+    customer,
+    rate,
+    stock_taking=None
+):
+
+    # ==================================================
+    # BASIC CHECK
+    # ==================================================
+
+    if not customer or not rate:
+        return None
+
+    # ==================================================
+    # GUEST USER CHECK
+    # ==================================================
+
+    if frappe.session.user == "Guest":
+        return None
+
+    # ==================================================
+    # WEBSITE USER CHECK
+    # ==================================================
+
+    user_type = frappe.db.get_value(
+        "User",
+        frappe.session.user,
+        "user_type"
+    )
+
+    if user_type == "Website User":
+        return None
+
+    # ==================================================
+    # STOCK TAKING REQUIRED
+    # ==================================================
+
+    if not stock_taking:
+        return None
+
+    # ==================================================
+    # STOCK TAKING → COMPANY
+    # ==================================================
+
+    company = frappe.db.get_value(
+        "Stock Taking",
+        stock_taking,
+        "company"
+    )
+
+    if not company:
+        return None
+
+    # ==================================================
+    # SIS CONFIGURATION
+    # ==================================================
+
+    config = frappe.db.get_value(
+        "SIS Configuration",
+        {
+            "company": company
+        },
+        [
+            "output_gst_min_net_rate",
+            "output_gst_max_net_rate",
+            "fresh_margin",
+        ],
+        as_dict=True
+    )
+
+    if not config:
+        return None
+
+    # ==================================================
+    # ALWAYS POSITIVE RATE
+    # ==================================================
+
+    rate = abs(
+        flt(rate)
+    )
+
+    if rate <= 0:
+        return None
+
+    # ==================================================
+    # GST SLAB
+    # ==================================================
+
+    if rate <= flt(
+        config.output_gst_min_net_rate
+    ):
+
+        gst_percent = 5
+
+    elif rate >= flt(
+        config.output_gst_max_net_rate
+    ):
+
+        gst_percent = 18
+
+    else:
+
+        gst_percent = 12
+
+    # ==================================================
+    # GST SPLIT
+    # ==================================================
+
+    net_sale_value = flt(
+        (
+            rate * 100
+        )
+        /
+        (
+            100 + gst_percent
+        ),
+        2
+    )
+
+    gst_value = flt(
+        rate - net_sale_value,
+        2
+    )
+
+    # ==================================================
+    # MARGIN
+    # ==================================================
+
+    margin_percent = flt(
+        config.fresh_margin
+    )
+
+    margin_amount = flt(
+        (
+            rate * margin_percent
+        )
+        /
+        100,
+        2
+    )
+
+    # ==================================================
+    # FINAL TAXABLE VALUE
+    # ==================================================
+
+    taxable_value = flt(
+        net_sale_value - margin_amount,
+        2
+    )
+
+    # ==================================================
+    # RETURN
+    # ==================================================
+
+    return {
+        "gst_percent": gst_percent,
+        "output_gst_value": gst_value,
+        "margin_percent": margin_percent,
+        "margin_amount": margin_amount,
+        "net_sale_value": net_sale_value,
+        "taxable_value": taxable_value,
+        "company": company,
+    }

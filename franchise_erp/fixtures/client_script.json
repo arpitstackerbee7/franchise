@@ -1,0 +1,35 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Journal Entry",
+  "enabled": 1,
+  "modified": "2026-08-06 18:07:35.020841",
+  "module": null,
+  "name": "Is System Generated",
+  "script": "frappe.ui.form.on(\"Journal Entry\", {\n    refresh(frm) {\n        if (frm.is_new()) {\n            frm.set_value(\"is_system_generated\", 0);\n        }\n    },\n\n    onload(frm) {\n        if (frm.is_new()) {\n            frm.set_value(\"is_system_generated\", 0);\n        }\n    }\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Leave Application",
+  "enabled": 0,
+  "modified": "2026-08-13 12:45:52.639266",
+  "module": "Franchise Erp",
+  "name": "Leave Application Rejection Reason",
+  "script": "frappe.ui.form.on('Leave Application', {\n    before_workflow_action(frm) {\n        if (frm.selected_workflow_action === 'Approve') {\n            frm.doc.custom_rejection_reason = 'N/A';\n            return;\n        }\n        \n        if (frm.selected_workflow_action === 'Reject') {\n            if (!frm.doc.custom_rejection_reason || \n                frm.doc.custom_rejection_reason.trim() === '' || \n                frm.doc.custom_rejection_reason.trim() === 'N/A') {\n                \n                frappe.msgprint({\n                    title: 'Rejection Reason Required',\n                    message: 'Please fill in the <b>Rejection Reason</b> before rejecting.',\n                    indicator: 'red'\n                });\n                \n                frappe.dom.unfreeze();\n                frm.scroll_to_field('custom_rejection_reason');\n                return Promise.reject();\n            }\n        }\n    }\n});",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Subcontracting Receipt",
+  "enabled": 1,
+  "modified": "2026-07-29 15:45:00.777309",
+  "module": "Franchise Erp",
+  "name": "Subcontracting Receipt GST on Service Cost",
+  "script": "frappe.ui.form.on('Subcontracting Receipt', {\r\n    refresh(frm) {\r\n        calculate_service_cost_tax(frm);\r\n    },\r\n\r\n    validate(frm) {\r\n        calculate_service_cost_tax(frm);\r\n    },\r\n\r\n    before_save(frm) {\r\n        calculate_service_cost_tax(frm);\r\n    }\r\n});\r\n\r\nfrappe.ui.form.on('Subcontracting Receipt Item', {\r\n    service_cost_per_qty(frm) {\r\n        calculate_service_cost_tax(frm);\r\n    },\r\n\r\n    qty(frm) {\r\n        calculate_service_cost_tax(frm);\r\n    },\r\n\r\n    items_remove(frm) {\r\n        calculate_service_cost_tax(frm);\r\n    }\r\n});\r\n\r\nfunction calculate_service_cost_tax(frm) {\r\n    const items = frm.doc.items || [];\r\n    const taxes = frm.doc.taxes || [];\r\n\r\n    let total_service_cost = 0;\r\n\r\n    items.forEach(item => {\r\n        total_service_cost +=\r\n            flt(item.service_cost_per_qty) * flt(item.qty);\r\n    });\r\n\r\n    frm.doc.custom_total_service_cost = total_service_cost;\r\n\r\n    let total_taxes = 0;\r\n    let running_total = total_service_cost;\r\n\r\n    taxes.forEach(tax => {\r\n        let tax_amount = 0;\r\n\r\n        if (tax.charge_type === 'On Net Total') {\r\n\r\n            let tax_rate = get_tax_rate(tax, items);\r\n\r\n            tax_amount =\r\n                total_service_cost * tax_rate / 100;\r\n\r\n            running_total += tax_amount;\r\n\r\n        } else if (tax.charge_type === 'On Previous Row Total') {\r\n\r\n            let tax_rate = flt(tax.rate);\r\n\r\n            tax_amount =\r\n                running_total * tax_rate / 100;\r\n\r\n            running_total += tax_amount;\r\n        }\r\n\r\n        tax.tax_amount = tax_amount;\r\n        tax.base_total = running_total;\r\n\r\n        total_taxes += tax_amount;\r\n    });\r\n\r\n    frm.doc.total_taxes = total_taxes;\r\n    frm.doc.base_grand_total =\r\n        total_service_cost + total_taxes;\r\n\r\n    frm.refresh_field('custom_total_service_cost');\r\n    frm.refresh_field('taxes');\r\n    frm.refresh_field('total_taxes');\r\n    frm.refresh_field('base_grand_total');\r\n}\r\n\r\n\r\nfunction get_tax_rate(tax, items) {\r\n\r\n    if (flt(tax.rate)) {\r\n        return flt(tax.rate);\r\n    }\r\n\r\n    let rate = 0;\r\n\r\n    items.forEach(item => {\r\n\r\n        if (tax.gst_tax_type === 'igst') {\r\n            rate = Math.max(\r\n                rate,\r\n                flt(item.igst_rate)\r\n            );\r\n        }\r\n\r\n        else if (tax.gst_tax_type === 'cgst') {\r\n            rate = Math.max(\r\n                rate,\r\n                flt(item.cgst_rate)\r\n            );\r\n        }\r\n\r\n        else if (tax.gst_tax_type === 'sgst') {\r\n            rate = Math.max(\r\n                rate,\r\n                flt(item.sgst_rate)\r\n            );\r\n        }\r\n\r\n        else if (tax.gst_tax_type === 'cess') {\r\n            rate = Math.max(\r\n                rate,\r\n                flt(item.cess_rate)\r\n            );\r\n        }\r\n\r\n    });\r\n\r\n    return rate;\r\n}",
+  "view": "Form"
+ }
+]
