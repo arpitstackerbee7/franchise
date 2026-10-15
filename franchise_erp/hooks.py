@@ -73,6 +73,7 @@ doc_events = {
         "before_save": [  
             "franchise_erp.custom.purchase_invoice.sync_merged_discounts"
         ],
+        "before_submit": "franchise_erp.custom.purchase_reciept.validate_purchase_invoice_return",
         # "before_insert": "franchise_erp.custom.purchase_invoice.set_spl_purchase_invoice_name"
     },
     "Journal Entry": {

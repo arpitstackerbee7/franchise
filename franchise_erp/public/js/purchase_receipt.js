@@ -408,7 +408,7 @@ frappe.ui.form.on("Purchase Receipt", {
                 __("Get Items From")
             );
         }
-        hide_purchase_invoice_option();
+        // hide_purchase_invoice_option();
     },
 
     // ===================================
@@ -461,22 +461,22 @@ frappe.ui.form.on("Purchase Receipt", {
     }
 });
 
-function hide_purchase_invoice_option() {
-    const observer = new MutationObserver(() => {
-        document.querySelectorAll(".dropdown-menu li, .dropdown-menu a").forEach((el) => {
-            if (el.innerText.trim() === "Purchase Invoice") {
-                el.style.display = "none";
-            }
-        });
-    });
+// function hide_purchase_invoice_option() {
+//     const observer = new MutationObserver(() => {
+//         document.querySelectorAll(".dropdown-menu li, .dropdown-menu a").forEach((el) => {
+//             if (el.innerText.trim() === "Purchase Invoice") {
+//                 el.style.display = "none";
+//             }
+//         });
+//     });
 
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
+//     observer.observe(document.body, {
+//         childList: true,
+//         subtree: true
+//     });
 
-    setTimeout(() => observer.disconnect(), 10000);
-}
+//     setTimeout(() => observer.disconnect(), 10000);
+// }
 // ===================================
 // 🚀 ITEM AUTO FILL
 // ===================================
