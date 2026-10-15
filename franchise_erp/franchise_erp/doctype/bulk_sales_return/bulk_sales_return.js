@@ -1,39 +1,118 @@
 frappe.ui.form.on("Bulk Sales Return", {
 
-    refresh(frm) {
+    
+refresh(frm) {
+    // IMPORTANT: Check failure BEFORE the submitted-document return.
+    if (
+    frm.doc.status === "Failed" &&
+    frm.doc.error_message &&
+    !frm.__bulk_return_error_shown
+) {
+    frm.__bulk_return_error_shown = true;
 
-        if (frm.is_new() || frm.doc.docstatus !== 0) {
-            return;
-        }
-        frm.add_custom_button(
-            "Get Items from SI / DN",
-            () => {
-                open_si_dn_dialog(frm);
-            }
-        );
-        
-        // frm.add_custom_button(
-        //     "Get Items from Sales Invoice",
-        //     () => {
-        //         open_sales_invoice_dialog(frm);
-        //     }
-        // );
+    frappe.msgprint({
+        title: __("Sales Return Could Not Be Completed"),
+        message: frappe.utils.escape_html(
+            frm.doc.error_message
+        ),
+        indicator: "red"
+    });
+}
 
-        // frm.add_custom_button(
-        //     "Get Items from Delivery Notes",
-        //     () => {
-        //         open_return_items_dialog(frm);
-        //     }
-        // );
+    if (frm.is_new() || frm.doc.docstatus !== 0) {
+        return;
+    }
 
-        update_total_quantity(frm);
-                hide_items_add_row(frm);
-    },
+    // Keep your existing draft-only button and logic here.
+    frm.add_custom_button(
+        __("Get Items from SI / DN"),
+        () => open_si_dn_dialog(frm)
+    );
+
+    update_total_quantity(frm);
+    hide_items_add_row(frm);
+},
+
+on_submit(frm) {
+    // Start checking the background job after successful submission.
+    start_bulk_return_error_polling(frm);
+},
+
 
     onload_post_render(frm) {
         hide_items_add_row(frm);
     }
 });
+
+
+function start_bulk_return_error_polling(frm) {
+    if (frm.__bulk_return_polling) return;
+
+    frm.__bulk_return_polling = true;
+
+    let attempts = 0;
+    const maxAttempts = 600; // 20 minutes, checking every 2 seconds
+
+    function poll_status() {
+        if (attempts >= maxAttempts) {
+            frm.__bulk_return_polling = false;
+            return;
+        }
+
+        attempts++;
+
+        frappe.call({
+            method: "frappe.client.get",
+            args: {
+                doctype: "Bulk Sales Return",
+                name: frm.doc.name
+            }
+        }).then((r) => {
+            const doc = r.message || {};
+            const status = doc.status;
+
+            if (status === "Failed") {
+                frm.__bulk_return_polling = false;
+                frm.doc.status = status;
+                frm.doc.error_message = doc.error_message || "";
+
+                const errorText = doc.error_message ||
+                    __("Background processing failed. Please check Error Log.");
+
+                if (!frm.__bulk_return_error_shown) {
+                    frm.__bulk_return_error_shown = true;
+
+                    frappe.msgprint({
+                        title: __("Bulk Sales Return Failed"),
+                        message: frappe.utils.escape_html(
+                            errorText
+                        ).replace(/\n/g, "<br>"),
+                        indicator: "red",
+                        wide: true
+                    });
+                }
+
+                frm.reload_doc();
+                return;
+            }
+
+            if (status === "Completed") {
+                frm.__bulk_return_polling = false;
+                frm.reload_doc();
+                return;
+            }
+
+            // Still Queued / In Progress: check again.
+            setTimeout(poll_status, 2000);
+
+        }).catch(() => {
+            // A temporary request failure should not stop polling.
+            setTimeout(poll_status, 2000);
+        });
+    }
+
+    poll_status();
+}
 
 function hide_items_add_row(frm) {
     const field = frm.get_field("items");
@@ -3918,6 +3997,64 @@ function open_si_dn_dialog(frm) {
                             )
                         );
                     }
+                }
+
+                // =====================================================
+                // REMOVE SERIALS ALREADY PRESENT IN MAIN ITEMS TABLE
+                // Keep only one row per Serial No. across existing rows
+                // and the current selection.
+                // =====================================================
+
+                const normalize_serials = value =>
+                    (value || "")
+                        .split(/[\\n,;]+/)
+                        .map(serial => serial.trim())
+                        .filter(Boolean);
+
+                const serials_already_added = new Set();
+
+                (frm.doc.items || []).forEach(row => {
+                    normalize_serials(row.serial_nos).forEach(serial => {
+                        serials_already_added.add(serial);
+                    });
+                });
+
+                const unique_selected = [];
+
+                selected.forEach(d => {
+                    if (!d.has_serial_no) {
+                        unique_selected.push(d);
+                        return;
+                    }
+
+                    const serials = normalize_serials(d.serial_nos);
+
+                    if (!serials.length) {
+                        unique_selected.push(d);
+                        return;
+                    }
+
+                    const serial = serials[0];
+
+                    if (serials_already_added.has(serial)) {
+                        frappe.show_alert({
+                            message: __("Serial No. {0} is already added. Duplicate row skipped.", [serial]),
+                            indicator: "orange"
+                        });
+                        return;
+                    }
+
+                    serials_already_added.add(serial);
+                    d.serial_nos = serial;
+                    d.return_qty = 1;
+                    unique_selected.push(d);
+                });
+
+                selected = unique_selected;
+
+                if (!selected.length) {
+                    frappe.msgprint(__("All selected serial numbers are already present in Items."));
+                    return;
                 }
 
                 // =====================================================
