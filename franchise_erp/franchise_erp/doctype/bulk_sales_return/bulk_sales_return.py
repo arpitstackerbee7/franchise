@@ -8,8 +8,64 @@ from frappe import _
 class BulkSalesReturn(Document):
 
     def validate(self):
+        self.remove_duplicate_serial_rows()
         self.validate_customer()
         self.validate_qty()
+        self.validate_billing_addresses()
+
+    # -------------------------------------------------------------------------
+    # DUPLICATE SERIAL PROTECTION
+    # -------------------------------------------------------------------------
+
+    def remove_duplicate_serial_rows(self):
+        """Keep each serial number only once across the Items table."""
+
+        seen_serials = set()
+        rows_to_remove = []
+
+        for row in list(self.items or []):
+            raw_serials = (row.get("serial_nos") or "").replace(",", "\\n")
+            serials = list(dict.fromkeys(
+                serial.strip()
+                for serial in raw_serials.splitlines()
+                if serial.strip()
+            ))
+
+            if not serials:
+                continue
+
+            unique_serials = []
+            for serial in serials:
+                if serial in seen_serials:
+                    continue
+                seen_serials.add(serial)
+                unique_serials.append(serial)
+
+            if not unique_serials:
+                rows_to_remove.append(row)
+                continue
+
+            if unique_serials != serials:
+                row.serial_nos = "\\n".join(unique_serials)
+
+            has_serial_no = frappe.db.get_value(
+                "Item", row.item_code, "has_serial_no"
+            )
+
+            if has_serial_no:
+                row.qty = len(unique_serials)
+
+        for row in rows_to_remove:
+            self.remove(row)
+
+        if rows_to_remove:
+            frappe.msgprint(
+                _("Removed {0} duplicate serial-number row(s) from Items.").format(
+                    len(rows_to_remove)
+                ),
+                indicator="orange",
+                alert=True,
+            )
 
     # -------------------------------------------------------------------------
     # CUSTOMER VALIDATION
@@ -205,6 +261,55 @@ class BulkSalesReturn(Document):
                         f"Serial Numbers for item {row.item_code}"
                     )
 
+    
+    
+    
+    def validate_billing_addresses(self):
+        for row in self.items or []:
+            if not row.delivery_note:
+                continue
+
+            source = frappe.db.get_value(
+                "Delivery Note",
+                row.delivery_note,
+                ["customer", "customer_address"],
+                as_dict=True
+            )
+
+            if not source:
+                continue
+
+            address = source.customer_address
+
+            if not address:
+                continue
+
+            address_linked = frappe.db.exists(
+                "Dynamic Link",
+                {
+                    "parent": address,
+                    "parenttype": "Address",
+                    "link_doctype": "Customer",
+                    "link_name": source.customer,
+                },
+            )
+
+            if not address_linked:
+                frappe.throw(
+                    _(
+                        "Cannot save Bulk Sales Return. The address '{0}' "
+                        "on Delivery Note '{1}' is not linked to Customer '{2}'. "
+                        "Please correct the address on the original Delivery Note."
+                    ).format(
+                        address,
+                        row.delivery_note,
+                        source.customer,
+                    ),
+                    title=_("Invalid Customer Address"),
+                )
+
+
+    
     # =========================================================================
     # ON SUBMIT
     # =========================================================================
@@ -432,9 +537,15 @@ def process_bulk_sales_return(docname):
 
     except Exception:
 
+        error_traceback = frappe.get_traceback()
+
         frappe.log_error(
-            frappe.get_traceback(),
-            f"Bulk Sales Return Failed - {docname}"
+            title=f"Bulk Sales Return Failed - {docname}",
+            message=error_traceback,
+        )
+
+        frappe.logger("bulk_sales_return").error(
+            f"Bulk Sales Return {docname} failed:\\n{error_traceback}"
         )
 
         try:
@@ -449,17 +560,25 @@ def process_bulk_sales_return(docname):
                 "Failed"
             )
 
+            
+            user_message = _(
+                "We could not complete this Sales Return. "
+                "Please verify the customer, billing address, and return details. "
+                "If the problem continues, contact the ERP support team with "
+                "Bulk Sales Return ID: {0}."
+            ).format(docname)
+
             if frappe.db.has_column(
                 "Bulk Sales Return",
                 "error_message"
             ):
-
                 doc.db_set(
                     "error_message",
-                    frappe.get_traceback()[-4000:]
+                    user_message
                 )
 
             frappe.db.commit()
+
 
         except Exception:
 
@@ -1614,6 +1733,63 @@ def create_single_sales_invoice_return(doc, rows):
     # =========================================================================
 
     return_doc.set_missing_values()
+
+    # =========================================================================
+    # FIX INVALID BILLING / SHIPPING ADDRESS LINKS
+    # The source invoice can contain an address not linked to this customer.
+    # ERPNext validates address ownership when the return invoice is inserted.
+    # =========================================================================
+
+    def get_customer_address(address_field):
+        address_name = return_doc.get(address_field)
+        if not address_name:
+            return None
+
+        is_linked = frappe.db.exists(
+            "Dynamic Link",
+            {
+                "parent": address_name,
+                "parenttype": "Address",
+                "parentfield": "links",
+                "link_doctype": "Customer",
+                "link_name": return_doc.customer,
+            },
+        )
+
+        if is_linked:
+            return address_name
+
+        frappe.logger("bulk_sales_return").warning(
+            f"Bulk Sales Return {doc.name}: address {address_name} in "
+            f"{address_field} is not linked to customer {return_doc.customer}; "
+            "looking for a valid customer address."
+        )
+
+        candidates = frappe.get_all(
+            "Dynamic Link",
+            filters={
+                "parenttype": "Address",
+                "parentfield": "links",
+                "link_doctype": "Customer",
+                "link_name": return_doc.customer,
+            },
+            fields=["parent"],
+            order_by="parent asc",
+            limit_page_length=1,
+        )
+
+        return candidates[0].parent if candidates else None
+
+    for address_field, display_field in (
+        ("customer_address", "address_display"),
+        ("shipping_address_name", "shipping_address"),
+    ):
+        valid_address = get_customer_address(address_field)
+        if return_doc.get(address_field) != valid_address:
+            return_doc.set(address_field, valid_address)
+
+            if display_field in return_doc.as_dict():
+                return_doc.set(display_field, None)
 
     # =========================================================================
     # RESTORE ORIGINAL RATE AFTER SET MISSING VALUES
@@ -4239,3 +4415,4 @@ def submit_linked_delivery_note_returns(
         )
 
         raise
+    
