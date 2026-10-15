@@ -1,4 +1,4 @@
-frappe.query_reports["Custom Trial Balance Without COGS"] = {
+frappe.query_reports["Custom Trial Balance"] = {
 	filters: [
 		{
 			fieldname: "company",
@@ -149,22 +149,14 @@ frappe.query_reports["Custom Trial Balance Without COGS"] = {
 				};
 			},
 		},
-{
-	fieldname: "transaction_type",
-	label: __("Transaction Type"),
-	fieldtype: "Select",
-	options: [
-		"",
-		"Purchase Receipt",
-		"Purchase Return (Receipt)",
-		"Purchase Invoice",
-		"Debit Note (Purchase Return)",
-		"Landed Cost Voucher",
-		"Journal Entry (Manual)",
-	].join("\n"),
-	depends_on: "eval:doc.srbnb_view == 'Document'",
-},
-
+		{
+			// Data field: breakdown rows ke saare naam (Purchase Receipt, Journal Entry,
+			// Stock Entry - ..., etc.) bina options ke chal jaayein
+			fieldname: "transaction_type",
+			label: __("Transaction Type"),
+			fieldtype: "Data",
+			depends_on: "eval:doc.srbnb_view == 'Document'",
+		},
 		{
 			fieldname: "supplier",
 			label: __("Supplier"),
@@ -181,18 +173,32 @@ frappe.query_reports["Custom Trial Balance Without COGS"] = {
 			);
 		}
 
-		// SRBNB account aur uske transaction rows ko clickable banayein
-		if (
-			column.fieldname === "account" &&
-			(data.is_srbnb_account || data.is_srbnb_breakdown)
-		) {
-			const label = data.is_srbnb_breakdown
-				? data.account_name
-				: value;
+		// Clickable rows: har breakdown row aur summary view ki rows.
+		// Account ki normal row (SRBNB bhi) ERPNext ki default General Ledger link se chalti hai.
+		const is_link =
+			(column.fieldname === "account" && data.is_txn_link) ||
+			(column.fieldname === "txn" && data.is_srbnb_txn_link);
 
-			const safeData = JSON.stringify(data).replace(/'/g, "\\u0027");
+		if (is_link) {
+			const label = data.is_txn_link ? data.account_name : value;
 
-			return `<a href="#" onclick='open_srbnb_ledger(${safeData}); return false;'
+			// Poori row nahi, sirf zaroori fields (chhota + safe)
+			const payload = {
+				company: data.company,
+				from_date: data.from_date,
+				to_date: data.to_date,
+				account: data.link_account,
+				transaction_type: data.transaction_type || "",
+			};
+
+			const encoded = encodeURIComponent(JSON.stringify(payload)).replace(
+				/'/g,
+				"%27"
+			);
+
+			return `<a href="#" class="srbnb-link"
+				data-payload="${encoded}"
+				onclick="window.open_srbnb_ledger('${encoded}'); return false;"
 				style="color: var(--link-color); text-decoration: underline;">
 				${frappe.utils.escape_html(label || "")}
 			</a>`;
@@ -226,36 +232,112 @@ frappe.query_reports["Custom Trial Balance Without COGS"] = {
 	initial_depth: 3,
 };
 
-erpnext.utils.add_dimensions("Custom Trial Balance Without COGS", 6);
+erpnext.utils.add_dimensions("Custom Trial Balance", 6);
 
 
-function open_srbnb_ledger(data) {
-	const account = data.parent_account || data.account;
+// Click handler: document level par (capture phase), taaki datatable ya koi aur
+// handler click ko rok na sake. Sirf ek baar bind hota hai.
+if (!window.__srbnb_click_bound) {
+	window.__srbnb_click_bound = true;
 
-	if (!account || !data.company) {
-		frappe.msgprint(
-			__("Account or Company is missing.")
-		);
-		return;
-	}
+	document.addEventListener(
+		"click",
+		function (e) {
+			const link = e.target && e.target.closest
+				? e.target.closest("a.srbnb-link")
+				: null;
 
-	if (!data.transaction_type) {
-		frappe.msgprint(
-			__("Transaction Type is missing.")
-		);
-		return;
-	}
+			if (!link) return;
 
-	frappe.set_route(
-		"query-report",
-		"Custom Trial Balance Without COGS",
-		{
-			company: data.company,
-			from_date: data.from_date,
-			to_date: data.to_date,
-			account: account,
-			srbnb_view: "Document",
-			transaction_type: data.transaction_type,
-		}
+			e.preventDefault();
+			e.stopPropagation();
+			window.open_srbnb_ledger(link.getAttribute("data-payload"));
+		},
+		true
 	);
 }
+
+// window par explicitly assign: script kisi bhi scope me eval ho, function global rahega
+window.open_srbnb_ledger = function (encoded) {
+	let p;
+	try {
+		p = JSON.parse(decodeURIComponent(encoded));
+	} catch (e) {
+		console.error("SRBNB link: bad payload", encoded, e);
+		frappe.msgprint(__("Could not read link data."));
+		return;
+	}
+
+	console.log("SRBNB link clicked:", p);
+
+	if (!p.account || !p.company) {
+		console.error("SRBNB link: missing account/company", p);
+		frappe.msgprint(__("Account or Company is missing."));
+		return;
+	}
+
+	// Transaction type hai -> us type ke documents.
+	// Nahi hai (SRBNB parent row) -> transaction type wise summary.
+	const options = {
+		company: p.company,
+		from_date: p.from_date,
+		to_date: p.to_date,
+		account: p.account,
+		srbnb_view: p.transaction_type ? "Document" : "Transaction Type",
+		transaction_type: p.transaction_type || "",
+	};
+
+	// Jo filters abhi report me lage hain, wahi aage carry karo,
+	// taaki value TB ke breakdown se match kare
+	const carry = [
+		"fiscal_year",
+		"cost_center",
+		"project",
+		"finance_book",
+		"include_default_book_entries",
+		"with_period_closing_entry_for_current_period",
+	];
+
+	carry.forEach((name) => {
+		const v = frappe.query_report
+			? frappe.query_report.get_filter_value(name)
+			: null;
+
+		const empty =
+			v === undefined ||
+			v === null ||
+			v === "" ||
+			(Array.isArray(v) && !v.length);
+
+		if (!empty) {
+			options[name] = v;
+		}
+	});
+
+	const query = Object.keys(options)
+		.map((key) => {
+			let val = options[key];
+			if (Array.isArray(val)) val = JSON.stringify(val);
+			return encodeURIComponent(key) + "=" + encodeURIComponent(val);
+		})
+		.join("&");
+
+	// true karoge to naye tab me khulega, false = isi tab me redirect
+	const open_in_new_tab = false;
+
+	// Full URL redirect: same-page route refresh ki problem nahi aati.
+	// Back dabane par Trial Balance wapas aa jaata hai (filters URL me hote hain).
+	const url =
+		window.location.origin +
+		"/app/query-report/" +
+		encodeURIComponent("Custom Trial Balance") +
+		"?" + query;
+
+	console.log("SRBNB link url:", url);
+
+	if (open_in_new_tab) {
+		window.open(url, "_blank");
+	} else {
+		window.location.assign(url);
+	}
+};

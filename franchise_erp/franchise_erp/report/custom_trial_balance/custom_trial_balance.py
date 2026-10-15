@@ -1,8 +1,10 @@
-
 # Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
+import json
+
 import frappe
+from frappe import _
 from frappe.utils import flt
 
 from erpnext.accounts.report.trial_balance.trial_balance import (
@@ -42,6 +44,33 @@ CASE
 
     ELSE gle.voucher_type
 END
+"""
+
+# Joins needed by TXN_CASE (breakdown aur SRBNB dono same use karte hain)
+TXN_JOINS = """
+LEFT JOIN `tabPurchase Invoice` pi
+    ON gle.voucher_type = 'Purchase Invoice'
+    AND pi.name = gle.voucher_no
+
+LEFT JOIN `tabPurchase Receipt` pr
+    ON gle.voucher_type = 'Purchase Receipt'
+    AND pr.name = gle.voucher_no
+
+LEFT JOIN `tabSales Invoice` si
+    ON gle.voucher_type = 'Sales Invoice'
+    AND si.name = gle.voucher_no
+
+LEFT JOIN `tabDelivery Note` dn
+    ON gle.voucher_type = 'Delivery Note'
+    AND dn.name = gle.voucher_no
+
+LEFT JOIN `tabStock Entry` se
+    ON gle.voucher_type = 'Stock Entry'
+    AND se.name = gle.voucher_no
+
+LEFT JOIN `tabPayment Entry` pe
+    ON gle.voucher_type = 'Payment Entry'
+    AND pe.name = gle.voucher_no
 """
 
 TXN_ORDER = [
@@ -89,13 +118,6 @@ def execute(filters=None):
         )
     )
 
-    # Get the configured Stock Received But Not Billed account
-    srbnb_account = frappe.get_cached_value(
-        "Company",
-        filters.company,
-        "stock_received_but_not_billed",
-    )
-
     output = []
 
     for row in data or []:
@@ -105,13 +127,8 @@ def execute(filters=None):
 
         account = row.get("account")
 
-        # Make the SRBNB parent account clickable
-        if srbnb_account and account == srbnb_account:
-            row["is_srbnb_account"] = 1
-            row["company"] = filters.company
-            row["from_date"] = filters.from_date
-            row["to_date"] = filters.to_date
-
+        # Account ki normal row ko touch nahi karte: ERPNext ki default
+        # General Ledger link waise hi chalegi.
         output.append(row)
 
         # Transaction breakdown only for leaf accounts
@@ -123,11 +140,6 @@ def execute(filters=None):
         )
 
         for txn, debit, credit in transactions:
-            is_srbnb_transaction = (
-                bool(srbnb_account)
-                and account == srbnb_account
-            )
-
             output.append(
                 {
                     "account": f"{account}::{txn}",
@@ -144,27 +156,17 @@ def execute(filters=None):
                     "has_value": True,
                     "is_breakdown": 1,
 
-                    # Click-link metadata for SRBNB transactions
-                    "is_srbnb_breakdown": (
-                        1 if is_srbnb_transaction else 0
-                    ),
-                    "transaction_type": (
-                        txn if is_srbnb_transaction else None
-                    ),
-                    "company": (
-                        filters.company if is_srbnb_transaction else None
-                    ),
-                    "from_date": (
-                        filters.from_date if is_srbnb_transaction else None
-                    ),
-                    "to_date": (
-                        filters.to_date if is_srbnb_transaction else None
-                    ),
+                    # Click-link metadata: account + transaction type -> documents
+                    "is_txn_link": 1,
+                    "link_account": account,
+                    "transaction_type": txn,
+                    "company": filters.company,
+                    "from_date": filters.from_date,
+                    "to_date": filters.to_date,
                 }
             )
 
     return columns, output
-
 
 
 def get_purchase_receipt_analytics_value(filters):
@@ -194,31 +196,38 @@ def get_purchase_receipt_analytics_value(filters):
 
     return flt(result[0][0]) if result else 0
 
-def get_breakdown(filters):
-    conditions = [
-        "gle.company = %(company)s",
-        "gle.is_cancelled = 0",
-        "gle.is_opening = 'No'",
-        "gle.posting_date BETWEEN %(from_date)s AND %(to_date)s",
-    ]
 
-    values = {
-        "company": filters.company,
-        "from_date": filters.from_date,
-        "to_date": filters.to_date,
-    }
+def _as_list(value):
+    """MultiSelectList value ko list me convert karo (list / JSON string / str)."""
+    if not value:
+        return []
 
-    # Period closing entries
-    if not filters.get("with_period_closing_entry_for_current_period"):
-        conditions.append(
-            "gle.voucher_type != 'Period Closing Voucher'"
-        )
+    if isinstance(value, (list, tuple)):
+        return list(value)
+
+    if isinstance(value, str):
+        value = value.strip()
+        if value.startswith("["):
+            try:
+                return list(json.loads(value))
+            except ValueError:
+                pass
+        return [value]
+
+    return []
+
+
+def get_dimension_conditions(filters):
+    """
+    Cost Center / Project / Finance Book ki GL conditions.
+    Breakdown aur SRBNB document view dono yahi use karte hain, taaki
+    dono jagah value same filters ke hisaab se match ho.
+    """
+    conditions = []
+    values = {}
 
     # Cost Center MultiSelectList, including child cost centers
-    cost_centers = filters.get("cost_center") or []
-
-    if isinstance(cost_centers, str):
-        cost_centers = [cost_centers] if cost_centers else []
+    cost_centers = _as_list(filters.get("cost_center"))
 
     if cost_centers:
         selected_centers = set()
@@ -246,23 +255,16 @@ def get_breakdown(filters):
 
         if selected_centers:
             values["cost_centers"] = list(selected_centers)
-            conditions.append(
-                "gle.cost_center IN %(cost_centers)s"
-            )
+            conditions.append("gle.cost_center IN %(cost_centers)s")
         else:
             conditions.append("1 = 0")
 
     # Project MultiSelectList
-    projects = filters.get("project") or []
-
-    if isinstance(projects, str):
-        projects = [projects] if projects else []
+    projects = _as_list(filters.get("project"))
 
     if projects:
         values["projects"] = projects
-        conditions.append(
-            "gle.project IN %(projects)s"
-        )
+        conditions.append("gle.project IN %(projects)s")
 
     # Finance Book filtering
     books = []
@@ -287,9 +289,34 @@ def get_breakdown(filters):
             "OR IFNULL(gle.finance_book, '') = '')"
         )
     else:
+        conditions.append("IFNULL(gle.finance_book, '') = ''")
+
+    return conditions, values
+
+
+def get_breakdown(filters):
+    conditions = [
+        "gle.company = %(company)s",
+        "gle.is_cancelled = 0",
+        "gle.is_opening = 'No'",
+        "gle.posting_date BETWEEN %(from_date)s AND %(to_date)s",
+    ]
+
+    values = {
+        "company": filters.company,
+        "from_date": filters.from_date,
+        "to_date": filters.to_date,
+    }
+
+    # Period closing entries
+    if not filters.get("with_period_closing_entry_for_current_period"):
         conditions.append(
-            "IFNULL(gle.finance_book, '') = ''"
+            "gle.voucher_type != 'Period Closing Voucher'"
         )
+
+    dim_conditions, dim_values = get_dimension_conditions(filters)
+    conditions.extend(dim_conditions)
+    values.update(dim_values)
 
     # Transaction-wise debit and credit
     rows = frappe.db.sql(
@@ -302,29 +329,7 @@ def get_breakdown(filters):
 
         FROM `tabGL Entry` gle
 
-        LEFT JOIN `tabPurchase Invoice` pi
-            ON gle.voucher_type = 'Purchase Invoice'
-            AND pi.name = gle.voucher_no
-
-        LEFT JOIN `tabPurchase Receipt` pr
-            ON gle.voucher_type = 'Purchase Receipt'
-            AND pr.name = gle.voucher_no
-
-        LEFT JOIN `tabSales Invoice` si
-            ON gle.voucher_type = 'Sales Invoice'
-            AND si.name = gle.voucher_no
-
-        LEFT JOIN `tabDelivery Note` dn
-            ON gle.voucher_type = 'Delivery Note'
-            AND dn.name = gle.voucher_no
-
-        LEFT JOIN `tabStock Entry` se
-            ON gle.voucher_type = 'Stock Entry'
-            AND se.name = gle.voucher_no
-
-        LEFT JOIN `tabPayment Entry` pe
-            ON gle.voucher_type = 'Payment Entry'
-            AND pe.name = gle.voucher_no
+        {TXN_JOINS}
 
         WHERE {" AND ".join(conditions)}
 
@@ -363,40 +368,14 @@ def sort_txns(items):
     return sorted(items, key=sort_key)
 
 
-
-from frappe import _
-
-
 # ---------------------------------------------------------------------
 # SRBNB Breakdown - ERPNext v15
 # ---------------------------------------------------------------------
 
-SRBNB_TXN_CASE = """
-CASE
-    WHEN gle.voucher_type = 'Purchase Receipt' AND pr.is_return = 1
-        THEN 'Purchase Return (Receipt)'
-    WHEN gle.voucher_type = 'Purchase Receipt'
-        THEN 'Purchase Receipt'
-    WHEN gle.voucher_type = 'Purchase Invoice' AND pi.is_return = 1
-        THEN 'Debit Note (Purchase Return)'
-    WHEN gle.voucher_type = 'Purchase Invoice'
-        THEN 'Purchase Invoice'
-    WHEN gle.voucher_type = 'Landed Cost Voucher'
-        THEN 'Landed Cost Voucher'
-    WHEN gle.voucher_type = 'Journal Entry'
-        THEN 'Journal Entry (Manual)'
-    ELSE gle.voucher_type
-END
-"""
-
-SRBNB_JOINS = """
-LEFT JOIN `tabPurchase Receipt` pr
-    ON gle.voucher_type = 'Purchase Receipt'
-    AND pr.name = gle.voucher_no
-LEFT JOIN `tabPurchase Invoice` pi
-    ON gle.voucher_type = 'Purchase Invoice'
-    AND pi.name = gle.voucher_no
-"""
+# Breakdown rows aur SRBNB views me EXACT same classification use hoti hai,
+# isliye breakdown row ka naam (txn) aur document view ka filter hamesha match karega.
+SRBNB_TXN_CASE = TXN_CASE
+SRBNB_JOINS = TXN_JOINS
 
 SRBNB_TXN_ORDER = [
     "Purchase Receipt",
@@ -404,7 +383,7 @@ SRBNB_TXN_ORDER = [
     "Purchase Invoice",
     "Debit Note (Purchase Return)",
     "Landed Cost Voucher",
-    "Journal Entry (Manual)",
+    "Journal Entry",
 ]
 
 
@@ -430,31 +409,41 @@ def execute_srbnb(filters):
             )
         )
 
-    opening = get_srbnb_opening(filters)
+    dim_conditions, dim_values = get_dimension_conditions(filters)
+
+    params = dict(filters)
+    params.update(dim_values)
+
+    opening = get_srbnb_opening(params, dim_conditions)
 
     if filters.get("srbnb_view") == "Document":
-        return get_srbnb_document_view(filters, opening)
+        return get_srbnb_document_view(filters, params, dim_conditions, opening)
 
-    return get_srbnb_summary_view(filters, opening)
+    return get_srbnb_summary_view(filters, params, dim_conditions, opening)
 
 
-def get_srbnb_base_conditions():
+def get_srbnb_base_conditions(dim_conditions):
     return [
         "gle.company = %(company)s",
         "gle.account = %(account)s",
         "gle.is_cancelled = 0",
-    ]
+    ] + dim_conditions
 
 
-def get_srbnb_period_conditions():
-    return get_srbnb_base_conditions() + [
+def get_srbnb_period_conditions(filters, dim_conditions):
+    conditions = get_srbnb_base_conditions(dim_conditions) + [
         "gle.is_opening = 'No'",
         "gle.posting_date BETWEEN %(from_date)s AND %(to_date)s",
     ]
 
+    if not filters.get("with_period_closing_entry_for_current_period"):
+        conditions.append("gle.voucher_type != 'Period Closing Voucher'")
 
-def get_srbnb_opening(filters):
-    conditions = get_srbnb_base_conditions() + [
+    return conditions
+
+
+def get_srbnb_opening(params, dim_conditions):
+    conditions = get_srbnb_base_conditions(dim_conditions) + [
         "(gle.posting_date < %(from_date)s OR gle.is_opening = 'Yes')"
     ]
 
@@ -466,7 +455,7 @@ def get_srbnb_opening(filters):
         FROM `tabGL Entry` gle
         WHERE {" AND ".join(conditions)}
         """,
-        filters,
+        params,
     )
 
     return flt(result[0][0]) if result else 0.0
@@ -488,7 +477,7 @@ def get_srbnb_sort_key(txn):
 # SRBNB Transaction Type view
 # ---------------------------------------------------------------------
 
-def get_srbnb_summary_view(filters, opening):
+def get_srbnb_summary_view(filters, params, dim_conditions, opening):
     columns = [
         {
             "label": _("Transaction Type"),
@@ -531,10 +520,10 @@ def get_srbnb_summary_view(filters, opening):
             SUM(gle.credit) AS credit
         FROM `tabGL Entry` gle
         {SRBNB_JOINS}
-        WHERE {" AND ".join(get_srbnb_period_conditions())}
+        WHERE {" AND ".join(get_srbnb_period_conditions(filters, dim_conditions))}
         GROUP BY txn
         """,
-        filters,
+        params,
         as_dict=True,
     )
 
@@ -572,6 +561,14 @@ def get_srbnb_summary_view(filters, opening):
                 "credit": credit,
                 "net": debit - credit,
                 "indent": 1,
+
+                # Click -> us transaction type ke documents
+                "is_srbnb_txn_link": 1,
+                "link_account": filters.account,
+                "transaction_type": row.txn,
+                "company": filters.company,
+                "from_date": filters.from_date,
+                "to_date": filters.to_date,
             }
         )
 
@@ -605,7 +602,7 @@ def get_srbnb_summary_view(filters, opening):
 # SRBNB Document view
 # ---------------------------------------------------------------------
 
-def get_srbnb_document_view(filters, opening):
+def get_srbnb_document_view(filters, params, dim_conditions, opening):
     columns = [
         {
             "label": _("Posting Date"),
@@ -659,12 +656,21 @@ def get_srbnb_document_view(filters, opening):
         },
     ]
 
-    conditions = get_srbnb_period_conditions()
+    conditions = get_srbnb_period_conditions(filters, dim_conditions)
 
     if filters.get("supplier"):
         conditions.append(
             "COALESCE(pr.supplier, pi.supplier, gle.party) = %(supplier)s"
         )
+
+    # Breakdown row pe click kiya to sirf wahi transaction type dikhao
+    transaction_type = (filters.get("transaction_type") or "").strip()
+    type_filtered = bool(transaction_type)
+
+    having = ""
+    if type_filtered:
+        params["transaction_type"] = transaction_type
+        having = "HAVING txn = %(transaction_type)s"
 
     rows = frappe.db.sql(
         f"""
@@ -686,27 +692,34 @@ def get_srbnb_document_view(filters, opening):
             gle.voucher_no,
             txn,
             supplier
+        {having}
         ORDER BY
             gle.posting_date,
             first_creation
         """,
-        filters,
+        params,
         as_dict=True,
     )
 
-    opening_debit, opening_credit = get_srbnb_split(opening)
+    data = []
 
-    data = [
-        {
-            "txn": _("Opening Balance"),
-            "debit": opening_debit,
-            "credit": opening_credit,
-            "balance": opening,
-            "is_bold": 1,
-        }
-    ]
+    if type_filtered:
+        # Type-wise view me opening/closing ka matlab nahi, running total 0 se
+        balance = 0.0
+    else:
+        opening_debit, opening_credit = get_srbnb_split(opening)
+        balance = opening
 
-    balance = opening
+        data.append(
+            {
+                "txn": _("Opening Balance"),
+                "debit": opening_debit,
+                "credit": opening_credit,
+                "balance": opening,
+                "is_bold": 1,
+            }
+        )
+
     total_debit = 0.0
     total_credit = 0.0
 
@@ -736,20 +749,22 @@ def get_srbnb_document_view(filters, opening):
             "txn": _("Total Movement"),
             "debit": total_debit,
             "credit": total_credit,
+            "balance": total_debit - total_credit,
             "is_bold": 1,
         }
     )
 
-    closing_debit, closing_credit = get_srbnb_split(balance)
+    if not type_filtered:
+        closing_debit, closing_credit = get_srbnb_split(balance)
 
-    data.append(
-        {
-            "txn": _("Closing Balance"),
-            "debit": closing_debit,
-            "credit": closing_credit,
-            "balance": balance,
-            "is_bold": 1,
-        }
-    )
+        data.append(
+            {
+                "txn": _("Closing Balance"),
+                "debit": closing_debit,
+                "credit": closing_credit,
+                "balance": balance,
+                "is_bold": 1,
+            }
+        )
 
     return columns, data
