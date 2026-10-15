@@ -1,6 +1,8 @@
 
 import frappe
 from frappe.utils import nowdate
+from frappe.utils import flt
+
 
 def lock_serials_on_grn_submit(doc, method):
     for item in doc.items:
@@ -961,3 +963,112 @@ def get_items_from_job_work_orders(jobo_names):
         })
 
     return items
+
+
+
+
+# Purchase Invoice Return should not be allowed until the linked Purchase Receipt (GRN) has been returned.
+#  The system must validate the GRN return status and returned quantity before allowing Purchase Invoice Return submission.
+
+
+def validate_purchase_invoice_return(doc, method=None):
+
+    # Only Purchase Invoice Return
+    if not doc.is_return:
+        return
+
+    if not doc.return_against:
+        frappe.throw(
+            _("Original Purchase Invoice reference is required.")
+        )
+
+    original_invoice = frappe.get_doc(
+        "Purchase Invoice",
+        doc.return_against
+    )
+
+    for item in doc.items:
+
+        # Find original invoice item
+        original_item = None
+
+        if item.get("purchase_invoice_item"):
+            original_item = next(
+                (
+                    row for row in original_invoice.items
+                    if row.name == item.purchase_invoice_item
+                ),
+                None
+            )
+
+        if not original_item:
+            matching_items = [
+                row for row in original_invoice.items
+                if row.item_code == item.item_code
+            ]
+
+            if len(matching_items) == 1:
+                original_item = matching_items[0]
+            else:
+                frappe.throw(
+                    _(
+                        "Cannot identify the original invoice row "
+                        "for Item {0}. Please verify item mapping."
+                    ).format(item.item_code)
+                )
+
+        # Direct Purchase Invoice without GRN
+        if not original_item.purchase_receipt:
+            continue
+
+        purchase_receipt = original_item.purchase_receipt
+        pr_detail = original_item.pr_detail
+
+        if not pr_detail:
+            frappe.throw(
+                _(
+                    "Purchase Receipt Item reference missing "
+                    "for Item {0}."
+                ).format(item.item_code)
+            )
+
+        # Get submitted GRN Return Qty
+        returned_qty = frappe.db.sql(
+            """
+            SELECT
+                COALESCE(SUM(ABS(pri.stock_qty)), 0)
+
+            FROM `tabPurchase Receipt Item` pri
+
+            INNER JOIN `tabPurchase Receipt` pr
+                ON pr.name = pri.parent
+
+            WHERE
+                pr.docstatus = 1
+                AND pr.is_return = 1
+                AND pr.return_against = %s
+                AND pri.purchase_receipt_item = %s
+            """,
+            (purchase_receipt, pr_detail)
+        )[0][0]
+
+        required_qty = abs(flt(item.stock_qty))
+
+        if flt(returned_qty) + 0.000001 < required_qty:
+
+            frappe.throw(
+                _(
+                    "Purchase Invoice Return is not allowed.<br><br>"
+                    "Item: <b>{0}</b><br>"
+                    "Purchase Receipt: <b>{1}</b><br>"
+                    "Required Return Qty: <b>{2}</b><br>"
+                    "GRN Returned Qty: <b>{3}</b><br><br>"
+                    "Please submit the linked GRN Return first."
+                ).format(
+                    item.item_code,
+                    purchase_receipt,
+                    required_qty,
+                    returned_qty
+                ),
+                title=_("GRN Return Required")
+            )
