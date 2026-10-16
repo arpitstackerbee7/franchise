@@ -77,13 +77,44 @@ def validate_user_roles(doc, method=None):
     # CHECK USER ROLES
     # =====================================================
 
-    assigned_roles = {
+    # assigned_roles = {
+    #     row.role
+    #     for row in doc.roles
+    #     if row.role
+    # }
+
+    # blocked_roles = assigned_roles.intersection(
+    #     restricted_roles
+    # )
+        assigned_roles = {
         row.role
         for row in doc.roles
         if row.role
     }
 
-    blocked_roles = assigned_roles.intersection(
+    # Roles that existed before this save
+    existing_roles = set()
+    if not doc.is_new():
+        before = doc.get_doc_before_save()
+        if before:
+            existing_roles = {
+                row.role
+                for row in before.roles
+                if row.role
+            }
+        else:
+            existing_roles = set(
+                frappe.get_all(
+                    "Has Role",
+                    filters={"parent": doc.name, "parenttype": "User"},
+                    pluck="role",
+                )
+            )
+
+    # Only newly added roles are validated
+    new_roles = assigned_roles - existing_roles
+
+    blocked_roles = new_roles.intersection(
         restricted_roles
     )
 
@@ -101,11 +132,21 @@ def validate_user_roles(doc, method=None):
     # CHECK USER MODULE PROFILE
     # =====================================================
 
+    # user_module_profile = doc.module_profile
+
+    # if (
+    #     user_module_profile
+    #     and restricted_modules
+    # ):
+
     user_module_profile = doc.module_profile
+
+    module_profile_changed = doc.is_new() or doc.has_value_changed("module_profile")
 
     if (
         user_module_profile
         and restricted_modules
+        and module_profile_changed
     ):
 
         # Get selected Module Profile
