@@ -24,6 +24,7 @@
   "is_user_login_with_otp",
   "enable_geo_location",
   "enable_pricing_rule",
+  "require_grn_return_before_purchase_invoice_return",
   "column_break_qyul",
   "enable_whatsapp_notification",
   "enable_whatsapp_group_notification",
@@ -116,14 +117,6 @@
    "fieldtype": "Table",
    "label": "Item Restricted Roles",
    "options": "Restricted Role Detail"
-  },
-  {
-   "fieldname": "sis_debit_note_company",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "SIS Debit Note Company",
-   "options": "Company",
-   "reqd": 1
   },
   {
    "fieldname": "sis_debit_note_supplier",
@@ -277,13 +270,19 @@
   {
    "fieldname": "column_break_evnp",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "require_grn_return_before_purchase_invoice_return",
+   "fieldtype": "Check",
+   "label": "Require GRN Return Before Purchase Invoice Return"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-09-18 13:17:23.911657",
+ "modified": "2026-10-16 15:57:46.468765",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
