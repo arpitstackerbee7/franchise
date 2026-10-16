@@ -2,6 +2,7 @@
 import frappe
 from frappe.utils import nowdate
 from frappe.utils import flt
+from frappe import _
 
 
 def lock_serials_on_grn_submit(doc, method):
@@ -970,10 +971,18 @@ def get_items_from_job_work_orders(jobo_names):
 # Purchase Invoice Return should not be allowed until the linked Purchase Receipt (GRN) has been returned.
 #  The system must validate the GRN return status and returned quantity before allowing Purchase Invoice Return submission.
 
-
 def validate_purchase_invoice_return(doc, method=None):
+    # Read the existing TZU Setting checkbox
+    require_grn_return = frappe.db.get_single_value(
+        "TZU Setting",
+        "require_grn_return_before_purchase_invoice_return"
+    )
 
-    # Only Purchase Invoice Return
+    # Skip custom validation when the setting is disabled
+    if not require_grn_return:
+        return
+
+    # Only validate Purchase Invoice Returns
     if not doc.is_return:
         return
 
@@ -988,10 +997,9 @@ def validate_purchase_invoice_return(doc, method=None):
     )
 
     for item in doc.items:
-
-        # Find original invoice item
         original_item = None
 
+        # Match the original Purchase Invoice row
         if item.get("purchase_invoice_item"):
             original_item = next(
                 (
@@ -1001,6 +1009,7 @@ def validate_purchase_invoice_return(doc, method=None):
                 None
             )
 
+        # Fallback: match by item code only when unambiguous
         if not original_item:
             matching_items = [
                 row for row in original_invoice.items
@@ -1017,7 +1026,7 @@ def validate_purchase_invoice_return(doc, method=None):
                     ).format(item.item_code)
                 )
 
-        # Direct Purchase Invoice without GRN
+        # Direct Purchase Invoice without a Purchase Receipt
         if not original_item.purchase_receipt:
             continue
 
@@ -1032,17 +1041,13 @@ def validate_purchase_invoice_return(doc, method=None):
                 ).format(item.item_code)
             )
 
-        # Get submitted GRN Return Qty
+        # Calculate the submitted GRN Return quantity
         returned_qty = frappe.db.sql(
             """
-            SELECT
-                COALESCE(SUM(ABS(pri.stock_qty)), 0)
-
+            SELECT COALESCE(SUM(ABS(pri.stock_qty)), 0)
             FROM `tabPurchase Receipt Item` pri
-
             INNER JOIN `tabPurchase Receipt` pr
                 ON pr.name = pri.parent
-
             WHERE
                 pr.docstatus = 1
                 AND pr.is_return = 1
@@ -1055,7 +1060,6 @@ def validate_purchase_invoice_return(doc, method=None):
         required_qty = abs(flt(item.stock_qty))
 
         if flt(returned_qty) + 0.000001 < required_qty:
-
             frappe.throw(
                 _(
                     "Purchase Invoice Return is not allowed.<br><br>"
