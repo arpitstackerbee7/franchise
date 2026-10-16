@@ -551,43 +551,102 @@ class TZURolePermissionManager(Document):
 	# 		f"Permissions for {role} on {document_type} "
 	# 		f"(Level {level}) have been removed."
 	# 	)
- 
- 
+	
+	
 	def on_cancel(self):
 		"""
-		Do not automatically delete permissions when a TZU Role
-		Permission Manager record is cancelled.
-
-		Permission removal should be done explicitly through the
-		Permission Manager after verifying the impact.
+		Remove a permission only when no other submitted
+		TZU Role Permission Manager record uses the same
+		DocType, Role and Permission Level.
 		"""
 
 		document_type = self.document_type
 		role = self.role
+		level = self.level or 0
 
-		# Keep existing permission records intact on cancellation.
-		# This prevents an older manager record from deleting a
-		# permission that may still be required by another workflow.
+		# Check whether another submitted manager record
+		# uses the same permission configuration.
+		other_managers = frappe.get_all(
+			"TZU Role Permission Manager",
+			filters={
+				"document_type": document_type,
+				"role": role,
+				"level": level,
+				"docstatus": 1,
+				"name": ["!=", self.name],
+			},
+			pluck="name",
+			limit=1,
+		)
 
-		if document_type == "Custom DocPerm":
+		if other_managers:
+			frappe.logger("permission_audit").warning(
+				"Permission preserved because another submitted "
+				"manager uses the same configuration. "
+				"Manager: %s, Other manager: %s, DocType: %s, Role: %s, Level: %s"
+				% (
+					self.name,
+					other_managers[0],
+					document_type,
+					role,
+					level,
+				)
+			)
+
+			frappe.clear_cache(doctype=document_type)
 			frappe.clear_cache(doctype="Custom DocPerm")
+			return
+
+		# No other submitted manager uses this configuration.
+		# Remove the matching permission row.
+		if document_type == "Custom DocPerm":
+			permission_name = frappe.db.get_value(
+				"DocPerm",
+				{
+					"parent": "Custom DocPerm",
+					"role": role,
+					"permlevel": level,
+				},
+				"name",
+			)
+
+			if permission_name:
+				frappe.db.delete(
+					"DocPerm",
+					{"name": permission_name},
+				)
+
+			frappe.clear_cache(doctype="Custom DocPerm")
+
 		else:
+			permission_name = frappe.db.get_value(
+				"Custom DocPerm",
+				{
+					"parent": document_type,
+					"role": role,
+					"permlevel": level,
+				},
+				"name",
+			)
+
+			if permission_name:
+				frappe.db.delete(
+					"Custom DocPerm",
+					{"name": permission_name},
+				)
+
 			frappe.clear_cache(doctype=document_type)
 			frappe.clear_cache(doctype="Custom DocPerm")
 
 		frappe.logger("permission_audit").warning(
-			"TZU Role Permission Manager cancelled without deleting "
-			"permissions. Manager: %s, DocType: %s, Role: %s, Level: %s, User: %s"
+			"TZU Role Permission Manager cancelled; no other submitted "
+			"matching manager found. Permission cleanup attempted. "
+			"Manager: %s, DocType: %s, Role: %s, Level: %s, User: %s"
 			% (
 				self.name,
 				document_type,
 				role,
-				self.level or 0,
+				level,
 				frappe.session.user,
 			)
-		)
-
-		frappe.msgprint(
-			"The manager record was cancelled. Existing permissions "
-			"were preserved. Remove permissions explicitly if required."
 		)
