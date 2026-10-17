@@ -446,160 +446,20 @@ class TZURolePermissionManager(Document):
 	# Manager.
 	# =============================================================
 
-	# def on_cancel(self):
-
-	# 	document_type = self.document_type
-	# 	role = self.role
-	# 	level = self.level or 0
-
-	# 	# =========================================================
-	# 	# CUSTOM DOCPERM
-	# 	#
-	# 	# Permission is stored in tabDocPerm
-	# 	# =========================================================
-
-	# 	if document_type == "Custom DocPerm":
-
-	# 		permission_name = frappe.db.get_value(
-	# 			"DocPerm",
-	# 			{
-	# 				"parent": "Custom DocPerm",
-	# 				"role": role,
-	# 				"permlevel": level,
-	# 			},
-	# 			"name",
-	# 		)
-
-	# 		if permission_name:
-
-	# 			frappe.db.sql(
-	# 				"""
-	# 				DELETE FROM `tabDocPerm`
-	# 				WHERE `name` = %(name)s
-	# 				""",
-	# 				{
-	# 					"name": permission_name,
-	# 				},
-	# 			)
-
-	# 		# Clear permission cache
-	# 		frappe.clear_cache(doctype="Custom DocPerm")
-
-	# 		frappe.msgprint(
-	# 			f"Permissions for {role} on Custom DocPerm "
-	# 			f"(Level {level}) have been removed."
-	# 		)
-
-	# 		return
-
-	# 	# =========================================================
-	# 	# NORMAL DOCTYPE
-	# 	#
-	# 	# Permission is stored in tabCustom DocPerm
-	# 	# =========================================================
-
-	# 	permission_name = frappe.db.get_value(
-	# 		"Custom DocPerm",
-	# 		{
-	# 			"parent": document_type,
-	# 			"role": role,
-	# 			"permlevel": level,
-	# 		},
-	# 		"name",
-	# 	)
-
-	# 	if permission_name:
-
-	# 		frappe.db.sql(
-	# 			"""
-	# 			DELETE FROM `tabCustom DocPerm`
-	# 			WHERE `name` = %(name)s
-	# 			""",
-	# 			{
-	# 				"name": permission_name,
-	# 			},
-	# 		)
-
-	# 	# =========================================================
-	# 	# CLEAR CACHE
-	# 	# =========================================================
-
-	# 	frappe.clear_cache(doctype=document_type)
-	# 	frappe.clear_cache(doctype="Custom DocPerm")
-
-	# 	# =========================================================
-	# 	# VALIDATE AGAIN
-	# 	#
-	# 	# This refreshes the permission configuration after
-	# 	# deleting the Custom DocPerm row.
-	# 	# =========================================================
-
-	# 	try:
-	# 		from frappe.core.doctype.doctype.doctype import (
-	# 			validate_permissions_for_doctype,
-	# 		)
-
-	# 		validate_permissions_for_doctype(document_type)
-
-	# 	except Exception:
-	# 		frappe.log_error(
-	# 			title="TZU Role Permission Manager - Cancel Permission Validation",
-	# 			message=frappe.get_traceback(),
-	# 		)
-
-	# 	frappe.msgprint(
-	# 		f"Permissions for {role} on {document_type} "
-	# 		f"(Level {level}) have been removed."
-	# 	)
-	
-	
 	def on_cancel(self):
-		"""
-		Remove a permission only when no other submitted
-		TZU Role Permission Manager record uses the same
-		DocType, Role and Permission Level.
-		"""
 
 		document_type = self.document_type
 		role = self.role
 		level = self.level or 0
 
-		# Check whether another submitted manager record
-		# uses the same permission configuration.
-		other_managers = frappe.get_all(
-			"TZU Role Permission Manager",
-			filters={
-				"document_type": document_type,
-				"role": role,
-				"level": level,
-				"docstatus": 1,
-				"name": ["!=", self.name],
-			},
-			pluck="name",
-			limit=1,
-		)
+		# =========================================================
+		# CUSTOM DOCPERM
+		#
+		# Permission is stored in tabDocPerm
+		# =========================================================
 
-		if other_managers:
-			frappe.logger("permission_audit").warning(
-				"Permission preserved because another submitted "
-				"manager uses the same configuration. "
-				"Manager: %s, Other manager: %s, DocType: %s, Role: %s, Level: %s"
-				% (
-					self.name,
-					other_managers[0],
-					document_type,
-					role,
-					level,
-				)
-			)
-
-			frappe.clear_cache(doctype=document_type)
-			frappe.clear_cache(doctype="Custom DocPerm")
-			return
-
-		# No other submitted manager uses this configuration.
-		# Remove the matching permission row.
 		if document_type == "Custom DocPerm":
+
 			permission_name = frappe.db.get_value(
 				"DocPerm",
 				{
@@ -611,42 +471,83 @@ class TZURolePermissionManager(Document):
 			)
 
 			if permission_name:
-				frappe.db.delete(
-					"DocPerm",
-					{"name": permission_name},
+
+				frappe.db.sql(
+					"""
+					DELETE FROM `tabDocPerm`
+					WHERE `name` = %(name)s
+					""",
+					{
+						"name": permission_name,
+					},
 				)
 
+			# Clear permission cache
 			frappe.clear_cache(doctype="Custom DocPerm")
 
-		else:
-			permission_name = frappe.db.get_value(
-				"Custom DocPerm",
+			frappe.msgprint(
+				f"Permissions for {role} on Custom DocPerm "
+				f"(Level {level}) have been removed."
+			)
+
+			return
+
+		# =========================================================
+		# NORMAL DOCTYPE
+		#
+		# Permission is stored in tabCustom DocPerm
+		# =========================================================
+
+		permission_name = frappe.db.get_value(
+			"Custom DocPerm",
+			{
+				"parent": document_type,
+				"role": role,
+				"permlevel": level,
+			},
+			"name",
+		)
+
+		if permission_name:
+
+			frappe.db.sql(
+				"""
+				DELETE FROM `tabCustom DocPerm`
+				WHERE `name` = %(name)s
+				""",
 				{
-					"parent": document_type,
-					"role": role,
-					"permlevel": level,
+					"name": permission_name,
 				},
-				"name",
 			)
 
-			if permission_name:
-				frappe.db.delete(
-					"Custom DocPerm",
-					{"name": permission_name},
-				)
+		# =========================================================
+		# CLEAR CACHE
+		# =========================================================
 
-			frappe.clear_cache(doctype=document_type)
-			frappe.clear_cache(doctype="Custom DocPerm")
+		frappe.clear_cache(doctype=document_type)
+		frappe.clear_cache(doctype="Custom DocPerm")
 
-		frappe.logger("permission_audit").warning(
-			"TZU Role Permission Manager cancelled; no other submitted "
-			"matching manager found. Permission cleanup attempted. "
-			"Manager: %s, DocType: %s, Role: %s, Level: %s, User: %s"
-			% (
-				self.name,
-				document_type,
-				role,
-				level,
-				frappe.session.user,
+		# =========================================================
+		# VALIDATE AGAIN
+		#
+		# This refreshes the permission configuration after
+		# deleting the Custom DocPerm row.
+		# =========================================================
+
+		try:
+			from frappe.core.doctype.doctype.doctype import (
+				validate_permissions_for_doctype,
 			)
+
+			validate_permissions_for_doctype(document_type)
+
+		except Exception:
+			frappe.log_error(
+				title="TZU Role Permission Manager - Cancel Permission Validation",
+				message=frappe.get_traceback(),
+			)
+
+		frappe.msgprint(
+			f"Permissions for {role} on {document_type} "
+			f"(Level {level}) have been removed."
 		)
