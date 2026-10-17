@@ -626,61 +626,179 @@ function open_purchase_order_mapper(frm) {
 // ===================================================
 // JOB RECEIPT
 // ===================================================
-function open_job_receipt_mapper(frm) {
+// function open_job_receipt_mapper(frm) {
 
-    new frappe.ui.form.MultiSelectDialog({
-        doctype: "Subcontracting Order",
-        target: frm,
-        setters: {
+//     new frappe.ui.form.MultiSelectDialog({
+//         doctype: "Subcontracting Order",
+//         target: frm,
+//         setters: {
+//             supplier: frm.doc.consignor,
+//             company: frm.doc.owner_site
+//         },
+//         get_query() {
+//             return {
+//                 filters: [
+//                     ["docstatus", "=", 1],
+//                     ["supplier", "=", frm.doc.consignor],
+//                     ["company", "=", frm.doc.owner_site],
+                    
+//                 ]
+//             };
+//         },
+//         action(selections) {
+//             add_reference_rows(frm, selections);
+//             this.dialog.hide();
+//         }
+//     });
+// }
+// ===================================================
+// JOB RECEIPT
+// ===================================================
+function open_job_receipt_mapper(frm) {
+    if (!frm.doc.consignor || !frm.doc.owner_site) {
+        frappe.throw("Please select Supplier and Company first");
+    }
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_job_receipt_orders",
+        args: {
             supplier: frm.doc.consignor,
             company: frm.doc.owner_site
         },
-        get_query() {
-            return {
-                filters: [
-                    ["docstatus", "=", 1],
-                    ["supplier", "=", frm.doc.consignor],
-                    ["company", "=", frm.doc.owner_site],
-                    
-                ]
-            };
-        },
-        action(selections) {
-            add_reference_rows(frm, selections);
-            this.dialog.hide();
+        freeze: true,
+        freeze_message: "Checking pending Job Work Orders...",
+
+        callback(r) {
+            const eligible_orders = r.message || [];
+
+            if (!eligible_orders.length) {
+                frappe.msgprint(
+                    "No Job Work Orders with pending return quantity found."
+                );
+                return;
+            }
+
+            new frappe.ui.form.MultiSelectDialog({
+                doctype: "Subcontracting Order",
+                target: frm,
+
+                setters: {
+                    supplier: frm.doc.consignor,
+                    company: frm.doc.owner_site
+                },
+
+                add_filters_group: 1,
+
+                get_query() {
+                    return {
+                        filters: {
+                            docstatus: 1,
+                            supplier: frm.doc.consignor,
+                            company: frm.doc.owner_site,
+                            name: ["in", eligible_orders]
+                        }
+                    };
+                },
+
+                action(selections) {
+                    add_reference_rows(frm, selections);
+                    this.dialog.hide();
+                }
+            });
         }
     });
 }
-
 // ===================================================
 // SALES RETURN
 // ===================================================
+// function open_sales_return_mapper(frm) {
+
+//     if (!frm.doc.consignor_customer) {
+//         frappe.throw("Please select Customer first");
+//     }
+
+//     new frappe.ui.form.MultiSelectDialog({
+//         doctype: "Sales Invoice",
+//         target: frm,
+//         setters: {
+//             customer: frm.doc.consignor_customer,
+//             company: frm.doc.owner_site
+//         },
+//         get_query() {
+//             return {
+//                 filters: [
+//                     ["docstatus", "=", 1],
+//                     ["is_return", "=", 0],
+//                     ["customer", "=", frm.doc.consignor_customer],
+//                     ["company", "=", frm.doc.owner_site]
+//                 ]
+//             };
+//         },
+//         action(selections) {
+//             add_reference_rows(frm, selections);
+//             this.dialog.hide();
+//         }
+//     });
+// }
 function open_sales_return_mapper(frm) {
 
     if (!frm.doc.consignor_customer) {
         frappe.throw("Please select Customer first");
     }
 
-    new frappe.ui.form.MultiSelectDialog({
-        doctype: "Sales Invoice",
-        target: frm,
-        setters: {
+    if (!frm.doc.owner_site) {
+        frappe.throw("Please select Company first");
+    }
+
+    frappe.call({
+        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_sales_invoices_with_returnable_qty",
+        args: {
             customer: frm.doc.consignor_customer,
             company: frm.doc.owner_site
         },
-        get_query() {
-            return {
-                filters: [
-                    ["docstatus", "=", 1],
-                    ["is_return", "=", 0],
-                    ["customer", "=", frm.doc.consignor_customer],
-                    ["company", "=", frm.doc.owner_site]
-                ]
-            };
-        },
-        action(selections) {
-            add_reference_rows(frm, selections);
-            this.dialog.hide();
+        freeze: true,
+        freeze_message: "Checking returned quantities...",
+
+        callback: function (r) {
+            if (r.exc) {
+                return;
+            }
+
+            const eligible_invoices = r.message || [];
+
+            if (!eligible_invoices.length) {
+                frappe.msgprint(
+                    "No Sales Invoice with returnable quantity found for this Customer and Company."
+                );
+                return;
+            }
+
+            new frappe.ui.form.MultiSelectDialog({
+                doctype: "Sales Invoice",
+                target: frm,
+
+                setters: {
+                    customer: frm.doc.consignor_customer,
+                    company: frm.doc.owner_site
+                },
+
+                get_query() {
+                    return {
+                        filters: [
+                            ["docstatus", "=", 1],
+                            ["is_return", "=", 0],
+                            ["customer", "=", frm.doc.consignor_customer],
+                            ["company", "=", frm.doc.owner_site],
+                            ["name", "in", eligible_invoices]
+                        ]
+                    };
+                },
+
+                action(selections) {
+                    add_reference_rows(frm, selections);
+                    this.dialog.hide();
+                }
+            });
         }
     });
 }
