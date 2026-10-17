@@ -626,88 +626,89 @@ function open_purchase_order_mapper(frm) {
 // ===================================================
 // JOB RECEIPT
 // ===================================================
-// function open_job_receipt_mapper(frm) {
-
-//     new frappe.ui.form.MultiSelectDialog({
-//         doctype: "Subcontracting Order",
-//         target: frm,
-//         setters: {
-//             supplier: frm.doc.consignor,
-//             company: frm.doc.owner_site
-//         },
-//         get_query() {
-//             return {
-//                 filters: [
-//                     ["docstatus", "=", 1],
-//                     ["supplier", "=", frm.doc.consignor],
-//                     ["company", "=", frm.doc.owner_site],
-                    
-//                 ]
-//             };
-//         },
-//         action(selections) {
-//             add_reference_rows(frm, selections);
-//             this.dialog.hide();
-//         }
-//     });
-// }
-// ===================================================
-// JOB RECEIPT
-// ===================================================
 function open_job_receipt_mapper(frm) {
-    if (!frm.doc.consignor || !frm.doc.owner_site) {
-        frappe.throw("Please select Supplier and Company first");
-    }
 
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_job_receipt_orders",
-        args: {
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Subcontracting Order",
+        target: frm,
+        setters: {
             supplier: frm.doc.consignor,
             company: frm.doc.owner_site
         },
-        freeze: true,
-        freeze_message: "Checking pending Job Work Orders...",
-
-        callback(r) {
-            const eligible_orders = r.message || [];
-
-            if (!eligible_orders.length) {
-                frappe.msgprint(
-                    "No Job Work Orders with pending return quantity found."
-                );
-                return;
-            }
-
-            new frappe.ui.form.MultiSelectDialog({
-                doctype: "Subcontracting Order",
-                target: frm,
-
-                setters: {
-                    supplier: frm.doc.consignor,
-                    company: frm.doc.owner_site
-                },
-
-                add_filters_group: 1,
-
-                get_query() {
-                    return {
-                        filters: {
-                            docstatus: 1,
-                            supplier: frm.doc.consignor,
-                            company: frm.doc.owner_site,
-                            name: ["in", eligible_orders]
-                        }
-                    };
-                },
-
-                action(selections) {
-                    add_reference_rows(frm, selections);
-                    this.dialog.hide();
-                }
-            });
+        get_query() {
+            return {
+                filters: [
+                    ["docstatus", "=", 1],
+                    ["supplier", "=", frm.doc.consignor],
+                    ["company", "=", frm.doc.owner_site],
+                    
+                ]
+            };
+        },
+        action(selections) {
+            add_reference_rows(frm, selections);
+            this.dialog.hide();
         }
     });
 }
+
+// ===================================================
+// JOB RECEIPT
+// ===================================================
+// function open_job_receipt_mapper(frm) {
+//     if (!frm.doc.consignor || !frm.doc.owner_site) {
+//         frappe.throw("Please select Supplier and Company first");
+//     }
+
+//     frappe.call({
+//         method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_job_receipt_orders",
+//         args: {
+//             supplier: frm.doc.consignor,
+//             company: frm.doc.owner_site
+//         },
+//         freeze: true,
+//         freeze_message: "Checking pending Job Work Orders...",
+
+//         callback(r) {
+//             const eligible_orders = r.message || [];
+
+//             if (!eligible_orders.length) {
+//                 frappe.msgprint(
+//                     "No Job Work Orders with pending return quantity found."
+//                 );
+//                 return;
+//             }
+
+//             new frappe.ui.form.MultiSelectDialog({
+//                 doctype: "Subcontracting Order",
+//                 target: frm,
+
+//                 setters: {
+//                     supplier: frm.doc.consignor,
+//                     company: frm.doc.owner_site
+//                 },
+
+//                 add_filters_group: 1,
+
+//                 get_query() {
+//                     return {
+//                         filters: {
+//                             docstatus: 1,
+//                             supplier: frm.doc.consignor,
+//                             company: frm.doc.owner_site,
+//                             name: ["in", eligible_orders]
+//                         }
+//                     };
+//                 },
+
+//                 action(selections) {
+//                     add_reference_rows(frm, selections);
+//                     this.dialog.hide();
+//                 }
+//             });
+//         }
+//     });
+// }
 // ===================================================
 // SALES RETURN
 // ===================================================
@@ -842,25 +843,59 @@ function open_stock_entry_mapper(frm) {
 // ===================================================
 // WIP RETURN
 // ===================================================
+// function open_wip_return_mapper(frm) {
+
+//     new frappe.ui.form.MultiSelectDialog({
+//         doctype: "Subcontracting Order",
+//         target: frm,
+//         setters: {
+//             supplier: frm.doc.consignor,
+//             company: frm.doc.owner_site
+//         },
+//         get_query() {
+//             return {
+//                 filters: [
+//                     ["docstatus", "=", 1],
+//                     ["supplier", "=", frm.doc.consignor],
+//                     ["company", "=", frm.doc.owner_site],
+                    
+//                 ]
+//             };
+//         },
+//         action(selections) {
+//             add_reference_rows(frm, selections);
+//             this.dialog.hide();
+//         }
+//     });
+// }
+// ===================================================
+// WIP RETURN
+// ===================================================
 function open_wip_return_mapper(frm) {
+    if (!frm.doc.consignor || !frm.doc.owner_site) {
+        frappe.throw("Please select Supplier and Company first");
+    }
 
     new frappe.ui.form.MultiSelectDialog({
         doctype: "Subcontracting Order",
         target: frm,
+
         setters: {
             supplier: frm.doc.consignor,
             company: frm.doc.owner_site
         },
+
         get_query() {
             return {
                 filters: [
                     ["docstatus", "=", 1],
                     ["supplier", "=", frm.doc.consignor],
                     ["company", "=", frm.doc.owner_site],
-                    
+                    ["status", "not in", ["Completed", "Closed", "Cancelled"]]
                 ]
             };
         },
+
         action(selections) {
             add_reference_rows(frm, selections);
             this.dialog.hide();
