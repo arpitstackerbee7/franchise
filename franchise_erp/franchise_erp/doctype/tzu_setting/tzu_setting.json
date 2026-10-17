@@ -21,6 +21,7 @@
   "box_barcode_series_length",
   "item_restricted_roles",
   "enabled_features_section",
+  "is_system_generated_je",
   "is_user_login_with_otp",
   "enable_geo_location",
   "enable_pricing_rule",
@@ -276,13 +277,19 @@
    "fieldname": "require_grn_return_before_purchase_invoice_return",
    "fieldtype": "Check",
    "label": "Require GRN Return Before Purchase Invoice Return"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_system_generated_je",
+   "fieldtype": "Check",
+   "label": "Is System Generated JE"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-16 15:57:46.468765",
+ "modified": "2026-10-17 17:32:21.001491",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
