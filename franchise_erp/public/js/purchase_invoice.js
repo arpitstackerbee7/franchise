@@ -541,43 +541,133 @@ frappe.ui.form.on('Purchase Invoice', {
     },
 
     //for  gate entry  PROCESS ITEMS
+    // process_gate_entries: function (frm, selected_rows) {
+
+    //     // ✅ Validate single transporter
+    //     let transporters = [...new Set(selected_rows.map(d => d.transporter))];
+
+    //     if (transporters.length > 1) {
+    //         frappe.throw("Multiple Transporters found!");
+    //     }
+
+    //     // ✅ Set Supplier
+    //     frm.set_value("supplier", transporters[0]);
+
+    //     // ✅ Clear old items
+    //     frm.clear_table("items");
+
+    //     selected_rows.forEach(ge => {
+
+    //         if (!ge.transport_service_item) {
+    //             frappe.throw(`Missing Service Item in ${ge.name}`);
+    //         }
+
+    //         let row = frm.add_child("items");
+
+    //         row.item_code = ge.transport_service_item;
+    //         row.item_name = ge.transport_service_item;
+    //         row.uom = "Nos";
+    //         row.qty = 1;
+
+    //         // ✅ Direct rate from backend
+    //         row.rate = ge.total_amount || 0;
+
+    //         row.custom_gate_entry = ge.name;
+    //     });
+
+    //     frm.refresh_field("items");
+
+    //     frappe.msgprint("Items added successfully");
+    // },
+
+    // FOR GATE ENTRY - PROCESS ITEMS
     process_gate_entries: function (frm, selected_rows) {
 
-        // ✅ Validate single transporter
-        let transporters = [...new Set(selected_rows.map(d => d.transporter))];
+        if (!selected_rows || !selected_rows.length) {
+            frappe.msgprint("Please select at least one Gate Entry.");
+            return;
+        }
+
+        // Validate single transporter
+        let transporters = [
+            ...new Set(
+                selected_rows
+                    .map(d => d.transporter)
+                    .filter(Boolean)
+            )
+        ];
 
         if (transporters.length > 1) {
             frappe.throw("Multiple Transporters found!");
         }
 
-        // ✅ Set Supplier
-        frm.set_value("supplier", transporters[0]);
+        // Existing Gate Entries in the Items table
+        
+        // Remove completely empty default rows only
+        frm.doc.items = (frm.doc.items || []).filter(row => {
+            return row.item_code ||
+                   row.custom_gate_entry ||
+                   row.qty ||
+                   row.rate;
+        });
 
-        // ✅ Clear old items
-        frm.clear_table("items");
+        frm.refresh_field("items");
 
-        selected_rows.forEach(ge => {
+        // Existing Gate Entries in the Items table
+        let existing_gate_entries = new Set(
+            (frm.doc.items || [])
+                .map(row => row.custom_gate_entry)
+                .filter(Boolean)
+        );
 
-            if (!ge.transport_service_item) {
-                frappe.throw(`Missing Service Item in ${ge.name}`);
-            }
 
+        // Filter out already added Gate Entries
+        let new_entries = selected_rows.filter(
+            ge => !existing_gate_entries.has(ge.name)
+        );
+
+        if (!new_entries.length) {
+            frappe.msgprint(
+                "All selected Gate Entries are already added in the Items table."
+            );
+            return;
+        }
+
+        // Validate service items before adding rows
+        let missing_service_items = new_entries.filter(
+            ge => !ge.transport_service_item
+        );
+
+        if (missing_service_items.length) {
+            frappe.throw(
+                "Missing Service Item in Gate Entry: " +
+                missing_service_items.map(ge => ge.name).join(", ")
+            );
+        }
+
+        // Set Supplier only if currently empty
+        // Do not overwrite an existing Supplier unnecessarily
+        if (!frm.doc.supplier && transporters.length) {
+            frm.set_value("supplier", transporters[0]);
+        }
+
+        // Append new items without clearing existing items
+        new_entries.forEach(ge => {
             let row = frm.add_child("items");
 
             row.item_code = ge.transport_service_item;
             row.item_name = ge.transport_service_item;
             row.uom = "Nos";
             row.qty = 1;
-
-            // ✅ Direct rate from backend
             row.rate = ge.total_amount || 0;
-
             row.custom_gate_entry = ge.name;
         });
 
         frm.refresh_field("items");
 
-        frappe.msgprint("Items added successfully");
+        frappe.msgprint(
+            `${new_entries.length} new Gate Entry item(s) added successfully.`
+        );
     },
 
     //for outgoing logistcis
