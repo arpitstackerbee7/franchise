@@ -586,3 +586,88 @@ def get_available_purchase_orders(supplier, company):
         for po in purchase_orders
         if po.name in pending_po_names
     ]
+
+@frappe.whitelist()
+def get_sales_invoices_with_returnable_qty(customer, company):
+    if not customer or not company:
+        return []
+
+    rows = frappe.db.sql(
+        """
+        SELECT DISTINCT si.name
+        FROM `tabSales Invoice` si
+        INNER JOIN `tabSales Invoice Item` sii
+            ON sii.parent = si.name
+
+        WHERE
+            si.docstatus = 1
+            AND si.is_return = 0
+            AND si.customer = %(customer)s
+            AND si.company = %(company)s
+
+            AND ABS(sii.qty) >
+                COALESCE((
+                    SELECT SUM(ABS(ri.qty))
+                    FROM `tabSales Invoice Item` ri
+                    INNER JOIN `tabSales Invoice` rsi
+                        ON rsi.name = ri.parent
+                    WHERE
+                        ri.sales_invoice_item = sii.name
+                        AND rsi.docstatus = 1
+                        AND rsi.is_return = 1
+                        AND rsi.return_against = si.name
+                ), 0) + 0.000001
+        """,
+        {
+            "customer": customer,
+            "company": company
+        },
+        as_dict=True
+    )
+
+    return [row.name for row in rows]
+
+@frappe.whitelist()
+def get_job_receipt_orders(supplier, company):
+    if not supplier or not company:
+        return []
+
+    rows = frappe.db.sql(
+        """
+        SELECT DISTINCT so.name
+        FROM `tabSubcontracting Order` so
+        INNER JOIN `tabSubcontracting Order Item` soi
+            ON soi.parent = so.name
+
+        LEFT JOIN (
+            SELECT
+                sri.subcontracting_order_item,
+                SUM(ABS(sri.received_qty)) AS returned_qty
+            FROM `tabSubcontracting Receipt Item` sri
+            INNER JOIN `tabSubcontracting Receipt` sr
+                ON sr.name = sri.parent
+            WHERE
+                sr.docstatus = 1
+                AND sr.is_return = 1
+                AND sri.subcontracting_order_item IS NOT NULL
+            GROUP BY sri.subcontracting_order_item
+        ) ret
+            ON ret.subcontracting_order_item = soi.name
+
+        WHERE
+            so.docstatus = 1
+            AND so.supplier = %(supplier)s
+            AND so.company = %(company)s
+            AND ABS(soi.qty) >
+                COALESCE(ret.returned_qty, 0) + 0.000001
+
+        ORDER BY so.name DESC
+        """,
+        {
+            "supplier": supplier,
+            "company": company,
+        },
+        as_dict=True,
+    )
+
+    return [row.name for row in rows]
