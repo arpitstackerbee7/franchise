@@ -32,6 +32,7 @@
    "options": "Promotional Scheme"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "franchises",
    "fieldtype": "Table",
    "label": "Franchises",
@@ -117,7 +118,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-19 16:50:21.767780",
+ "modified": "2026-10-18 09:24:44.383805",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Promotion Franchise linking",
