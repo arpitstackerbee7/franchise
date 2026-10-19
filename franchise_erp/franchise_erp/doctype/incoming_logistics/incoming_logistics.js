@@ -641,6 +641,7 @@ function open_job_receipt_mapper(frm) {
                     ["docstatus", "=", 1],
                     ["supplier", "=", frm.doc.consignor],
                     ["company", "=", frm.doc.owner_site],
+                    ["status", "not in", ["Completed", "Closed", "Cancelled"]]
                     
                 ]
             };
