@@ -327,11 +327,7 @@ def get_statement_mappings(section=None):
     """
     Read Statement mappings from Finance Setting.
 
-<<<<<<< Updated upstream
-    Statement Type order is EXACTLY the order of rows
-=======
     Statement Type order follows the order of rows
->>>>>>> Stashed changes
     inside financial_statement_account_mapping.
     """
 
@@ -359,14 +355,9 @@ def get_statement_mappings(section=None):
             continue
 
         # Account
-<<<<<<< Updated upstream
-        # Account khali ho to sirf tab allow karo jab ye
-        # SRBNB transaction-type row ho
-=======
->>>>>>> Stashed changes
         account = child.get("account")
 
-        if not account and not get_txn_config(child):
+        if not account:
             continue
 
         # Section
@@ -378,17 +369,9 @@ def get_statement_mappings(section=None):
             continue
 
         # Copy child row
-<<<<<<< Updated upstream
-        row = frappe._dict(
-            child.as_dict()
-        )
-
-        # Exact TZU Setting sequence
-=======
         row = frappe._dict(child.as_dict())
 
         # Preserve Finance Setting row order
->>>>>>> Stashed changes
         row["_sequence"] = sequence
 
         # Statement Parent
@@ -398,16 +381,13 @@ def get_statement_mappings(section=None):
 
         result.append(row)
 
-<<<<<<< Updated upstream
-    # ALWAYS preserve TZU Setting order
-=======
     # Preserve original configuration order
->>>>>>> Stashed changes
     result.sort(
         key=lambda row: row.get("_sequence", 999999)
     )
 
     return result
+
 
 
 
@@ -1328,11 +1308,7 @@ def get_section_data(
 
 def get_statement_sections():
 
-<<<<<<< Updated upstream
-    settings = frappe.get_single("TZU Setting")
-=======
     settings = frappe.get_single("Finance Setting")
->>>>>>> Stashed changes
 
     mappings = (
         settings.get("financial_statement_account_mapping")
