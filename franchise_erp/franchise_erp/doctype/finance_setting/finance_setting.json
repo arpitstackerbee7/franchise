@@ -9,6 +9,7 @@
  ],
  "fields": [
   {
+   "allow_bulk_edit": 1,
    "fieldname": "financial_statement_account_mapping",
    "fieldtype": "Table",
    "label": "Financial Statement Account Mapping",
@@ -19,7 +20,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-21 13:52:09.645351",
+ "modified": "2026-10-21 17:11:06.056596",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Finance Setting",
