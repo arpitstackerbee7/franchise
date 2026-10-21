@@ -44,9 +44,7 @@
   "for_reports_section",
   "counter_store_level_performance",
   "column_break_evnp",
-  "individual_sales_representative_incentives",
-  "section_break_eiab",
-  "financial_statement_account_mapping"
+  "individual_sales_representative_incentives"
  ],
  "fields": [
   {
@@ -222,17 +220,6 @@
    "fieldtype": "Link",
    "label": "Dashboard Company",
    "options": "Company"
-  },
-  {
-   "fieldname": "section_break_eiab",
-   "fieldtype": "Section Break"
-  },
-  {
-   "allow_bulk_edit": 1,
-   "fieldname": "financial_statement_account_mapping",
-   "fieldtype": "Table",
-   "label": "Financial Statement Account Mapping",
-   "options": "Financial Statement Account Mapping"
   },
   {
    "fieldname": "employee_payable_account",

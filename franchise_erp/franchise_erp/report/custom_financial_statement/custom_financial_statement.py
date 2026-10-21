@@ -325,15 +325,13 @@ def get_columns(filters=None):
 
 def get_statement_mappings(section=None):
     """
-    Read Statement mappings from TZU Setting.
+    Read Statement mappings from Finance Setting.
 
-    Statement Type order is EXACTLY the order of rows
+    Statement Type order follows the order of rows
     inside financial_statement_account_mapping.
-
-    Account hierarchy is NOT used here.
     """
 
-    settings = frappe.get_single("TZU Setting")
+    settings = frappe.get_single("Finance Setting")
 
     mappings = (
         settings.get("financial_statement_account_mapping")
@@ -357,11 +355,9 @@ def get_statement_mappings(section=None):
             continue
 
         # Account
-        # Account khali ho to sirf tab allow karo jab ye
-        # SRBNB transaction-type row ho
         account = child.get("account")
 
-        if not account and not get_txn_config(child):
+        if not account:
             continue
 
         # Section
@@ -373,11 +369,9 @@ def get_statement_mappings(section=None):
             continue
 
         # Copy child row
-        row = frappe._dict(
-            child.as_dict()
-        )
+        row = frappe._dict(child.as_dict())
 
-        # Exact TZU Setting sequence
+        # Preserve Finance Setting row order
         row["_sequence"] = sequence
 
         # Statement Parent
@@ -387,12 +381,14 @@ def get_statement_mappings(section=None):
 
         result.append(row)
 
-    # ALWAYS preserve TZU Setting order
+    # Preserve original configuration order
     result.sort(
         key=lambda row: row.get("_sequence", 999999)
     )
 
     return result
+
+
 
 
 # ============================================================
@@ -1312,7 +1308,7 @@ def get_section_data(
 
 def get_statement_sections():
 
-    settings = frappe.get_single("TZU Setting")
+    settings = frappe.get_single("Finance Setting")
 
     mappings = (
         settings.get("financial_statement_account_mapping")
@@ -1337,6 +1333,7 @@ def get_statement_sections():
             sections.append(section)
 
     return sections
+
 
 
 def is_trading_section(section):
