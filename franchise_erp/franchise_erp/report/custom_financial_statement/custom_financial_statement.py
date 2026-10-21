@@ -1,9 +1,265 @@
 # Copyright (c) 2026
 # For license information, please see license.txt
 
+import json
+
 import frappe
 from frappe import _
 from frappe.utils import flt, add_days
+
+
+# ============================================================
+# TRANSACTION TYPE LOGIC (same as Custom Trial Balance)
+# ============================================================
+
+TXN_CASE = """
+CASE
+    WHEN gle.voucher_type = 'Purchase Invoice' AND pi.is_return = 1
+        THEN 'Debit Note (Purchase Return)'
+    WHEN gle.voucher_type = 'Purchase Invoice'
+        THEN 'Purchase Invoice'
+
+    WHEN gle.voucher_type = 'Purchase Receipt' AND pr.is_return = 1
+        THEN 'Purchase Return (Receipt)'
+    WHEN gle.voucher_type = 'Purchase Receipt'
+        THEN 'Purchase Receipt'
+
+    WHEN gle.voucher_type = 'Sales Invoice' AND si.is_return = 1
+        THEN 'Credit Note (Sales Return)'
+    WHEN gle.voucher_type = 'Sales Invoice' AND si.is_debit_note = 1
+        THEN 'Debit Note (Sales)'
+    WHEN gle.voucher_type = 'Sales Invoice'
+        THEN 'Sales Invoice'
+
+    WHEN gle.voucher_type = 'Delivery Note' AND dn.is_return = 1
+        THEN 'Sales Return (Delivery)'
+    WHEN gle.voucher_type = 'Delivery Note'
+        THEN 'Delivery Note'
+
+    WHEN gle.voucher_type = 'Stock Entry'
+        THEN CONCAT('Stock Entry - ', IFNULL(se.stock_entry_type, ''))
+
+    WHEN gle.voucher_type = 'Payment Entry'
+        THEN CONCAT('Payment - ', IFNULL(pe.payment_type, ''))
+
+    ELSE gle.voucher_type
+END
+"""
+
+TXN_JOINS = """
+LEFT JOIN `tabPurchase Invoice` pi
+    ON gle.voucher_type = 'Purchase Invoice'
+    AND pi.name = gle.voucher_no
+
+LEFT JOIN `tabPurchase Receipt` pr
+    ON gle.voucher_type = 'Purchase Receipt'
+    AND pr.name = gle.voucher_no
+
+LEFT JOIN `tabSales Invoice` si
+    ON gle.voucher_type = 'Sales Invoice'
+    AND si.name = gle.voucher_no
+
+LEFT JOIN `tabDelivery Note` dn
+    ON gle.voucher_type = 'Delivery Note'
+    AND dn.name = gle.voucher_no
+
+LEFT JOIN `tabStock Entry` se
+    ON gle.voucher_type = 'Stock Entry'
+    AND se.name = gle.voucher_no
+
+LEFT JOIN `tabPayment Entry` pe
+    ON gle.voucher_type = 'Payment Entry'
+    AND pe.name = gle.voucher_no
+"""
+
+# Statement Type = "Purchase" ki value SRBNB GL se aayegi,
+# Purchase Receipt transaction type ke logic se.
+#   sign =  1  => Credit - Debit
+#   sign = -1  => Debit - Credit
+# Agar sign ulta dikhe to bas 1 <-> -1 kar do.
+TXN_STATEMENT_TYPES = {
+    "purchase": ("Purchase Receipt", 1),
+}
+
+
+def get_txn_config(mapping):
+    """Return (txn_name, sign) if mapping is one of the 5 special types."""
+
+    key = str(
+        mapping.get("statement_type") or ""
+    ).strip().lower()
+
+    return TXN_STATEMENT_TYPES.get(key)
+
+
+def _as_list(value):
+    """Convert list / JSON string / str into list."""
+
+    if not value:
+        return []
+
+    if isinstance(value, (list, tuple)):
+        return list(value)
+
+    if isinstance(value, str):
+        value = value.strip()
+
+        if value.startswith("["):
+            try:
+                return list(json.loads(value))
+            except ValueError:
+                pass
+
+        return [value]
+
+    return []
+
+
+def get_dimension_conditions(filters):
+    """Cost Center / Project / Finance Book conditions for GL Entry."""
+
+    conditions = []
+    values = {}
+
+    # Cost Center (including child cost centers)
+    cost_centers = _as_list(filters.get("cost_center"))
+
+    if cost_centers:
+        selected_centers = set()
+
+        for center in cost_centers:
+            bounds = frappe.db.get_value(
+                "Cost Center",
+                center,
+                ["lft", "rgt"],
+            )
+
+            if not bounds:
+                continue
+
+            children = frappe.get_all(
+                "Cost Center",
+                filters={
+                    "lft": [">=", bounds[0]],
+                    "rgt": ["<=", bounds[1]],
+                },
+                pluck="name",
+            )
+
+            selected_centers.update(children)
+
+        if selected_centers:
+            values["cost_centers"] = list(selected_centers)
+            conditions.append("gle.cost_center IN %(cost_centers)s")
+        else:
+            conditions.append("1 = 0")
+
+    # Project
+    projects = _as_list(filters.get("project"))
+
+    if projects:
+        values["projects"] = projects
+        conditions.append("gle.project IN %(projects)s")
+
+    # Finance Book
+    books = []
+
+    if filters.get("finance_book"):
+        books.append(filters.get("finance_book"))
+
+    if filters.get("include_default_book_entries"):
+        default_book = frappe.get_cached_value(
+            "Company",
+            filters.get("company"),
+            "default_finance_book",
+        )
+
+        if default_book:
+            books.append(default_book)
+
+    if books:
+        values["books"] = tuple(set(books))
+        conditions.append(
+            "(gle.finance_book IN %(books)s "
+            "OR IFNULL(gle.finance_book, '') = '')"
+        )
+    else:
+        conditions.append("IFNULL(gle.finance_book, '') = ''")
+
+    return conditions, values
+
+
+def get_txn_value(mapping, filters):
+    """
+    SRBNB account ke GL Entry se transaction-type wise value.
+    """
+
+    config = get_txn_config(mapping)
+
+    if not config:
+        return 0
+
+    txn_name, sign = config
+
+    # Finance Setting me account diya hai to wahi, warna Company ka SRBNB
+    account = mapping.get("account") or frappe.get_cached_value(
+        "Company",
+        filters.get("company"),
+        "stock_received_but_not_billed",
+    )
+
+    if not account:
+        return 0
+
+    conditions = [
+        "gle.company = %(company)s",
+        "gle.account = %(account)s",
+        "gle.is_cancelled = 0",
+        "gle.is_opening = 'No'",
+        "gle.posting_date BETWEEN %(from_date)s AND %(to_date)s",
+        "gle.voucher_type != 'Period Closing Voucher'",
+    ]
+
+    values = {
+        "company": filters.get("company"),
+        "account": account,
+        "from_date": filters.get("from_date"),
+        "to_date": filters.get("to_date"),
+        "txn_name": txn_name,
+    }
+
+    dim_conditions, dim_values = get_dimension_conditions(filters)
+
+    conditions.extend(dim_conditions)
+    values.update(dim_values)
+
+    result = frappe.db.sql(
+        f"""
+        SELECT
+            {TXN_CASE} AS txn,
+            COALESCE(SUM(gle.debit), 0) AS debit,
+            COALESCE(SUM(gle.credit), 0) AS credit
+
+        FROM `tabGL Entry` gle
+
+        {TXN_JOINS}
+
+        WHERE {" AND ".join(conditions)}
+
+        GROUP BY txn
+        HAVING txn = %(txn_name)s
+        """,
+        values,
+        as_dict=True,
+    )
+
+    if not result:
+        return 0
+
+    debit = flt(result[0].debit)
+    credit = flt(result[0].credit)
+
+    return (credit - debit) if sign == 1 else (debit - credit)
 
 
 # ============================================================
@@ -66,11 +322,10 @@ def get_columns(filters=None):
 # ============================================================
 # STATEMENT MAPPINGS
 # ============================================================
+
 def get_statement_mappings(section=None):
     """
     Read Statement mappings from Finance Setting.
-
-    IMPORTANT:
 
     Statement Type order is EXACTLY the order of rows
     inside financial_statement_account_mapping.
@@ -89,17 +344,11 @@ def get_statement_mappings(section=None):
 
     for sequence, child in enumerate(mappings):
 
-        # ----------------------------------------------------
         # Enabled
-        # ----------------------------------------------------
-
         if not child.get("enabled"):
             continue
 
-        # ----------------------------------------------------
         # Statement Type
-        # ----------------------------------------------------
-
         statement_type = str(
             child.get("statement_type") or ""
         ).strip()
@@ -107,19 +356,15 @@ def get_statement_mappings(section=None):
         if not statement_type:
             continue
 
-        # ----------------------------------------------------
         # Account
-        # ----------------------------------------------------
-
+        # Account khali ho to sirf tab allow karo jab ye
+        # SRBNB transaction-type row ho
         account = child.get("account")
 
-        if not account:
+        if not account and not get_txn_config(child):
             continue
 
-        # ----------------------------------------------------
         # Section
-        # ----------------------------------------------------
-
         row_section = str(
             child.get("statement_section") or ""
         ).strip()
@@ -127,10 +372,7 @@ def get_statement_mappings(section=None):
         if section and row_section != section:
             continue
 
-        # ----------------------------------------------------
         # Copy child row
-        # ----------------------------------------------------
-
         row = frappe._dict(
             child.as_dict()
         )
@@ -138,25 +380,16 @@ def get_statement_mappings(section=None):
         # Exact Finance Setting sequence
         row["_sequence"] = sequence
 
-        # ----------------------------------------------------
         # Statement Parent
-        # ----------------------------------------------------
-
         row["statement_parent"] = str(
             child.get("statement_parent") or ""
         ).strip()
 
         result.append(row)
 
-    # --------------------------------------------------------
     # ALWAYS preserve Finance Setting order
-    # --------------------------------------------------------
-
     result.sort(
-        key=lambda row: row.get(
-            "_sequence",
-            999999
-        )
+        key=lambda row: row.get("_sequence", 999999)
     )
 
     return result
@@ -231,38 +464,22 @@ def find_statement_parent(
 
     Example:
 
-    Statement Type:
-        JOB CHARGES
-
-    Statement Parent:
-        DIRECT EXPENSES
+    Statement Type:   JOB CHARGES
+    Statement Parent: DIRECT EXPENSES
 
     Therefore:
-
         DIRECT EXPENSES
             JOB CHARGES
     """
 
-    parent_name = get_statement_parent(
-        mapping
-    )
+    parent_name = get_statement_parent(mapping)
 
     if not parent_name:
         return None
 
-    current_sequence = mapping.get(
-        "_sequence",
-        999999
-    )
+    current_side = get_statement_side(mapping)
 
-    current_side = get_statement_side(
-        mapping
-    )
-
-    # --------------------------------------------------------
     # Find exact Statement Type
-    # --------------------------------------------------------
-
     candidates = []
 
     for other in mappings:
@@ -270,21 +487,11 @@ def find_statement_parent(
         if other is mapping:
             continue
 
-        other_statement_type = get_statement_type(
-            other
-        )
-
-        if (
-            other_statement_type
-            != parent_name
-        ):
+        if get_statement_type(other) != parent_name:
             continue
 
         # Parent must be on same side
-        if (
-            get_statement_side(other)
-            != current_side
-        ):
+        if get_statement_side(other) != current_side:
             continue
 
         candidates.append(other)
@@ -292,18 +499,10 @@ def find_statement_parent(
     if not candidates:
         return None
 
-    # --------------------------------------------------------
-    # Normally Statement Type should be unique.
-    #
     # If duplicate exists, use first row according to
-    # TZU Setting order.
-    # --------------------------------------------------------
-
+    # Finance Setting order.
     candidates.sort(
-        key=lambda row: row.get(
-            "_sequence",
-            999999
-        )
+        key=lambda row: row.get("_sequence", 999999)
     )
 
     return candidates[0]
@@ -320,7 +519,6 @@ def build_statement_tree(
     Build explicit Statement Type hierarchy.
 
     Parent-child relationship is based ONLY on:
-
         statement_parent
 
     NOT on Account.parent_account.
@@ -338,26 +536,16 @@ def build_statement_tree(
         if not parent:
             continue
 
-        parent_id = id(parent)
-
         children_map.setdefault(
-            parent_id,
+            id(parent),
             []
-        ).append(
-            mapping
-        )
+        ).append(mapping)
 
-    # --------------------------------------------------------
-    # Preserve TZU Setting order
-    # --------------------------------------------------------
-
+    # Preserve Finance Setting order
     for parent_id in children_map:
 
         children_map[parent_id].sort(
-            key=lambda row: row.get(
-                "_sequence",
-                999999
-            )
+            key=lambda row: row.get("_sequence", 999999)
         )
 
     return children_map
@@ -415,10 +603,7 @@ def get_account_balance(
         "rgt": account_details.rgt,
     }
 
-    # --------------------------------------------------------
     # DATE
-    # --------------------------------------------------------
-
     if from_date:
 
         conditions.append(
@@ -437,10 +622,7 @@ def get_account_balance(
             """
         )
 
-    # --------------------------------------------------------
     # PERIOD CLOSING
-    # --------------------------------------------------------
-
     if exclude_period_closing:
 
         conditions.append(
@@ -452,10 +634,7 @@ def get_account_balance(
             """
         )
 
-    # --------------------------------------------------------
     # COST CENTER
-    # --------------------------------------------------------
-
     if cost_center:
 
         conditions.append(
@@ -470,10 +649,7 @@ def get_account_balance(
 
         values["cost_center"] = cost_center
 
-    # --------------------------------------------------------
     # PROJECT
-    # --------------------------------------------------------
-
     if project:
 
         conditions.append(
@@ -488,10 +664,7 @@ def get_account_balance(
 
         values["project"] = project
 
-    # --------------------------------------------------------
     # FINANCE BOOK
-    # --------------------------------------------------------
-
     if finance_book:
 
         conditions.append(
@@ -506,9 +679,7 @@ def get_account_balance(
 
         values["finance_book"] = finance_book
 
-    where_clause = " AND ".join(
-        conditions
-    )
+    where_clause = " AND ".join(conditions)
 
     result = frappe.db.sql(
         f"""
@@ -527,17 +698,8 @@ def get_account_balance(
         as_dict=True,
     )
 
-    debit = flt(
-        result[0].debit
-        if result
-        else 0
-    )
-
-    credit = flt(
-        result[0].credit
-        if result
-        else 0
-    )
+    debit = flt(result[0].debit if result else 0)
+    credit = flt(result[0].credit if result else 0)
 
     root_type = account_details.root_type
 
@@ -563,9 +725,13 @@ def get_mapping_value(
     Get value according to Balance Type.
     """
 
-    account = mapping.get(
-        "account"
-    )
+    # SRBNB transaction-type rows
+    # (Purchase Receipt, Purchase Return (Receipt), Purchase Invoice,
+    #  Debit Note (Purchase Return), Journal Entry)
+    if get_txn_config(mapping):
+        return get_txn_value(mapping, filters)
+
+    account = mapping.get("account")
 
     if not account:
         return 0
@@ -580,9 +746,7 @@ def get_mapping_value(
 
     if balance_type == "opening balance":
 
-        from_date = filters.get(
-            "from_date"
-        )
+        from_date = filters.get("from_date")
 
         if not from_date:
             return 0
@@ -592,57 +756,34 @@ def get_mapping_value(
             -1,
         )
 
-        # ----------------------------------------------------
         # OPENING STOCK SPECIAL LOGIC
-        # ----------------------------------------------------
-
         if (
             str(
-                mapping.get("statement_type")
-                or ""
+                mapping.get("statement_type") or ""
             ).strip().lower()
             == "opening stock"
         ):
 
             return get_account_balance(
                 account=account,
-                company=filters.get(
-                    "company"
-                ),
+                company=filters.get("company"),
                 from_date=None,
                 to_date=opening_date,
-                cost_center=filters.get(
-                    "cost_center"
-                ),
-                project=filters.get(
-                    "project"
-                ),
-                finance_book=filters.get(
-                    "finance_book"
-                ),
+                cost_center=filters.get("cost_center"),
+                project=filters.get("project"),
+                finance_book=filters.get("finance_book"),
                 exclude_period_closing=True,
             )
 
-        # ----------------------------------------------------
         # NORMAL OPENING
-        # ----------------------------------------------------
-
         return get_account_balance(
             account=account,
-            company=filters.get(
-                "company"
-            ),
+            company=filters.get("company"),
             from_date=None,
             to_date=opening_date,
-            cost_center=filters.get(
-                "cost_center"
-            ),
-            project=filters.get(
-                "project"
-            ),
-            finance_book=filters.get(
-                "finance_book"
-            ),
+            cost_center=filters.get("cost_center"),
+            project=filters.get("project"),
+            finance_book=filters.get("finance_book"),
         )
 
     # ========================================================
@@ -653,22 +794,12 @@ def get_mapping_value(
 
         return get_account_balance(
             account=account,
-            company=filters.get(
-                "company"
-            ),
+            company=filters.get("company"),
             from_date=None,
-            to_date=filters.get(
-                "to_date"
-            ),
-            cost_center=filters.get(
-                "cost_center"
-            ),
-            project=filters.get(
-                "project"
-            ),
-            finance_book=filters.get(
-                "finance_book"
-            ),
+            to_date=filters.get("to_date"),
+            cost_center=filters.get("cost_center"),
+            project=filters.get("project"),
+            finance_book=filters.get("finance_book"),
         )
 
     # ========================================================
@@ -677,24 +808,12 @@ def get_mapping_value(
 
     return get_account_balance(
         account=account,
-        company=filters.get(
-            "company"
-        ),
-        from_date=filters.get(
-            "from_date"
-        ),
-        to_date=filters.get(
-            "to_date"
-        ),
-        cost_center=filters.get(
-            "cost_center"
-        ),
-        project=filters.get(
-            "project"
-        ),
-        finance_book=filters.get(
-            "finance_book"
-        ),
+        company=filters.get("company"),
+        from_date=filters.get("from_date"),
+        to_date=filters.get("to_date"),
+        cost_center=filters.get("cost_center"),
+        project=filters.get("project"),
+        finance_book=filters.get("finance_book"),
     )
 
 
@@ -714,19 +833,14 @@ def make_statement_row(
     Create one Statement Type row.
     """
 
-    statement_type = get_statement_type(
-        mapping
-    )
+    statement_type = get_statement_type(mapping)
 
-    account = mapping.get(
-        "account"
-    )
+    account = mapping.get("account")
 
-    side = get_statement_side(
-        mapping
-    )
+    side = get_statement_side(mapping)
 
-    if not statement_type or not account or not side:
+    # Account required nahi hai (SRBNB txn rows me account khali ho sakta hai)
+    if not statement_type or not side:
         return None
 
     tree_id = (
@@ -734,12 +848,7 @@ def make_statement_row(
         + "__"
         + frappe.scrub(side)
         + "__"
-        + str(
-            mapping.get(
-                "_sequence",
-                999999
-            )
-        )
+        + str(mapping.get("_sequence", 999999))
         + "__"
         + frappe.scrub(statement_type)
     )
@@ -759,32 +868,23 @@ def make_statement_row(
         "value": value,
         "account": account,
 
-        "statement_parent": get_statement_parent(
-            mapping
-        ),
+        "statement_parent": get_statement_parent(mapping),
 
         "indent": indent,
 
         "is_statement_type": 1,
 
-        "has_children": (
-            1 if children else 0
-        ),
+        "has_children": 1 if children else 0,
 
         "is_tree_node": 1,
 
-        "is_leaf": (
-            0 if children else 1
-        ),
+        "is_leaf": 0 if children else 1,
 
         "tree_id": tree_id,
 
         "tree_parent": parent_tree_id,
 
-        "sequence": mapping.get(
-            "_sequence",
-            999999
-        ),
+        "sequence": mapping.get("_sequence", 999999),
     }
 
 
@@ -802,7 +902,7 @@ def build_all_statement_rows(
 
     Rules:
 
-    1. TZU Setting controls order.
+    1. Finance Setting controls order.
     2. Statement Parent controls hierarchy.
     3. Account hierarchy is completely ignored for
        Statement Type parent-child relation.
@@ -812,20 +912,12 @@ def build_all_statement_rows(
     if not mappings:
         return [], []
 
-    children_map = build_statement_tree(
-        mappings
-    )
+    children_map = build_statement_tree(mappings)
 
     expense_rows = []
     income_rows = []
 
-    # --------------------------------------------------------
-    # Roots
-    #
-    # A row is root when Statement Parent is blank
-    # OR parent cannot be resolved.
-    # --------------------------------------------------------
-
+    # Roots: Statement Parent blank OR parent cannot be resolved
     roots = []
 
     for mapping in mappings:
@@ -836,25 +928,13 @@ def build_all_statement_rows(
         )
 
         if not parent:
-            roots.append(
-                mapping
-            )
-
-    # --------------------------------------------------------
-    # Root sequence
-    # --------------------------------------------------------
+            roots.append(mapping)
 
     roots.sort(
-        key=lambda row: row.get(
-            "_sequence",
-            999999
-        )
+        key=lambda row: row.get("_sequence", 999999)
     )
 
-    # --------------------------------------------------------
     # Recursive builder
-    # --------------------------------------------------------
-
     visited = set()
 
     def add_mapping(
@@ -868,13 +948,9 @@ def build_all_statement_rows(
         if mapping_id in visited:
             return
 
-        visited.add(
-            mapping_id
-        )
+        visited.add(mapping_id)
 
-        side = get_statement_side(
-            mapping
-        )
+        side = get_statement_side(mapping)
 
         if not side:
             return
@@ -891,14 +967,10 @@ def build_all_statement_rows(
         if row:
 
             if side == "expense":
-                expense_rows.append(
-                    row
-                )
+                expense_rows.append(row)
 
             elif side == "income":
-                income_rows.append(
-                    row
-                )
+                income_rows.append(row)
 
         children = children_map.get(
             mapping_id,
@@ -906,10 +978,7 @@ def build_all_statement_rows(
         )
 
         children.sort(
-            key=lambda child: child.get(
-                "_sequence",
-                999999
-            )
+            key=lambda child: child.get("_sequence", 999999)
         )
 
         current_tree_id = (
@@ -926,10 +995,7 @@ def build_all_statement_rows(
                 current_tree_id,
             )
 
-    # --------------------------------------------------------
     # Build roots
-    # --------------------------------------------------------
-
     for root in roots:
 
         add_mapping(
@@ -938,15 +1004,7 @@ def build_all_statement_rows(
             "",
         )
 
-    # --------------------------------------------------------
-    # Safety:
-    #
-    # If there is a broken/circular parent reference,
-    # don't silently lose the row.
-    #
-    # Add remaining mappings in original sequence.
-    # --------------------------------------------------------
-
+    # Safety: broken/circular parent reference
     remaining = [
         mapping
         for mapping in mappings
@@ -954,10 +1012,7 @@ def build_all_statement_rows(
     ]
 
     remaining.sort(
-        key=lambda row: row.get(
-            "_sequence",
-            999999
-        )
+        key=lambda row: row.get("_sequence", 999999)
     )
 
     for mapping in remaining:
@@ -968,45 +1023,22 @@ def build_all_statement_rows(
             "",
         )
 
-    # --------------------------------------------------------
-    # Keep side-specific sequence.
-    # --------------------------------------------------------
-
+    # Keep side-specific sequence
     expense_rows.sort(
         key=lambda row: (
-            row.get(
-                "sequence",
-                999999
-            ),
-            row.get(
-                "indent",
-                0
-            ),
+            row.get("sequence", 999999),
+            row.get("indent", 0),
         )
     )
 
     income_rows.sort(
         key=lambda row: (
-            row.get(
-                "sequence",
-                999999
-            ),
-            row.get(
-                "indent",
-                0
-            ),
+            row.get("sequence", 999999),
+            row.get("indent", 0),
         )
     )
 
-    # --------------------------------------------------------
-    # IMPORTANT:
-    #
-    # Sorting by original sequence above would destroy
-    # nested visual order if a child was entered later.
-    #
-    # Therefore create final tree order separately.
-    # --------------------------------------------------------
-
+    # Final tree order (parent -> children)
     def tree_order(rows):
 
         if not rows:
@@ -1017,20 +1049,14 @@ def build_all_statement_rows(
         for row in rows:
 
             by_parent.setdefault(
-                row.get(
-                    "tree_parent",
-                    ""
-                ),
+                row.get("tree_parent", ""),
                 []
             ).append(row)
 
         for key in by_parent:
 
             by_parent[key].sort(
-                key=lambda row: row.get(
-                    "sequence",
-                    999999
-                )
+                key=lambda row: row.get("sequence", 999999)
             )
 
         ordered = []
@@ -1044,28 +1070,16 @@ def build_all_statement_rows(
 
             for row in children:
 
-                ordered.append(
-                    row
-                )
+                ordered.append(row)
 
-                walk(
-                    row.get(
-                        "tree_id",
-                        ""
-                    )
-                )
+                walk(row.get("tree_id", ""))
 
         walk("")
 
         return ordered
 
-    expense_rows = tree_order(
-        expense_rows
-    )
-
-    income_rows = tree_order(
-        income_rows
-    )
+    expense_rows = tree_order(expense_rows)
+    income_rows = tree_order(income_rows)
 
     return (
         expense_rows,
@@ -1092,9 +1106,7 @@ def build_rows(
         len(income_rows),
     )
 
-    for index in range(
-        max_length
-    ):
+    for index in range(max_length):
 
         expense = (
             expense_rows[index]
@@ -1109,144 +1121,47 @@ def build_rows(
         )
 
         data = {
-            "expense": (
-                expense.get("label")
-                if expense
-                else ""
-            ),
-
-            "expense_amount": (
-                expense.get("value")
-                if expense
-                else ""
-            ),
-
-            "income": (
-                income.get("label")
-                if income
-                else ""
-            ),
-
-            "income_amount": (
-                income.get("value")
-                if income
-                else ""
-            ),
+            "expense": expense.get("label") if expense else "",
+            "expense_amount": expense.get("value") if expense else "",
+            "income": income.get("label") if income else "",
+            "income_amount": income.get("value") if income else "",
         }
 
-        # ----------------------------------------------------
         # EXPENSE META
-        # ----------------------------------------------------
-
         if expense:
 
             data.update(
                 {
-                    "expense_account": expense.get(
-                        "account",
-                        "",
-                    ),
-
-                    "expense_statement_parent": expense.get(
-                        "statement_parent",
-                        "",
-                    ),
-
-                    "expense_indent": expense.get(
-                        "indent",
-                        0,
-                    ),
-
-                    "expense_is_statement_type": expense.get(
-                        "is_statement_type",
-                        0,
-                    ),
-
-                    "expense_has_children": expense.get(
-                        "has_children",
-                        0,
-                    ),
-
-                    "expense_is_tree_node": expense.get(
-                        "is_tree_node",
-                        0,
-                    ),
-
-                    "expense_tree_id": expense.get(
-                        "tree_id",
-                        "",
-                    ),
-
-                    "expense_tree_parent": expense.get(
-                        "tree_parent",
-                        "",
-                    ),
-
-                    "expense_is_leaf": expense.get(
-                        "is_leaf",
-                        1,
-                    ),
+                    "expense_account": expense.get("account", ""),
+                    "expense_statement_parent": expense.get("statement_parent", ""),
+                    "expense_indent": expense.get("indent", 0),
+                    "expense_is_statement_type": expense.get("is_statement_type", 0),
+                    "expense_has_children": expense.get("has_children", 0),
+                    "expense_is_tree_node": expense.get("is_tree_node", 0),
+                    "expense_tree_id": expense.get("tree_id", ""),
+                    "expense_tree_parent": expense.get("tree_parent", ""),
+                    "expense_is_leaf": expense.get("is_leaf", 1),
                 }
             )
 
-        # ----------------------------------------------------
         # INCOME META
-        # ----------------------------------------------------
-
         if income:
 
             data.update(
                 {
-                    "income_account": income.get(
-                        "account",
-                        "",
-                    ),
-
-                    "income_statement_parent": income.get(
-                        "statement_parent",
-                        "",
-                    ),
-
-                    "income_indent": income.get(
-                        "indent",
-                        0,
-                    ),
-
-                    "income_is_statement_type": income.get(
-                        "is_statement_type",
-                        0,
-                    ),
-
-                    "income_has_children": income.get(
-                        "has_children",
-                        0,
-                    ),
-
-                    "income_is_tree_node": income.get(
-                        "is_tree_node",
-                        0,
-                    ),
-
-                    "income_tree_id": income.get(
-                        "tree_id",
-                        "",
-                    ),
-
-                    "income_tree_parent": income.get(
-                        "tree_parent",
-                        "",
-                    ),
-
-                    "income_is_leaf": income.get(
-                        "is_leaf",
-                        1,
-                    ),
+                    "income_account": income.get("account", ""),
+                    "income_statement_parent": income.get("statement_parent", ""),
+                    "income_indent": income.get("indent", 0),
+                    "income_is_statement_type": income.get("is_statement_type", 0),
+                    "income_has_children": income.get("has_children", 0),
+                    "income_is_tree_node": income.get("is_tree_node", 0),
+                    "income_tree_id": income.get("tree_id", ""),
+                    "income_tree_parent": income.get("tree_parent", ""),
+                    "income_is_leaf": income.get("is_leaf", 1),
                 }
             )
 
-        rows.append(
-            data
-        )
+        rows.append(data)
 
     return rows
 
@@ -1264,21 +1179,8 @@ def calculate_section_totals(
 
     RULE:
 
-    Parent row:
-        included in total
-
-    Child row:
-        NOT separately included
-
-    Example:
-
-        DIRECT EXPENSES
-            JOB CHARGES
-                Consumables
-
-    If DIRECT EXPENSES is mapped to an Account whose balance
-    already contains JOB CHARGES / Consumables, only
-    DIRECT EXPENSES is counted.
+    Parent row: included in total
+    Child row:  NOT separately included
 
     This prevents double counting.
     """
@@ -1289,10 +1191,7 @@ def calculate_section_totals(
     expense_total = 0
     income_total = 0
 
-    # --------------------------------------------------------
-    # Only roots are included in total.
-    # --------------------------------------------------------
-
+    # Only roots are included in total
     root_mappings = []
 
     for mapping in mappings:
@@ -1303,20 +1202,10 @@ def calculate_section_totals(
         )
 
         if not parent:
-
-            root_mappings.append(
-                mapping
-            )
-
-    # --------------------------------------------------------
-    # Exact TZU Setting sequence
-    # --------------------------------------------------------
+            root_mappings.append(mapping)
 
     root_mappings.sort(
-        key=lambda row: row.get(
-            "_sequence",
-            999999
-        )
+        key=lambda row: row.get("_sequence", 999999)
     )
 
     counted_expense_accounts = set()
@@ -1324,18 +1213,15 @@ def calculate_section_totals(
 
     for mapping in root_mappings:
 
-        side = get_statement_side(
-            mapping
-        )
+        side = get_statement_side(mapping)
 
         if not side:
             continue
 
-        account = mapping.get(
-            "account"
-        )
+        account = mapping.get("account")
 
-        if not account:
+        # txn-type rows ko bina account ke bhi count karo
+        if not account and not get_txn_config(mapping):
             continue
 
         value = get_mapping_value(
@@ -1343,39 +1229,27 @@ def calculate_section_totals(
             filters,
         )
 
-        # ----------------------------------------------------
         # Expense
-        # ----------------------------------------------------
-
         if side == "expense":
 
-            if account in counted_expense_accounts:
+            if account and account in counted_expense_accounts:
                 continue
 
-            counted_expense_accounts.add(
-                account
-            )
+            if account:
+                counted_expense_accounts.add(account)
 
-            expense_total += flt(
-                value
-            )
+            expense_total += flt(value)
 
-        # ----------------------------------------------------
         # Income
-        # ----------------------------------------------------
-
         elif side == "income":
 
-            if account in counted_income_accounts:
+            if account and account in counted_income_accounts:
                 continue
 
-            counted_income_accounts.add(
-                account
-            )
+            if account:
+                counted_income_accounts.add(account)
 
-            income_total += flt(
-                value
-            )
+            income_total += flt(value)
 
     return (
         expense_total,
@@ -1392,9 +1266,7 @@ def get_section_data(
     filters,
 ):
 
-    mappings = get_statement_mappings(
-        section
-    )
+    mappings = get_statement_mappings(section)
 
     if not mappings:
 
@@ -1406,10 +1278,7 @@ def get_section_data(
             "income_total": 0,
         }
 
-    # --------------------------------------------------------
     # DISPLAY
-    # --------------------------------------------------------
-
     (
         expense_rows,
         income_rows,
@@ -1419,10 +1288,7 @@ def get_section_data(
         section=section,
     )
 
-    # --------------------------------------------------------
     # TOTAL
-    # --------------------------------------------------------
-
     (
         expense_total,
         income_total,
@@ -1446,14 +1312,10 @@ def get_section_data(
 
 def get_statement_sections():
 
-    settings = frappe.get_single(
-        "Finance Setting"
-    )
+    settings = frappe.get_single("Finance Setting")
 
     mappings = (
-        settings.get(
-            "financial_statement_account_mapping"
-        )
+        settings.get("financial_statement_account_mapping")
         or []
     )
 
@@ -1465,18 +1327,14 @@ def get_statement_sections():
             continue
 
         section = str(
-            row.get("statement_section")
-            or ""
+            row.get("statement_section") or ""
         ).strip()
 
         if not section:
             continue
 
         if section not in sections:
-
-            sections.append(
-                section
-            )
+            sections.append(section)
 
     return sections
 
@@ -1484,9 +1342,7 @@ def get_statement_sections():
 def is_trading_section(section):
 
     return (
-        str(section or "")
-        .strip()
-        .lower()
+        str(section or "").strip().lower()
         == "trading account"
     )
 
@@ -1512,77 +1368,37 @@ def get_kpi(
     gross_profit,
 ):
 
-    expense_total = flt(
-        section_data.get(
-            "expense_total"
-        )
-    )
-
-    income_total = flt(
-        section_data.get(
-            "income_total"
-        )
-    )
+    expense_total = flt(section_data.get("expense_total"))
+    income_total = flt(section_data.get("income_total"))
 
     sales = 0
 
-    # --------------------------------------------------------
     # Sales
-    # --------------------------------------------------------
-
-    for row in section_data.get(
-        "income_rows",
-        [],
-    ):
+    for row in section_data.get("income_rows", []):
 
         if (
-            row.get(
-                "is_statement_type"
-            )
-            and str(
-                row.get("label")
-                or ""
-            ).strip().lower()
-            == "sales"
+            row.get("is_statement_type")
+            and str(row.get("label") or "").strip().lower() == "sales"
         ):
 
-            sales += flt(
-                row.get("value")
-            )
+            sales += flt(row.get("value"))
 
     if not sales:
         sales = income_total
 
-    # --------------------------------------------------------
     # Operating Expenses
-    # --------------------------------------------------------
-
     operating_expenses = expense_total
 
-    # --------------------------------------------------------
     # Gross Profit %
-    # --------------------------------------------------------
-
     gross_profit_percent = (
-        (
-            gross_profit
-            / sales
-        )
-        * 100
+        (gross_profit / sales) * 100
         if sales
         else 0
     )
 
-    # --------------------------------------------------------
     # Operating Expense Ratio
-    # --------------------------------------------------------
-
     operating_expense_ratio = (
-        (
-            operating_expenses
-            / sales
-        )
-        * 100
+        (operating_expenses / sales) * 100
         if sales
         else 0
     )
@@ -1627,29 +1443,14 @@ def get_data(filters):
             filters,
         )
 
-        all_section_data.append(
-            section_data
-        )
+        all_section_data.append(section_data)
 
-        # ----------------------------------------------------
         # Trading Account
-        # ----------------------------------------------------
-
-        if is_trading_section(
-            section
-        ):
+        if is_trading_section(section):
 
             gross_profit = (
-                flt(
-                    section_data[
-                        "income_total"
-                    ]
-                )
-                - flt(
-                    section_data[
-                        "expense_total"
-                    ]
-                )
+                flt(section_data["income_total"])
+                - flt(section_data["expense_total"])
             )
 
     # ========================================================
@@ -1668,25 +1469,15 @@ def get_data(filters):
 
     for section_data in all_section_data:
 
-        section = section_data[
-            "section"
-        ]
+        section = section_data["section"]
 
-        # ----------------------------------------------------
         # KPI
-        # ----------------------------------------------------
-
-        if is_kpi_section(
-            section
-        ):
+        if is_kpi_section(section):
 
             kpi_section_data = section_data
             continue
 
-        # ----------------------------------------------------
         # SECTION HEADER
-        # ----------------------------------------------------
-
         final_rows.append(
             {
                 "expense": section,
@@ -1702,43 +1493,27 @@ def get_data(filters):
         # TRADING ACCOUNT
         # ====================================================
 
-        if is_trading_section(
-            section
-        ):
+        if is_trading_section(section):
 
             final_rows.extend(
                 build_rows(
-                    section_data[
-                        "expense_rows"
-                    ],
-                    section_data[
-                        "income_rows"
-                    ],
+                    section_data["expense_rows"],
+                    section_data["income_rows"],
                 )
             )
 
-            # ------------------------------------------------
             # TOTAL
-            # ------------------------------------------------
-
             final_rows.append(
                 {
                     "expense": "Total",
-                    "expense_amount": section_data[
-                        "expense_total"
-                    ],
+                    "expense_amount": section_data["expense_total"],
                     "income": "Total",
-                    "income_amount": section_data[
-                        "income_total"
-                    ],
+                    "income_amount": section_data["income_total"],
                     "is_total": 1,
                 }
             )
 
-            # ------------------------------------------------
             # GROSS PROFIT / LOSS
-            # ------------------------------------------------
-
             if gross_profit >= 0:
 
                 final_rows.append(
@@ -1756,9 +1531,7 @@ def get_data(filters):
                 final_rows.append(
                     {
                         "expense": "Gross Loss",
-                        "expense_amount": abs(
-                            gross_profit
-                        ),
+                        "expense_amount": abs(gross_profit),
                         "income": "",
                         "income_amount": "",
                         "is_gross_profit": 1,
@@ -1771,35 +1544,22 @@ def get_data(filters):
         # P&L
         # ====================================================
 
-        pnl_sections.append(
-            section_data
-        )
+        pnl_sections.append(section_data)
 
         final_rows.extend(
             build_rows(
-                section_data[
-                    "expense_rows"
-                ],
-                section_data[
-                    "income_rows"
-                ],
+                section_data["expense_rows"],
+                section_data["income_rows"],
             )
         )
 
-        # ----------------------------------------------------
         # SUBTOTAL
-        # ----------------------------------------------------
-
         final_rows.append(
             {
                 "expense": "Total",
-                "expense_amount": section_data[
-                    "expense_total"
-                ],
+                "expense_amount": section_data["expense_total"],
                 "income": "Total",
-                "income_amount": section_data[
-                    "income_total"
-                ],
+                "income_amount": section_data["income_total"],
                 "is_subtotal": 1,
             }
         )
@@ -1811,20 +1571,12 @@ def get_data(filters):
     if pnl_sections:
 
         pnl_expense_total = sum(
-            flt(
-                item[
-                    "expense_total"
-                ]
-            )
+            flt(item["expense_total"])
             for item in pnl_sections
         )
 
         pnl_income_total = sum(
-            flt(
-                item[
-                    "income_total"
-                ]
-            )
+            flt(item["income_total"])
             for item in pnl_sections
         )
 
@@ -1834,10 +1586,7 @@ def get_data(filters):
             - pnl_expense_total
         )
 
-        # ----------------------------------------------------
         # GROSS PROFIT
-        # ----------------------------------------------------
-
         final_rows.append(
             {
                 "expense": "",
@@ -1848,10 +1597,7 @@ def get_data(filters):
             }
         )
 
-        # ----------------------------------------------------
         # NET PROFIT / LOSS
-        # ----------------------------------------------------
-
         if net_profit >= 0:
 
             final_rows.append(
@@ -1869,9 +1615,7 @@ def get_data(filters):
             final_rows.append(
                 {
                     "expense": "Net Loss",
-                    "expense_amount": abs(
-                        net_profit
-                    ),
+                    "expense_amount": abs(net_profit),
                     "income": "",
                     "income_amount": "",
                     "is_total": 1,
@@ -1891,9 +1635,7 @@ def get_data(filters):
 
         final_rows.append(
             {
-                "expense": kpi_section_data[
-                    "section"
-                ],
+                "expense": kpi_section_data["section"],
                 "expense_amount": "",
                 "income": "",
                 "income_amount": "",
@@ -1905,12 +1647,8 @@ def get_data(filters):
 
             final_rows.append(
                 {
-                    "expense": kpi[
-                        "label"
-                    ],
-                    "expense_amount": kpi[
-                        "value"
-                    ],
+                    "expense": kpi["label"],
+                    "expense_amount": kpi["value"],
                     "income": "",
                     "income_amount": "",
                     "is_kpi": 1,
