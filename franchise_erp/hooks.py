@@ -34,9 +34,11 @@ on_session_creation = [
      
 ]
 
-before_request = [
-    "franchise_erp.overrides.helpdesk_permissions.apply_helpdesk_permission_patch"
-]
+# before_request = [
+#     "franchise_erp.overrides.helpdesk_permissions.apply_helpdesk_permission_patch"
+# ]
+
+
 # before_job = [
 #     "franchise_erp.custom.attendance_patch.load_patch"
 # ]
@@ -628,7 +630,8 @@ permission_query_conditions = {
 has_permission = {
     "Daily Checklist": "franchise_erp.franchise_erp.doctype.daily_checklist.daily_checklist.has_permission",
     "VM Daily Checklist": "franchise_erp.franchise_erp.doctype.vm_daily_checklist.vm_daily_checklist.has_permission",
-    "Leave Application": "franchise_erp.overrides.custom_leave_application.has_permission"
+    "Leave Application": "franchise_erp.overrides.custom_leave_application.has_permission",
+    "HD Ticket": "franchise_erp.overrides.hd_ticket.has_permission",
 }
 
 # DocType Class
