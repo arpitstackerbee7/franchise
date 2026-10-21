@@ -474,6 +474,7 @@ app_include_js = [
     "/assets/franchise_erp/js/barcode_scanner_override.js",
     "/assets/franchise_erp/js/list_settings_permission.js",
     "/assets/franchise_erp/js/journal_entry_filter.js",
+    "/assets/franchise_erp/js/grid_upload_merge.js"
 ]
 
 
