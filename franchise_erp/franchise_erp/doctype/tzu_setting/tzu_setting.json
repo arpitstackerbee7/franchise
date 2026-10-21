@@ -44,9 +44,7 @@
   "for_reports_section",
   "counter_store_level_performance",
   "column_break_evnp",
-  "individual_sales_representative_incentives",
-  "section_break_eiab",
-  "financial_statement_account_mapping"
+  "individual_sales_representative_incentives"
  ],
  "fields": [
   {
@@ -224,17 +222,6 @@
    "options": "Company"
   },
   {
-   "fieldname": "section_break_eiab",
-   "fieldtype": "Section Break"
-  },
-  {
-   "allow_bulk_edit": 1,
-   "fieldname": "financial_statement_account_mapping",
-   "fieldtype": "Table",
-   "label": "Financial Statement Account Mapping",
-   "options": "Financial Statement Account Mapping"
-  },
-  {
    "fieldname": "employee_payable_account",
    "fieldtype": "Link",
    "label": "Employee Payable Account",
@@ -289,7 +276,11 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
+<<<<<<< Updated upstream
  "modified": "2026-10-17 17:32:21.001491",
+=======
+ "modified": "2026-10-21 13:57:01.639166",
+>>>>>>> Stashed changes
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
