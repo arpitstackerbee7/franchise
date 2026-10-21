@@ -24,10 +24,7 @@ frappe.query_reports["Custom Sales Invoice"] = {
 			fieldtype: "MultiSelectList",
 
 			get_data: function (txt) {
-				return frappe.db.get_link_options(
-					"Customer",
-					txt
-				);
+				return frappe.db.get_link_options("Customer", txt);
 			},
 		},
 
@@ -40,10 +37,7 @@ frappe.query_reports["Custom Sales Invoice"] = {
 			fieldtype: "MultiSelectList",
 
 			get_data: function (txt) {
-				return frappe.db.get_link_options(
-					"Customer Group",
-					txt
-				);
+				return frappe.db.get_link_options("Customer Group", txt);
 			},
 		},
 
@@ -56,45 +50,34 @@ frappe.query_reports["Custom Sales Invoice"] = {
 			fieldtype: "MultiSelectList",
 
 			get_data: function (txt) {
-				return frappe.call({
-					method: "frappe.client.get_list",
+				return frappe
+					.call({
+						method: "frappe.client.get_list",
 
-					args: {
-						doctype: "Sales Invoice",
-
-						fields: [
-							"custom_class_name"
-						],
-
-						filters: {
-							custom_class_name: [
-								"like",
-								`%${txt}%`
-							],
+						args: {
+							doctype: "Sales Invoice",
+							fields: ["custom_class_name"],
+							filters: {
+								custom_class_name: ["like", `%${txt}%`],
+							},
+							distinct: true,
+							limit_page_length: 20,
 						},
+					})
+					.then((r) => {
+						let unique_classes = [
+							...new Set(
+								(r.message || [])
+									.map((d) => d.custom_class_name)
+									.filter(Boolean)
+							),
+						];
 
-						distinct: true,
-						limit_page_length: 20,
-					},
-				}).then((r) => {
-					let unique_classes = [
-						...new Set(
-							(r.message || [])
-								.map(
-									(d) =>
-										d.custom_class_name
-								)
-								.filter(Boolean)
-						),
-					];
-
-					return unique_classes.map(
-						(value) => ({
+						return unique_classes.map((value) => ({
 							value: value,
 							description: "",
-						})
-					);
-				});
+						}));
+					});
 			},
 		},
 
@@ -109,34 +92,26 @@ frappe.query_reports["Custom Sales Invoice"] = {
 			options: "Supplier",
 
 			get_data: function (txt) {
-				return frappe.call({
-					method: "frappe.client.get_list",
+				return frappe
+					.call({
+						method: "frappe.client.get_list",
 
-					args: {
-						doctype: "Supplier",
-
-						filters: {
-							custom_is_agent: 1,
-							name: [
-								"like",
-								`%${txt}%`
-							],
+						args: {
+							doctype: "Supplier",
+							filters: {
+								custom_is_agent: 1,
+								name: ["like", `%${txt}%`],
+							},
+							fields: ["name"],
+							limit_page_length: 20,
 						},
-
-						fields: [
-							"name"
-						],
-
-						limit_page_length: 20,
-					},
-				}).then((r) => {
-					return (r.message || []).map(
-						(row) => ({
+					})
+					.then((r) => {
+						return (r.message || []).map((row) => ({
 							value: row.name,
 							description: row.name,
-						})
-					);
-				});
+						}));
+					});
 			},
 		},
 
@@ -149,10 +124,7 @@ frappe.query_reports["Custom Sales Invoice"] = {
 			fieldtype: "MultiSelectList",
 
 			get_data: function (txt) {
-				return frappe.db.get_link_options(
-					"Sales Invoice",
-					txt
-				);
+				return frappe.db.get_link_options("Sales Invoice", txt);
 			},
 		},
 	],
@@ -161,38 +133,29 @@ frappe.query_reports["Custom Sales Invoice"] = {
 	// ONLOAD
 	// =========================================
 	onload: function (report) {
-		report.page.add_inner_button(
-			__("Summary Export"),
-			function () {
-				let filters = report.get_values();
+		report.page.add_inner_button(__("Summary Export"), function () {
+			let filters = report.get_values();
 
-				frappe.call({
-					method:
-						"frappe.desk.query_report.run",
+			frappe
+				.call({
+					method: "frappe.desk.query_report.run",
 
 					args: {
-						report_name:
-							"Custom Sales Invoice",
-
+						report_name: "Custom Sales Invoice",
 						filters: filters,
-
 						ignore_prepared_report: 1,
 					},
 
 					freeze: true,
-
-					freeze_message: __(
-						"Preparing Excel Export..."
-					),
-				}).then((r) => {
+					freeze_message: __("Preparing Excel Export..."),
+				})
+				.then((r) => {
 					let result = r.message || {};
 					let data = result.result || [];
 
 					if (!data.length) {
 						frappe.msgprint(
-							__(
-								"No data found for the selected filters."
-							)
+							__("No data found for the selected filters.")
 						);
 
 						return;
@@ -213,52 +176,29 @@ frappe.query_reports["Custom Sales Invoice"] = {
 
 						if (!grouped[invoice]) {
 							grouped[invoice] = {
-								name:
-									row.name || "",
-
-								posting_date:
-									row.posting_date || "",
-
-								customer:
-									row.customer || "",
-
-								customer_agent:
-									row.customer_agent || "",
-
-								customer_group:
-									row.customer_group || "",
-
-								class_name:
-									row.class_name || "",
-
-								company:
-									row.company || "",
+								name: row.name || "",
+								posting_date: row.posting_date || "",
+								customer: row.customer || "",
+								customer_agent: row.customer_agent || "",
+								customer_group: row.customer_group || "",
+								class_name: row.class_name || "",
+								company: row.company || "",
 
 								qty: 0,
 
-								// Discount ke baad
-								// GST ke pehle
-								gross_amount:
-									flt(
-										row.gross_amount
-									),
+								// Discount ke baad, GST ke pehle
+								gross_amount: flt(row.gross_amount),
 
-								// GST included
-								// Rounded Total
-								net_amount:
-									flt(
-										row.net_amount
-									),
+								// GST included (Rounded Total)
+								net_amount: flt(row.net_amount),
 							};
 						}
 
-						// Invoice ke saare item qty
-						grouped[invoice].qty +=
-							flt(row.qty);
+						// Invoice ke saare items ki qty
+						grouped[invoice].qty += flt(row.qty);
 					});
 
-					let summary_data =
-						Object.values(grouped);
+					let summary_data = Object.values(grouped);
 
 					// =========================================
 					// HEADERS
@@ -278,7 +218,7 @@ frappe.query_reports["Custom Sales Invoice"] = {
 					];
 
 					// =========================================
-					// TOTALS
+					// BUILD SUMMARY ROWS + TOTALS
 					// =========================================
 
 					let total_qty = 0;
@@ -287,22 +227,10 @@ frappe.query_reports["Custom Sales Invoice"] = {
 
 					let rows = [];
 
-					// =========================================
-					// BUILD SUMMARY ROWS
-					// =========================================
-
 					summary_data.forEach((row) => {
 						let qty = flt(row.qty);
-
-						let gross_amount =
-							flt(
-								row.gross_amount
-							);
-
-						let net_amount =
-							flt(
-								row.net_amount
-							);
+						let gross_amount = flt(row.gross_amount);
+						let net_amount = flt(row.net_amount);
 
 						rows.push([
 							row.name || "",
@@ -318,12 +246,8 @@ frappe.query_reports["Custom Sales Invoice"] = {
 						]);
 
 						total_qty += qty;
-
-						total_gross_amount +=
-							gross_amount;
-
-						total_net_amount +=
-							net_amount;
+						total_gross_amount += gross_amount;
+						total_net_amount += net_amount;
 					});
 
 					// =========================================
@@ -372,10 +296,7 @@ frappe.query_reports["Custom Sales Invoice"] = {
 					`;
 
 					headers.forEach((header) => {
-						html +=
-							"<th>" +
-							escape_html(header) +
-							"</th>";
+						html += "<th>" + escape_html(header) + "</th>";
 					});
 
 					html += `
@@ -392,23 +313,16 @@ frappe.query_reports["Custom Sales Invoice"] = {
 					rows.forEach((row) => {
 						html += "<tr>";
 
-						row.forEach(
-							(value, index) => {
-								let cell_class =
-									index >= 7
-										? "number"
-										: "";
+						row.forEach((value, index) => {
+							let cell_class = index >= 7 ? "number" : "";
 
-								html +=
-									'<td class="' +
-									cell_class +
-									'">' +
-									escape_html(
-										value
-									) +
-									"</td>";
-							}
-						);
+							html +=
+								'<td class="' +
+								cell_class +
+								'">' +
+								escape_html(value) +
+								"</td>";
+						});
 
 						html += "</tr>";
 					});
@@ -452,62 +366,33 @@ frappe.query_reports["Custom Sales Invoice"] = {
 					// CREATE EXCEL FILE
 					// =========================================
 
-					let blob = new Blob(
-						[
-							"\ufeff" + html
-						],
-						{
-							type:
-								"application/vnd.ms-excel;charset=utf-8;",
-						}
-					);
+					let blob = new Blob(["\ufeff" + html], {
+						type: "application/vnd.ms-excel;charset=utf-8;",
+					});
 
-					let url =
-						URL.createObjectURL(
-							blob
-						);
+					let url = URL.createObjectURL(blob);
 
-					let link =
-						document.createElement(
-							"a"
-						);
+					let link = document.createElement("a");
 
 					link.href = url;
 
 					link.download =
 						"Custom_Sales_Invoice_Summary_" +
-						frappe.datetime
-							.now_datetime()
-							.replace(
-								/[: ]/g,
-								"_"
-							) +
+						frappe.datetime.now_datetime().replace(/[: ]/g, "_") +
 						".xls";
 
-					document.body.appendChild(
-						link
-					);
-
+					document.body.appendChild(link);
 					link.click();
+					document.body.removeChild(link);
 
-					document.body.removeChild(
-						link
-					);
-
-					URL.revokeObjectURL(
-						url
-					);
+					URL.revokeObjectURL(url);
 
 					frappe.show_alert({
-						message: __(
-							"Excel file downloaded successfully."
-						),
-
+						message: __("Excel file downloaded successfully."),
 						indicator: "green",
 					});
 				});
-			}
-		);
+		});
 	},
 };
 
@@ -517,32 +402,14 @@ frappe.query_reports["Custom Sales Invoice"] = {
 // =========================================
 
 function escape_html(value) {
-	if (
-		value === null ||
-		value === undefined
-	) {
+	if (value === null || value === undefined) {
 		return "";
 	}
 
 	return String(value)
-		.replace(
-			/&/g,
-			"&amp;"
-		)
-		.replace(
-			/</g,
-			"&lt;"
-		)
-		.replace(
-			/>/g,
-			"&gt;"
-		)
-		.replace(
-			/"/g,
-			"&quot;"
-		)
-		.replace(
-			/'/g,
-			"&#039;"
-		);
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
 }
