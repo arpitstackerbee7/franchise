@@ -515,112 +515,152 @@ function open_incoming_mapper_by_type(frm) {
 //     });
 // }
 
+// function open_purchase_order_mapper(frm) {
+//     if (!frm.doc.consignor) {
+//         frappe.throw("Please select Supplier first");
+//     }
+
+//     if (!frm.doc.owner_site) {
+//         frappe.throw("Please select Company first");
+//     }
+
+//     frappe.call({
+//         method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_available_purchase_orders",
+//         args: {
+//             supplier: frm.doc.consignor,
+//             company: frm.doc.owner_site
+//         },
+//         freeze: true,
+//         freeze_message: __("Checking pending GRN quantities..."),
+
+//         callback(r) {
+//             if (r.exc) {
+//                 return;
+//             }
+
+//             const available_orders = r.message || [];
+
+//             if (!available_orders.length) {
+//                 frappe.msgprint({
+//                     title: __("No Pending Purchase Orders"),
+//                     message: __(
+//                         "No Purchase Orders with pending GRN quantity were found for the selected Supplier and Company."
+//                     ),
+//                     indicator: "orange"
+//                 });
+//                 return;
+//             }
+
+//             new frappe.ui.form.MultiSelectDialog({
+//                 doctype: "Purchase Order",
+//                 target: frm,
+
+//                 setters: {
+//                     supplier: frm.doc.consignor,
+//                     company: frm.doc.owner_site
+//                 },
+
+//                 add_filters_group: 1,
+
+//                 get_query() {
+//                     return {
+//                         filters: [
+//                             [
+//                                 "Purchase Order",
+//                                 "name",
+//                                 "in",
+//                                 available_orders
+//                             ],
+//                             [
+//                                 "Purchase Order",
+//                                 "docstatus",
+//                                 "=",
+//                                 1
+//                             ],
+//                             [
+//                                 "Purchase Order",
+//                                 "supplier",
+//                                 "=",
+//                                 frm.doc.consignor
+//                             ],
+//                             [
+//                                 "Purchase Order",
+//                                 "company",
+//                                 "=",
+//                                 frm.doc.owner_site
+//                             ]
+//                         ]
+//                     };
+//                 },
+
+//                 action(selections) {
+//                     if (!selections || !selections.length) {
+//                         frappe.msgprint(
+//                             __("Please select at least one Purchase Order.")
+//                         );
+//                         return;
+//                     }
+
+//                     add_reference_rows(frm, selections);
+
+//                     this.dialog.hide();
+//                 }
+//             });
+//         },
+
+//         error() {
+//             frappe.msgprint({
+//                 title: __("Error"),
+//                 message: __(
+//                     "Unable to fetch Purchase Orders. Please try again."
+//                 ),
+//                 indicator: "red"
+//             });
+//         }
+//     });
+// }
+
 function open_purchase_order_mapper(frm) {
     if (!frm.doc.consignor) {
-        frappe.throw("Please select Supplier first");
+        frappe.throw(__("Please select Supplier first"));
     }
 
     if (!frm.doc.owner_site) {
-        frappe.throw("Please select Company first");
+        frappe.throw(__("Please select Company first"));
     }
 
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_available_purchase_orders",
-        args: {
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Purchase Order",
+        target: frm,
+
+        setters: {
             supplier: frm.doc.consignor,
             company: frm.doc.owner_site
         },
-        freeze: true,
-        freeze_message: __("Checking pending GRN quantities..."),
 
-        callback(r) {
-            if (r.exc) {
-                return;
-            }
+        add_filters_group: 1,
 
-            const available_orders = r.message || [];
-
-            if (!available_orders.length) {
-                frappe.msgprint({
-                    title: __("No Pending Purchase Orders"),
-                    message: __(
-                        "No Purchase Orders with pending GRN quantity were found for the selected Supplier and Company."
-                    ),
-                    indicator: "orange"
-                });
-                return;
-            }
-
-            new frappe.ui.form.MultiSelectDialog({
-                doctype: "Purchase Order",
-                target: frm,
-
-                setters: {
+        get_query() {
+            return {
+                query: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.purchase_order_pending_query",
+                filters: {
                     supplier: frm.doc.consignor,
                     company: frm.doc.owner_site
-                },
-
-                add_filters_group: 1,
-
-                get_query() {
-                    return {
-                        filters: [
-                            [
-                                "Purchase Order",
-                                "name",
-                                "in",
-                                available_orders
-                            ],
-                            [
-                                "Purchase Order",
-                                "docstatus",
-                                "=",
-                                1
-                            ],
-                            [
-                                "Purchase Order",
-                                "supplier",
-                                "=",
-                                frm.doc.consignor
-                            ],
-                            [
-                                "Purchase Order",
-                                "company",
-                                "=",
-                                frm.doc.owner_site
-                            ]
-                        ]
-                    };
-                },
-
-                action(selections) {
-                    if (!selections || !selections.length) {
-                        frappe.msgprint(
-                            __("Please select at least one Purchase Order.")
-                        );
-                        return;
-                    }
-
-                    add_reference_rows(frm, selections);
-
-                    this.dialog.hide();
                 }
-            });
+            };
         },
 
-        error() {
-            frappe.msgprint({
-                title: __("Error"),
-                message: __(
-                    "Unable to fetch Purchase Orders. Please try again."
-                ),
-                indicator: "red"
-            });
+        action(selections) {
+            if (!selections || !selections.length) {
+                frappe.msgprint(__("Please select at least one Purchase Order."));
+                return;
+            }
+
+            add_reference_rows(frm, selections);
+            this.dialog.hide();
         }
     });
 }
-
-
 
 
 // ===================================================
@@ -742,104 +782,155 @@ function open_job_receipt_mapper(frm) {
 //         }
 //     });
 // }
+
+// function open_sales_return_mapper(frm) {
+
+//     if (!frm.doc.consignor_customer) {
+//         frappe.throw("Please select Customer first");
+//     }
+
+//     if (!frm.doc.owner_site) {
+//         frappe.throw("Please select Company first");
+//     }
+
+//     frappe.call({
+//         method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_sales_invoices_with_returnable_qty",
+//         args: {
+//             customer: frm.doc.consignor_customer,
+//             company: frm.doc.owner_site
+//         },
+//         freeze: true,
+//         freeze_message: "Checking returned quantities...",
+
+//         callback: function (r) {
+//             if (r.exc) {
+//                 return;
+//             }
+
+//             const eligible_invoices = r.message || [];
+
+//             if (!eligible_invoices.length) {
+//                 frappe.msgprint(
+//                     "No Sales Invoice with returnable quantity found for this Customer and Company."
+//                 );
+//                 return;
+//             }
+
+//             new frappe.ui.form.MultiSelectDialog({
+//                 doctype: "Sales Invoice",
+//                 target: frm,
+
+//                 setters: {
+//                     customer: frm.doc.consignor_customer,
+//                     company: frm.doc.owner_site
+//                 },
+
+//                 get_query() {
+//                     return {
+//                         filters: [
+//                             ["docstatus", "=", 1],
+//                             ["is_return", "=", 0],
+//                             ["customer", "=", frm.doc.consignor_customer],
+//                             ["company", "=", frm.doc.owner_site],
+//                             ["name", "in", eligible_invoices]
+//                         ]
+//                     };
+//                 },
+
+//                 action(selections) {
+//                     add_reference_rows(frm, selections);
+//                     this.dialog.hide();
+//                 }
+//             });
+//         }
+//     });
+// }
 function open_sales_return_mapper(frm) {
 
-    if (!frm.doc.consignor_customer) {
-        frappe.throw("Please select Customer first");
-    }
+    if (!frm.doc.consignor_customer) frappe.throw("Please select Customer first");
+    if (!frm.doc.owner_site) frappe.throw("Please select Company first");
 
-    if (!frm.doc.owner_site) {
-        frappe.throw("Please select Company first");
-    }
-
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_sales_invoices_with_returnable_qty",
-        args: {
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Sales Invoice",
+        target: frm,
+        setters: {
             customer: frm.doc.consignor_customer,
             company: frm.doc.owner_site
         },
-        freeze: true,
-        freeze_message: "Checking returned quantities...",
-
-        callback: function (r) {
-            if (r.exc) {
-                return;
-            }
-
-            const eligible_invoices = r.message || [];
-
-            if (!eligible_invoices.length) {
-                frappe.msgprint(
-                    "No Sales Invoice with returnable quantity found for this Customer and Company."
-                );
-                return;
-            }
-
-            new frappe.ui.form.MultiSelectDialog({
-                doctype: "Sales Invoice",
-                target: frm,
-
-                setters: {
+        add_filters_group: 1,
+        get_query() {
+            return {
+                query: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.sales_invoice_returnable_query",
+                filters: {
                     customer: frm.doc.consignor_customer,
                     company: frm.doc.owner_site
-                },
-
-                get_query() {
-                    return {
-                        filters: [
-                            ["docstatus", "=", 1],
-                            ["is_return", "=", 0],
-                            ["customer", "=", frm.doc.consignor_customer],
-                            ["company", "=", frm.doc.owner_site],
-                            ["name", "in", eligible_invoices]
-                        ]
-                    };
-                },
-
-                action(selections) {
-                    add_reference_rows(frm, selections);
-                    this.dialog.hide();
                 }
-            });
+            };
+        },
+        action(selections) {
+            add_reference_rows(frm, selections);
+            this.dialog.hide();
         }
     });
 }
 
+// function open_stock_entry_mapper(frm) {
+//     //Pehle database se used IDs mangwayein
+//     frappe.call({
+//         method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_used_source_ids",
+//         args: { source_doctype: "Stock Entry" },
+//         callback: function(r) {
+//             const used_ids = r.message || [];
+
+//             //Ab Dialog open karein
+//             new frappe.ui.form.MultiSelectDialog({
+//                 doctype: "Stock Entry",
+//                 target: frm,
+//                 setters: {
+//                     stock_entry_type: "Material Issue"
+//                 },
+//                 get_query() {
+//                     return {
+//                         filters: [
+//                             ["Stock Entry", "docstatus", "=", 1],
+//                             ["Stock Entry", "stock_entry_type", "=", "Material Issue"],
+//                             ["Stock Entry", "company", "=", frm.doc.owner_site],
+//                             ["Stock Entry", "name", "not in", used_ids] // 🚩 YAHI LINE MAIN CHECK HAI
+//                         ]
+//                     };
+//                 },
+//                 action(selections) {
+//                     // Add selected Stock Entry rows to references
+//                     add_reference_rows(frm, selections);
+//                     this.dialog.hide();
+//                 }
+//             });
+//         }
+//     });
+// }
 function open_stock_entry_mapper(frm) {
-    //Pehle database se used IDs mangwayein
-    frappe.call({
-        method: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.get_used_source_ids",
-        args: { source_doctype: "Stock Entry" },
-        callback: function(r) {
-            const used_ids = r.message || [];
-
-            //Ab Dialog open karein
-            new frappe.ui.form.MultiSelectDialog({
-                doctype: "Stock Entry",
-                target: frm,
-                setters: {
+    new frappe.ui.form.MultiSelectDialog({
+        doctype: "Stock Entry",
+        target: frm,
+        setters: {
+            stock_entry_type: "Material Issue"
+        },
+        add_filters_group: 1,
+        get_query() {
+            return {
+                query: "franchise_erp.franchise_erp.doctype.incoming_logistics.incoming_logistics.stock_entry_transfer_in_query",
+                filters: {
+                    company: frm.doc.owner_site,
                     stock_entry_type: "Material Issue"
-                },
-                get_query() {
-                    return {
-                        filters: [
-                            ["Stock Entry", "docstatus", "=", 1],
-                            ["Stock Entry", "stock_entry_type", "=", "Material Issue"],
-                            ["Stock Entry", "company", "=", frm.doc.owner_site],
-                            ["Stock Entry", "name", "not in", used_ids] // 🚩 YAHI LINE MAIN CHECK HAI
-                        ]
-                    };
-                },
-                action(selections) {
-                    // Add selected Stock Entry rows to references
-                    add_reference_rows(frm, selections);
-                    this.dialog.hide();
                 }
-            });
+            };
+        },
+        action(selections) {
+            add_reference_rows(frm, selections);
+            this.dialog.hide();
         }
     });
 }
-
 
 // ===================================================
 // WIP RETURN

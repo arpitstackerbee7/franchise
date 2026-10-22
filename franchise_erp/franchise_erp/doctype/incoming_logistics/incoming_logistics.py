@@ -512,121 +512,209 @@ from frappe.utils import flt
 
 
 
+# @frappe.whitelist()
+# def get_available_purchase_orders(supplier, company):
+#     # Fetch submitted Purchase Orders for the selected supplier and company.
+#     purchase_orders = frappe.get_all(
+#         "Purchase Order",
+#         filters={
+#             "docstatus": 1,
+#             "supplier": supplier,
+#             "company": company,
+#         },
+#         fields=["name"],
+#     )
+
+#     if not purchase_orders:
+#         return []
+
+#     po_names = [po.name for po in purchase_orders]
+
+#     # Fetch all individual PO item rows.
+#     po_items = frappe.get_all(
+#         "Purchase Order Item",
+#         filters={
+#             "parent": ["in", po_names],
+#             "parenttype": "Purchase Order",
+#             "parentfield": "items",
+#         },
+#         fields=["name", "parent", "stock_qty"],
+#     )
+
+#     if not po_items:
+#         return []
+
+#     po_item_names = [item.name for item in po_items]
+
+#     # Calculate actual received stock quantity from submitted,
+#     # non-return Purchase Receipts linked to each PO item row.
+#     grn_rows = frappe.db.sql(
+#         """
+#         SELECT
+#             pri.purchase_order_item,
+#             SUM(pri.stock_qty) AS received_stock_qty
+#         FROM `tabPurchase Receipt Item` pri
+#         INNER JOIN `tabPurchase Receipt` pr
+#             ON pr.name = pri.parent
+#         WHERE pri.purchase_order_item IN %(po_item_names)s
+#           AND pr.docstatus = 1
+#           AND IFNULL(pr.is_return, 0) = 0
+#         GROUP BY pri.purchase_order_item
+#         """,
+#         {"po_item_names": tuple(po_item_names)},
+#         as_dict=True,
+#     )
+
+#     received_by_po_item = {
+#         row.purchase_order_item: flt(row.received_stock_qty)
+#         for row in grn_rows
+#     }
+
+#     # A PO remains available if ANY item has pending quantity.
+#     # Hide it only when EVERY item is fully received.
+#     pending_po_names = set()
+
+#     for item in po_items:
+#         ordered_qty = flt(item.stock_qty)
+#         received_qty = received_by_po_item.get(item.name, 0)
+
+#         if received_qty < ordered_qty - 0.000001:
+#             pending_po_names.add(item.parent)
+
+#     return [
+#         po.name
+#         for po in purchase_orders
+#         if po.name in pending_po_names
+#     ]
+
 @frappe.whitelist()
-def get_available_purchase_orders(supplier, company):
-    # Fetch submitted Purchase Orders for the selected supplier and company.
-    purchase_orders = frappe.get_all(
-        "Purchase Order",
-        filters={
-            "docstatus": 1,
+@frappe.validate_and_sanitize_search_inputs
+def purchase_order_pending_query(doctype, txt, searchfield, start, page_len, filters, as_dict=False):
+    if isinstance(filters, str):
+        filters = frappe.parse_json(filters)
+
+    supplier = filters.get("supplier")
+    company = filters.get("company")
+
+    return frappe.db.sql(
+        """
+        SELECT po.name, po.supplier, po.company, po.transaction_date
+        FROM `tabPurchase Order` po
+        WHERE
+            po.docstatus = 1
+            AND po.status NOT IN ('Closed', 'Cancelled')
+            AND po.supplier = %(supplier)s
+            AND po.company = %(company)s
+            AND po.name LIKE %(txt)s
+            AND EXISTS (
+                SELECT 1
+                FROM `tabPurchase Order Item` poi
+                WHERE poi.parent = po.name
+                  AND poi.parenttype = 'Purchase Order'
+                  AND poi.parentfield = 'items'
+                  AND poi.stock_qty > COALESCE((
+                        SELECT SUM(pri.stock_qty)
+                        FROM `tabPurchase Receipt Item` pri
+                        INNER JOIN `tabPurchase Receipt` pr
+                            ON pr.name = pri.parent
+                        WHERE pri.purchase_order_item = poi.name
+                          AND pr.docstatus = 1
+                          AND IFNULL(pr.is_return, 0) = 0
+                  ), 0) + 0.000001
+            )
+        ORDER BY po.transaction_date DESC, po.name DESC
+        LIMIT %(start)s, %(page_len)s
+        """,
+        {
             "supplier": supplier,
             "company": company,
+            "txt": f"%{txt}%",
+            "start": int(start),
+            "page_len": int(page_len),
         },
-        fields=["name"],
+        as_dict=as_dict,
     )
+# @frappe.whitelist()
+# def get_sales_invoices_with_returnable_qty(customer, company):
+#     if not customer or not company:
+#         return []
 
-    if not purchase_orders:
-        return []
+#     rows = frappe.db.sql(
+#         """
+#         SELECT DISTINCT si.name
+#         FROM `tabSales Invoice` si
+#         INNER JOIN `tabSales Invoice Item` sii
+#             ON sii.parent = si.name
 
-    po_names = [po.name for po in purchase_orders]
+#         WHERE
+#             si.docstatus = 1
+#             AND si.is_return = 0
+#             AND si.customer = %(customer)s
+#             AND si.company = %(company)s
 
-    # Fetch all individual PO item rows.
-    po_items = frappe.get_all(
-        "Purchase Order Item",
-        filters={
-            "parent": ["in", po_names],
-            "parenttype": "Purchase Order",
-            "parentfield": "items",
-        },
-        fields=["name", "parent", "stock_qty"],
-    )
+#             AND ABS(sii.qty) >
+#                 COALESCE((
+#                     SELECT SUM(ABS(ri.qty))
+#                     FROM `tabSales Invoice Item` ri
+#                     INNER JOIN `tabSales Invoice` rsi
+#                         ON rsi.name = ri.parent
+#                     WHERE
+#                         ri.sales_invoice_item = sii.name
+#                         AND rsi.docstatus = 1
+#                         AND rsi.is_return = 1
+#                         AND rsi.return_against = si.name
+#                 ), 0) + 0.000001
+#         """,
+#         {
+#             "customer": customer,
+#             "company": company
+#         },
+#         as_dict=True
+#     )
 
-    if not po_items:
-        return []
-
-    po_item_names = [item.name for item in po_items]
-
-    # Calculate actual received stock quantity from submitted,
-    # non-return Purchase Receipts linked to each PO item row.
-    grn_rows = frappe.db.sql(
-        """
-        SELECT
-            pri.purchase_order_item,
-            SUM(pri.stock_qty) AS received_stock_qty
-        FROM `tabPurchase Receipt Item` pri
-        INNER JOIN `tabPurchase Receipt` pr
-            ON pr.name = pri.parent
-        WHERE pri.purchase_order_item IN %(po_item_names)s
-          AND pr.docstatus = 1
-          AND IFNULL(pr.is_return, 0) = 0
-        GROUP BY pri.purchase_order_item
-        """,
-        {"po_item_names": tuple(po_item_names)},
-        as_dict=True,
-    )
-
-    received_by_po_item = {
-        row.purchase_order_item: flt(row.received_stock_qty)
-        for row in grn_rows
-    }
-
-    # A PO remains available if ANY item has pending quantity.
-    # Hide it only when EVERY item is fully received.
-    pending_po_names = set()
-
-    for item in po_items:
-        ordered_qty = flt(item.stock_qty)
-        received_qty = received_by_po_item.get(item.name, 0)
-
-        if received_qty < ordered_qty - 0.000001:
-            pending_po_names.add(item.parent)
-
-    return [
-        po.name
-        for po in purchase_orders
-        if po.name in pending_po_names
-    ]
-
+#     return [row.name for row in rows]
 @frappe.whitelist()
-def get_sales_invoices_with_returnable_qty(customer, company):
-    if not customer or not company:
-        return []
+@frappe.validate_and_sanitize_search_inputs
+def sales_invoice_returnable_query(doctype, txt, searchfield, start, page_len, filters, as_dict=False):
+    if isinstance(filters, str):
+        filters = frappe.parse_json(filters)
 
-    rows = frappe.db.sql(
+    customer = filters.get("customer")
+    company = filters.get("company")
+
+    return frappe.db.sql(
         """
-        SELECT DISTINCT si.name
+        SELECT DISTINCT si.name, si.customer, si.company, si.posting_date
         FROM `tabSales Invoice` si
-        INNER JOIN `tabSales Invoice Item` sii
-            ON sii.parent = si.name
-
+        INNER JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
         WHERE
             si.docstatus = 1
             AND si.is_return = 0
             AND si.customer = %(customer)s
             AND si.company = %(company)s
-
+            AND si.name LIKE %(txt)s
             AND ABS(sii.qty) >
                 COALESCE((
                     SELECT SUM(ABS(ri.qty))
                     FROM `tabSales Invoice Item` ri
-                    INNER JOIN `tabSales Invoice` rsi
-                        ON rsi.name = ri.parent
-                    WHERE
-                        ri.sales_invoice_item = sii.name
-                        AND rsi.docstatus = 1
-                        AND rsi.is_return = 1
-                        AND rsi.return_against = si.name
+                    INNER JOIN `tabSales Invoice` rsi ON rsi.name = ri.parent
+                    WHERE ri.sales_invoice_item = sii.name
+                      AND rsi.docstatus = 1
+                      AND rsi.is_return = 1
+                      AND rsi.return_against = si.name
                 ), 0) + 0.000001
+        ORDER BY si.posting_date DESC, si.name DESC
+        LIMIT %(start)s, %(page_len)s
         """,
         {
             "customer": customer,
-            "company": company
+            "company": company,
+            "txt": f"%{txt}%",
+            "start": int(start),
+            "page_len": int(page_len),
         },
-        as_dict=True
+        as_dict=as_dict,
     )
-
-    return [row.name for row in rows]
-
 # @frappe.whitelist()
 # def get_job_receipt_orders(supplier, company):
 #     if not supplier or not company:
@@ -671,3 +759,52 @@ def get_sales_invoices_with_returnable_qty(customer, company):
 #     )
 
 #     return [row.name for row in rows]
+
+def _filters_to_dict(filters):
+    if isinstance(filters, str):
+        filters = frappe.parse_json(filters)
+    if isinstance(filters, (list, tuple)):
+        out = {}
+        for f in filters:
+            if len(f) == 3 and f[1] == "=":
+                out[f[0]] = f[2]
+            elif len(f) == 4 and f[2] == "=":
+                out[f[1]] = f[3]
+        return out
+    return filters or {}
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def stock_entry_transfer_in_query(doctype, txt, searchfield, start, page_len, filters, as_dict=False):
+    filters = _filters_to_dict(filters)
+
+    return frappe.db.sql(
+        """
+        SELECT se.name, se.stock_entry_type, se.company, se.posting_date
+        FROM `tabStock Entry` se
+        WHERE
+            se.docstatus = 1
+            AND se.company = %(company)s
+            AND se.stock_entry_type = %(stock_entry_type)s
+            AND se.name LIKE %(txt)s
+            AND NOT EXISTS (
+                SELECT 1
+                FROM `tabOutgoing Logistics Reference` r
+                WHERE r.source_doctype = 'Stock Entry'
+                  AND r.source_name = se.name
+                  AND r.parenttype = 'Incoming Logistics'
+                  AND r.docstatus < 2
+            )
+        ORDER BY se.posting_date DESC, se.name DESC
+        LIMIT %(start)s, %(page_len)s
+        """,
+        {
+            "company": filters.get("company"),
+            "stock_entry_type": filters.get("stock_entry_type") or "Material Issue",
+            "txt": f"%{txt}%",
+            "start": int(start),
+            "page_len": int(page_len),
+        },
+        as_dict=as_dict,
+    )
