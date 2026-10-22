@@ -34,8 +34,11 @@ def permission_query(user=None):
 
     escaped_user = frappe.db.escape(user)
 
+    # The ticket creator (owner) can see their own tickets, along with users
+    # who are assigned to the ticket or who assigned it to someone else.
     return f"""(
-        `tabHD Ticket`.name in (
+        `tabHD Ticket`.owner = {escaped_user}
+        or `tabHD Ticket`.name in (
             select todo.reference_name
             from `tabToDo` todo
             where todo.reference_type = 'HD Ticket'
@@ -55,6 +58,18 @@ def has_permission(doc, user=None, ptype=None, **kwargs):
     if _is_privileged(user):
         return True
 
+    # A new ticket is being created, so do not block it here.
+    # A new ticket has no ToDo yet, so the ToDo check below would always fail.
+    # The Role Permission Manager decides whether the user may create tickets.
+    if ptype == "create" or doc.is_new():
+        return True
+
+    # The creator always has access to their own ticket.
+    if doc.owner == user:
+        return True
+
+    # Otherwise, allow access only if the user is the assignee or the assigner
+    # of an active (non-cancelled) ToDo linked to this ticket.
     return bool(
         frappe.db.sql(
             """
