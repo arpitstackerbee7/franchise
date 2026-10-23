@@ -8,13 +8,22 @@ from erpnext.controllers.sales_and_purchase_return import make_return_doc
 from erpnext.stock.utils import get_stock_balance
 
 
+# Tax related fields that must be carried from the ORIGINAL GRN item row
+# into the combined return, otherwise GST is not applied (items become Nil-Rated).
+TAX_FIELDS = (
+    "item_tax_template",
+    "item_tax_rate",
+    "gst_treatment",
+    "gst_hsn_code",
+)
+
+
 class BulkPurchaseReturn(Document):
 
     def validate(self):
         self.validate_supplier()
         self.validate_qty()
         self.validate_non_serialized_stock()
-
 
     def validate_supplier(self):
 
@@ -32,7 +41,6 @@ class BulkPurchaseReturn(Document):
                     f"Supplier mismatch in row {row.idx}"
                 )
 
-
     def validate_qty(self):
 
         for row in self.items:
@@ -43,20 +51,17 @@ class BulkPurchaseReturn(Document):
                 "qty"
             ) or 0
 
-
             if flt(row.qty) > flt(received_qty):
 
                 frappe.throw(
                     f"Return qty cannot exceed received qty in row {row.idx}"
                 )
 
-
             has_serial_no = frappe.db.get_value(
                 "Item",
                 row.item_code,
                 "has_serial_no"
             )
-
 
             if has_serial_no:
 
@@ -70,7 +75,6 @@ class BulkPurchaseReturn(Document):
                         if s.strip()
                     ]
 
-
                 if not serials:
 
                     frappe.throw(
@@ -78,14 +82,12 @@ class BulkPurchaseReturn(Document):
                         f"for serialized item {row.item_code}"
                     )
 
-
                 if len(serials) != flt(row.qty):
 
                     frappe.throw(
                         f"Row {row.idx}: Qty must match number of "
                         f"Serial Numbers for item {row.item_code}"
                     )
-
 
     def validate_non_serialized_stock(self):
 
@@ -97,16 +99,13 @@ class BulkPurchaseReturn(Document):
                 "has_serial_no"
             )
 
-
             if has_serial_no:
                 continue
-
 
             available_stock = get_stock_balance(
                 row.item_code,
                 row.warehouse
             )
-
 
             if flt(available_stock) < flt(row.qty):
 
@@ -117,12 +116,10 @@ class BulkPurchaseReturn(Document):
                     f"{available_stock}, Required: {row.qty}"
                 )
 
-
     def on_submit(self):
 
         self.db_set("status", "Queued")
         frappe.db.commit()
-
 
         frappe.enqueue(
 
@@ -138,10 +135,25 @@ class BulkPurchaseReturn(Document):
             job_name=f"Bulk Purchase Return {self.name}"
         )
 
-
         frappe.msgprint(
             "Return document is being created in the background."
         )
+
+
+def _apply_source_tax(item, source_tax):
+    """
+    Copy GST fields from the original GRN item row to the return item row.
+    Only non-empty source values are applied.
+    """
+    if not source_tax:
+        return
+
+    for field in TAX_FIELDS:
+
+        value = source_tax.get(field)
+
+        if value:
+            item.set(field, value)
 
 
 def process_bulk_purchase_return(docname):
@@ -200,6 +212,9 @@ def process_bulk_purchase_return(docname):
         # Remove copied items
         return_doc.items = []
 
+        # purchase_receipt_item -> source GST data
+        source_tax_map = {}
+
         # --------------------------------------------------
         # ADD ITEMS FROM ALL GRNs
         # --------------------------------------------------
@@ -243,6 +258,14 @@ def process_bulk_purchase_return(docname):
                         f"is {return_doc.company}"
                     )
 
+                # GST data of the ORIGINAL GRN row
+                source_tax = {
+                    field: pr_item.get(field)
+                    for field in TAX_FIELDS
+                }
+
+                source_tax_map[row.purchase_receipt_item] = source_tax
+
                 return_doc.append(
                     "items",
                     {
@@ -273,7 +296,20 @@ def process_bulk_purchase_return(docname):
                         # VERY IMPORTANT
                         # Keep original GRN item reference
                         "purchase_receipt_item":
-                            row.purchase_receipt_item
+                            row.purchase_receipt_item,
+
+                        # GST: keep same tax setup as original GRN
+                        "item_tax_template":
+                            source_tax.get("item_tax_template"),
+
+                        "item_tax_rate":
+                            source_tax.get("item_tax_rate"),
+
+                        "gst_treatment":
+                            source_tax.get("gst_treatment"),
+
+                        "gst_hsn_code":
+                            source_tax.get("gst_hsn_code"),
                     }
                 )
 
@@ -305,6 +341,16 @@ def process_bulk_purchase_return(docname):
             item.idx = idx
 
         return_doc.set_missing_values()
+
+        # set_missing_values() may overwrite or blank GST fields when
+        # the item master has no Item Tax row for this company.
+        # Re-apply the original GRN tax data so return GST == GRN GST.
+        for item in return_doc.items:
+
+            _apply_source_tax(
+                item,
+                source_tax_map.get(item.purchase_receipt_item)
+            )
 
         return_doc.calculate_taxes_and_totals()
 
@@ -341,6 +387,7 @@ def process_bulk_purchase_return(docname):
 
         raise
 
+
 @frappe.whitelist()
 def get_returnable_items(
     supplier,
@@ -353,13 +400,11 @@ def get_returnable_items(
         "AND pr.company = %(company)s"
     )
 
-
     if item_code:
 
         conditions += (
             " AND pri.item_code = %(item_code)s"
         )
-
 
     items = frappe.db.sql(
 
@@ -423,9 +468,7 @@ def get_returnable_items(
         as_dict=1
     )
 
-
     return items
-
 
 
 @frappe.whitelist()
@@ -435,29 +478,23 @@ def get_pr_item_details(items):
 
     result = []
 
-
     for d in items:
-
 
         pr_item = frappe.get_doc(
             "Purchase Receipt Item",
             d.get("purchase_receipt_item")
         )
 
-
         item_doc = frappe.get_doc(
             "Item",
             pr_item.item_code
         )
 
-
         is_serialized = (
             item_doc.has_serial_no
         )
 
-
         pr_serials = []
-
 
         if pr_item.serial_no:
 
@@ -465,7 +502,6 @@ def get_pr_item_details(items):
                 pr_item.serial_no
                 .split("\n")
             )
-
 
         returned_serials = frappe.db.sql(
 
@@ -494,9 +530,7 @@ def get_pr_item_details(items):
             as_dict=1
         )
 
-
         returned_list = []
-
 
         for r in returned_serials:
 
@@ -506,15 +540,12 @@ def get_pr_item_details(items):
                     r.serial_no.split("\n")
                 )
 
-
         available_serials = list(
             set(pr_serials) -
             set(returned_list)
         )
 
-
         scanned_serials = []
-
 
         if d.get("serial_nos"):
 
@@ -528,13 +559,11 @@ def get_pr_item_details(items):
                 if s.strip()
             ]
 
-
         invalid_serials = list(
 
             set(scanned_serials) -
             set(available_serials)
         )
-
 
         if invalid_serials:
 
@@ -545,12 +574,9 @@ def get_pr_item_details(items):
                 f"{', '.join(invalid_serials)}"
             )
 
-
         warehouse_map = {}
 
-
         if is_serialized:
-
 
             for serial in scanned_serials:
 
@@ -561,9 +587,7 @@ def get_pr_item_details(items):
                     []
                 ).append(serial)
 
-
             for wh, serial_list in warehouse_map.items():
-
 
                 result.append({
 
@@ -610,26 +634,20 @@ def get_pr_item_details(items):
                         "\n".join(available_serials)
                 })
 
-
         else:
-
 
             qty = d.get("return_qty")
 
             wh = pr_item.warehouse
-
 
             warehouse_map.setdefault(
                 wh,
                 0
             )
 
-
             warehouse_map[wh] += qty
 
-
             for wh, qty in warehouse_map.items():
-
 
                 result.append({
 
@@ -676,14 +694,11 @@ def get_pr_item_details(items):
                         ""
                 })
 
-
     return result
-
 
 
 @frappe.whitelist()
 def get_pr_from_serial(serial_no, company):
-
 
     pr_item = frappe.db.sql(
 
@@ -728,20 +743,16 @@ def get_pr_from_serial(serial_no, company):
         as_dict=True
     )
 
-
     if not pr_item:
 
         return None
 
-
     pr_item = pr_item[0]
-
 
     serial = frappe.get_doc(
         "Serial No",
         serial_no
     )
-
 
     return {
 
@@ -771,25 +782,20 @@ def get_pr_from_serial(serial_no, company):
     }
 
 
-
 @frappe.whitelist()
 def submit_created_prs(docname):
-
 
     doc = frappe.get_doc(
         "Bulk Purchase Return",
         docname
     )
 
-
     doc.db_set(
         "submit_status",
         "Queued"
     )
 
-
     frappe.db.commit()
-
 
     frappe.enqueue(
 
@@ -805,22 +811,17 @@ def submit_created_prs(docname):
         job_name=f"Submit PRs for {docname}"
     )
 
-
     return "Queued"
 
 
-
 def process_submit_prs(docname):
-
 
     doc = frappe.get_doc(
         "Bulk Purchase Return",
         docname
     )
 
-
     try:
-
 
         doc.db_set(
             "submit_status",
@@ -828,7 +829,6 @@ def process_submit_prs(docname):
         )
 
         frappe.db.commit()
-
 
         prs = frappe.get_all(
 
@@ -846,21 +846,16 @@ def process_submit_prs(docname):
             pluck="name"
         )
 
-
         for pr in prs:
-
 
             pr_doc = frappe.get_doc(
                 "Purchase Receipt",
                 pr
             )
 
-
             pr_doc.flags.ignore_permissions = True
 
-
             pr_doc.submit()
-
 
         doc.db_set(
             "submit_status",
@@ -869,13 +864,9 @@ def process_submit_prs(docname):
 
         frappe.db.commit()
 
-
-
     except Exception:
 
-
         frappe.db.rollback()
-
 
         frappe.log_error(
 
@@ -883,7 +874,6 @@ def process_submit_prs(docname):
 
             "Submit PRs Failed"
         )
-
 
         doc.db_set(
             "submit_status",
@@ -893,10 +883,8 @@ def process_submit_prs(docname):
         frappe.db.commit()
 
 
-
 @frappe.whitelist()
 def has_draft_return_prs(docname):
-
 
     exists = frappe.db.exists(
 
@@ -911,6 +899,5 @@ def has_draft_return_prs(docname):
                 0
         }
     )
-
 
     return bool(exists)

@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate
+from frappe.utils import flt, get_datetime, getdate
 
 
 PENDING_ALL = "All"
@@ -377,12 +377,14 @@ def get_linked_document_details(doc_no, ewb_no=None, from_gstin=None, from_trade
 
     if logistics:
         details["logistic_in_no"] = logistics.name
-        details["logistic_in_date"] = logistics.invoice_date
-        details["logistic_in_time"] = time_value(logistics.invoice_time)
+        # Date / time = system creation timestamp of Incoming Logistics
+        details["logistic_in_date"], details["logistic_in_time"] = split_datetime(
+            logistics.creation
+        )
 
         # -------------------------------------------------------------
         # 2. Gate In No = Incoming Logistics.gate_entry_no
-        #    Gate In Date / Time = Gate Entry posting_date / posting_time
+        #    Gate In Date / Time = Gate Entry system creation date / time
         # -------------------------------------------------------------
         gate_entry_no = logistics.gate_entry_no
 
@@ -392,13 +394,14 @@ def get_linked_document_details(doc_no, ewb_no=None, from_gstin=None, from_trade
             gate = frappe.db.get_value(
                 "Gate Entry",
                 gate_entry_no,
-                ["name", "posting_date", "posting_time"],
+                ["name", "creation"],
                 as_dict=True,
             )
 
             if gate:
-                details["gate_in_date"] = gate.posting_date
-                details["gate_in_time"] = time_value(gate.posting_time)
+                details["gate_in_date"], details["gate_in_time"] = split_datetime(
+                    gate.creation
+                )
 
     # -----------------------------------------------------------------
     # 3. Purchase Receipt through Purchase Receipt Item.custom_bulk_gate_entry
@@ -464,8 +467,7 @@ def find_incoming_logistics(ewb_no, doc_no, from_gstin=None, from_trader_name=No
     fields = [
         "name",
         "invoice_no",
-        "invoice_date",
-        "invoice_time",
+        "creation",
         "gate_entry_no",
         "consignor",
     ]
@@ -746,6 +748,15 @@ def unique_values(values):
         result.append(value)
 
     return result
+
+
+def split_datetime(value):
+    """Split a datetime (e.g. creation) into (date, 'HH:MM:SS')."""
+    if not value:
+        return None, ""
+
+    value = get_datetime(value)
+    return value.date(), value.strftime("%H:%M:%S")
 
 
 def time_value(value):

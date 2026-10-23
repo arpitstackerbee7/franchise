@@ -431,6 +431,8 @@ override_whitelisted_methods = {
 
     "frappe.core.page.permission_manager.permission_manager.reset":
         "franchise_erp.custom.permission_audit.reset",
+    
+    "helpdesk.api.doc.get_filterable_fields": "franchise_erp.overrides.helpdesk_overrides.get_filterable_fields",
 
 }
 
