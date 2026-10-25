@@ -195,85 +195,101 @@ def get_columns():
 		},
 
 		{
-			"label": _("Previous Sale Qty"),
+			"label": _("Qty sold at counter"),
 			"fieldname": "sale_qty_ytd",
 			"fieldtype": "Float",
 			"width": 85
 		},
 
 		{
-			"label": _("Previous Sale Amount"),
+			"label": _("Billing Value with gst"),
 			"fieldname": "amount_ytd",
 			"fieldtype": "Currency",
 			"width": 100
 		},
 
 		{
-			"label": _("Previous Credit Note"),
-			"fieldname": "credit_note",
+			"label": _("Credit Note Value (Disc on Sale)"),
+			"fieldname": "credit_note_disc",
 			"fieldtype": "Currency",
-			"width": 85
+			"width": 110
 		},
 
 		{
-			"label": _("Previous Debit Note"),
+			"label": _("Credit Note Value (Any Other)"),
+			"fieldname": "credit_note_other",
+			"fieldtype": "Currency",
+			"width": 110
+		},
+
+		{
+			"label": _("Debit Note Value (All)"),
 			"fieldname": "debit_note",
 			"fieldtype": "Currency",
 			"width": 85
 		},
 
 		{
-			"label": _("Previous Payment Receivable"),
-			"fieldname": "payment_received",
-			"fieldtype": "Currency",
-			"width": 90
-		},
-
-		{
-			"label": _("Previous Collectable Amount"),
+			"label": _("Collectable amt"),
 			"fieldname": "collectable_amount",
 			"fieldtype": "Currency",
 			"width": 100
 		},
 
 		{
-			"label": _("Current Sale Qty"),
+			"label": _("Payment received"),
+			"fieldname": "payment_received",
+			"fieldtype": "Currency",
+			"width": 90
+		},
+
+		{
+			"label": _("Pending Amount"),
+			"fieldname": "pending_amount",
+			"fieldtype": "Currency",
+			"width": 100
+		},
+
+		{
+			"label": _("Qty"),
 			"fieldname": "sale_qty_15",
 			"fieldtype": "Float",
 			"width": 90
 		},
 
 		{
-			"label": _("Current Sale Amount"),
+			"label": _("Billing value with gst"),
 			"fieldname": "amount_15",
 			"fieldtype": "Currency",
 			"width": 100
 		},
 
 		{
-			"label": _("Current Credit Note"),
-			"fieldname": "credit_note_15",
+			"label": _("CN Value (Disc on Sale)"),
+			"fieldname": "credit_note_disc_15",
 			"fieldtype": "Currency",
-			"width": 90
+			"width": 110
 		},
 
 		{
-			"label": _("Current Debit Note"),
-			"fieldname": "debit_note_15",
+			"label": _("CN Value (Any Other)"),
+			"fieldname": "credit_note_other_15",
 			"fieldtype": "Currency",
-			"width": 90
+			"width": 110
 		},
 
+
+
 		{
-			"label": _("Current Collectable Amount"),
+			"label": _("Collectable amount"),
 			"fieldname": "collectable_amount_15",
 			"fieldtype": "Currency",
 			"width": 100
 		},
 
 		{
-			"label": _("Total Collectable Amount"),
-			"fieldname": "total_collectable_amount",
+			"label": _("Net Pending"),
+			"fieldname": "net_pending",
 			"fieldtype": "Currency",
 			"width": 100
 		}
@@ -507,11 +523,11 @@ def get_data(filters, companies):
 
 			total_amount = D(r.total_amount)
 
-			discount_percentage = D(0)
-			promo_discount = D(0)
+			discount_percentage = D(r.discount_percentage)
+			promo_discount = D(r.custom_promo_discount_percent)
 			is_promo = r.custom_is_promo_scheme
 
-			# 🔥 PROMO DISCOUNT OVERRIDE
+			#  PROMO DISCOUNT OVERRIDE
 			if is_promo and promo_discount > 0:
 				discount_percentage = promo_discount
 
@@ -539,7 +555,7 @@ def get_data(filters, companies):
 
 			is_return = r.is_return or 0
 
-			# 🔥 IMPORTANT: use absolute value for GST decision
+			#  IMPORTANT: use absolute value for GST decision
 			check_amount = abs(net_amount)
 
 			if is_return == 1:
@@ -843,7 +859,11 @@ def get_data(filters, companies):
 
 		for row in (previous_result.get("invoice_list") or []):
 			qty_map[customer]["qty_ytd"] += float(row.get("qty") or 0)
-			qty_map[customer]["amount_ytd"] += float(row.get("inv_base_value") or 0)
+			qty_map[customer]["amount_ytd"] += (
+				float(row.get("inv_base_value") or 0)
+				+ float(row.get("in_put_gst_value") or 0)
+				+ float(row.get("debit_note") or 0)
+			)
 
 
 		# -------------------------------------------------
@@ -858,7 +878,11 @@ def get_data(filters, companies):
 
 		for row in (last_15_result.get("invoice_list") or []):
 			qty_map[customer]["qty_15"] += float(row.get("qty") or 0)
-			qty_map[customer]["amount_15"] += float(row.get("inv_base_value") or 0)
+			qty_map[customer]["amount_15"] += (
+				float(row.get("inv_base_value") or 0)
+				+ float(row.get("in_put_gst_value") or 0)
+				+ float(row.get("debit_note") or 0)
+			)
 
 
 	# =====================================================
@@ -1020,24 +1044,35 @@ def get_data(filters, companies):
 			SUM(CASE
 				WHEN gle.posting_date <= %(prev_to_date)s
 					AND gle.voucher_subtype IN ('Credit Note', 'Journal Entry')
-				THEN gle.credit ELSE 0 END) AS credit_note,
+					AND gle.against LIKE '%%DISCOUNT ON SALE - TZUPL%%'
+				THEN gle.credit ELSE 0 END) AS credit_note_disc,
+
+			SUM(CASE
+				WHEN gle.posting_date <= %(prev_to_date)s
+					AND gle.voucher_subtype IN ('Credit Note', 'Journal Entry')
+					AND IFNULL(gle.against, '') NOT LIKE '%%DISCOUNT ON SALE - TZUPL%%'
+				THEN gle.credit ELSE 0 END) AS credit_note_other,
 
 			SUM(CASE
 				WHEN gle.posting_date >= %(last_15_start)s
 					AND gle.posting_date <= %(to_date)s
 					AND gle.voucher_subtype IN ('Credit Note', 'Journal Entry')
-				THEN gle.credit ELSE 0 END) AS credit_note_15,
-
-			SUM(CASE
-				WHEN gle.posting_date <= %(prev_to_date)s
-					AND gle.voucher_subtype IN ('Debit Note', 'Journal Entry')
-				THEN gle.debit ELSE 0 END) AS debit_note,
+					AND gle.against LIKE '%%DISCOUNT ON SALE - TZUPL%%'
+				THEN gle.credit ELSE 0 END) AS credit_note_disc_15,
 
 			SUM(CASE
 				WHEN gle.posting_date >= %(last_15_start)s
 					AND gle.posting_date <= %(to_date)s
+					AND gle.voucher_subtype IN ('Credit Note', 'Journal Entry')
+					AND IFNULL(gle.against, '') NOT LIKE '%%DISCOUNT ON SALE - TZUPL%%'
+				THEN gle.credit ELSE 0 END) AS credit_note_other_15,
+
+			SUM(CASE
+				WHEN gle.posting_date <= %(prev_to_date)s
 					AND gle.voucher_subtype IN ('Debit Note', 'Journal Entry')
-				THEN gle.debit ELSE 0 END) AS debit_note_15
+				THEN gle.debit ELSE 0 END) AS debit_note
+
+			
 
 		FROM `tabGL Entry` gle
 		WHERE
@@ -1294,11 +1329,13 @@ def get_data(filters, companies):
 		amount_ytd = qty.get("amount_ytd") or 0
 		amount_15 = qty.get("amount_15") or 0
 
-		credit_note = journal_note.get("credit_note") or 0
-		credit_note_15 = journal_note.get("credit_note_15") or 0
+		credit_note_disc = -(journal_note.get("credit_note_disc") or 0)
+		credit_note_other = -(journal_note.get("credit_note_other") or 0)
+
+		credit_note_disc_15 = -(journal_note.get("credit_note_disc_15") or 0)
+		credit_note_other_15 = -(journal_note.get("credit_note_other_15") or 0)
 
 		debit_note = journal_note.get("debit_note") or 0
-		debit_note_15 = journal_note.get("debit_note_15") or 0
 
 		previous_collection_amount = (
 			payment.get("previous_collection_amount") or 0
@@ -1316,30 +1353,28 @@ def get_data(filters, companies):
 
 		payment_received = payment_rec.get("payment_received") or 0
 
+
+
 		collectable_amount = (
 			net_sale_franchise
 			+ amount_ytd
+			+ credit_note_disc
+			+ credit_note_other
 			+ debit_note
-			- credit_note
-			- payment_received
 		)
 
 
 		collectable_amount_15 = (
 			amount_15
-			+ debit_note_15
-			- credit_note_15
-		)
-
-
-		total_collectable_amount = (
-			collectable_amount
-			+ collectable_amount_15
+			+ credit_note_disc_15
+			+ credit_note_other_15
 		)
 
 
 
+		pending_amount = collectable_amount - payment_received
 
+		net_pending = pending_amount + collectable_amount_15
 
 		data.append({
 			"customer_name": customer,
@@ -1351,21 +1386,25 @@ def get_data(filters, companies):
 			"sale_qty_ytd": sale_qty_ytd,
 			"amount_ytd": amount_ytd,
 
-			"credit_note": credit_note,
+			"credit_note_disc": credit_note_disc,
+			"credit_note_other": credit_note_other,
+			
 			"debit_note": debit_note,
 
 			"payment_received": payment_received,
 			"collectable_amount": collectable_amount,
+			"pending_amount": pending_amount,
 
 			"sale_qty_15": sale_qty_15,
 			"amount_15": amount_15,
 
-			"credit_note_15": credit_note_15,
-			"debit_note_15": debit_note_15,
+			"credit_note_disc_15": credit_note_disc_15,
+			"credit_note_other_15": credit_note_other_15,
+
 
 			"collectable_amount_15": collectable_amount_15,
 
-			"total_collectable_amount": total_collectable_amount
+			"net_pending": net_pending
 
 			
 		})
