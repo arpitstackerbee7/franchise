@@ -76,21 +76,9 @@ function start_bulk_return_error_polling(frm) {
                 frm.doc.status = status;
                 frm.doc.error_message = doc.error_message || "";
 
-                const errorText = doc.error_message ||
-                    __("Background processing failed. Please check Error Log.");
-
-                if (!frm.__bulk_return_error_shown) {
-                    frm.__bulk_return_error_shown = true;
-
-                    frappe.msgprint({
-                        title: __("Bulk Sales Return Failed"),
-                        message: frappe.utils.escape_html(
-                            errorText
-                        ).replace(/\n/g, "<br>"),
-                        indicator: "red",
-                        wide: true
-                    });
-                }
+                // Popup is already shown by the server (realtime).
+                // Mark it as shown so refresh() does not show it a second time.
+                frm.__bulk_return_error_shown = true;
 
                 frm.reload_doc();
                 return;

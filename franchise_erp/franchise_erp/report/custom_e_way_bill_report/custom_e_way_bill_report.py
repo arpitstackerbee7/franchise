@@ -244,12 +244,15 @@ def get_data(filters):
         #
         # All                               -> no extra condition
         # E-Way Bill Pending for Gate Entry -> Gate In No is empty
-        # Gate Entry Pending for GRC/PRC    -> GRC/PRC No is empty
+        # Gate Entry Pending for GRC/PRC    -> Gate In No is present AND GRC/PRC No is empty
         # -------------------------------------------------------------
         if pending_type == PENDING_GATE_ENTRY and erp_details.get("gate_in_no"):
             continue
 
-        if pending_type == PENDING_GRC_PRC and erp_details.get("grc_prc_no"):
+        if pending_type == PENDING_GRC_PRC and (
+            not erp_details.get("gate_in_no")
+            or erp_details.get("grc_prc_no")
+        ):
             continue
 
         result.append({
