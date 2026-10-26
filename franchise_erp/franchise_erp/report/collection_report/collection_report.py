@@ -1067,10 +1067,13 @@ def get_data(filters, companies):
 					AND IFNULL(gle.against, '') NOT LIKE '%%DISCOUNT ON SALE - TZUPL%%'
 				THEN gle.credit ELSE 0 END) AS credit_note_other_15,
 
+			# SUM(CASE
+			# 	WHEN gle.posting_date <= %(prev_to_date)s
+			# 		AND gle.voucher_subtype IN ('Debit Note', 'Journal Entry')
+			# 	THEN gle.debit ELSE 0 END) AS debit_note
 			SUM(CASE
-				WHEN gle.posting_date <= %(prev_to_date)s
-					AND gle.voucher_subtype IN ('Debit Note', 'Journal Entry')
-				THEN gle.debit ELSE 0 END) AS debit_note
+                WHEN gle.posting_date <= %(prev_to_date)s
+                THEN gle.debit ELSE 0 END) AS debit_note
 
 			
 
@@ -1082,7 +1085,7 @@ def get_data(filters, companies):
 			AND gle.party_type = 'Customer'
 			AND IFNULL(gle.party, '') != ''
 			AND gle.voucher_type = 'Journal Entry'
-			AND gle.voucher_subtype IN ('Credit Note', 'Debit Note', 'Journal Entry')
+			#AND gle.voucher_subtype IN ('Credit Note', 'Debit Note', 'Journal Entry')
 			{journal_note_customer_condition}
 		GROUP BY gle.party
 		""",
