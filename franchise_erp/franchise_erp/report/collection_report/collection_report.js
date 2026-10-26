@@ -105,6 +105,7 @@ frappe.query_reports["Collection Report"] = {
 
 	after_datatable_render: function(datatable_obj) {
 		set_report_title();
+		add_period_groups(datatable_obj);
 	},
 
 
@@ -239,4 +240,103 @@ function inject_print_heading_style() {
 
 	document.head.appendChild(style);
 
+}
+
+function add_period_groups(datatable) {
+	const wrapper = datatable.wrapper;
+	build_period_groups(datatable);
+
+	// bar gayab ho jaye (column change / re-render) to dobara banao
+	if (wrapper.__groupWatch) wrapper.__groupWatch.disconnect();
+	let timer = null;
+	wrapper.__groupWatch = new MutationObserver(() => {
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			if (!wrapper.querySelector(".period-group-bar")) {
+				build_period_groups(datatable);
+			}
+		}, 50);
+	});
+	wrapper.__groupWatch.observe(wrapper, { childList: true, subtree: true });
+}
+
+function build_period_groups(datatable) {
+	try {
+		const groups = [
+			{ label: "Previous Period", color: "#d9efbf", from: "net_sale_franchise", to: "pending_amount" },
+			{ label: "Current Period", color: "#bfe6f7", from: "sale_qty_15", to: "collectable_amount_15" }
+		];
+
+		const wrapper = datatable.wrapper;
+		const getHeaderRow = () => datatable.header.querySelector(".dt-row-header");
+		if (!getHeaderRow()) return;
+
+		// purani bar aur listeners hatao
+		wrapper.querySelectorAll(".period-group-bar").forEach(e => e.remove());
+		if (wrapper.__groupSync) {
+			wrapper.removeEventListener("scroll", wrapper.__groupSync, true);
+			window.removeEventListener("resize", wrapper.__groupSync);
+			document.removeEventListener("mousemove", wrapper.__groupSync);
+			document.removeEventListener("mouseup", wrapper.__groupSync);
+		}
+
+		const bar = document.createElement("div");
+		bar.className = "period-group-bar";
+		bar.style.cssText = "position:relative;overflow:hidden;height:35px;width:100%;";
+
+		const items = groups.map(g => {
+			const div = document.createElement("div");
+			div.textContent = g.label;
+			div.style.cssText =
+				"position:absolute;top:0;height:100%;box-sizing:border-box;" +
+				"display:flex;align-items:center;justify-content:center;" +
+				"font-weight:bold;color:#333;border-right:1px solid #fff;" +
+				"white-space:nowrap;background:" + g.color + ";";
+			bar.appendChild(div);
+			return { g, div };
+		});
+
+		datatable.header.parentNode.insertBefore(bar, datatable.header);
+
+		// har baar fresh columns aur fresh header cells se measure karo
+		const cellOf = (id) => {
+			const headerRow = getHeaderRow();
+			if (!headerRow) return null;
+			const cols = datatable.datamanager.columns;
+			const idx = cols.findIndex(c => c.id === id);
+			if (idx < 0) return null;
+			return (
+				headerRow.querySelector(`.dt-cell--header-${cols[idx].colIndex}`) ||
+				headerRow.querySelectorAll(".dt-cell")[idx] ||
+				null
+			);
+		};
+
+		const update = () => {
+			const barRect = bar.getBoundingClientRect();
+			items.forEach(({ g, div }) => {
+				const a = cellOf(g.from);
+				const b = cellOf(g.to);
+				if (!a || !b) return;
+				let l = a.getBoundingClientRect().left - barRect.left;
+				let r = b.getBoundingClientRect().right - barRect.left;
+				l = Math.max(l, 0);
+				r = Math.min(r, barRect.width);
+				if (r <= l) { div.style.display = "none"; return; }
+				div.style.display = "flex";
+				div.style.left = l + "px";
+				div.style.width = (r - l) + "px";
+			});
+		};
+
+		wrapper.__groupSync = () => requestAnimationFrame(update);
+		wrapper.addEventListener("scroll", wrapper.__groupSync, true);
+		window.addEventListener("resize", wrapper.__groupSync);
+		document.addEventListener("mousemove", wrapper.__groupSync);
+		document.addEventListener("mouseup", wrapper.__groupSync);
+
+		update();
+	} catch (e) {
+		console.error("Period group header failed", e);
+	}
 }
