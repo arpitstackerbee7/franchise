@@ -42,8 +42,7 @@ frappe.query_reports["Custom Stock Report"] = {
 			options: "Item",
 
 			get_data: async function (txt) {
-				let item_group =
-					frappe.query_report.get_filter_value("item_group");
+				let item_group = frappe.query_report.get_filter_value("item_group");
 
 				let filters = {
 					...(item_group && { item_group }),
@@ -81,22 +80,15 @@ frappe.query_reports["Custom Stock Report"] = {
 			options: "Warehouse",
 
 			get_data: (txt) => {
-				let warehouse_type =
-					frappe.query_report.get_filter_value("warehouse_type");
-
-				let company =
-					frappe.query_report.get_filter_value("company");
+				let warehouse_type = frappe.query_report.get_filter_value("warehouse_type");
+				let company = frappe.query_report.get_filter_value("company");
 
 				let filters = {
 					...(warehouse_type && { warehouse_type }),
 					...(company && { company }),
 				};
 
-				return frappe.db.get_link_options(
-					"Warehouse",
-					txt,
-					filters
-				);
+				return frappe.db.get_link_options("Warehouse", txt, filters);
 			},
 		},
 		{
@@ -150,43 +142,22 @@ frappe.query_reports["Custom Stock Report"] = {
 		},
 	],
 
-	formatter: function (
-		value,
-		row,
-		column,
-		data,
-		default_formatter
-	) {
+	formatter: function (value, row, column, data, default_formatter) {
 		// Image
 		if (column.fieldname === "image" && value) {
 			return `
-				<div
-					style="
-						display:flex;
-						align-items:center;
-						justify-content:center;
-						height:100%;
-					"
-				>
+				<div style="display:flex;align-items:center;justify-content:center;height:100%;">
 					<img
 						src="${value}"
-						style="
-							height:60px;
-							width:60px;
-							object-fit:cover;
-							border-radius:4px;
-						"
+						loading="lazy"
+						style="height:60px;width:60px;object-fit:cover;border-radius:4px;"
 					>
 				</div>
 			`;
 		}
 
 		// Serial Numbers
-		if (
-			column.fieldname === "serial_no" &&
-			data &&
-			data.serial_no
-		) {
+		if (column.fieldname === "serial_no" && data && data.serial_no) {
 			return `
 				<a
 					href="#"
@@ -198,169 +169,109 @@ frappe.query_reports["Custom Stock Report"] = {
 			`;
 		}
 
-		value = default_formatter(
-			value,
-			row,
-			column,
-			data
-		);
+		value = default_formatter(value, row, column, data);
 
 		// Out Qty Red
-		if (
-			column.fieldname === "out_qty" &&
-			data &&
-			data.out_qty > 0
-		) {
-			value =
-				"<span style='color:red'>" +
-				value +
-				"</span>";
+		if (column.fieldname === "out_qty" && data && data.out_qty > 0) {
+			value = "<span style='color:red'>" + value + "</span>";
 		}
-
 		// In Qty Green
-		else if (
-			column.fieldname === "in_qty" &&
-			data &&
-			data.in_qty > 0
-		) {
-			value =
-				"<span style='color:green'>" +
-				value +
-				"</span>";
+		else if (column.fieldname === "in_qty" && data && data.in_qty > 0) {
+			value = "<span style='color:green'>" + value + "</span>";
 		}
 
 		return value;
 	},
 
-	after_datatable_render: function (datatable_obj) {
-		datatable_obj.options.cellHeight = 70;
-		datatable_obj.refresh();
+	// Replaces after_datatable_render + refresh() (which rendered the table twice)
+	get_datatable_options: function (options) {
+		return Object.assign(options, { cellHeight: 70 });
 	},
 
 	onload: function (report) {
-
 		// View Stock Ledger
-		report.page.add_inner_button(
-			__("View Stock Ledger"),
-			function () {
-				var filters = report.get_values();
+		report.page.add_inner_button(__("View Stock Ledger"), function () {
+			var filters = report.get_values();
+			frappe.set_route("query-report", "Stock Ledger", filters);
+		});
 
-				frappe.set_route(
-					"query-report",
-					"Stock Ledger",
-					filters
-				);
-			}
-		);
 		function get_locked_closing_balance_name() {
-	        let msg = frappe.query_report.message;
-	        if (msg && msg.closing_balance_name) {
-		        return msg.closing_balance_name;
-	        }
-	        return null;
-        }  
+			let msg = frappe.query_report.message;
+			if (msg && msg.closing_balance_name) {
+				return msg.closing_balance_name;
+			}
+			return null;
+		}
 
 		// Export With Images
-		report.page.add_inner_button(
-			__("Export with Images"),
-			function () {
+		report.page.add_inner_button(__("Export with Images"), function () {
+			frappe.show_alert({
+				message: __("Generating Excel with images..."),
+				indicator: "blue",
+			});
 
-				frappe.show_alert({
-					message: __("Generating Excel with images..."),
-					indicator: "blue",
-				});
-				let filters = report.get_filter_values();
+			let filters = report.get_filter_values();
 
-                let locked_name = get_locked_closing_balance_name();
-                if (locked_name) {
-	                filters.closing_balance_name = locked_name;
-                }
-
-				frappe.call({
-					method:
-						"franchise_erp.franchise_erp.report.custom_stock_report.export_with_images.export_custom_stock_report_with_images",
-
-					args: {
-						filters: filters,
-						report_data: report.data,
-						columns: report.columns.map((c) => ({
-                        fieldname: c.fieldname,
-                        label: c.label,
-                        fieldtype: c.fieldtype,
-                        width: c.width,
-                    })),
-					},
-
-					callback: function (r) {
-						if (r.message) {
-
-							window.open(r.message);
-
-							frappe.show_alert({
-								message: __("Excel file ready!"),
-								indicator: "green",
-							});
-						}
-					},
-				});
+			let locked_name = get_locked_closing_balance_name();
+			if (locked_name) {
+				filters.closing_balance_name = locked_name;
 			}
-		);
+
+			frappe.call({
+				method: "franchise_erp.franchise_erp.report.custom_stock_report.export_with_images.export_custom_stock_report_with_images",
+
+				args: {
+					filters: filters,
+					report_data: report.data,
+					columns: report.columns.map((c) => ({
+						fieldname: c.fieldname,
+						label: c.label,
+						fieldtype: c.fieldtype,
+						width: c.width,
+					})),
+				},
+
+				callback: function (r) {
+					if (r.message) {
+						window.open(r.message);
+
+						frappe.show_alert({
+							message: __("Excel file ready!"),
+							indicator: "green",
+						});
+					}
+				},
+			});
+		});
 
 		// Serial Number Popup
-		$(document).off(
-			"click",
-			".show-serials"
-		);
+		$(document).off("click", ".show-serials");
 
-		$(document).on(
-			"click",
-			".show-serials",
-			function (e) {
+		$(document).on("click", ".show-serials", function (e) {
+			e.preventDefault();
 
-				e.preventDefault();
+			let serials = decodeURIComponent($(this).attr("data-serials"));
 
-				let serials =
-					decodeURIComponent(
-						$(this).attr("data-serials")
-					);
+			let dialog = new frappe.ui.Dialog({
+				title: __("Serial Numbers"),
+				size: "large",
+				fields: [
+					{
+						fieldtype: "HTML",
+						fieldname: "serial_list",
+					},
+				],
+			});
 
-				let dialog =
-					new frappe.ui.Dialog({
-						title: __("Serial Numbers"),
-						size: "large",
+			dialog.fields_dict.serial_list.$wrapper.html(`
+				<div style="max-height:500px;overflow-y:auto;padding:10px;">
+					${serials.split(", ").join("<br>")}
+				</div>
+			`);
 
-						fields: [
-							{
-								fieldtype: "HTML",
-								fieldname: "serial_list",
-							},
-						],
-					});
-
-				dialog.fields_dict
-					.serial_list
-					.$wrapper
-					.html(`
-						<div
-							style="
-								max-height:500px;
-								overflow-y:auto;
-								padding:10px;
-							"
-						>
-							${serials
-								.split(", ")
-								.join("<br>")}
-						</div>
-					`);
-
-				dialog.show();
-			}
-		);
+			dialog.show();
+		});
 	},
 };
 
-erpnext.utils.add_inventory_dimensions(
-	"Custom Stock Report",
-	8
-);
+erpnext.utils.add_inventory_dimensions("Custom Stock Report", 8);

@@ -18,6 +18,9 @@ from erpnext.stock.doctype.warehouse.warehouse import apply_warehouse_filter
 from erpnext.stock.report.stock_ageing.stock_ageing import FIFOSlots, get_average_age
 from erpnext.stock.utils import add_additional_uom_columns
 
+OPENING_SUPPLIER = "TZU Lifestyle Pvt Ltd"
+
+
 class StockBalanceFilter(TypedDict):
 	company: str | None
 	from_date: str
@@ -54,16 +57,11 @@ class StockBalanceReport:
 
 		self.set_company_currency()
 
-
 	def set_company_currency(self) -> None:
 		if self.filters.get("company"):
-			self.company_currency = erpnext.get_company_currency(
-				self.filters.get("company")
-			)
+			self.company_currency = erpnext.get_company_currency(self.filters.get("company"))
 		else:
-			self.company_currency = frappe.db.get_single_value(
-				"Global Defaults", "default_currency"
-			)
+			self.company_currency = frappe.db.get_single_value("Global Defaults", "default_currency")
 
 	def run(self):
 		self.float_precision = cint(frappe.db.get_default("float_precision")) or 3
@@ -73,6 +71,7 @@ class StockBalanceReport:
 		self.prepare_stock_ledger_entries()
 		self.prepare_new_data()
 
+		self.set_serial_numbers()
 		self.set_price_list_rates()
 		self.set_supplier_name()
 
@@ -83,40 +82,7 @@ class StockBalanceReport:
 
 		message = {"closing_balance_name": self.closing_balance_name}
 
-
 		return self.columns, self.data, message
-
-	# def add_total_row(self):
-	# 	if not self.data:
-	# 		return
-
-	# 	numeric_fields = [
-	# 		"bal_qty",
-	# 		"bal_val",
-	# 		"opening_qty",
-	# 		"opening_val",
-	# 		"in_qty",
-	# 		"in_val",
-	# 		"out_qty",
-	# 		"out_val",
-	# 		"reserved_stock",
-	# 		"val_rate",
-    #         "std_rate",
-    #         "wsp_rate",
-    #         "mrp_rate",
-	# 	]
-
-	# 	total_row = frappe._dict()
-	# 	total_row["item_name"] = _("Total")
-
-	# 	for field in numeric_fields:
-	# 		total_row[field] = flt(
-	# 			sum(flt(row.get(field, 0)) for row in self.data),
-	# 			self.float_precision,
-	# 		)
-
-	# 	self.data.append(total_row)
-
 
 	def prepare_opening_data_from_closing_balance(self) -> None:
 		self.opening_data = frappe._dict({})
@@ -192,19 +158,6 @@ class StockBalanceReport:
 				and report_data.bal_val == 0
 			):
 				continue
-
-			serials = frappe.get_all(
-				"Serial No",
-				filters={
-					"item_code": report_data.item_code,
-					"warehouse": report_data.warehouse,
-					"status": "Active",
-				},
-				pluck="name",
-			)
-
-			report_data.serial_no = ", ".join(serials)
-			report_data.serial_count = len(serials)
 
 			self.data.append(report_data)
 
@@ -373,8 +326,8 @@ class StockBalanceReport:
 				"stock_uom": entry.stock_uom,
 				"item_name": entry.item_name,
 				"style": entry.custom_barcode_code,
-                "top_fabric": entry.custom_top_fabrics,
-                "sup_design_no": entry.custom_sup_design_no,
+				"top_fabric": entry.custom_top_fabrics,
+				"sup_design_no": entry.custom_sup_design_no,
 				"image": entry.image,
 				"opening_qty": opening_data.get("bal_qty") or 0.0,
 				"opening_val": opening_data.get("bal_val") or 0.0,
@@ -407,10 +360,10 @@ class StockBalanceReport:
 
 		if self.filters.get("closing_balance_name"):
 			return frappe.get_all(
-            "Closing Stock Balance",
-            filters={"name": self.filters.get("closing_balance_name"), "docstatus": 1},
-            fields=["name", "to_date"],
-        )
+				"Closing Stock Balance",
+				filters={"name": self.filters.get("closing_balance_name"), "docstatus": 1},
+				fields=["name", "to_date"],
+			)
 		table = frappe.qb.DocType("Closing Stock Balance")
 
 		query = (
@@ -464,9 +417,9 @@ class StockBalanceReport:
 				item_table.item_group,
 				item_table.stock_uom,
 				item_table.item_name,
-				item_table.custom_barcode_code,      
-                item_table.custom_top_fabrics,        
-                item_table.custom_sup_design_no, 
+				item_table.custom_barcode_code,
+				item_table.custom_top_fabrics,
+				item_table.custom_sup_design_no,
 				item_table.image,
 			)
 			.where((sle.docstatus < 2) & (sle.is_cancelled == 0))
@@ -519,7 +472,6 @@ class StockBalanceReport:
 
 		if brand := self.filters.get("brand"):
 			query = query.where(item_table.brand == brand)
-		
 
 		return query
 
@@ -532,6 +484,36 @@ class StockBalanceReport:
 
 		return query
 
+	# ------------------------------------------------------------------
+	# Serial numbers (single query for all rows)
+	# ------------------------------------------------------------------
+	def set_serial_numbers(self):
+		if not self.data:
+			return
+
+		item_codes = list({r.item_code for r in self.data})
+
+		rows = frappe.db.sql(
+			"""
+			SELECT item_code, warehouse, name
+			FROM `tabSerial No`
+			WHERE status = 'Active'
+				AND item_code IN %(items)s
+				AND IFNULL(warehouse, '') != ''
+			ORDER BY name
+			""",
+			{"items": item_codes},
+			as_dict=True,
+		)
+
+		serial_map = {}
+		for d in rows:
+			serial_map.setdefault((d.item_code, d.warehouse), []).append(d.name)
+
+		for row in self.data:
+			serials = serial_map.get((row.item_code, row.warehouse), [])
+			row.serial_no = ", ".join(serials)
+			row.serial_count = len(serials)
 
 	def set_price_list_rates(self):
 		if not self.data:
@@ -559,307 +541,274 @@ class StockBalanceReport:
 			row.wsp_rate = price_map.get(row.item_code, {}).get("WSP", 0)
 			row.mrp_rate = price_map.get(row.item_code, {}).get("MRP", 0)
 
-	# def set_supplier_name(self):
-	# 	item_warehouse_pairs = {
-	# 		(row.item_code, row.warehouse) for row in self.data if row.item_code
-	# 	}
-
-	# 	if not item_warehouse_pairs:
-	# 		return
-
-	# 	item_codes = list({item for item, _ in item_warehouse_pairs})
-
-	# 	pr_data = frappe.db.sql(
-	# 		"""
-	# 		SELECT
-	# 			pri.item_code,
-	# 			pri.warehouse,
-	# 			pr.supplier,
-	# 			pr.posting_date
-	# 		FROM `tabPurchase Receipt Item` pri
-	# 		INNER JOIN `tabPurchase Receipt` pr
-	# 			ON pr.name = pri.parent
-	# 		WHERE
-	# 			pr.docstatus = 1
-	# 			AND pri.item_code IN %(items)s
-	# 		ORDER BY
-	# 			pri.item_code,
-	# 			pri.warehouse,
-	# 			pr.posting_date DESC,
-	# 			pr.creation DESC
-	# 		""",
-	# 		{"items": item_codes},
-	# 		as_dict=True,
-	# 	)
-
-	# 	pi_data = frappe.db.sql(
-	# 		"""
-	# 		SELECT
-	# 			pii.item_code,
-	# 			pii.warehouse,
-	# 			pi.supplier,
-	# 			pi.posting_date
-	# 		FROM `tabPurchase Invoice Item` pii
-	# 		INNER JOIN `tabPurchase Invoice` pi
-	# 			ON pi.name = pii.parent
-	# 		WHERE
-	# 			pi.docstatus = 1
-	# 			AND pi.update_stock = 1
-	# 			AND pii.item_code IN %(items)s
-	# 		ORDER BY
-	# 			pii.item_code,
-	# 			pii.warehouse,
-	# 			pi.posting_date DESC,
-	# 			pi.creation DESC
-	# 		""",
-	# 		{"items": item_codes},
-	# 		as_dict=True,
-	# 	)
-
-	# 	item_map = {}
-
-	# 	# Pehle fallback (PI) se bharo
-	# 	for d in pi_data:
-	# 		key = (d.item_code, d.warehouse)
-	# 		if key not in item_map:
-	# 			item_map[key] = {"supplier": d.supplier, "last_stock_in_date": d.posting_date}
-
-	# 	# Fir PR se overwrite (PR ko priority)
-	# 	for d in pr_data:
-	# 		key = (d.item_code, d.warehouse)
-	# 		item_map[key] = {"supplier": d.supplier, "last_stock_in_date": d.posting_date}
-
-	# 	for row in self.data:
-	# 		info = item_map.get((row.item_code, row.warehouse), {})
-	# 		row.party_name = info.get("supplier")
-	# 		row.last_stock_in_date = info.get("last_stock_in_date")
+	# ------------------------------------------------------------------
+	# Party Name / Last Stock In Date / Party City
+	# ------------------------------------------------------------------
 	def set_supplier_name(self):
 		"""
-		Party Name priority:
+		Party Name priority (every row gets a value):
+		1. Opening stock (item + warehouse)                       -> TZU Lifestyle Pvt Ltd
+		2. PR / PI / Subcontracting Receipt / Serial No supplier  (item + warehouse)
+		3. Same suppliers, item level (any warehouse, latest date)
+		4. Everything else (Stock Entry / Sales Return / Delivery
+		   Note return / no purchase record at all)               -> TZU Lifestyle Pvt Ltd
 
-		1. Purchase Receipt supplier
-		2. Purchase Invoice supplier
-		3. Serial No -> purchase_document_no
-		-> Subcontracting Receipt supplier
-		4. Current report Opening Qty > 0
-		-> TZU Lifestyle Pvt Ltd
-		5. Otherwise blank
+		Last Stock In Date: last Stock Ledger IN entry (item + warehouse) <= to_date,
+		fallback to the supplier document date.
 		"""
-
-		item_warehouse_pairs = {
-			(row.item_code, row.warehouse)
-			for row in self.data
-			if row.item_code and row.warehouse
-		}
-
-		if not item_warehouse_pairs:
+		rows = [r for r in self.data if r.item_code]
+		if not rows:
 			return
 
-		item_codes = list({item for item, _ in item_warehouse_pairs})
+		item_codes = list({r.item_code for r in rows})
+		params = {"items": item_codes, "to_date": self.to_date}
 
-		# =========================================================
-		# 1. PURCHASE RECEIPT SUPPLIER
-		# =========================================================
-
-		pr_data = frappe.db.sql(
+		# ---------- Opening stock (Stock Reconciliation / Stock Entry) ----------
+		opening_rows = frappe.db.sql(
 			"""
-			SELECT
-				pri.item_code,
-				pri.warehouse,
-				pr.supplier,
-				pr.posting_date
-			FROM `tabPurchase Receipt Item` pri
-			INNER JOIN `tabPurchase Receipt` pr
-				ON pr.name = pri.parent
-			WHERE
-				pr.docstatus = 1
-				AND pri.item_code IN %(items)s
-				AND pri.warehouse IS NOT NULL
-				AND pri.warehouse != ''
-			ORDER BY
-				pri.item_code,
-				pri.warehouse,
-				pr.posting_date DESC,
-				pr.creation DESC
+			SELECT DISTINCT sle.item_code, sle.warehouse
+			FROM `tabStock Ledger Entry` sle
+			LEFT JOIN `tabStock Reconciliation` sr
+				ON sle.voucher_type = 'Stock Reconciliation'
+				AND sr.name = sle.voucher_no
+				AND sr.docstatus = 1
+				AND sr.purpose = 'Opening Stock'
+			LEFT JOIN `tabStock Entry` se
+				ON sle.voucher_type = 'Stock Entry'
+				AND se.name = sle.voucher_no
+				AND se.docstatus = 1
+				AND se.is_opening = 'Yes'
+			WHERE sle.item_code IN %(items)s
+				AND sle.is_cancelled = 0
+				AND sle.actual_qty > 0
+				AND sle.posting_date <= %(to_date)s
+				AND (sr.name IS NOT NULL OR se.name IS NOT NULL)
 			""",
-			{"items": item_codes},
+			params,
 			as_dict=True,
 		)
+		opening_wh_set = {(d.item_code, d.warehouse) for d in opening_rows}
 
-		item_map = {}
-
-		for d in pr_data:
-			key = (d.item_code, d.warehouse)
-
-			if key not in item_map:
-				item_map[key] = {
-					"supplier": d.supplier,
-					"last_stock_in_date": d.posting_date,
-				}
-
-		# =========================================================
-		# 2. PURCHASE INVOICE SUPPLIER
-		# =========================================================
+		# ---------- Latest supplier per (item, warehouse) ----------
+		pr_data = frappe.db.sql(
+			"""
+			SELECT item_code, warehouse, supplier, posting_date FROM (
+				SELECT pri.item_code, pri.warehouse, pr.supplier, pr.posting_date,
+					ROW_NUMBER() OVER (
+						PARTITION BY pri.item_code, pri.warehouse
+						ORDER BY pr.posting_date DESC, pr.creation DESC
+					) AS rn
+				FROM `tabPurchase Receipt Item` pri
+				INNER JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
+				WHERE pr.docstatus = 1
+					AND pr.posting_date <= %(to_date)s
+					AND pri.item_code IN %(items)s
+			) t WHERE rn = 1
+			""",
+			params,
+			as_dict=True,
+		)
 
 		pi_data = frappe.db.sql(
 			"""
-			SELECT
-				pii.item_code,
-				pii.warehouse,
-				pi.supplier,
-				pi.posting_date
-			FROM `tabPurchase Invoice Item` pii
-			INNER JOIN `tabPurchase Invoice` pi
-				ON pi.name = pii.parent
-			WHERE
-				pi.docstatus = 1
-				AND pi.update_stock = 1
-				AND pii.item_code IN %(items)s
-				AND pii.warehouse IS NOT NULL
-				AND pii.warehouse != ''
-			ORDER BY
-				pii.item_code,
-				pii.warehouse,
-				pi.posting_date DESC,
-				pi.creation DESC
+			SELECT item_code, warehouse, supplier, posting_date FROM (
+				SELECT pii.item_code, pii.warehouse, pi.supplier, pi.posting_date,
+					ROW_NUMBER() OVER (
+						PARTITION BY pii.item_code, pii.warehouse
+						ORDER BY pi.posting_date DESC, pi.creation DESC
+					) AS rn
+				FROM `tabPurchase Invoice Item` pii
+				INNER JOIN `tabPurchase Invoice` pi ON pi.name = pii.parent
+				WHERE pi.docstatus = 1
+					AND pi.update_stock = 1
+					AND pi.posting_date <= %(to_date)s
+					AND pii.item_code IN %(items)s
+			) t WHERE rn = 1
 			""",
-			{"items": item_codes},
+			params,
 			as_dict=True,
 		)
 
-		# PI only as fallback
-		for d in pi_data:
-			key = (d.item_code, d.warehouse)
+		scr_data = frappe.db.sql(
+			"""
+			SELECT item_code, warehouse, supplier, posting_date FROM (
+				SELECT scri.item_code, scri.warehouse, scr.supplier, scr.posting_date,
+					ROW_NUMBER() OVER (
+						PARTITION BY scri.item_code, scri.warehouse
+						ORDER BY scr.posting_date DESC, scr.creation DESC
+					) AS rn
+				FROM `tabSubcontracting Receipt Item` scri
+				INNER JOIN `tabSubcontracting Receipt` scr ON scr.name = scri.parent
+				WHERE scr.docstatus = 1
+					AND scr.posting_date <= %(to_date)s
+					AND scri.item_code IN %(items)s
+			) t WHERE rn = 1
+			""",
+			params,
+			as_dict=True,
+		)
 
-			if key not in item_map:
-				item_map[key] = {
-					"supplier": d.supplier,
-					"last_stock_in_date": d.posting_date,
-				}
-
-		# =========================================================
-		# 3. SERIAL NO -> PURCHASE DOCUMENT -> SUPPLIER
-		# =========================================================
-		#
-		# Example:
-		#
-		# Item:
-		# FTKDST127MLFR
-		#
-		# Serial No:
-		# XXXXX
-		#
-		# Serial No.purchase_document_no:
-		# JOBR/26-27/00207
-		#
-		# JOBR/26-27/00207 is Subcontracting Receipt
-		#
-		# Subcontracting Receipt supplier:
-		# Sample For Merchant Internal Jobber
-		#
-		# =========================================================
-
+		# Serial No -> purchase_document_no matched by document name
+		# (this site's Serial No has no purchase_document_type field)
 		serial_data = frappe.db.sql(
 			"""
-			SELECT
-				sn.item_code,
-				sn.warehouse,
-				sn.name AS serial_no,
-				sn.purchase_document_no,
-				sr.supplier,
-				sr.posting_date
-			FROM `tabSerial No` sn
-			LEFT JOIN `tabSubcontracting Receipt` sr
-				ON sr.name = sn.purchase_document_no
-				AND sr.docstatus = 1
-			WHERE
-				sn.item_code IN %(items)s
-				AND sn.purchase_document_no IS NOT NULL
-				AND sn.purchase_document_no != ''
-			ORDER BY
-				sn.item_code,
-				sn.warehouse,
-				sr.posting_date DESC,
-				sn.creation DESC
+			SELECT item_code, warehouse, supplier, posting_date FROM (
+				SELECT
+					sn.item_code,
+					sn.warehouse,
+					COALESCE(pr.supplier, pi.supplier, scr.supplier) AS supplier,
+					COALESCE(pr.posting_date, pi.posting_date, scr.posting_date) AS posting_date,
+					ROW_NUMBER() OVER (
+						PARTITION BY sn.item_code, sn.warehouse
+						ORDER BY COALESCE(pr.posting_date, pi.posting_date, scr.posting_date) DESC,
+							sn.creation DESC
+					) AS rn
+				FROM `tabSerial No` sn
+				LEFT JOIN `tabPurchase Receipt` pr
+					ON pr.name = sn.purchase_document_no AND pr.docstatus = 1
+				LEFT JOIN `tabPurchase Invoice` pi
+					ON pi.name = sn.purchase_document_no AND pi.docstatus = 1
+				LEFT JOIN `tabSubcontracting Receipt` scr
+					ON scr.name = sn.purchase_document_no AND scr.docstatus = 1
+				WHERE sn.item_code IN %(items)s
+					AND IFNULL(sn.warehouse, '') != ''
+					AND IFNULL(sn.purchase_document_no, '') != ''
+					AND COALESCE(pr.supplier, pi.supplier, scr.supplier) IS NOT NULL
+			) t WHERE rn = 1
 			""",
-			{"items": item_codes},
+			params,
 			as_dict=True,
 		)
 
-		serial_supplier_map = {}
+		# ---------- merge by priority ----------
+		wh_map = {}    # (item, warehouse) -> info (source priority PR > PI > SCR > Serial)
+		item_map = {}  # item -> latest info across all sources (fallback)
 
-		for d in serial_data:
+		for source in (pr_data, pi_data, scr_data, serial_data):
+			for d in source:
+				if not d.supplier:
+					continue
 
-			if not d.item_code or not d.warehouse:
-				continue
+				info = {"supplier": d.supplier, "date": d.posting_date}
 
-			if not d.supplier:
-				continue
+				if d.warehouse:
+					wh_map.setdefault((d.item_code, d.warehouse), info)
 
-			key = (d.item_code, d.warehouse)
+				existing = item_map.get(d.item_code)
+				if not existing or (
+					d.posting_date and (not existing["date"] or d.posting_date > existing["date"])
+				):
+					item_map[d.item_code] = info
 
-			# First/latest valid serial supplier
-			if key not in serial_supplier_map:
-				serial_supplier_map[key] = {
-					"supplier": d.supplier,
-					"last_stock_in_date": d.posting_date,
-					"serial_no": d.serial_no,
-					"purchase_document_no": d.purchase_document_no,
-				}
+		# ---------- last stock in date from Stock Ledger ----------
+		sle_data = frappe.db.sql(
+			"""
+			SELECT item_code, warehouse, MAX(posting_date) AS last_in
+			FROM `tabStock Ledger Entry`
+			WHERE item_code IN %(items)s
+				AND actual_qty > 0
+				AND is_cancelled = 0
+				AND posting_date <= %(to_date)s
+			GROUP BY item_code, warehouse
+			""",
+			params,
+			as_dict=True,
+		)
+		last_in_map = {(d.item_code, d.warehouse): d.last_in for d in sle_data}
 
-		# =========================================================
-		# 4. SET FINAL PARTY NAME
-		# =========================================================
-
-		opening_supplier = "TZU Lifestyle Pvt Ltd"
-
-		for row in self.data:
-
+		# ---------- set on rows ----------
+		for row in rows:
 			key = (row.item_code, row.warehouse)
 
-			# -----------------------------------------------------
-			# First: PO/PR/PI based supplier
-			# -----------------------------------------------------
+			party_name = None
+			supplier_date = None
 
-			info = item_map.get(key, {})
+			if key in opening_wh_set:
+				# 1. Opening stock
+				party_name = OPENING_SUPPLIER
+			else:
+				# 2 & 3. Purchase based supplier (warehouse level, then item level)
+				info = wh_map.get(key) or item_map.get(row.item_code) or {}
+				party_name = info.get("supplier")
+				supplier_date = info.get("date")
 
-			party_name = info.get("supplier")
-			last_stock_in_date = info.get("last_stock_in_date")
-
-			# -----------------------------------------------------
-			# Second: Serial No -> Subcontracting Receipt supplier
-			# -----------------------------------------------------
-
+			# 4. Stock Entry / Sales Return / Delivery Note return / no purchase record
 			if not party_name:
+				party_name = OPENING_SUPPLIER
 
-				serial_info = serial_supplier_map.get(key, {})
+			row.party_name = party_name
+			row.last_stock_in_date = last_in_map.get(key) or supplier_date
 
-				if serial_info.get("supplier"):
-					party_name = serial_info.get("supplier")
-					last_stock_in_date = serial_info.get("last_stock_in_date")
+		self.set_party_city()
 
-			# -----------------------------------------------------
-			# Third: CURRENT REPORT Opening Stock
-			# -----------------------------------------------------
-			#
-			# IMPORTANT:
-			# Do NOT check historical Stock Reconciliation here.
-			#
-			# Only current report opening_qty matters.
-			#
+	def set_party_city(self):
+		parties = list({r.party_name for r in self.data if r.get("party_name")})
+		if not parties:
+			return
 
-			if not party_name and flt(row.opening_qty) > 0:
-				party_name = opening_supplier
+		city_map = {}
 
-			# -----------------------------------------------------
-			# Final
-			# -----------------------------------------------------
+		# 1. Any address linked to the Supplier (primary last => wins)
+		addr_rows = frappe.db.sql(
+			"""
+			SELECT dl.link_name, a.city
+			FROM `tabAddress` a
+			INNER JOIN `tabDynamic Link` dl
+				ON dl.parent = a.name AND dl.parenttype = 'Address'
+			WHERE dl.link_doctype = 'Supplier'
+				AND dl.link_name IN %(parties)s
+				AND IFNULL(a.disabled, 0) = 0
+				AND IFNULL(a.city, '') != ''
+			ORDER BY a.is_primary_address ASC, a.creation DESC
+			""",
+			{"parties": parties},
+			as_dict=True,
+		)
+		for d in addr_rows:
+			city_map[d.link_name] = d.city
 
-			row.party_name = party_name or None
-			row.last_stock_in_date = last_stock_in_date
-	
-	
- 
+		# 2. Supplier's primary address overrides
+		suppliers = frappe.get_all(
+			"Supplier",
+			filters={"name": ["in", parties]},
+			fields=["name", "supplier_primary_address"],
+		)
+		primary_addrs = {
+			s.name: s.supplier_primary_address for s in suppliers if s.supplier_primary_address
+		}
+		if primary_addrs:
+			cities = frappe.get_all(
+				"Address",
+				filters={"name": ["in", list(primary_addrs.values())]},
+				fields=["name", "city"],
+			)
+			addr_city = {c.name: c.city for c in cities if c.city}
+			for supplier, addr in primary_addrs.items():
+				if addr_city.get(addr):
+					city_map[supplier] = addr_city[addr]
+
+		# 3. TZU Lifestyle Pvt Ltd: agar Supplier address nahi mila to Company ke address ki city
+		if OPENING_SUPPLIER in parties and not city_map.get(OPENING_SUPPLIER):
+			company_city = frappe.db.sql(
+				"""
+				SELECT a.city
+				FROM `tabAddress` a
+				INNER JOIN `tabDynamic Link` dl
+					ON dl.parent = a.name AND dl.parenttype = 'Address'
+				WHERE dl.link_doctype = 'Company'
+					AND (%(company)s IS NULL OR dl.link_name = %(company)s)
+					AND IFNULL(a.disabled, 0) = 0
+					AND IFNULL(a.city, '') != ''
+				ORDER BY a.is_primary_address DESC, a.creation DESC
+				LIMIT 1
+				""",
+				{"company": self.filters.get("company") or None},
+			)
+			if company_city:
+				city_map[OPENING_SUPPLIER] = company_city[0][0]
+
+		for row in self.data:
+			row.party_city = city_map.get(row.get("party_name"))
 
 	def get_columns(self):
 		columns = [
@@ -914,22 +863,22 @@ class StockBalanceReport:
 				"width": 180,
 			},
 			{
-				"label": _("Serial No."),
-				"fieldname": "serial_no",
+				"label": _("Party City"),
+				"fieldname": "party_city",
 				"fieldtype": "Data",
-				"width": 210,
+				"width": 120,
 			},
-			# {
-			# 	"label": _("Serial Count"),
-			# 	"fieldname": "serial_count",
-			# 	"fieldtype": "Int",
-			# 	"hidden": 1,			
-			# },
 			{
 				"label": _("Last Stock In Date"),
 				"fieldname": "last_stock_in_date",
 				"fieldtype": "Date",
 				"width": 120,
+			},
+			{
+				"label": _("Serial No."),
+				"fieldname": "serial_no",
+				"fieldtype": "Data",
+				"width": 210,
 			},
 			{
 				"label": _("Item Group"),
@@ -1035,25 +984,25 @@ class StockBalanceReport:
 					"convertible": "qty",
 				},
 				{
-   				    "label": _("STD Rate"),
-   				    "fieldname": "std_rate",
-    				"fieldtype": "Currency",
-    				"width": 100,
-    				"options": "Company:company:default_currency",
+					"label": _("STD Rate"),
+					"fieldname": "std_rate",
+					"fieldtype": "Currency",
+					"width": 100,
+					"options": "Company:company:default_currency",
 				},
 				{
-    				"label": _("WSP Rate"),
-    				"fieldname": "wsp_rate",
-    				"fieldtype": "Currency",
-    				"width": 100,
-    				"options": "Company:company:default_currency",
+					"label": _("WSP Rate"),
+					"fieldname": "wsp_rate",
+					"fieldtype": "Currency",
+					"width": 100,
+					"options": "Company:company:default_currency",
 				},
 				{
-    				"label": _("MRP Rate"),
-    				"fieldname": "mrp_rate",
-    				"fieldtype": "Currency",
-    				"width": 100,
-    				"options": "Company:company:default_currency",
+					"label": _("MRP Rate"),
+					"fieldname": "mrp_rate",
+					"fieldtype": "Currency",
+					"width": 100,
+					"options": "Company:company:default_currency",
 				},
 				{
 					"label": _("Company"),
@@ -1079,8 +1028,6 @@ class StockBalanceReport:
 			]
 
 		return columns
-
-
 
 	def add_additional_uom_columns(self):
 		if not self.filters.get("include_uom"):
@@ -1200,10 +1147,11 @@ def filter_items_with_no_transactions(
 				"project",
 				"stock_uom",
 				"company",
+				"currency",
 				"opening_fifo_queue",
 				"style",
-                "sup_design_no",
-                "top_fabric",
+				"sup_design_no",
+				"top_fabric",
 				"image",
 			]:
 				continue
