@@ -291,6 +291,89 @@ frappe.ui.form.on('Purchase Order', {
 
 
 // service cost updated
+// frappe.ui.form.on("Purchase Order", {
+// 	refresh(frm) {
+
+// 		frm.add_custom_button(__('Update Cost'), () => {
+
+// 			let data = [];
+
+// 			// 🔥 Load PO items into dialog
+// 			(frm.doc.items || []).forEach(d => {
+// 				data.push({
+// 					docname: d.name,
+// 					item_code: d.item_code,
+// 					rate: d.rate
+// 				});
+// 			});
+
+// 			let dialog = new frappe.ui.Dialog({
+// 				title: "Update Cost",
+// 				size: "large",
+// 				fields: [
+// 					{
+// 						fieldname: "items",
+// 						fieldtype: "Table",
+// 						label: "Items",
+// 						cannot_add_rows: true,
+// 						in_place_edit: true,
+// 						fields: [
+// 							{
+// 								fieldname: "item_code",
+// 								label: "Item Code",
+// 								fieldtype: "Data",
+// 								read_only: 1,
+// 								in_list_view: 1
+// 							},
+// 							{
+// 								fieldname: "rate",
+// 								label: "Rate",
+// 								fieldtype: "Currency",
+// 								in_list_view: 1,
+//                                 default: 0
+// 							}
+// 						]
+// 					}
+// 				],
+// 				primary_action_label: "Update",
+// 				primary_action(values) {
+
+//                     // ✅ FIX: convert rate to number (important for 0)
+//                     (values.items || []).forEach(row => {
+//                         row.rate = (row.rate === "" || row.rate === null || row.rate === undefined)
+//                             ? 0
+//                             : flt(row.rate);
+//                     });
+
+//                     frappe.call({
+//                         method: "franchise_erp.custom.purchase_order.update_po_cost_and_sco",
+//                         args: {
+//                             docname: frm.doc.name,
+//                             items: values.items
+//                         },
+//                         freeze: true,
+//                         freeze_message: __("Updating Purchase Order and Subcontracting Order costs..."),
+
+//                         callback: function(r) {
+//                             if (r.message) {
+//                                 frappe.msgprint(__(r.message));
+//                                 dialog.hide();
+//                                 frm.reload_doc();
+//                             }
+//                         }
+//                     });
+//                 }
+// 			});
+
+// 			dialog.fields_dict.items.df.data = data;
+// 			dialog.fields_dict.items.grid.refresh();
+
+// 			dialog.show();
+
+// 		});
+
+// 	}
+// });
 frappe.ui.form.on("Purchase Order", {
 	refresh(frm) {
 
@@ -303,6 +386,7 @@ frappe.ui.form.on("Purchase Order", {
 				data.push({
 					docname: d.name,
 					item_code: d.item_code,
+					fg_item: d.fg_item,   // 👈 naya field added
 					rate: d.rate
 				});
 			});
@@ -326,11 +410,19 @@ frappe.ui.form.on("Purchase Order", {
 								in_list_view: 1
 							},
 							{
+								fieldname: "fg_item",            // 👈 naya column
+								label: "Finished Good",
+								fieldtype: "Data",               // agar fg_item ek Link field hai to "Link" use karein
+								// options: "Item",               // agar Link field hai to ye uncomment karein
+								read_only: 1,
+								in_list_view: 1
+							},
+							{
 								fieldname: "rate",
 								label: "Rate",
 								fieldtype: "Currency",
 								in_list_view: 1,
-                                default: 0
+								default: 0
 							}
 						]
 					}
@@ -374,7 +466,6 @@ frappe.ui.form.on("Purchase Order", {
 
 	}
 });
-
 frappe.ui.form.on("Purchase Order", {
     refresh(frm) {
 

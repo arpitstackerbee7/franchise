@@ -3589,7 +3589,7 @@ function open_si_dn_dialog(frm) {
                                 1,
 
                             columns:
-                                2
+                               2
                         },
 
                         // ---------------------------------------------
@@ -3637,9 +3637,16 @@ function open_si_dn_dialog(frm) {
                                 1,
 
                             columns:
-                                2
+                                1
                         },
-
+                        // {
+                        //     fieldname: "serial_nos",
+                        //     label: "Serial No",
+                        //     fieldtype: "Data",
+                        //     read_only: 1,
+                        //     in_list_view: 1,
+                        //     columns: 2
+                        // },
                         // ---------------------------------------------
                         // RETURNABLE
                         // ---------------------------------------------
@@ -3816,7 +3823,7 @@ function open_si_dn_dialog(frm) {
                                 1,
 
                             columns:
-                                2
+                                1
                         }
                     ]
                 }
@@ -4465,7 +4472,31 @@ function open_si_dn_dialog(frm) {
     // =============================================================
 
     dialog.show();
+        // Make checkbox / row-number columns narrower
+    if (!document.getElementById("bsr-dialog-check-style")) {
 
+        const style = document.createElement("style");
+
+        style.id = "bsr-dialog-check-style";
+
+        style.innerHTML = `
+            .modal .grid-row .row-check,
+            .modal .grid-heading-row .row-check {
+                flex: 0 0 28px !important;
+                max-width: 28px !important;
+                width: 28px !important;
+            }
+
+            .modal .grid-row .row-index,
+            .modal .grid-heading-row .row-index {
+                flex: 0 0 32px !important;
+                max-width: 32px !important;
+                width: 32px !important;
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
 
     // =============================================================
     // CHECKBOX CHANGE
