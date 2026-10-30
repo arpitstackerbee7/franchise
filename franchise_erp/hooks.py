@@ -134,11 +134,13 @@ doc_events = {
     "Purchase Receipt": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "validate":[
+            "franchise_erp.event.purchase_receipt.validate_mandatory_links",
             "franchise_erp.custom.purchase_reciept.validate_item",
                     "franchise_erp.custom.back_date_validation.validate_back_date", 
                     "franchise_erp.custom.purchase_reciept.validate_gate_entry",
                     "franchise_erp.custom.purchase_reciept.validate_gate_entry_qty_on_grn"
                     ],
+        "before_submit": "franchise_erp.event.purchase_receipt.validate_mandatory_links",
         "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_from_po_on_submit",
         "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
                       "franchise_erp.custom.purchase_reciept.on_submit",
@@ -461,6 +463,7 @@ after_migrate = [
     "franchise_erp.overrides.scheduler.disable_core_hourly_job",
     "franchise_erp.overrides.scheduler.enable_create_log_for_all_shifts_job",
     "franchise_erp.overrides.scheduler.force_enable_scheduler",
+    "franchise_erp.api.create_or_update_letterhead",
 ]
 
 # app_include_js = "public/js/back_date_disabled.js"
@@ -891,4 +894,8 @@ fixtures = [
     {
     "dt": "Property Setter"
 },
+{
+        "dt": "Letter Head",
+        "filters": [["name", "in", ["TZU Letterhead"]]]
+    },
 ]
