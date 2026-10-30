@@ -1552,7 +1552,18 @@ def apply_sales_term(doc, method):
         t for t in doc.taxes
         if t.description != "Freight as per Sales Term"
     ]
-
+    if doc.taxes_and_charges:
+        master_template = frappe.get_doc(
+            "Sales Taxes and Charges Template",
+            doc.taxes_and_charges
+        )
+        master_flags = {
+            row.account_head: row.included_in_print_rate
+            for row in master_template.taxes
+        }
+        for t in doc.taxes:
+            if t.account_head in master_flags:
+                t.included_in_print_rate = master_flags[t.account_head]
     # =========================================
     # 3. ITEM LEVEL DISCOUNT
     # =========================================
@@ -1658,7 +1669,8 @@ def apply_sales_term(doc, method):
             "account_head": freight_account,
             "tax_amount": total_freight,
             "description": "Freight as per Sales Term",
-            "cost_center": cost_center
+            "cost_center": cost_center,
+            "included_in_print_rate": master_flags.get(freight_account, 0)
         })
 
     # =========================================
