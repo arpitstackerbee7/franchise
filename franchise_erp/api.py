@@ -2992,3 +2992,35 @@ def get_counter_wise_export_data(from_date, to_date, view_type="qty", company=No
             output[comp] = company_data
 
     return output
+
+LETTER_HEAD_NAME = "TZU Letterhead"
+LETTERHEAD_IMAGE_URL = "/assets/franchise_erp/images/tzu_letterhead.png"
+
+LETTERHEAD_HTML = f"""
+<div style="padding-bottom:40px;">
+  <img src="{LETTERHEAD_IMAGE_URL}"
+       alt="TZU Lifestyle Private Limited"
+       style="display:block; width:100%; max-width:720px; height:auto; margin:0 auto;">
+</div>
+"""
+
+
+def create_or_update_letterhead():
+    if frappe.db.exists("Letter Head", LETTER_HEAD_NAME):
+        doc = frappe.get_doc("Letter Head", LETTER_HEAD_NAME)
+    else:
+        doc = frappe.new_doc("Letter Head")
+        doc.letter_head_name = LETTER_HEAD_NAME
+
+    doc.source = "HTML"
+    doc.content = LETTERHEAD_HTML
+    doc.is_default = 1
+    doc.disabled = 0
+    doc.save(ignore_permissions=True)
+
+    
+    frappe.db.sql(
+        "update `tabLetter Head` set is_default = 0 where name != %s",
+        LETTER_HEAD_NAME,
+    )
+    frappe.db.commit()
