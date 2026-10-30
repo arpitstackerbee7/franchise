@@ -1532,6 +1532,7 @@ def apply_sales_term(doc, method):
     total_discount = 0.0
     total_freight = 0.0
     freight_account = None
+    master_flags = {} 
 
     # =========================================
     # 1. RESET OLD VALUES
