@@ -38,13 +38,18 @@ let QTY_TIMER = null;
 ===================================================== */
 
 frappe.ui.form.on("Sales Invoice", {
-
+    custom_disable_update_stock: function(frm) {
+        if (frm.doc.custom_disable_update_stock) {
+            frm.set_value('update_stock', 0);
+        } else {
+            frm.set_value('update_stock', 1);
+        }
+    },
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
         if (frm.doc.custom_bulk_sales_return) {
             frm.set_df_property("return_against", "hidden", 1);
         }
-
         handle_inter_company_grn(frm);
         toggle_incoming_logistic_button(frm);
         toggle_outgoing_logistics_button(frm);
@@ -116,6 +121,11 @@ frappe.ui.form.on("Sales Invoice", {
         });
         make_total_qty_bold(frm);
         
+    },
+    update_stock: function(frm) {
+        if (frm.doc.custom_disable_update_stock && frm.doc.update_stock) {
+            frm.set_value('update_stock', 0);
+        }
     },
     on_submit(frm) {
         // ✅ ensure button appears immediately after submit

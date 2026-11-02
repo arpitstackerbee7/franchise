@@ -150,7 +150,18 @@ def company_fy_autoname(doc, method=None):
 
     prefix = DOCTYPE_PREFIX.get(doc.doctype)
 
-    if getattr(doc, "is_return", 0):
+    # if getattr(doc, "is_return", 0):
+    #     prefix = RETURN_PREFIX_MAP.get(doc.doctype, prefix + "R")
+    is_return = getattr(doc, "is_return", 0)
+    is_debit_note = getattr(doc, "is_debit_note", 0)
+    disable_update_stock = getattr(doc, "custom_disable_update_stock", 0)
+
+    # Sirf Sales Invoice + custom_disable_update_stock checked par SC / SD
+    if doc.doctype == "Sales Invoice" and disable_update_stock and is_return:
+        prefix = "SC"
+    elif doc.doctype == "Sales Invoice" and disable_update_stock and is_debit_note:
+        prefix = "SD"
+    elif is_return:
         prefix = RETURN_PREFIX_MAP.get(doc.doctype, prefix + "R")
 
     series = f"{prefix}/{fy}/"
