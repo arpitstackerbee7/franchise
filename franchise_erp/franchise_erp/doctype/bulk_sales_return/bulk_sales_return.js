@@ -3548,25 +3548,25 @@ function open_si_dn_dialog(frm) {
                         // SOURCE
                         // ---------------------------------------------
 
-                        {
-                            fieldname:
-                                "source_type",
+                        // {
+                        //     fieldname:
+                        //         "source_type",
 
-                            label:
-                                "Source",
+                        //     label:
+                        //         "Source",
 
-                            fieldtype:
-                                "Data",
+                        //     fieldtype:
+                        //         "Data",
 
-                            read_only:
-                                1,
+                        //     read_only:
+                        //         1,
 
-                            in_list_view:
-                                1,
+                        //     in_list_view:
+                        //         1,
 
-                            columns:
-                                1
-                        },
+                        //     columns:
+                        //         1
+                        // },
 
                         // ---------------------------------------------
                         // SALES INVOICE
@@ -3823,7 +3823,7 @@ function open_si_dn_dialog(frm) {
                                 1,
 
                             columns:
-                                1
+                                2
                         }
                     ]
                 }
