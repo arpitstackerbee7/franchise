@@ -571,7 +571,6 @@ scheduler_events = {
             "franchise_erp.send_whatsapp_notification.send_daily_counter_sales_group",
         ],
         "* * * * *": [
-            "franchise_erp.custom.serial_no.update_serial_custom_style",
             "franchise_erp.overrides.scheduler.update_attendance_working_hours",
         ],
     },

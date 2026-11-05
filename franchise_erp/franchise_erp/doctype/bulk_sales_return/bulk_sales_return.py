@@ -1585,6 +1585,85 @@ def create_single_sales_invoice_return(doc, rows):
 # ACTIVATE SALES INVOICE ONLY SERIAL STOCK
 # =============================================================================
 
+# def activate_sales_invoice_only_stock(doc, resolved_rows):
+#     """
+#     Activate Serial Nos for serialized items which originated
+#     directly from a Stock-updating Sales Invoice.
+
+#     Delivery Note backed items are intentionally skipped because
+#     their stock reversal is handled by the Delivery Note Return.
+#     """
+
+#     if not doc:
+#         return
+
+#     for row in resolved_rows:
+
+#         # Must have Sales Invoice source
+#         if not row.get("sales_invoice_item"):
+#             continue
+
+#         # DN backed -> DN Return handles stock reversal
+#         if row.get("delivery_note_item"):
+#             continue
+
+#         sales_invoice = row.get("sales_invoice")
+
+#         if not sales_invoice:
+#             continue
+
+#         source_update_stock = frappe.db.get_value(
+#             "Sales Invoice", sales_invoice, "update_stock"
+#         )
+
+#         if not source_update_stock:
+#             continue
+
+#         item_code = row.get("item_code")
+
+#         has_serial_no = frappe.db.get_value("Item", item_code, "has_serial_no")
+
+#         if not has_serial_no:
+#             continue
+
+#         serials = list(dict.fromkeys(row.get("serials") or []))
+
+#         if not serials:
+#             continue
+
+#         warehouse = row.get("warehouse")
+
+#         for serial_no in serials:
+
+#             if not frappe.db.exists("Serial No", serial_no):
+#                 continue
+
+#             values = {"status": "Active"}
+
+#             if warehouse:
+#                 values["warehouse"] = warehouse
+
+#                 warehouse_company = frappe.db.get_value(
+#                     "Warehouse", warehouse, "company"
+#                 )
+
+#                 if warehouse_company:
+#                     values["company"] = warehouse_company
+
+#             frappe.db.set_value(
+#                 "Serial No",
+#                 serial_no,
+#                 values,
+#                 update_modified=False
+#             )
+
+#             frappe.logger().info(
+#                 f"Bulk Sales Return {doc.name}: Serial No {serial_no} "
+#                 f"activated because it is SI-only."
+#             )
+
+#         frappe.db.commit()
+
 def activate_sales_invoice_only_stock(doc, resolved_rows):
     """
     Activate Serial Nos for serialized items which originated
@@ -1592,6 +1671,12 @@ def activate_sales_invoice_only_stock(doc, resolved_rows):
 
     Delivery Note backed items are intentionally skipped because
     their stock reversal is handled by the Delivery Note Return.
+
+    SAFETY GUARD:
+    Serial No master is NEVER activated if the latest valid
+    Serial and Batch Bundle entry of that serial is Outward.
+    (e.g. serial was returned to supplier via Purchase Return after
+    the original sale). Ledger is the source of truth.
     """
 
     if not doc:
@@ -1633,19 +1718,54 @@ def activate_sales_invoice_only_stock(doc, resolved_rows):
 
         warehouse = row.get("warehouse")
 
+        warehouse_company = None
+
+        if warehouse:
+            warehouse_company = frappe.db.get_value(
+                "Warehouse", warehouse, "company"
+            )
+
         for serial_no in serials:
 
             if not frappe.db.exists("Serial No", serial_no):
+                continue
+
+            # -----------------------------------------------------------------
+            # GUARD: ledger ke hisaab se serial abhi bahar hai -> skip
+            # -----------------------------------------------------------------
+            last_entry = frappe.db.sql(
+                """
+                SELECT sbb.type_of_transaction, sbb.voucher_no
+                FROM `tabSerial and Batch Entry` sbe
+                INNER JOIN `tabSerial and Batch Bundle` sbb
+                    ON sbb.name = sbe.parent
+                WHERE sbe.serial_no = %s
+                AND sbb.docstatus = 1
+                AND sbb.is_cancelled = 0
+                ORDER BY
+                    sbb.posting_date DESC,
+                    sbb.posting_time DESC,
+                    sbb.creation DESC
+                LIMIT 1
+                """,
+                serial_no,
+                as_dict=True
+            )
+
+            if last_entry and last_entry[0].type_of_transaction == "Outward":
+
+                frappe.logger().info(
+                    f"Bulk Sales Return {doc.name}: Serial No {serial_no} "
+                    f"NOT activated. Last ledger entry is Outward "
+                    f"({last_entry[0].voucher_no})."
+                )
+
                 continue
 
             values = {"status": "Active"}
 
             if warehouse:
                 values["warehouse"] = warehouse
-
-                warehouse_company = frappe.db.get_value(
-                    "Warehouse", warehouse, "company"
-                )
 
                 if warehouse_company:
                     values["company"] = warehouse_company
@@ -1662,9 +1782,7 @@ def activate_sales_invoice_only_stock(doc, resolved_rows):
                 f"activated because it is SI-only."
             )
 
-        frappe.db.commit()
-
-
+    frappe.db.commit()
 # =============================================================================
 # DELIVERY NOTE RETURNS
 # =============================================================================
