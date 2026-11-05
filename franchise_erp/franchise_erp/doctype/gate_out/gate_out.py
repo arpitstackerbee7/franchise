@@ -1,9 +1,26 @@
 import frappe
 from frappe.model.document import Document
+from frappe.model.naming import getseries
 
 
 class GateOut(Document):
 
+    def autoname(self):
+        today = frappe.utils.getdate(frappe.utils.today())
+
+        if today.month >= 4:
+            fy_start = today.year % 100
+            fy_end = (today.year + 1) % 100
+        else:
+            fy_start = (today.year - 1) % 100
+            fy_end = today.year % 100
+
+        financial_year = f"{fy_start:02d}-{fy_end:02d}"
+
+        prefix = f"GO/{financial_year}/"
+
+        self.name = prefix + getseries(prefix, 5)
+            
     def on_update(self):
         self.update_gate_out_flag()
 
