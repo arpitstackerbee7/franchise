@@ -523,6 +523,111 @@ def get_items_from_gate_entry(gate_entry_name):
 
 
 #service cost updated
+
+# @frappe.whitelist()
+# def update_po_cost_and_sco(docname, items):
+#     items = frappe.parse_json(items)
+
+#     doc = frappe.get_doc("Purchase Order", docname)
+
+#     # ✅ IMPORTANT FLAGS
+#     doc.flags.ignore_validate = True
+#     doc.flags.ignore_validate_update_after_submit = True
+#     doc.flags.ignore_pricing_rule = True
+#     doc.flags.ignore_validate_rate = True
+#     doc.flags.ignore_price_list = True
+
+#     item_map = {d.get("docname"): d for d in items}
+
+#     # -------------------------
+#     # UPDATE ITEMS
+#     # -------------------------
+#     for row in doc.items:
+#         if row.name in item_map:
+#             rate_val = item_map[row.name].get("rate")
+
+#             if rate_val is not None:
+#                 rate_val = flt(rate_val)
+
+#                 row.rate = rate_val
+#                 row.price_list_rate = rate_val
+
+#                 row.amount = flt(row.qty) * rate_val
+#                 row.base_amount = row.amount
+#                 row.net_amount = row.amount
+#                 row.base_net_amount = row.amount
+
+#     # -------------------------
+#     # CALCULATE
+#     # -------------------------
+#     doc.run_method("calculate_taxes_and_totals")
+
+#     # -------------------------
+#     # 🔥 FORCE APPLY AGAIN (MAIN FIX)
+#     # -------------------------
+#     for row in doc.items:
+#         if row.name in item_map:
+#             rate_val = item_map[row.name].get("rate")
+
+#             if rate_val is not None:
+#                 rate_val = flt(rate_val)
+
+#                 row.rate = rate_val
+#                 row.price_list_rate = rate_val
+
+#                 row.amount = flt(row.qty) * rate_val
+#                 row.base_amount = row.amount
+#                 row.net_amount = row.amount
+#                 row.base_net_amount = row.amount
+
+#     doc.set_payment_schedule()
+
+#     doc.save(ignore_permissions=True)
+
+#     # -------------------------
+#     # UPDATE SCO
+#     # Only update non-cancelled Subcontracting Orders
+#     # -------------------------
+#     sco_list = frappe.get_all(
+#         "Subcontracting Order",
+#         filters={
+#             "purchase_order": docname,
+#             "docstatus": ["!=", 2],
+#         },
+#         fields=["name", "docstatus"],
+#     )
+
+#     for sco in sco_list:
+#         sco_doc = frappe.get_doc("Subcontracting Order", sco.name)
+
+#         # Extra safety: never update cancelled SCO
+#         if sco_doc.docstatus == 2:
+#             continue
+
+#         sco_doc.flags.ignore_validate = True
+#         sco_doc.flags.ignore_validate_update_after_submit = True
+
+#         changed = False
+
+#         for row in sco_doc.items:
+#             po_item_name = row.purchase_order_item
+
+#             if po_item_name in item_map:
+#                 rate_val = item_map[po_item_name].get("rate")
+
+#                 if rate_val is not None:
+#                     rate_val = flt(rate_val)
+
+#                     if flt(row.service_cost_per_qty) != rate_val:
+#                         row.service_cost_per_qty = rate_val
+#                         changed = True
+
+#         # Save only if at least one service cost changed
+#         if changed:
+#             sco_doc.save(ignore_permissions=True)
+
+#     return "Cost Updated Successfully"
+
 @frappe.whitelist()
 def update_po_cost_and_sco(docname, items):
     items = frappe.parse_json(items)
@@ -539,53 +644,49 @@ def update_po_cost_and_sco(docname, items):
     item_map = {d.get("docname"): d for d in items}
 
     # -------------------------
-    # UPDATE ITEMS
+    # Rate + discount reset (isi function ke andar)
     # -------------------------
-    for row in doc.items:
-        if row.name in item_map:
-            rate_val = item_map[row.name].get("rate")
+    def apply_rate(row, rate_val):
+        rate_val = flt(rate_val)
+        amount = flt(row.qty) * rate_val
 
-            if rate_val is not None:
-                rate_val = flt(rate_val)
+        row.rate = rate_val
+        row.price_list_rate = rate_val
 
-                row.rate = rate_val
-                row.price_list_rate = rate_val
+        # 🔥 DISCOUNT RESET
+        row.discount_percentage = 0
+        row.discount_amount = 0
+        row.pricing_rules = ""
 
-                row.amount = flt(row.qty) * rate_val
-                row.base_amount = row.amount
-                row.net_amount = row.amount
-                row.base_net_amount = row.amount
+        row.net_rate = rate_val
+        row.amount = amount
+        row.net_amount = amount
+
+        row.base_rate = rate_val
+        row.base_price_list_rate = rate_val
+        row.base_amount = amount
+        row.base_net_rate = rate_val
+        row.base_net_amount = amount
+
+    def apply_all():
+        for row in doc.items:
+            if row.name in item_map:
+                rate_val = item_map[row.name].get("rate")
+                if rate_val is not None:
+                    apply_rate(row, rate_val)
 
     # -------------------------
-    # CALCULATE
+    # UPDATE ITEMS -> CALCULATE -> FORCE APPLY AGAIN
     # -------------------------
+    apply_all()
     doc.run_method("calculate_taxes_and_totals")
-
-    # -------------------------
-    # 🔥 FORCE APPLY AGAIN (MAIN FIX)
-    # -------------------------
-    for row in doc.items:
-        if row.name in item_map:
-            rate_val = item_map[row.name].get("rate")
-
-            if rate_val is not None:
-                rate_val = flt(rate_val)
-
-                row.rate = rate_val
-                row.price_list_rate = rate_val
-
-                row.amount = flt(row.qty) * rate_val
-                row.base_amount = row.amount
-                row.net_amount = row.amount
-                row.base_net_amount = row.amount
+    apply_all()
 
     doc.set_payment_schedule()
-
     doc.save(ignore_permissions=True)
 
     # -------------------------
-    # UPDATE SCO
-    # Only update non-cancelled Subcontracting Orders
+    # UPDATE SCO (non-cancelled only)
     # -------------------------
     sco_list = frappe.get_all(
         "Subcontracting Order",
@@ -599,7 +700,6 @@ def update_po_cost_and_sco(docname, items):
     for sco in sco_list:
         sco_doc = frappe.get_doc("Subcontracting Order", sco.name)
 
-        # Extra safety: never update cancelled SCO
         if sco_doc.docstatus == 2:
             continue
 
@@ -621,7 +721,6 @@ def update_po_cost_and_sco(docname, items):
                         row.service_cost_per_qty = rate_val
                         changed = True
 
-        # Save only if at least one service cost changed
         if changed:
             sco_doc.save(ignore_permissions=True)
 
