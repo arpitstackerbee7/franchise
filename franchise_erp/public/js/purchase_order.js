@@ -229,16 +229,25 @@ frappe.ui.form.on("Purchase Order Item", {
 
 
     // Jab rate manually change ho → price list rate bhi same ho jaye
-    rate: function(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
-        if (row.rate) {
-            row.price_list_rate = row.rate;
-            row.amount = row.rate * row.qty;
-            frm.refresh_field("items");
-        }
-    },
+    // rate: function(frm, cdt, cdn) {
+    //     let row = locals[cdt][cdn];
+    //     if (row.rate) {
+    //         row.price_list_rate = row.rate;
+    //         row.amount = row.rate * row.qty;
+    //         frm.refresh_field("items");
+    //     }
+    // },
 
-   
+   rate: function(frm, cdt, cdn) {
+    let row = locals[cdt][cdn];
+    let rate = flt(row.rate);
+
+    setTimeout(() => {
+            frappe.model.set_value(cdt, cdn, "price_list_rate", rate);
+            frappe.model.set_value(cdt, cdn, "discount_percentage", 0);
+            frappe.model.set_value(cdt, cdn, "discount_amount", 0);
+        }, 300);
+    }
 });
 
 // by mayuri Tupe
@@ -374,6 +383,7 @@ frappe.ui.form.on('Purchase Order', {
 
 // 	}
 // });
+
 frappe.ui.form.on("Purchase Order", {
 	refresh(frm) {
 
