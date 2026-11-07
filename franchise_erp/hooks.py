@@ -140,7 +140,7 @@ doc_events = {
                     "franchise_erp.custom.purchase_reciept.validate_gate_entry",
                     "franchise_erp.custom.purchase_reciept.validate_gate_entry_qty_on_grn"
                     ],
-        #"before_submit": "franchise_erp.event.purchase_receipt.validate_mandatory_links",
+        "before_submit": "franchise_erp.event.purchase_receipt.validate_mandatory_links",
         "before_save": "franchise_erp.custom.purchase_reciept.assign_serials_from_po_on_submit",
         "on_submit": ["franchise_erp.custom.purchase_reciept.lock_serials_on_grn_submit",
                       "franchise_erp.custom.purchase_reciept.on_submit",
@@ -896,5 +896,9 @@ fixtures = [
 {
         "dt": "Letter Head",
         "filters": [["name", "in", ["TZU Letterhead"]]]
+    },
+    {
+        "dt": "Print Format",
+        "filters": [["name", "in", ["Party General Ledger"]]]
     },
 ]
