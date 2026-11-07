@@ -237,19 +237,42 @@ frappe.ui.form.on("Purchase Order Item", {
     //         frm.refresh_field("items");
     //     }
     // },
+});
+frappe.ui.form.on("Purchase Order Item", {
 
-   rate: function(frm, cdt, cdn) {
-    let row = locals[cdt][cdn];
-    let rate = flt(row.rate);
+    rate: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
 
-    setTimeout(() => {
-            frappe.model.set_value(cdt, cdn, "price_list_rate", rate);
-            frappe.model.set_value(cdt, cdn, "discount_percentage", 0);
-            frappe.model.set_value(cdt, cdn, "discount_amount", 0);
-        }, 300);
+        // Re-entry guard: hamare apne set_value se trigger na ho
+        if (row.__updating_rate) return;
+
+        let rate = flt(row.rate);
+
+        // Agar already sahi hai to kuch mat karo (loop break)
+        if (
+            flt(row.price_list_rate) === rate &&
+            flt(row.discount_percentage) === 0 &&
+            flt(row.discount_amount) === 0
+        ) {
+            return;
+        }
+
+        row.__updating_rate = true;
+
+        frappe.model.set_value(cdt, cdn, {
+            price_list_rate: rate,
+            discount_percentage: 0,
+            discount_amount: 0
+        }).then(() => {
+            // ERPNext ne rate badal diya ho to wapas user wali value set karo
+            if (flt(row.rate) !== rate) {
+                return frappe.model.set_value(cdt, cdn, "rate", rate);
+            }
+        }).finally(() => {
+            row.__updating_rate = false;
+        });
     }
 });
-
 // by mayuri Tupe
 frappe.ui.form.on('Purchase Order', {
     refresh: function(frm) {
