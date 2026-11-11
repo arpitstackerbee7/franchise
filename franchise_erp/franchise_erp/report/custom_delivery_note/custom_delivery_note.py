@@ -291,15 +291,11 @@ from frappe.query_builder.terms import ValueWrapper
 # CONFIG
 # ============================================================
 
-# Custom Sales Invoice report ka python module path (supplier logic reuse karne ke liye).
-# "your_app" aur "your_module" ko apne app/module ke naam se badlo.
-# Agar import fail hua to Supplier Name / Supplier Agent columns khali rahenge.
 SALES_INVOICE_REPORT_MODULE = (
 	"franchise_erp.franchise_erp.report.custom_sales_invoice.custom_sales_invoice"
 )
 
-# Delivery Note Item par ye custom fields ho to wahi use honge,
-# warna Item master se uthaye jayenge (agar Item me hon).
+
 ITEM_FIELDS_ON_DN_ITEM = [
 	"custom_bottom_fabric",
 	"custom_dupatta_fabric",
@@ -307,14 +303,14 @@ ITEM_FIELDS_ON_DN_ITEM = [
 	"custom_count_of_pcs",
 ]
 
-# Item Price doctype ki price lists -> report ke fieldnames
-# (values Item ke Accounting tab ke "Item Prices" table se aati hain)
+
 PRICE_LISTS = {
 	"STD": "custom_std",
 	"WSP": "custom_wsp",
 	"MRP": "custom_mrp",
 	"RSP": "custom_rsp",
 	"Standard Buying": "custom_standard_buying",
+	"Standard Selling": "custom_standard_selling",
 }
 
 
@@ -348,13 +344,14 @@ def get_columns():
 		{"label": _("Quantity"), "fieldname": "qty", "fieldtype": "Float", "width": 100},
 		{"label": _("Price List"), "fieldname": "price_list", "fieldtype": "Link", "options": "Price List", "width": 130},
 		{"label": _("Rate"), "fieldname": "rate", "fieldtype": "Currency", "options": "currency", "width": 110},
-		# ---- NEW COLUMNS (ticket #0573) ----
+		
 		{"label": _("STD"), "fieldname": "custom_std", "fieldtype": "Currency", "options": "currency", "width": 110},
 		{"label": _("WSP"), "fieldname": "custom_wsp", "fieldtype": "Currency", "options": "currency", "width": 110},
 		{"label": _("MRP"), "fieldname": "custom_mrp", "fieldtype": "Currency", "options": "currency", "width": 120},
 		{"label": _("RSP"), "fieldname": "custom_rsp", "fieldtype": "Currency", "options": "currency", "width": 110},
 		{"label": _("Standard Buying"), "fieldname": "custom_standard_buying", "fieldtype": "Currency", "options": "currency", "width": 140},
-		# ------------------------------------
+		{"label": _("Standard Selling"), "fieldname": "custom_standard_selling", "fieldtype": "Currency", "options": "currency", "width": 140},
+		
 		{"label": _("Gross Amount"), "fieldname": "gross_amount", "fieldtype": "Currency", "options": "currency", "width": 130},
 		{"label": _("Net Amount"), "fieldname": "net_amount", "fieldtype": "Currency", "options": "currency", "width": 130},
 		{"label": _("Currency"), "fieldname": "currency", "fieldtype": "Data", "width": 90},
@@ -413,13 +410,13 @@ def get_data(filters):
 		item.custom_sup_design_no.as_("sup_design_no"),
 	]
 
-	# class name (Delivery Note par ho to)
+	
 	if frappe.db.has_column("Delivery Note", "custom_class_name"):
 		selects.append(dn.custom_class_name.as_("class_name"))
 	else:
 		selects.append(ValueWrapper(None).as_("class_name"))
 
-	# fabric / count fields
+	
 	for f in ITEM_FIELDS_ON_DN_ITEM:
 		if frappe.db.has_column("Delivery Note Item", f):
 			selects.append(dni[f].as_(f))
@@ -466,7 +463,7 @@ def get_data(filters):
 
 	data = query.orderby(dn.posting_date, order=frappe.qb.desc).run(as_dict=True)
 
-	# Delivery Note ka amount sirf pehli item row par, taaki total double na ho
+	
 	seen_dn = set()
 	for row in data:
 		if row.name in seen_dn:
