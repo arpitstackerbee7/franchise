@@ -356,7 +356,9 @@ doc_events = {
     #     "validate": "franchise_erp.custom.custom_leave_encashment.override_leave_encashment_calculation"
     # },
     
-
+    "POS Invoice": {
+        "before_validate": "franchise_erp.custom.sales_invoice.enforce_pos_invoice_tax",
+    },
 
 }
    

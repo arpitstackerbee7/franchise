@@ -2138,3 +2138,61 @@ def calculate_sis_values_for_stock_take(
         "taxable_value": taxable_value,
         "company": company,
     }
+    
+    
+def _pos_linked_templates(company):
+    return set(frappe.get_all(
+        "POS Profile",
+        filters={"company": company, "disabled": 0, "taxes_and_charges": ["is", "set"]},
+        pluck="taxes_and_charges",
+    ))
+
+
+def enforce_sales_tax_template(doc, method=None):
+    from frappe.utils import cint
+    from erpnext.controllers.accounts_controller import get_taxes_and_charges
+
+    TAX_DT = "Sales Taxes and Charges Template"
+    if not doc.company or cint(doc.get("is_consolidated")) or cint(doc.get("is_pos")) or doc.get("pos_profile"):
+        return
+
+    blocked = _pos_linked_templates(doc.company)
+    target = doc.taxes_and_charges
+    if not target or target in blocked:
+        target = frappe.db.get_value(TAX_DT, {"company": doc.company, "is_default": 1, "disabled": 0}) or target
+
+    if target and target != doc.taxes_and_charges:
+        doc.taxes_and_charges = target
+        doc.set("taxes", [])
+        for row in get_taxes_and_charges(TAX_DT, target) or []:
+            doc.append("taxes", row)
+
+    if doc.taxes_and_charges and doc.taxes:
+        flags = {
+            r.account_head: r.included_in_print_rate
+            for r in frappe.get_all(
+                "Sales Taxes and Charges",
+                filters={"parent": doc.taxes_and_charges, "parenttype": TAX_DT},
+                fields=["account_head", "included_in_print_rate"],
+            )
+        }
+        for t in doc.taxes:
+            if t.account_head in flags and t.description != "Freight as per Sales Term":
+                t.included_in_print_rate = flags[t.account_head]
+                
+def enforce_pos_invoice_tax(doc, method=None):
+    """POS Invoice: har GST tax row inclusive (Net Total par), Freight/Actual rows jaisi hain waisi."""
+    if not doc.get("taxes"):
+        return
+
+    for t in doc.taxes:
+        head = (t.account_head or "").upper()
+        is_gst = any(k in head for k in ("CGST", "SGST", "IGST", "CESS"))
+
+        if is_gst:
+            t.charge_type = "On Net Total"
+            t.row_id = None
+            t.included_in_print_rate = 1
+        else:
+            # Freight etc. (Actual) inclusive nahi ho sakta
+            t.included_in_print_rate = 0
