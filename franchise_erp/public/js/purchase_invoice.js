@@ -834,7 +834,12 @@ frappe.ui.form.on('Purchase Invoice', {
             .map(d => d.custom_outgoing_logistics)
             .filter(Boolean);
         selected_rows.forEach(d => {
+            
             if (existing_ol.includes(d.name)) {
+                return;
+            }
+            if (!d.transport_service_item) {
+                missing.push(d.name);
                 return;
             }
             let row = frm.add_child("items");

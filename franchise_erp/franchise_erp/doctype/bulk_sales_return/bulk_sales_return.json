@@ -10,6 +10,7 @@
   "customer",
   "posting_date",
   "amended_from",
+  "error_message",
   "column_break_dtdh",
   "company",
   "status",
@@ -92,6 +93,12 @@
    "fieldtype": "Data",
    "label": "Total Quantity",
    "read_only": 1
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -107,7 +114,7 @@
    "link_fieldname": "custom_bulk_sales_return"
   }
  ],
- "modified": "2026-09-29 10:53:53.671014",
+ "modified": "2026-11-14 11:20:49.347551",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Bulk Sales Return",

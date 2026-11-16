@@ -365,7 +365,8 @@ def get_outgoing_logistics_match_from_pi(supplier):
         if transporter_name == supplier:
 
             # Always use TZU Setting Item
-            row.transport_service_item = tzu_item
+            if not row.transport_service_item:
+                row.transport_service_item = tzu_item
 
             result.append(row)
 
