@@ -2,7 +2,7 @@
 // For license information, please see license.txt
 
 
-
+const TRANSPORT_FIELDS = ['transporter', 's_transporter', 'transfer_out_transport'];
 frappe.ui.form.on("Outgoing Logistics", {
 	refresh(frm) {
         frm.set_query("consignee_supplier", function() {
@@ -15,15 +15,18 @@ frappe.ui.form.on("Outgoing Logistics", {
              };
         });
         if (frm.is_new()) {
-            frappe.db.get_single_value(
-                "TZU Setting",
-                "transport_service_item"
-            ).then(value => {
-                if (value) {
-                    frm.set_value("transport_service_item", value);
-                }
-            });
+            set_service_item(frm);
         }
+        // if (frm.is_new()) {
+        //     frappe.db.get_single_value(
+        //         "TZU Setting",
+        //         "transport_service_item"
+        //     ).then(value => {
+        //         if (value) {
+        //             frm.set_value("transport_service_item", value);
+        //         }
+        //     });
+        // }
         // if (frm.doc.docstatus === 0) {
         //     frm.add_custom_button(
         //         __("Fetch Sales Invoice ID"),
@@ -346,6 +349,15 @@ frm.add_custom_button(
 );
 }
 	},
+    transporter: function (frm) {
+    set_service_item(frm, 'transporter');
+    },
+    s_transporter: function (frm) {
+        set_service_item(frm, 's_transporter');
+    },
+    transfer_out_transport: function (frm) {
+        set_service_item(frm, 'transfer_out_transport');
+    },
 });
 
 function open_mapper_by_type(frm) {
@@ -1001,3 +1013,37 @@ frappe.ui.form.on('Outgoing Logistics', {
         frm.fields_dict['references'].grid.refresh();
     }
 });
+
+
+
+function set_service_item(frm, changed_field) {
+    // Jis field me abhi change hua wo priority le, warna pehli bhari hui field
+    let supplier = null;
+
+    if (changed_field && frm.doc[changed_field]) {
+        supplier = frm.doc[changed_field];
+    } else {
+        for (const f of TRANSPORT_FIELDS) {
+            if (frm.doc[f]) {
+                supplier = frm.doc[f];
+                break;
+            }
+        }
+    }
+
+    // Koi value nahi hai to service item clear kar do
+    if (!supplier) {
+        if (frm.doc.transport_service_item) {
+            frm.set_value('transport_service_item', '');
+        }
+        return;
+    }
+
+    frappe.db.get_value('Supplier', supplier, 'custom_service_item')
+        .then(r => {
+            const item = (r.message && r.message.custom_service_item) || '';
+            if (frm.doc.transport_service_item !== item) {
+                frm.set_value('transport_service_item', item);
+            }
+        });
+}

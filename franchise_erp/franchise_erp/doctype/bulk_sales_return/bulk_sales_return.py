@@ -367,24 +367,17 @@ class BulkSalesReturn(Document):
 # =============================================================================
 # MAIN BULK PROCESS
 # =============================================================================
-
 def process_bulk_sales_return(docname):
 
     lock_name = f"bulk_sales_return_si_creation:{docname}"
     lock_acquired = False
 
     try:
-
-        # =====================================================================
-        # DATABASE LOCK
-        # =====================================================================
-
         lock_result = frappe.db.sql(
             "SELECT GET_LOCK(%s, 30) AS lock_acquired",
             lock_name,
-            as_dict=True
+            as_dict=True,
         )
-
         lock_acquired = bool(
             lock_result and lock_result[0].get("lock_acquired") == 1
         )
@@ -397,136 +390,82 @@ def process_bulk_sales_return(docname):
 
         doc = frappe.get_doc("Bulk Sales Return", docname)
 
-        # NEW: cancelled / non-submitted doc must not be processed
         if doc.docstatus != 1:
-
-            frappe.logger().info(
-                f"Bulk Sales Return {docname} is not submitted "
-                f"(docstatus={doc.docstatus}). Skipping processing."
-            )
-
             return
 
-        # =====================================================================
-        # ALREADY COMPLETED -> DO NOT PROCESS AGAIN
-        # =====================================================================
-
         if doc.status == "Completed":
-
             existing_si = get_existing_bulk_sales_invoice_return(docname)
-
             existing_dn = frappe.db.exists(
                 "Delivery Note",
                 {
                     "custom_bulk_sales_return": docname,
                     "is_return": 1,
-                    "docstatus": ["in", [0, 1]]
-                }
+                    "docstatus": ["in", [0, 1]],
+                },
             )
-
             if existing_si or existing_dn:
-
-                frappe.logger().info(
-                    f"Bulk Sales Return {docname} is already processed. "
-                    f"Existing SI: {existing_si}, Existing DN: {existing_dn}. "
-                    f"Skipping."
-                )
-
                 return
 
         doc.db_set("status", "In Progress")
-
         frappe.db.commit()
 
         if not doc.items:
             frappe.throw("No return items found.")
 
-        # =====================================================================
-        # RESOLVE ALL BULK ROWS
-        # =====================================================================
-
         resolved_rows = []
-
         for row in doc.items:
-
             resolved = resolve_bulk_return_row(row)
-
             if not resolved:
                 frappe.throw(f"Unable to resolve return source for row {row.idx}")
-
             resolved_rows.append(resolved)
 
-        # =====================================================================
-        # ONE CONSOLIDATED SALES INVOICE RETURN
-        # =====================================================================
+        # ONE consolidated Sales Invoice return
+        si_rows = [r for r in resolved_rows if r.get("sales_invoice_item")]
+        if si_rows and not get_existing_bulk_sales_invoice_return(doc.name):
+            create_single_sales_invoice_return(doc, si_rows)
 
-        si_rows = [
-            row for row in resolved_rows
-            if row.get("sales_invoice_item")
-        ]
-
-        if si_rows:
-
-            existing_si = get_existing_bulk_sales_invoice_return(doc.name)
-
-            if existing_si:
-
-                frappe.logger().info(
-                    f"Bulk Sales Return {doc.name}: Existing Sales Invoice "
-                    f"Return {existing_si} found before creation. "
-                    f"Skipping SI creation."
-                )
-
-            else:
-                create_single_sales_invoice_return(doc, si_rows)
-
-        # =====================================================================
-        # ONE DELIVERY NOTE RETURN PER SOURCE DN
-        # =====================================================================
-
+        # ONE consolidated Delivery Note return
         dn_rows = [
-            row for row in resolved_rows
-            if row.get("delivery_note") and row.get("delivery_note_item")
+            r for r in resolved_rows
+            if r.get("delivery_note") and r.get("delivery_note_item")
         ]
-
         if dn_rows:
             create_delivery_note_returns(doc, dn_rows)
 
-        # SI-only serials are NOT activated here (SI Return is still DRAFT).
-
-        # =====================================================================
-        # FINAL DELIVERY NOTE REFERENCE REPAIR
-        # =====================================================================
-
-        reconcile_delivery_note_bulk_reference(doc)
-
-        # =====================================================================
-        # COMPLETE
-        # =====================================================================
-
         doc.db_set("status", "Completed")
-
         frappe.db.commit()
+
+        # SI return pehle se submit hai to DN draft ab ban chuka hai,
+        # isliye ab DN submit queue karo (commit ke baad, taaki job ko draft dikhe)
+        if frappe.db.exists(
+            "Sales Invoice",
+            {
+                "custom_bulk_sales_return": doc.name,
+                "is_return": 1,
+                "docstatus": 1,
+            },
+        ):
+            frappe.enqueue(
+                "franchise_erp.franchise_erp.doctype.bulk_sales_return."
+                "bulk_sales_return.submit_linked_delivery_note_returns",
+                queue="short",
+                timeout=600,
+                job_id=f"bsr_submit_dn::{doc.name}",
+                deduplicate=True,
+                bulk_sales_return=doc.name,
+            )
 
     except Exception as e:
 
-        error_traceback = frappe.get_traceback()
+        frappe.db.rollback()
 
+        error_traceback = frappe.get_traceback()
         frappe.log_error(
             title=f"Bulk Sales Return Failed - {docname}",
             message=error_traceback,
         )
 
-        frappe.logger("bulk_sales_return").error(
-            f"Bulk Sales Return {docname} failed:\n{error_traceback}"
-        )
-
-        # ---------------------------------------------------------------------
-        # Readable reason (the real error, without HTML)
-        # ---------------------------------------------------------------------
-
         error_detail = strip_html(str(e) or e.__class__.__name__).strip()
-
         if len(error_detail) > 600:
             error_detail = error_detail[:600] + "..."
 
@@ -535,30 +474,23 @@ def process_bulk_sales_return(docname):
         ).format(docname, error_detail)
 
         try:
-
-            doc = frappe.get_doc("Bulk Sales Return", docname)
-
-            doc.db_set("status", "Failed")
-
+            frappe.db.set_value(
+                "Bulk Sales Return", docname, "status", "Failed",
+                update_modified=False,
+            )
             if frappe.db.has_column("Bulk Sales Return", "error_message"):
-                doc.db_set("error_message", user_message)
-
+                frappe.db.set_value(
+                    "Bulk Sales Return", docname, "error_message",
+                    user_message, update_modified=False,
+                )
             frappe.db.commit()
-
         except Exception:
-
             frappe.log_error(
                 frappe.get_traceback(),
-                "Bulk Sales Return Status Update Failed"
+                "Bulk Sales Return Status Update Failed",
             )
 
-        # ---------------------------------------------------------------------
-        # Show alert on whatever page the user is currently on
-        # (list page / form / any desk page)
-        # ---------------------------------------------------------------------
-
         try:
-
             frappe.publish_realtime(
                 event="msgprint",
                 message={
@@ -568,34 +500,20 @@ def process_bulk_sales_return(docname):
                 },
                 user=frappe.session.user,
             )
-
         except Exception:
-
-            frappe.log_error(
-                frappe.get_traceback(),
-                "Bulk Sales Return Realtime Alert Failed"
-            )
+            pass
 
         raise
 
     finally:
-
-        # =====================================================================
-        # RELEASE DATABASE LOCK
-        # =====================================================================
-
         if lock_acquired:
-
             try:
                 frappe.db.sql("SELECT RELEASE_LOCK(%s)", lock_name)
-
             except Exception:
-
                 frappe.log_error(
                     frappe.get_traceback(),
-                    f"Failed to release Bulk Sales Return lock {docname}"
+                    f"Failed to release Bulk Sales Return lock {docname}",
                 )
-
 
 # =============================================================================
 # RESOLVE BULK RETURN ROW
@@ -1787,222 +1705,343 @@ def activate_sales_invoice_only_stock(doc, resolved_rows):
 # DELIVERY NOTE RETURNS
 # =============================================================================
 
+# def create_delivery_note_returns(doc, rows):
+
+#     grouped = {}
+
+#     for row in rows:
+
+#         delivery_note = row.get("delivery_note")
+#         delivery_note_item = row.get("delivery_note_item")
+
+#         if not delivery_note:
+#             continue
+
+#         if not delivery_note_item:
+#             continue
+
+#         grouped.setdefault(delivery_note, []).append(row)
+
+#     created = []
+
+#     for delivery_note, source_rows in grouped.items():
+
+#         source_dn = frappe.get_doc("Delivery Note", delivery_note)
+
+#         if source_dn.docstatus != 1:
+#             frappe.throw(f"Delivery Note {delivery_note} must be submitted.")
+
+#         selected = {}
+
+#         for row in source_rows:
+
+#             delivery_note_item = row.get("delivery_note_item")
+
+#             if not delivery_note_item:
+#                 continue
+
+#             selected.setdefault(
+#                 delivery_note_item,
+#                 {"qty": 0, "serials": []}
+#             )
+
+#             selected[delivery_note_item]["qty"] += flt(row.get("qty"))
+#             selected[delivery_note_item]["serials"].extend(
+#                 row.get("serials") or []
+#             )
+
+#         if not selected:
+#             continue
+
+#         # ============================================================
+#         # CHECK ALREADY RETURNED QTY
+#         # ============================================================
+
+#         valid_selected = {}
+
+#         for delivery_note_item, data in selected.items():
+
+#             requested_qty = flt(data["qty"])
+
+#             original_qty = flt(
+#                 frappe.db.get_value(
+#                     "Delivery Note Item", delivery_note_item, "qty"
+#                 ) or 0
+#             )
+
+#             already_returned_qty = flt(
+#                 frappe.db.sql(
+#                     """
+#                     SELECT IFNULL(SUM(ABS(dni.qty)), 0)
+#                     FROM `tabDelivery Note Item` dni
+#                     INNER JOIN `tabDelivery Note` dn
+#                         ON dn.name = dni.parent
+#                     WHERE dn.docstatus = 1
+#                     AND dn.is_return = 1
+#                     AND dni.dn_detail = %s
+#                     """,
+#                     delivery_note_item
+#                 )[0][0] or 0
+#             )
+
+#             available_qty = original_qty - already_returned_qty
+
+#             if available_qty <= 0:
+
+#                 frappe.log_error(
+#                     f"Bulk Sales Return {doc.name}: Skipping already "
+#                     f"returned DN Item {delivery_note_item}.",
+#                     "Bulk Sales Return - DN Already Returned"
+#                 )
+
+#                 continue
+
+#             if requested_qty > available_qty:
+#                 frappe.throw(
+#                     f"Delivery Note Item {delivery_note_item} "
+#                     f"has only {available_qty} qty available for return, "
+#                     f"but requested {requested_qty}."
+#                 )
+
+#             valid_selected[delivery_note_item] = data
+
+#         if not valid_selected:
+#             continue
+
+#         # ============================================================
+#         # DUPLICATE DELIVERY NOTE RETURN PROTECTION
+#         # ============================================================
+
+#         existing_dn = frappe.db.sql(
+#             """
+#             SELECT name
+#             FROM `tabDelivery Note`
+#             WHERE is_return = 1
+#             AND docstatus IN (0, 1)
+#             AND return_against = %s
+#             AND custom_bulk_sales_return = %s
+#             ORDER BY creation ASC
+#             LIMIT 1
+#             """,
+#             (source_dn.name, doc.name),
+#             as_dict=True
+#         )
+
+#         if existing_dn:
+#             created.append(existing_dn[0].name)
+#             continue
+
+#         # ============================================================
+#         # CREATE STANDARD DELIVERY NOTE RETURN
+#         # ============================================================
+
+#         return_doc = make_return_doc("Delivery Note", source_dn.name)
+
+#         return_doc.is_return = 1
+#         return_doc.return_against = source_dn.name
+#         return_doc.custom_bulk_sales_return = doc.name
+
+#         kept_items = []
+
+#         for return_item in list(return_doc.items):
+
+#             original_item_name = getattr(return_item, "dn_detail", None) or None
+
+#             if not original_item_name:
+
+#                 if return_item.idx:
+
+#                     original_item_name = frappe.db.get_value(
+#                         "Delivery Note Item",
+#                         {
+#                             "parent": source_dn.name,
+#                             "idx": return_item.idx
+#                         },
+#                         "name"
+#                     )
+
+#             selected_row = valid_selected.get(original_item_name)
+
+#             if not selected_row:
+#                 continue
+
+#             return_item.dn_detail = original_item_name
+
+#             return_item.qty = -abs(flt(selected_row["qty"]))
+
+#             serials = list(dict.fromkeys(selected_row["serials"]))
+
+#             if serials:
+
+#                 return_item.serial_no = "\n".join(serials)
+
+#                 if hasattr(return_item, "use_serial_batch_fields"):
+#                     return_item.use_serial_batch_fields = 1
+
+#             kept_items.append(return_item)
+
+#         if not kept_items:
+#             continue
+
+#         return_doc.items = kept_items
+
+#         for idx, item in enumerate(return_doc.items, start=1):
+#             item.idx = idx
+
+#         return_doc.custom_bulk_sales_return = doc.name
+
+#         return_doc.set_missing_values()
+
+#         return_doc.flags.ignore_permissions = True
+
+#         # ============================================================
+#         # INSERT DRAFT
+#         # ============================================================
+
+#         return_doc.insert(ignore_permissions=True)
+
+#         # ============================================================
+#         # FORCE DATABASE REFERENCE
+#         # ============================================================
+
+#         force_set_delivery_note_bulk_reference(return_doc.name, doc.name)
+#         verify_delivery_note_bulk_reference(return_doc.name, doc.name)
+
+#         return_doc.reload()
+
+#         return_doc.flags.ignore_permissions = True
+
+#         force_set_delivery_note_bulk_reference(return_doc.name, doc.name)
+#         verify_delivery_note_bulk_reference(return_doc.name, doc.name)
+
+#         created.append(return_doc.name)
+
+#         frappe.db.commit()
+
+#     reconcile_delivery_note_bulk_reference(doc)
+
+#     return created
 def create_delivery_note_returns(doc, rows):
+    """ONE consolidated Delivery Note Return for all source Delivery Notes."""
+
+    existing = frappe.db.get_value(
+        "Delivery Note",
+        {
+            "custom_bulk_sales_return": doc.name,
+            "is_return": 1,
+            "docstatus": ["in", [0, 1]],
+        },
+        "name",
+    )
+    if existing:
+        return [existing]
 
     grouped = {}
-
     for row in rows:
-
-        delivery_note = row.get("delivery_note")
-        delivery_note_item = row.get("delivery_note_item")
-
-        if not delivery_note:
+        dn = row.get("delivery_note")
+        dn_item = row.get("delivery_note_item")
+        if not dn or not dn_item:
             continue
+        sel = grouped.setdefault(dn, {}).setdefault(
+            dn_item, {"qty": 0, "serials": []}
+        )
+        sel["qty"] += flt(row.get("qty"))
+        sel["serials"].extend(row.get("serials") or [])
 
-        if not delivery_note_item:
-            continue
+    if not grouped:
+        return []
 
-        grouped.setdefault(delivery_note, []).append(row)
+    customers, companies = set(), set()
+    for dn in grouped:
+        s = frappe.db.get_value(
+            "Delivery Note", dn, ["docstatus", "customer", "company"], as_dict=True
+        )
+        if s.docstatus != 1:
+            frappe.throw(f"Delivery Note {dn} must be submitted.")
+        customers.add(s.customer)
+        companies.add(s.company)
+    if len(customers) > 1 or len(companies) > 1:
+        frappe.throw("All Delivery Notes must have the same Customer and Company.")
 
-    created = []
+    skip_keys = {
+        "name", "parent", "parentfield", "parenttype", "idx", "creation",
+        "modified", "owner", "modified_by", "docstatus", "doctype",
+        "serial_and_batch_bundle", "rejected_serial_and_batch_bundle",
+    }
 
-    for delivery_note, source_rows in grouped.items():
+    return_doc = None
 
-        source_dn = frappe.get_doc("Delivery Note", delivery_note)
+    for source_name, selected in grouped.items():
+        mapped = make_return_doc("Delivery Note", source_name)
 
-        if source_dn.docstatus != 1:
-            frappe.throw(f"Delivery Note {delivery_note} must be submitted.")
-
-        selected = {}
-
-        for row in source_rows:
-
-            delivery_note_item = row.get("delivery_note_item")
-
-            if not delivery_note_item:
+        for return_item in list(mapped.items):
+            original_item_name = getattr(return_item, "dn_detail", None)
+            data = selected.get(original_item_name)
+            if not data:
                 continue
 
-            selected.setdefault(
-                delivery_note_item,
-                {"qty": 0, "serials": []}
-            )
-
-            selected[delivery_note_item]["qty"] += flt(row.get("qty"))
-            selected[delivery_note_item]["serials"].extend(
-                row.get("serials") or []
-            )
-
-        if not selected:
-            continue
-
-        # ============================================================
-        # CHECK ALREADY RETURNED QTY
-        # ============================================================
-
-        valid_selected = {}
-
-        for delivery_note_item, data in selected.items():
-
-            requested_qty = flt(data["qty"])
-
             original_qty = flt(
-                frappe.db.get_value(
-                    "Delivery Note Item", delivery_note_item, "qty"
-                ) or 0
+                frappe.db.get_value("Delivery Note Item", original_item_name, "qty")
             )
-
-            already_returned_qty = flt(
+            already_returned = flt(
                 frappe.db.sql(
                     """
                     SELECT IFNULL(SUM(ABS(dni.qty)), 0)
                     FROM `tabDelivery Note Item` dni
-                    INNER JOIN `tabDelivery Note` dn
-                        ON dn.name = dni.parent
-                    WHERE dn.docstatus = 1
-                    AND dn.is_return = 1
+                    INNER JOIN `tabDelivery Note` dn ON dn.name = dni.parent
+                    WHERE dn.docstatus = 1 AND dn.is_return = 1
                     AND dni.dn_detail = %s
                     """,
-                    delivery_note_item
-                )[0][0] or 0
+                    original_item_name,
+                )[0][0]
             )
-
-            available_qty = original_qty - already_returned_qty
-
-            if available_qty <= 0:
-
-                frappe.log_error(
-                    f"Bulk Sales Return {doc.name}: Skipping already "
-                    f"returned DN Item {delivery_note_item}.",
-                    "Bulk Sales Return - DN Already Returned"
-                )
-
-                continue
-
-            if requested_qty > available_qty:
+            if flt(data["qty"]) > original_qty - already_returned:
                 frappe.throw(
-                    f"Delivery Note Item {delivery_note_item} "
-                    f"has only {available_qty} qty available for return, "
-                    f"but requested {requested_qty}."
+                    f"Delivery Note Item {original_item_name}: only "
+                    f"{original_qty - already_returned} qty available for return."
                 )
 
-            valid_selected[delivery_note_item] = data
-
-        if not valid_selected:
-            continue
-
-        # ============================================================
-        # DUPLICATE DELIVERY NOTE RETURN PROTECTION
-        # ============================================================
-
-        existing_dn = frappe.db.sql(
-            """
-            SELECT name
-            FROM `tabDelivery Note`
-            WHERE is_return = 1
-            AND docstatus IN (0, 1)
-            AND return_against = %s
-            AND custom_bulk_sales_return = %s
-            ORDER BY creation ASC
-            LIMIT 1
-            """,
-            (source_dn.name, doc.name),
-            as_dict=True
-        )
-
-        if existing_dn:
-            created.append(existing_dn[0].name)
-            continue
-
-        # ============================================================
-        # CREATE STANDARD DELIVERY NOTE RETURN
-        # ============================================================
-
-        return_doc = make_return_doc("Delivery Note", source_dn.name)
-
-        return_doc.is_return = 1
-        return_doc.return_against = source_dn.name
-        return_doc.custom_bulk_sales_return = doc.name
-
-        kept_items = []
-
-        for return_item in list(return_doc.items):
-
-            original_item_name = getattr(return_item, "dn_detail", None) or None
-
-            if not original_item_name:
-
-                if return_item.idx:
-
-                    original_item_name = frappe.db.get_value(
-                        "Delivery Note Item",
-                        {
-                            "parent": source_dn.name,
-                            "idx": return_item.idx
-                        },
-                        "name"
-                    )
-
-            selected_row = valid_selected.get(original_item_name)
-
-            if not selected_row:
-                continue
-
-            return_item.dn_detail = original_item_name
-
-            return_item.qty = -abs(flt(selected_row["qty"]))
-
-            serials = list(dict.fromkeys(selected_row["serials"]))
-
+            return_item.qty = -abs(flt(data["qty"]))
+            serials = list(dict.fromkeys(data["serials"]))
             if serials:
-
                 return_item.serial_no = "\n".join(serials)
-
                 if hasattr(return_item, "use_serial_batch_fields"):
                     return_item.use_serial_batch_fields = 1
 
-            kept_items.append(return_item)
+            if return_doc is None:
+                return_doc = mapped
+                return_doc.set("items", [])
 
-        if not kept_items:
-            continue
+            item_dict = return_item.as_dict()
+            for k in list(item_dict.keys()):
+                if k in skip_keys or k.startswith("__"):
+                    item_dict.pop(k)
+            return_doc.append("items", item_dict)
 
-        return_doc.items = kept_items
+    if not return_doc or not return_doc.items:
+        return []
 
-        for idx, item in enumerate(return_doc.items, start=1):
-            item.idx = idx
+    for idx, item in enumerate(return_doc.items, start=1):
+        item.idx = idx
 
-        return_doc.custom_bulk_sales_return = doc.name
+    return_doc.is_return = 1
+    return_doc.return_against = None
+    return_doc.custom_bulk_sales_return = doc.name
+    return_doc.flags.ignore_permissions = True
 
-        return_doc.set_missing_values()
+    return_doc.set_missing_values()
+    return_doc.calculate_taxes_and_totals()
+    return_doc.return_against = None
+    return_doc.insert(ignore_permissions=True)
 
-        return_doc.flags.ignore_permissions = True
+    frappe.db.set_value(
+        "Delivery Note", return_doc.name,
+        {"return_against": None, "custom_bulk_sales_return": doc.name},
+        update_modified=False,
+    )
+    frappe.db.commit()
+    return [return_doc.name]
 
-        # ============================================================
-        # INSERT DRAFT
-        # ============================================================
-
-        return_doc.insert(ignore_permissions=True)
-
-        # ============================================================
-        # FORCE DATABASE REFERENCE
-        # ============================================================
-
-        force_set_delivery_note_bulk_reference(return_doc.name, doc.name)
-        verify_delivery_note_bulk_reference(return_doc.name, doc.name)
-
-        return_doc.reload()
-
-        return_doc.flags.ignore_permissions = True
-
-        force_set_delivery_note_bulk_reference(return_doc.name, doc.name)
-        verify_delivery_note_bulk_reference(return_doc.name, doc.name)
-
-        created.append(return_doc.name)
-
-        frappe.db.commit()
-
-    reconcile_delivery_note_bulk_reference(doc)
-
-    return created
 
 
 # =============================================================================
@@ -3356,110 +3395,222 @@ def activate_bulk_si_only_serials_after_submit(bulk_sales_return):
     activate_sales_invoice_only_stock(bulk_doc, resolved_rows)
 
 
+
+def submit_bulk_dn_return(dn_doc):
+    """
+    Consolidated DN return (return_against blank) ko submit karta hai.
+    ERPNext submit par return_against wale DN ka per_returned update karta hai,
+    blank hone par wo fail hota hai, isliye wo step skip karke baad me
+    source DNs ka per_returned/status khud update kiya jata hai.
+    """
+    dn_doc.flags.ignore_permissions = True
+
+    source_dns = set()
+
+    if not dn_doc.return_against:
+
+        new_updater = []
+        for entry in dn_doc.status_updater:
+            if entry.get("percent_join_field_parent") == "return_against":
+                entry = dict(entry)
+                entry.pop("percent_join_field_parent", None)
+            new_updater.append(entry)
+        dn_doc.status_updater = new_updater
+
+        for it in dn_doc.items:
+            if it.get("dn_detail"):
+                parent = frappe.db.get_value(
+                    "Delivery Note Item", it.dn_detail, "parent"
+                )
+                if parent:
+                    source_dns.add(parent)
+
+    dn_doc.submit()
+
+    for src in source_dns:
+        tot = frappe.db.sql(
+            """
+            SELECT IFNULL(SUM(stock_qty), 0), IFNULL(SUM(returned_qty), 0)
+            FROM `tabDelivery Note Item`
+            WHERE parent = %s
+            """,
+            src,
+        )[0]
+
+        per = (
+            min(abs(flt(tot[1])) / flt(tot[0]) * 100, 100)
+            if flt(tot[0])
+            else 0
+        )
+
+        frappe.db.set_value(
+            "Delivery Note", src, "per_returned", per, update_modified=False
+        )
+        frappe.get_doc("Delivery Note", src).set_status(update=True)
+
+
 # =============================================================================
 # AUTO SUBMIT LINKED DELIVERY NOTE RETURNS
 # =============================================================================
 
 def auto_submit_linked_delivery_note_return(doc, method=None):
-    """
-    Called when a Sales Invoice Return is submitted.
-
-    Bulk Sales Return -> Sales Invoice Return -> Delivery Note Return
-    -> Submit DN Return -> Activate SI-only serials
-
-    IMPORTANT:
-    Normal/manual Sales Invoice Returns must NEVER enter this flow.
-    """
-
-    if not doc:
-        return
-
-    if not doc.is_return:
+    if not doc or not doc.is_return or doc.docstatus != 1:
         return
 
     bulk_sales_return = doc.get("custom_bulk_sales_return")
-
     if not bulk_sales_return:
         return
 
-    if doc.docstatus != 1:
-        return
-
-    # Queue AFTER current Sales Invoice transaction commits
     frappe.enqueue(
         "franchise_erp.franchise_erp.doctype.bulk_sales_return."
         "bulk_sales_return.submit_linked_delivery_note_returns",
-        queue="short",
-        timeout=300,
+        queue="long",
+        timeout=1800,
         enqueue_after_commit=True,
+        job_id=f"bsr_submit_dn::{bulk_sales_return}",
+        deduplicate=True,
         bulk_sales_return=bulk_sales_return,
     )
 
 
-# =============================================================================
-# SUBMIT LINKED DELIVERY NOTE RETURNS
-# =============================================================================
-
 def submit_linked_delivery_note_returns(bulk_sales_return):
-    """
-    Submit all Draft Delivery Note Returns belonging to the given
-    Bulk Sales Return, then activate SI-only serialized items.
-    """
-
     if not bulk_sales_return:
         return
 
-    try:
+    lock_name = f"bsr_submit_dn:{bulk_sales_return}"
+    got_lock = frappe.db.sql("SELECT GET_LOCK(%s, 30)", lock_name)[0][0] == 1
 
+    if not got_lock:
+        frappe.throw(f"Could not acquire lock for {bulk_sales_return}")
+
+    failed = []
+
+    try:
         dns = frappe.get_all(
             "Delivery Note",
             filters={
                 "custom_bulk_sales_return": bulk_sales_return,
                 "is_return": 1,
-                "docstatus": 0
+                "docstatus": 0,
             },
             pluck="name",
-            order_by="creation asc"
+            order_by="creation asc",
         )
 
         for dn_name in dns:
+            try:
+                dn_doc = frappe.get_doc("Delivery Note", dn_name)
 
-            dn_doc = frappe.get_doc("Delivery Note", dn_name)
+                if dn_doc.docstatus != 0:
+                    continue
+                auto_purchase_return_for_dn_serials(dn_doc)
+                submit_bulk_dn_return(dn_doc)
+                frappe.db.commit()
 
-            # Already submitted by another process
-            if dn_doc.docstatus != 0:
-                continue
+            except Exception as e:
+                frappe.db.rollback()
+                reason = strip_html(str(e) or e.__class__.__name__).strip()[:300]
+                failed.append(f"{dn_name} -> {reason}")
+                frappe.log_error(
+                    frappe.get_traceback(),
+                    f"Bulk Sales Return - DN Return submit failed: {dn_name}",
+                )
 
-            dn_doc.flags.ignore_permissions = True
-
-            dn_doc.submit()
-
-            force_set_delivery_note_bulk_reference(
-                dn_doc.name, bulk_sales_return
+        if failed:
+            frappe.publish_realtime(
+                event="msgprint",
+                message=(
+                    f"Bulk Sales Return {bulk_sales_return}: Delivery Note "
+                    f"return submit failed:<br>" + "<br>".join(failed)
+                ),
             )
+            return
 
-            verify_delivery_note_bulk_reference(
-                dn_doc.name, bulk_sales_return
-            )
-
-            frappe.db.commit()
-
-        # Must happen AFTER DN Returns are submitted.
         activate_bulk_si_only_serials_after_submit(bulk_sales_return)
-
         frappe.db.commit()
 
-        frappe.logger().info(
-            f"Bulk Sales Return {bulk_sales_return}: Linked Delivery Note "
-            f"Returns submitted successfully and SI-only serialized stock "
-            f"processed."
-        )
+    finally:
+        frappe.db.sql("SELECT RELEASE_LOCK(%s)", lock_name)
+        
 
-    except Exception:
+def auto_purchase_return_for_dn_serials(dn_doc):
+    """
+    DN return ke serials agar customer company (BDBA) ke warehouse me pade hain,
+    to unki Purchase Receipt ka Purchase Return bana ke submit karta hai,
+    taaki TZUPL me DN return submit ho sake.
+    """
+    # serial -> (PR, PR item) latest inward bundle se
+    groups = {}  # (pr_name, pr_item) -> [serials]
 
-        frappe.log_error(
-            frappe.get_traceback(),
-            "Bulk Sales Return - Submit Linked Delivery Note Returns Failed"
-        )
+    for it in dn_doc.items:
+        for s in (it.serial_no or "").split("\n"):
+            s = s.strip()
+            if not s:
+                continue
 
-        raise
+            wh = frappe.db.get_value("Serial No", s, "warehouse")
+            if not wh:
+                continue
+            if frappe.db.get_value("Warehouse", wh, "company") == dn_doc.company:
+                continue  # already apni company me, kuch nahi karna
+
+            row = frappe.db.sql(
+                """
+                SELECT sbb.voucher_no, sbb.voucher_detail_no
+                FROM `tabSerial and Batch Entry` sbe
+                JOIN `tabSerial and Batch Bundle` sbb ON sbb.name = sbe.parent
+                WHERE sbe.serial_no = %s AND sbb.docstatus = 1
+                AND sbb.is_cancelled = 0 AND sbb.voucher_type = 'Purchase Receipt'
+                AND sbb.type_of_transaction = 'Inward' AND sbb.warehouse = %s
+                ORDER BY sbb.posting_date DESC, sbb.posting_time DESC, sbb.creation DESC
+                LIMIT 1
+                """,
+                (s, wh),
+                as_dict=True,
+            )
+            if not row:
+                frappe.throw(
+                    f"Serial {s} {wh} me hai par uski Purchase Receipt nahi mili. "
+                    f"Manual reverse karein."
+                )
+            groups.setdefault(
+                (row[0].voucher_no, row[0].voucher_detail_no), []
+            ).append(s)
+
+    if not groups:
+        return []
+
+    by_pr = {}
+    for (pr, pr_item), serials in groups.items():
+        by_pr.setdefault(pr, {})[pr_item] = serials
+
+    created = []
+    for pr_name, items_map in by_pr.items():
+        ret = make_return_doc("Purchase Receipt", pr_name)
+        kept = []
+        for item in list(ret.items):
+            serials = items_map.get(item.get("purchase_receipt_item"))
+            if not serials:
+                continue
+            item.qty = -len(serials)
+            item.received_qty = -len(serials)
+            item.serial_and_batch_bundle = None
+            item.serial_no = "\n".join(serials)
+            if hasattr(item, "use_serial_batch_fields"):
+                item.use_serial_batch_fields = 1
+            kept.append(item)
+
+        if not kept:
+            continue
+
+        ret.items = kept
+        for idx, i in enumerate(ret.items, start=1):
+            i.idx = idx
+        ret.flags.ignore_permissions = True
+        ret.set_missing_values()
+        ret.insert(ignore_permissions=True)
+        ret.submit()
+        created.append(ret.name)
+
+    frappe.db.commit()
+    return created
