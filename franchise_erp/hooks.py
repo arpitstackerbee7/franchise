@@ -357,6 +357,7 @@ doc_events = {
     # },
     
     "POS Invoice": {
+        "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
         "before_validate": "franchise_erp.custom.sales_invoice.enforce_pos_invoice_tax",
     },
 

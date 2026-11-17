@@ -37,6 +37,7 @@ DOCTYPE_PREFIX = {
     "Incoming Logistics": "IL",
     "Gate Entry": "IG",
     "Outgoing Logistics": "OL",
+    "POS Invoice": "POS",
 }
 
 
