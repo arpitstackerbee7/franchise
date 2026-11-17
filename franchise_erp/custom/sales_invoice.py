@@ -2180,19 +2180,47 @@ def enforce_sales_tax_template(doc, method=None):
             if t.account_head in flags and t.description != "Freight as per Sales Term":
                 t.included_in_print_rate = flags[t.account_head]
                 
+# def enforce_pos_invoice_tax(doc, method=None):
+#     """POS Invoice: har GST tax row inclusive (Net Total par), Freight/Actual rows jaisi hain waisi."""
+#     if not doc.get("taxes"):
+#         return
+
+#     for t in doc.taxes:
+#         head = (t.account_head or "").upper()
+#         is_gst = any(k in head for k in ("CGST", "SGST", "IGST", "CESS"))
+
+#         if is_gst:
+#             t.charge_type = "On Net Total"
+#             t.row_id = None
+#             t.included_in_print_rate = 1
+#         else:
+#             # Freight etc. (Actual) inclusive nahi ho sakta
+#             t.included_in_print_rate = 0
+
 def enforce_pos_invoice_tax(doc, method=None):
-    """POS Invoice: har GST tax row inclusive (Net Total par), Freight/Actual rows jaisi hain waisi."""
+    """POS Invoice: har GST tax row inclusive (Net Total par); payments grand total se sync (return me bhi)."""
+    from frappe.utils import flt
+
     if not doc.get("taxes"):
         return
 
     for t in doc.taxes:
         head = (t.account_head or "").upper()
         is_gst = any(k in head for k in ("CGST", "SGST", "IGST", "CESS"))
-
         if is_gst:
             t.charge_type = "On Net Total"
             t.row_id = None
             t.included_in_print_rate = 1
         else:
-            # Freight etc. (Actual) inclusive nahi ho sakta
             t.included_in_print_rate = 0
+
+    # Totals dobara nikalo, phir payment sync karo
+    doc.calculate_taxes_and_totals()
+
+    payments = doc.get("payments") or []
+    if len(payments) == 1:
+        total = flt(doc.rounded_total or doc.grand_total)  # return me negative aayega
+        payments[0].amount = total
+        payments[0].base_amount = total * flt(doc.conversion_rate or 1)
+        doc.paid_amount = total
+        doc.base_paid_amount = payments[0].base_amount
