@@ -48,7 +48,7 @@ RETURN_PREFIX_MAP = {
 }
 
 
-# 🔥 GENERIC FUNCTION (WORKS FOR ALL DOCTYPES)
+# GENERIC FUNCTION (WORKS FOR ALL DOCTYPES)
 # def get_next_number(doctype, series):
 #     last = frappe.db.sql(f"""
 #         SELECT name FROM `tab{doctype}`
@@ -83,10 +83,10 @@ def get_next_number(doctype, prefix, digits=5):
     for row in names:
         name = row.name
 
-        # ✅ remove amend suffix (-1, -2)
+        # remove amend suffix (-1, -2)
         clean_name = re.sub(r"-\d+$", "", name)
 
-        # ✅ extract last number
+        # extract last number
         match = re.search(r'(\d+)(?!.*\d)', clean_name)
 
         if match:
@@ -131,17 +131,17 @@ def get_doc_date(doc):
 
 def company_fy_autoname(doc, method=None):
 
-    # 🔥 prevent duplicate execution
+    
     if doc.name and not doc.name.startswith("New"):
         return
 
     if doc.doctype not in DOCTYPE_PREFIX:
         return
 
-    # ✅ USE GENERIC DATE FUNCTION
+    
     date = get_doc_date(doc)
 
-    # 🔥 backdate → ERPNext default
+    
     if date < FY_START_DATE:
         return
 
@@ -167,7 +167,7 @@ def company_fy_autoname(doc, method=None):
         prefix = "SC"
     elif doc.doctype == "Sales Invoice" and disable_update_stock and is_debit_note:
         prefix = "SD"
-    elif is_return:
+    elif is_return and doc.doctype != "POS Invoice":
         prefix = RETURN_PREFIX_MAP.get(doc.doctype, prefix + "R")
 
     series = f"{prefix}/{fy}/"
