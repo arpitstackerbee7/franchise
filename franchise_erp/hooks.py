@@ -282,6 +282,7 @@ doc_events = {
     "validate": [
         "franchise_erp.custom.back_date_validation.validate_back_date",
         "franchise_erp.custom.subcontracting_receipt.validate_gate_entry_qty_on_subcontracting",
+        "franchise_erp.custom.job_work_po_validation.validate_scr_po_submitted",
     ],
 
     "before_save": [
@@ -324,7 +325,8 @@ doc_events = {
 
     "Subcontracting Order": {
         "autoname": "franchise_erp.utils.fy_naming.company_fy_autoname",
-        "before_validate": "franchise_erp.custom.subcontracting_order.set_tax_rows_on_net_total"
+        "before_validate": "franchise_erp.custom.subcontracting_order.set_tax_rows_on_net_total",
+        "validate": "franchise_erp.custom.job_work_po_validation.validate_sco_po_submitted",
     },
     "Supplier": {
         "after_insert": "franchise_erp.custom.supplier.create_supplier_warehouse",
