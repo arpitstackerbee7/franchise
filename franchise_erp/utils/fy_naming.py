@@ -151,6 +151,11 @@ def company_fy_autoname(doc, method=None):
 
     prefix = DOCTYPE_PREFIX.get(doc.doctype)
 
+    if doc.doctype == "POS Invoice" and doc.pos_profile:
+        profile_code = re.sub(r"[^A-Za-z0-9]", "", doc.pos_profile)[:1].upper()
+        if profile_code:
+            prefix = f"PS{profile_code}"
+
     # if getattr(doc, "is_return", 0):
     #     prefix = RETURN_PREFIX_MAP.get(doc.doctype, prefix + "R")
     is_return = getattr(doc, "is_return", 0)
