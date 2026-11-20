@@ -361,6 +361,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "depends_on": "eval:doc.to_pay ==\"Yes\"",
    "fieldname": "transport_service_item",
    "fieldtype": "Link",
@@ -401,7 +402,7 @@
    "link_fieldname": "custom_outgoing_logistics"
   }
  ],
- "modified": "2026-11-13 20:33:37.489205",
+ "modified": "2026-11-20 15:56:36.299564",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "Outgoing Logistics",

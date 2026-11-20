@@ -332,70 +332,92 @@ def get_purchase_invoice_city(purchase_invoice):
     return None
 
 
+
+from frappe.utils import flt
+import frappe
+
 # def sync_merged_discounts(doc, method=None):
 #     if not doc.items:
 #         return
 
 #     total_pr_discount = 0.0
 #     unique_prs = set()
+#     apply_discount_on = None
 
 #     for item in doc.items:
 #         if item.purchase_receipt and item.purchase_receipt not in unique_prs:
-#             pr_discount = frappe.db.get_value("Purchase Receipt", item.purchase_receipt, "discount_amount")
-#             if pr_discount:
-#                 total_pr_discount += flt(pr_discount)
+#             pr_doc = frappe.get_doc("Purchase Receipt", item.purchase_receipt)
+
+#             if pr_doc.discount_amount:
+#                 total_pr_discount += flt(pr_doc.discount_amount)
+
+#             # First Purchase Receipt se Apply Discount On lo
+#             if not apply_discount_on:
+#                 apply_discount_on = pr_doc.apply_discount_on
+
 #             unique_prs.add(item.purchase_receipt)
 
 #     if total_pr_discount > 0:
 #         final_discount = flt(total_pr_discount, 2)
-        
-#         doc.apply_discount_on = "Grand Total"
+
+#         # PR ka Apply Discount On preserve karo
+#         doc.apply_discount_on = apply_discount_on or "Net Total"
+
 #         doc.discount_amount = final_discount
 #         doc.base_discount_amount = final_discount * flt(doc.conversion_rate or 1)
 
 #         doc.set_missing_values()
-        
+
 #         for item in doc.items:
-#             item.run_method("calculate_net_amount") 
+#             item.run_method("calculate_net_amount")
 
 #         doc.calculate_taxes_and_totals()
-
-from frappe.utils import flt
-import frappe
 
 def sync_merged_discounts(doc, method=None):
     if not doc.items:
         return
 
-    total_pr_discount = 0.0
-    unique_prs = set()
-    apply_discount_on = None
-
+    unique_prs = []
     for item in doc.items:
         if item.purchase_receipt and item.purchase_receipt not in unique_prs:
-            pr_doc = frappe.get_doc("Purchase Receipt", item.purchase_receipt)
+            unique_prs.append(item.purchase_receipt)
 
-            if pr_doc.discount_amount:
-                total_pr_discount += flt(pr_doc.discount_amount)
+    if not unique_prs:
+        return
 
-            # First Purchase Receipt se Apply Discount On lo
-            if not apply_discount_on:
-                apply_discount_on = pr_doc.apply_discount_on
+    prs = [
+        frappe.db.get_value(
+            "Purchase Receipt",
+            name,
+            ["discount_amount", "apply_discount_on", "net_total", "total_taxes_and_charges"],
+            as_dict=True,
+        )
+        for name in unique_prs
+    ]
+    types = {p.apply_discount_on or "Grand Total" for p in prs}
 
-            unique_prs.add(item.purchase_receipt)
+    total = 0.0
+    if len(types) == 1:
+        # Sab PR me same "Apply Discount On": purana behaviour
+        apply_on = next(iter(types))
+        total = sum(flt(p.discount_amount) for p in prs)
+    else:
+        # Mixed: sab discount ko Net Total basis par laao
+        apply_on = "Net Total"
+        for p in prs:
+            d = flt(p.discount_amount)
+            if (
+                d
+                and (p.apply_discount_on or "Grand Total") == "Grand Total"
+                and flt(p.net_total)
+            ):
+                d = d / (1 + flt(p.total_taxes_and_charges) / flt(p.net_total))
+            total += d
 
-    if total_pr_discount > 0:
-        final_discount = flt(total_pr_discount, 2)
-
-        # PR ka Apply Discount On preserve karo
-        doc.apply_discount_on = apply_discount_on or "Net Total"
-
-        doc.discount_amount = final_discount
-        doc.base_discount_amount = final_discount * flt(doc.conversion_rate or 1)
-
-        doc.set_missing_values()
-
-        for item in doc.items:
-            item.run_method("calculate_net_amount")
+    if total > 0:
+        doc.apply_discount_on = apply_on
+        doc.additional_discount_percentage = 0  # % se amount dobara recalc na ho
+        doc.discount_amount = flt(total, 2)
+        doc.base_discount_amount = flt(doc.discount_amount * flt(doc.conversion_rate or 1), 2)
 
         doc.calculate_taxes_and_totals()
