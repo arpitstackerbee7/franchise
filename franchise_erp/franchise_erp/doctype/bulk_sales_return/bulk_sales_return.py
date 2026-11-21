@@ -1,9 +1,9 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import flt
-from erpnext.controllers.sales_and_purchase_return import make_return_doc
 from frappe import _
 from frappe.utils import flt, strip_html
+from erpnext.controllers.sales_and_purchase_return import make_return_doc
+
 
 class BulkSalesReturn(Document):
 
@@ -45,8 +45,8 @@ class BulkSalesReturn(Document):
                 rows_to_remove.append(row)
                 continue
 
-            if unique_serials != serials:
-                row.serial_nos = "\n".join(unique_serials)
+            # FIX: hamesha newline format me save karo (comma wale bhi normalize)
+            row.serial_nos = "\n".join(unique_serials)
 
             has_serial_no = frappe.db.get_value(
                 "Item", row.item_code, "has_serial_no"
@@ -271,13 +271,12 @@ class BulkSalesReturn(Document):
 
     # =========================================================================
     # ON SUBMIT
+    # FIX: manual frappe.db.commit() hataya, enqueue_after_commit=True lagaya
     # =========================================================================
 
     def on_submit(self):
 
         self.db_set("status", "Queued")
-
-        frappe.db.commit()
 
         frappe.enqueue(
             method=(
@@ -287,13 +286,14 @@ class BulkSalesReturn(Document):
             docname=self.name,
             queue="long",
             timeout=1200,
-            job_name=f"Bulk Sales Return {self.name}"
+            job_name=f"Bulk Sales Return {self.name}",
+            enqueue_after_commit=True,
         )
 
         frappe.msgprint("Return documents are being created in the background.")
 
     # =========================================================================
-    # BEFORE CANCEL  (NEW)
+    # BEFORE CANCEL
     #
     # Draft Delivery Note / Sales Invoice returns created from this Bulk Sales
     # Return are DELETED (drafts cannot be "cancelled" in ERPNext).
@@ -366,6 +366,10 @@ class BulkSalesReturn(Document):
 
 # =============================================================================
 # MAIN BULK PROCESS
+# FIX: hamesha max 1 SI return + max 1 DN return.
+#      Sirf SI-only items  -> SI return update_stock=1
+#      DN-backed / mixed   -> SI return update_stock=0 + DN return (stock
+#                             dono tarah ke items ka DN return se wapas aata hai)
 # =============================================================================
 def process_bulk_sales_return(docname):
 
@@ -419,24 +423,56 @@ def process_bulk_sales_return(docname):
                 frappe.throw(f"Unable to resolve return source for row {row.idx}")
             resolved_rows.append(resolved)
 
-        # ONE consolidated Sales Invoice return
+        # ---------------------------------------------------------------
+        # HAMESHA MAX 1 SALES INVOICE RETURN + MAX 1 DELIVERY NOTE RETURN
+        #
+        # Case A: koi DN-backed item nahi (sirf SI-only items)
+        #     -> 1 SI return, update_stock = 1 (SLE banega, serial Active hoga)
+        #
+        # Case B: DN-backed items hain (ya DN + SI-only mixed)
+        #     -> 1 SI return, update_stock = 0 (sirf billing / credit note)
+        #     -> 1 DN return: DN-backed items + SI-only items dono ka stock
+        #        isi DN return se wapas aata hai (SLE banega, serial Active hoga)
+        # ---------------------------------------------------------------
         si_rows = [r for r in resolved_rows if r.get("sales_invoice_item")]
-        if si_rows and not get_existing_bulk_sales_invoice_return(doc.name):
-            create_single_sales_invoice_return(doc, si_rows)
-
-        # ONE consolidated Delivery Note return
         dn_rows = [
             r for r in resolved_rows
             if r.get("delivery_note") and r.get("delivery_note_item")
         ]
-        if dn_rows:
-            create_delivery_note_returns(doc, dn_rows)
+        stock_si_rows, _billing_only_rows = split_si_rows_by_stock_effect(si_rows)
+
+        # Pichle run ke purane DRAFT returns hata do, taaki purana draft
+        # (jisme naye items na hon) dobara use na ho jaye.
+        delete_draft_bulk_returns(doc.name)
+
+        if not dn_rows:
+
+            # Case A
+            if si_rows and not get_existing_bulk_sales_invoice_return(doc.name):
+                create_single_sales_invoice_return(
+                    doc,
+                    si_rows,
+                    update_stock=1 if stock_si_rows else 0,
+                )
+
+        else:
+
+            # Case B
+            if si_rows and not get_existing_bulk_sales_invoice_return(doc.name):
+                create_single_sales_invoice_return(doc, si_rows, update_stock=0)
+
+            create_delivery_note_returns(
+                doc, dn_rows, extra_si_rows=stock_si_rows
+            )
+
+            # DN return me saare items (DN wale + SI-only) hone chahiye,
+            # nahi to SI-only serial Active nahi honge -> clear error do.
+            verify_dn_return_items(doc.name, dn_rows, stock_si_rows)
 
         doc.db_set("status", "Completed")
         frappe.db.commit()
 
-        # SI return pehle se submit hai to DN draft ab ban chuka hai,
-        # isliye ab DN submit queue karo (commit ke baad, taaki job ko draft dikhe)
+        # Koi SI return pehle se submit ho chuka ho to DN submit queue karo
         if frappe.db.exists(
             "Sales Invoice",
             {
@@ -514,6 +550,101 @@ def process_bulk_sales_return(docname):
                     frappe.get_traceback(),
                     f"Failed to release Bulk Sales Return lock {docname}",
                 )
+
+
+# =============================================================================
+# DELETE OLD DRAFT RETURNS OF THIS BULK SALES RETURN
+# =============================================================================
+def delete_draft_bulk_returns(bulk_sales_return):
+
+    for doctype in ("Sales Invoice", "Delivery Note"):
+
+        drafts = frappe.get_all(
+            doctype,
+            filters={
+                "custom_bulk_sales_return": bulk_sales_return,
+                "is_return": 1,
+                "docstatus": 0,
+            },
+            pluck="name",
+        )
+
+        for name in drafts:
+            frappe.delete_doc(
+                doctype, name, force=True, ignore_permissions=True
+            )
+
+
+# =============================================================================
+# VERIFY DN RETURN HAS ALL ITEMS
+# =============================================================================
+def verify_dn_return_items(bulk_sales_return, dn_rows, stock_si_rows):
+
+    expected = sum(flt(r.get("qty")) for r in dn_rows) + sum(
+        flt(r.get("qty")) for r in stock_si_rows
+    )
+
+    dn_name = frappe.db.get_value(
+        "Delivery Note",
+        {
+            "custom_bulk_sales_return": bulk_sales_return,
+            "is_return": 1,
+            "docstatus": ["in", [0, 1]],
+        },
+        "name",
+    )
+
+    if not dn_name:
+        frappe.throw("Delivery Note return was not created.")
+
+    actual = flt(
+        frappe.db.sql(
+            """
+            SELECT IFNULL(SUM(ABS(qty)), 0)
+            FROM `tabDelivery Note Item`
+            WHERE parent = %s
+            """,
+            dn_name,
+        )[0][0]
+    )
+
+    if abs(actual - expected) > 0.0001:
+        frappe.throw(
+            f"Delivery Note return {dn_name} has qty {actual} but "
+            f"{expected} was expected (DN items + SI-only items). "
+            f"Serials of missing items will not become Active."
+        )
+
+
+# =============================================================================
+# SPLIT SI ROWS BY STOCK EFFECT  (NEW)
+#   Stock wale  : original SI me update_stock=1 aur koi DN link nahi
+#                 -> SI Return update_stock=1 (SLE banega, serial Active hoga)
+#   Billing wale: DN-backed (ya non-stock SI)
+#                 -> SI Return update_stock=0 (stock DN Return se wapas aata hai)
+# =============================================================================
+def split_si_rows_by_stock_effect(si_rows):
+
+    stock_rows = []
+    billing_rows = []
+    update_stock_cache = {}
+
+    for r in si_rows:
+
+        si_name = r.get("sales_invoice")
+
+        if si_name not in update_stock_cache:
+            update_stock_cache[si_name] = bool(
+                frappe.db.get_value("Sales Invoice", si_name, "update_stock")
+            )
+
+        if update_stock_cache[si_name] and not r.get("delivery_note_item"):
+            stock_rows.append(r)
+        else:
+            billing_rows.append(r)
+
+    return stock_rows, billing_rows
+
 
 # =============================================================================
 # RESOLVE BULK RETURN ROW
@@ -730,9 +861,10 @@ def resolve_bulk_return_row(row):
 
 # =============================================================================
 # FIND EXISTING BULK SALES INVOICE RETURN
+# FIX: update_stock ke hisab se alag-alag existing return check hota hai
 # =============================================================================
 
-def get_existing_bulk_sales_invoice_return(bulk_sales_return):
+def get_existing_bulk_sales_invoice_return(bulk_sales_return, update_stock=None):
 
     if not bulk_sales_return:
         return None
@@ -742,19 +874,27 @@ def get_existing_bulk_sales_invoice_return(bulk_sales_return):
     if not meta.has_field("custom_bulk_sales_return"):
         return None
 
+    conditions = ""
+    params = [bulk_sales_return]
+
+    if update_stock is not None:
+        conditions = " AND update_stock = %s"
+        params.append(1 if update_stock else 0)
+
     # Only Draft / Submitted returns are considered.
     # Cancelled return should NOT block creation of a new return.
     existing = frappe.db.sql(
-        """
+        f"""
         SELECT name, docstatus, creation
         FROM `tabSales Invoice`
         WHERE custom_bulk_sales_return = %s
         AND is_return = 1
         AND docstatus IN (0, 1)
+        {conditions}
         ORDER BY creation ASC
         LIMIT 1
         """,
-        bulk_sales_return,
+        params,
         as_dict=True
     )
 
@@ -765,10 +905,11 @@ def get_existing_bulk_sales_invoice_return(bulk_sales_return):
 
 
 # =============================================================================
-# CREATE ONE CONSOLIDATED SALES INVOICE RETURN  (UPDATED - TAX FIX)
+# CREATE ONE CONSOLIDATED SALES INVOICE RETURN
+# FIX: update_stock parameter (1 = SI-only items, 0 = DN-backed items)
 # =============================================================================
 
-def create_single_sales_invoice_return(doc, rows):
+def create_single_sales_invoice_return(doc, rows, update_stock=None):
 
     # ---------------------------------------------------------------------
     # HARD DUPLICATE PROTECTION
@@ -777,7 +918,7 @@ def create_single_sales_invoice_return(doc, rows):
     if not doc or not doc.name:
         return None
 
-    existing_return = get_existing_bulk_sales_invoice_return(doc.name)
+    existing_return = get_existing_bulk_sales_invoice_return(doc.name, update_stock)
 
     if existing_return:
         frappe.logger().warning(
@@ -905,19 +1046,17 @@ def create_single_sales_invoice_return(doc, rows):
 
     # ---------------------------------------------------------------------
     # STOCK LOGIC
+    # FIX: pehle yaha any(DN-backed) se poore return ka update_stock=0 ho
+    # jata tha. Ab caller (process_bulk_sales_return) decide karta hai.
     # ---------------------------------------------------------------------
 
-    has_dn_backed_item = any(
-        data.get("delivery_note_item") for data in selected.values()
-    )
-
-    if has_dn_backed_item:
-        return_doc.update_stock = 0
+    if update_stock is not None:
+        return_doc.update_stock = 1 if update_stock else 0
     else:
         source_update_stock = all(
-            bool(source_sis[data.get("sales_invoice")].update_stock)
-            for data in selected.values()
-            if data.get("sales_invoice") in source_sis
+            bool(source_sis[d.get("sales_invoice")].update_stock)
+            for d in selected.values()
+            if d.get("sales_invoice") in source_sis
         )
         return_doc.update_stock = 1 if source_update_stock else 0
 
@@ -956,8 +1095,8 @@ def create_single_sales_invoice_return(doc, rows):
                 "so_detail",
                 "delivery_note",
                 "dn_detail",
-                "item_tax_template",   # NEW
-                "item_tax_rate",       # NEW
+                "item_tax_template",
+                "item_tax_rate",
             ],
             as_dict=True,
         )
@@ -1027,7 +1166,7 @@ def create_single_sales_invoice_return(doc, rows):
         if hasattr(item, "brand"):
             item.brand = original_data.brand
 
-        # NEW: ITEM TAX TEMPLATE / ITEM TAX RATE
+        # ITEM TAX TEMPLATE / ITEM TAX RATE
         if hasattr(item, "item_tax_template"):
             item.item_tax_template = original_data.item_tax_template
 
@@ -1056,7 +1195,7 @@ def create_single_sales_invoice_return(doc, rows):
         )
 
     # ---------------------------------------------------------------------
-    # NEW: COPY TAXES FROM SOURCE SALES INVOICE
+    # COPY TAXES FROM SOURCE SALES INVOICE
     # ---------------------------------------------------------------------
 
     return_doc.taxes_and_charges = source_si.taxes_and_charges
@@ -1232,7 +1371,7 @@ def create_single_sales_invoice_return(doc, rows):
             if hasattr(item, "base_amount"):
                 item.base_amount = flt(item.qty) * flt(item.base_rate or 0)
 
-            # NEW: net fields (tax is calculated on net_amount)
+            # net fields (tax is calculated on net_amount)
             if not taxes_inclusive:
 
                 if hasattr(item, "net_rate"):
@@ -1255,7 +1394,7 @@ def create_single_sales_invoice_return(doc, rows):
 
     return_doc.set_missing_values()
 
-    # NEW: set_missing_values may have wiped taxes -> re-apply if empty
+    # set_missing_values may have wiped taxes -> re-apply if empty
     if not return_doc.get("taxes") and source_si.get("taxes"):
 
         return_doc.taxes_and_charges = source_si.taxes_and_charges
@@ -1263,7 +1402,7 @@ def create_single_sales_invoice_return(doc, rows):
         for tax_row in build_tax_rows():
             return_doc.append("taxes", tax_row)
 
-    # NEW: item tax template / rate may be reset by set_missing_values
+    # item tax template / rate may be reset by set_missing_values
     for item in return_doc.items:
 
         source_item = (
@@ -1290,6 +1429,46 @@ def create_single_sales_invoice_return(doc, rows):
 
         if hasattr(item, "item_tax_rate"):
             item.item_tax_rate = src_tax.item_tax_rate
+
+    # ---------------------------------------------------------------------
+    # ADDITIONAL DISCOUNT FIX
+    # make_return_doc poore original invoice ka discount_amount copy kar deta
+    # hai. Ham sirf kuch items return karte hain, isliye discount ko har source
+    # SI ke returned items ke hisab se proportional karna zaroori hai.
+    # ---------------------------------------------------------------------
+
+    discount_share = 0
+
+    for src_name, src in source_sis.items():
+
+        src_discount = abs(flt(src.discount_amount))
+        src_total = flt(src.total)
+
+        if not src_discount or not src_total:
+            continue
+
+        returned_value_si = 0
+
+        for i in return_doc.items:
+            sii_name = i.get("sales_invoice_item")
+            parent_si = frappe.db.get_value(
+                "Sales Invoice Item", sii_name, "parent"
+            )
+            if parent_si != src_name:
+                continue
+
+            original_rate = flt((source_rates.get(sii_name) or {}).get("rate"))
+            returned_value_si += abs(flt(i.qty)) * original_rate
+
+        ratio = min(returned_value_si / src_total, 1) if src_total else 0
+        discount_share += src_discount * ratio
+
+    return_doc.additional_discount_percentage = 0
+    return_doc.discount_amount = (
+        -flt(discount_share, return_doc.precision("discount_amount"))
+        if discount_share
+        else 0
+    )
 
     # ---------------------------------------------------------------------
     # FIX INVALID BILLING / SHIPPING ADDRESS LINKS
@@ -1367,7 +1546,7 @@ def create_single_sales_invoice_return(doc, rows):
     # ---------------------------------------------------------------------
 
     frappe.logger().info(
-        f"Bulk Sales Return {doc.name}: "
+        f"Bulk Sales Return {doc.name}: update_stock={return_doc.update_stock}, "
         f"taxes_and_charges={return_doc.taxes_and_charges}, "
         f"taxes_rows={len(return_doc.get('taxes') or [])}, "
         f"total_taxes_and_charges={return_doc.total_taxes_and_charges}, "
@@ -1491,6 +1670,7 @@ def create_single_sales_invoice_return(doc, rows):
 
     frappe.logger().info(
         f"Bulk Sales Return {doc.name}: FINAL | SI Return={return_doc.name} | "
+        f"update_stock={return_doc.update_stock} | "
         f"net_total={return_doc.net_total} | "
         f"total_taxes_and_charges={return_doc.total_taxes_and_charges} | "
         f"grand_total={return_doc.grand_total}"
@@ -1500,550 +1680,12 @@ def create_single_sales_invoice_return(doc, rows):
 
 
 # =============================================================================
-# ACTIVATE SALES INVOICE ONLY SERIAL STOCK
+# DELIVERY NOTE RETURNS (ONE consolidated return)
+# FIX: agar selected DN item ka returnable qty nahi bacha to pehle wo chupchap
+# skip ho jata tha, ab clear error aata hai.
 # =============================================================================
 
-# def activate_sales_invoice_only_stock(doc, resolved_rows):
-#     """
-#     Activate Serial Nos for serialized items which originated
-#     directly from a Stock-updating Sales Invoice.
-
-#     Delivery Note backed items are intentionally skipped because
-#     their stock reversal is handled by the Delivery Note Return.
-#     """
-
-#     if not doc:
-#         return
-
-#     for row in resolved_rows:
-
-#         # Must have Sales Invoice source
-#         if not row.get("sales_invoice_item"):
-#             continue
-
-#         # DN backed -> DN Return handles stock reversal
-#         if row.get("delivery_note_item"):
-#             continue
-
-#         sales_invoice = row.get("sales_invoice")
-
-#         if not sales_invoice:
-#             continue
-
-#         source_update_stock = frappe.db.get_value(
-#             "Sales Invoice", sales_invoice, "update_stock"
-#         )
-
-#         if not source_update_stock:
-#             continue
-
-#         item_code = row.get("item_code")
-
-#         has_serial_no = frappe.db.get_value("Item", item_code, "has_serial_no")
-
-#         if not has_serial_no:
-#             continue
-
-#         serials = list(dict.fromkeys(row.get("serials") or []))
-
-#         if not serials:
-#             continue
-
-#         warehouse = row.get("warehouse")
-
-#         for serial_no in serials:
-
-#             if not frappe.db.exists("Serial No", serial_no):
-#                 continue
-
-#             values = {"status": "Active"}
-
-#             if warehouse:
-#                 values["warehouse"] = warehouse
-
-#                 warehouse_company = frappe.db.get_value(
-#                     "Warehouse", warehouse, "company"
-#                 )
-
-#                 if warehouse_company:
-#                     values["company"] = warehouse_company
-
-#             frappe.db.set_value(
-#                 "Serial No",
-#                 serial_no,
-#                 values,
-#                 update_modified=False
-#             )
-
-#             frappe.logger().info(
-#                 f"Bulk Sales Return {doc.name}: Serial No {serial_no} "
-#                 f"activated because it is SI-only."
-#             )
-
-#         frappe.db.commit()
-
-# def activate_sales_invoice_only_stock(doc, resolved_rows):
-#     """
-#     Activate Serial Nos for serialized items which originated
-#     directly from a Stock-updating Sales Invoice.
-
-#     Delivery Note backed items are intentionally skipped because
-#     their stock reversal is handled by the Delivery Note Return.
-
-#     SAFETY GUARD:
-#     Serial No master is NEVER activated if the latest valid
-#     Serial and Batch Bundle entry of that serial is Outward.
-#     (e.g. serial was returned to supplier via Purchase Return after
-#     the original sale). Ledger is the source of truth.
-#     """
-
-#     if not doc:
-#         return
-
-#     for row in resolved_rows:
-
-#         # Must have Sales Invoice source
-#         if not row.get("sales_invoice_item"):
-#             continue
-
-#         # DN backed -> DN Return handles stock reversal
-#         if row.get("delivery_note_item"):
-#             continue
-
-#         sales_invoice = row.get("sales_invoice")
-
-#         if not sales_invoice:
-#             continue
-
-#         source_update_stock = frappe.db.get_value(
-#             "Sales Invoice", sales_invoice, "update_stock"
-#         )
-
-#         if not source_update_stock:
-#             continue
-
-#         item_code = row.get("item_code")
-
-#         has_serial_no = frappe.db.get_value("Item", item_code, "has_serial_no")
-
-#         if not has_serial_no:
-#             continue
-
-#         serials = list(dict.fromkeys(row.get("serials") or []))
-
-#         if not serials:
-#             continue
-
-#         warehouse = row.get("warehouse")
-
-#         warehouse_company = None
-
-#         if warehouse:
-#             warehouse_company = frappe.db.get_value(
-#                 "Warehouse", warehouse, "company"
-#             )
-
-#         for serial_no in serials:
-
-#             if not frappe.db.exists("Serial No", serial_no):
-#                 continue
-
-#             # -----------------------------------------------------------------
-#             # GUARD: ledger ke hisaab se serial abhi bahar hai -> skip
-#             # -----------------------------------------------------------------
-#             last_entry = frappe.db.sql(
-#                 """
-#                 SELECT sbb.type_of_transaction, sbb.voucher_no
-#                 FROM `tabSerial and Batch Entry` sbe
-#                 INNER JOIN `tabSerial and Batch Bundle` sbb
-#                     ON sbb.name = sbe.parent
-#                 WHERE sbe.serial_no = %s
-#                 AND sbb.docstatus = 1
-#                 AND sbb.is_cancelled = 0
-#                 ORDER BY
-#                     sbb.posting_date DESC,
-#                     sbb.posting_time DESC,
-#                     sbb.creation DESC
-#                 LIMIT 1
-#                 """,
-#                 serial_no,
-#                 as_dict=True
-#             )
-
-#             if last_entry and last_entry[0].type_of_transaction == "Outward":
-
-#                 frappe.logger().info(
-#                     f"Bulk Sales Return {doc.name}: Serial No {serial_no} "
-#                     f"NOT activated. Last ledger entry is Outward "
-#                     f"({last_entry[0].voucher_no})."
-#                 )
-
-#                 continue
-
-#             values = {"status": "Active"}
-
-#             if warehouse:
-#                 values["warehouse"] = warehouse
-
-#                 if warehouse_company:
-#                     values["company"] = warehouse_company
-
-#             frappe.db.set_value(
-#                 "Serial No",
-#                 serial_no,
-#                 values,
-#                 update_modified=False
-#             )
-
-#             frappe.logger().info(
-#                 f"Bulk Sales Return {doc.name}: Serial No {serial_no} "
-#                 f"activated because it is SI-only."
-#             )
-
-#     frappe.db.commit()
-
-def activate_sales_invoice_only_stock(doc, resolved_rows):
-    """
-    Activate Serial Nos for serialized items which originated
-    directly from a Stock-updating Sales Invoice.
-
-    Delivery Note backed items are intentionally skipped because
-    their stock reversal is handled by the Delivery Note Return.
-
-    SAFETY GUARD:
-    Original Sales Invoice ki apni Outward entry ignore hoti hai.
-    Uske baad ki koi Outward entry (jaise Purchase Return) ho to
-    serial activate nahi hota.
-    """
-
-    if not doc:
-        return
-
-    for row in resolved_rows:
-
-        # Must have Sales Invoice source
-        if not row.get("sales_invoice_item"):
-            continue
-
-        # DN backed -> DN Return handles stock reversal
-        if row.get("delivery_note_item"):
-            continue
-
-        sales_invoice = row.get("sales_invoice")
-
-        if not sales_invoice:
-            continue
-
-        source_update_stock = frappe.db.get_value(
-            "Sales Invoice", sales_invoice, "update_stock"
-        )
-
-        if not source_update_stock:
-            continue
-
-        item_code = row.get("item_code")
-
-        has_serial_no = frappe.db.get_value("Item", item_code, "has_serial_no")
-
-        if not has_serial_no:
-            continue
-
-        serials = list(dict.fromkeys(row.get("serials") or []))
-
-        if not serials:
-            continue
-
-        warehouse = row.get("warehouse")
-
-        warehouse_company = None
-
-        if warehouse:
-            warehouse_company = frappe.db.get_value(
-                "Warehouse", warehouse, "company"
-            )
-
-        for serial_no in serials:
-
-            if not frappe.db.exists("Serial No", serial_no):
-                continue
-
-            # -----------------------------------------------------------------
-            # GUARD: original SI ki entry ignore karo (voucher_no != sales_invoice)
-            # uske baad ki last entry Outward ho to skip
-            # -----------------------------------------------------------------
-            last_entry = frappe.db.sql(
-                """
-                SELECT sbb.type_of_transaction, sbb.voucher_no
-                FROM `tabSerial and Batch Entry` sbe
-                INNER JOIN `tabSerial and Batch Bundle` sbb
-                    ON sbb.name = sbe.parent
-                WHERE sbe.serial_no = %s
-                AND sbb.docstatus = 1
-                AND sbb.is_cancelled = 0
-                AND sbb.voucher_no != %s
-                ORDER BY
-                    sbb.posting_date DESC,
-                    sbb.posting_time DESC,
-                    sbb.creation DESC
-                LIMIT 1
-                """,
-                (serial_no, sales_invoice),
-                as_dict=True
-            )
-
-            if last_entry and last_entry[0].type_of_transaction == "Outward":
-
-                frappe.logger().info(
-                    f"Bulk Sales Return {doc.name}: Serial No {serial_no} "
-                    f"NOT activated. Last ledger entry is Outward "
-                    f"({last_entry[0].voucher_no})."
-                )
-
-                continue
-
-            values = {"status": "Active"}
-
-            if warehouse:
-                values["warehouse"] = warehouse
-
-                if warehouse_company:
-                    values["company"] = warehouse_company
-
-            frappe.db.set_value(
-                "Serial No",
-                serial_no,
-                values,
-                update_modified=False
-            )
-
-            frappe.logger().info(
-                f"Bulk Sales Return {doc.name}: Serial No {serial_no} "
-                f"activated because it is SI-only."
-            )
-
-    frappe.db.commit()
-    
-# =============================================================================
-# DELIVERY NOTE RETURNS
-# =============================================================================
-
-# def create_delivery_note_returns(doc, rows):
-
-#     grouped = {}
-
-#     for row in rows:
-
-#         delivery_note = row.get("delivery_note")
-#         delivery_note_item = row.get("delivery_note_item")
-
-#         if not delivery_note:
-#             continue
-
-#         if not delivery_note_item:
-#             continue
-
-#         grouped.setdefault(delivery_note, []).append(row)
-
-#     created = []
-
-#     for delivery_note, source_rows in grouped.items():
-
-#         source_dn = frappe.get_doc("Delivery Note", delivery_note)
-
-#         if source_dn.docstatus != 1:
-#             frappe.throw(f"Delivery Note {delivery_note} must be submitted.")
-
-#         selected = {}
-
-#         for row in source_rows:
-
-#             delivery_note_item = row.get("delivery_note_item")
-
-#             if not delivery_note_item:
-#                 continue
-
-#             selected.setdefault(
-#                 delivery_note_item,
-#                 {"qty": 0, "serials": []}
-#             )
-
-#             selected[delivery_note_item]["qty"] += flt(row.get("qty"))
-#             selected[delivery_note_item]["serials"].extend(
-#                 row.get("serials") or []
-#             )
-
-#         if not selected:
-#             continue
-
-#         # ============================================================
-#         # CHECK ALREADY RETURNED QTY
-#         # ============================================================
-
-#         valid_selected = {}
-
-#         for delivery_note_item, data in selected.items():
-
-#             requested_qty = flt(data["qty"])
-
-#             original_qty = flt(
-#                 frappe.db.get_value(
-#                     "Delivery Note Item", delivery_note_item, "qty"
-#                 ) or 0
-#             )
-
-#             already_returned_qty = flt(
-#                 frappe.db.sql(
-#                     """
-#                     SELECT IFNULL(SUM(ABS(dni.qty)), 0)
-#                     FROM `tabDelivery Note Item` dni
-#                     INNER JOIN `tabDelivery Note` dn
-#                         ON dn.name = dni.parent
-#                     WHERE dn.docstatus = 1
-#                     AND dn.is_return = 1
-#                     AND dni.dn_detail = %s
-#                     """,
-#                     delivery_note_item
-#                 )[0][0] or 0
-#             )
-
-#             available_qty = original_qty - already_returned_qty
-
-#             if available_qty <= 0:
-
-#                 frappe.log_error(
-#                     f"Bulk Sales Return {doc.name}: Skipping already "
-#                     f"returned DN Item {delivery_note_item}.",
-#                     "Bulk Sales Return - DN Already Returned"
-#                 )
-
-#                 continue
-
-#             if requested_qty > available_qty:
-#                 frappe.throw(
-#                     f"Delivery Note Item {delivery_note_item} "
-#                     f"has only {available_qty} qty available for return, "
-#                     f"but requested {requested_qty}."
-#                 )
-
-#             valid_selected[delivery_note_item] = data
-
-#         if not valid_selected:
-#             continue
-
-#         # ============================================================
-#         # DUPLICATE DELIVERY NOTE RETURN PROTECTION
-#         # ============================================================
-
-#         existing_dn = frappe.db.sql(
-#             """
-#             SELECT name
-#             FROM `tabDelivery Note`
-#             WHERE is_return = 1
-#             AND docstatus IN (0, 1)
-#             AND return_against = %s
-#             AND custom_bulk_sales_return = %s
-#             ORDER BY creation ASC
-#             LIMIT 1
-#             """,
-#             (source_dn.name, doc.name),
-#             as_dict=True
-#         )
-
-#         if existing_dn:
-#             created.append(existing_dn[0].name)
-#             continue
-
-#         # ============================================================
-#         # CREATE STANDARD DELIVERY NOTE RETURN
-#         # ============================================================
-
-#         return_doc = make_return_doc("Delivery Note", source_dn.name)
-
-#         return_doc.is_return = 1
-#         return_doc.return_against = source_dn.name
-#         return_doc.custom_bulk_sales_return = doc.name
-
-#         kept_items = []
-
-#         for return_item in list(return_doc.items):
-
-#             original_item_name = getattr(return_item, "dn_detail", None) or None
-
-#             if not original_item_name:
-
-#                 if return_item.idx:
-
-#                     original_item_name = frappe.db.get_value(
-#                         "Delivery Note Item",
-#                         {
-#                             "parent": source_dn.name,
-#                             "idx": return_item.idx
-#                         },
-#                         "name"
-#                     )
-
-#             selected_row = valid_selected.get(original_item_name)
-
-#             if not selected_row:
-#                 continue
-
-#             return_item.dn_detail = original_item_name
-
-#             return_item.qty = -abs(flt(selected_row["qty"]))
-
-#             serials = list(dict.fromkeys(selected_row["serials"]))
-
-#             if serials:
-
-#                 return_item.serial_no = "\n".join(serials)
-
-#                 if hasattr(return_item, "use_serial_batch_fields"):
-#                     return_item.use_serial_batch_fields = 1
-
-#             kept_items.append(return_item)
-
-#         if not kept_items:
-#             continue
-
-#         return_doc.items = kept_items
-
-#         for idx, item in enumerate(return_doc.items, start=1):
-#             item.idx = idx
-
-#         return_doc.custom_bulk_sales_return = doc.name
-
-#         return_doc.set_missing_values()
-
-#         return_doc.flags.ignore_permissions = True
-
-#         # ============================================================
-#         # INSERT DRAFT
-#         # ============================================================
-
-#         return_doc.insert(ignore_permissions=True)
-
-#         # ============================================================
-#         # FORCE DATABASE REFERENCE
-#         # ============================================================
-
-#         force_set_delivery_note_bulk_reference(return_doc.name, doc.name)
-#         verify_delivery_note_bulk_reference(return_doc.name, doc.name)
-
-#         return_doc.reload()
-
-#         return_doc.flags.ignore_permissions = True
-
-#         force_set_delivery_note_bulk_reference(return_doc.name, doc.name)
-#         verify_delivery_note_bulk_reference(return_doc.name, doc.name)
-
-#         created.append(return_doc.name)
-
-#         frappe.db.commit()
-
-#     reconcile_delivery_note_bulk_reference(doc)
-
-#     return created
-def create_delivery_note_returns(doc, rows):
+def create_delivery_note_returns(doc, rows, extra_si_rows=None):
     """ONE consolidated Delivery Note Return for all source Delivery Notes."""
 
     existing = frappe.db.get_value(
@@ -2095,6 +1737,7 @@ def create_delivery_note_returns(doc, rows):
 
     for source_name, selected in grouped.items():
         mapped = make_return_doc("Delivery Note", source_name)
+        added = set()
 
         for return_item in list(mapped.items):
             original_item_name = getattr(return_item, "dn_detail", None)
@@ -2139,9 +1782,95 @@ def create_delivery_note_returns(doc, rows):
                 if k in skip_keys or k.startswith("__"):
                     item_dict.pop(k)
             return_doc.append("items", item_dict)
+            added.add(original_item_name)
+
+        # make_return_doc fully-returned items ko mapped doc me nahi deta.
+        # Aise item ko chupchap skip karne ki jagah error do.
+        missing = set(selected) - added
+        if missing:
+            frappe.throw(
+                f"Delivery Note {source_name}: no returnable qty left for item(s) "
+                f"{', '.join(sorted(missing))}. Already returned?"
+            )
 
     if not return_doc or not return_doc.items:
         return []
+
+    # -----------------------------------------------------------------
+    # SI-ONLY ITEMS (koi DN nahi, stock Sales Invoice se gaya tha)
+    # Inka stock isi consolidated DN return se wapas aata hai, taaki
+    # ek hi SI return (update_stock=0) aur ek hi DN return bane.
+    # -----------------------------------------------------------------
+    if extra_si_rows:
+
+        merged_si = {}
+
+        for r in extra_si_rows:
+            sii_name = r.get("sales_invoice_item")
+            if not sii_name:
+                continue
+            m = merged_si.setdefault(sii_name, {"qty": 0, "serials": []})
+            m["qty"] += flt(r.get("qty"))
+            m["serials"].extend(r.get("serials") or [])
+
+        for sii_name, data in merged_si.items():
+
+            src = frappe.db.get_value(
+                "Sales Invoice Item",
+                sii_name,
+                [
+                    "parent", "item_code", "item_name", "description", "uom",
+                    "stock_uom", "conversion_factor", "rate", "warehouse",
+                    "cost_center",
+                ],
+                as_dict=True,
+            )
+
+            if not src:
+                frappe.throw(f"Sales Invoice Item {sii_name} not found.")
+
+            si_head = frappe.db.get_value(
+                "Sales Invoice",
+                src.parent,
+                ["docstatus", "customer", "company"],
+                as_dict=True,
+            )
+
+            if si_head.docstatus != 1:
+                frappe.throw(f"Sales Invoice {src.parent} must be submitted.")
+
+            if (
+                si_head.customer not in customers
+                or si_head.company not in companies
+            ):
+                frappe.throw(
+                    "All Sales Invoices and Delivery Notes must have the "
+                    "same Customer and Company."
+                )
+
+            new_item = return_doc.append(
+                "items",
+                {
+                    "item_code": src.item_code,
+                    "item_name": src.item_name,
+                    "description": src.description or src.item_name,
+                    "uom": src.uom,
+                    "stock_uom": src.stock_uom,
+                    "conversion_factor": src.conversion_factor or 1,
+                    "qty": -abs(flt(data["qty"])),
+                    "rate": flt(src.rate),
+                    "warehouse": src.warehouse,
+                    "cost_center": src.cost_center,
+                },
+            )
+
+            serials = list(dict.fromkeys(data["serials"]))
+
+            if serials:
+                new_item.serial_no = "\n".join(serials)
+
+                if hasattr(new_item, "use_serial_batch_fields"):
+                    new_item.use_serial_batch_fields = 1
 
     for idx, item in enumerate(return_doc.items, start=1):
         item.idx = idx
@@ -2163,7 +1892,6 @@ def create_delivery_note_returns(doc, rows):
     )
     frappe.db.commit()
     return [return_doc.name]
-
 
 
 # =============================================================================
@@ -2335,6 +2063,9 @@ def submit_created_returns(docname):
 
 # =============================================================================
 # PROCESS SUBMIT RETURNS
+# FIX: purana code DN return ko seedha dn_doc.submit() se submit karta tha
+# (consolidated DN return me return_against blank hota hai, isliye fail).
+# Ab SI returns submit hote hain, fir DN returns auto-submit wale path se.
 # =============================================================================
 
 def process_submit_returns(docname):
@@ -2347,35 +2078,7 @@ def process_submit_returns(docname):
 
         frappe.db.commit()
 
-        # DELIVERY NOTE RETURNS
-        dns = frappe.get_all(
-            "Delivery Note",
-            filters={
-                "custom_bulk_sales_return": docname,
-                "docstatus": 0,
-                "is_return": 1
-            },
-            pluck="name",
-            order_by="creation asc"
-        )
-
-        for dn in dns:
-
-            dn_doc = frappe.get_doc("Delivery Note", dn)
-
-            if dn_doc.docstatus != 0:
-                continue
-
-            dn_doc.flags.ignore_permissions = True
-
-            dn_doc.submit()
-
-            force_set_delivery_note_bulk_reference(dn_doc.name, docname)
-            verify_delivery_note_bulk_reference(dn_doc.name, docname)
-
-            frappe.db.commit()
-
-        # SALES INVOICE RETURNS
+        # SALES INVOICE RETURNS (update_stock=1 wale se SLE banega)
         sis = frappe.get_all(
             "Sales Invoice",
             filters={
@@ -2400,10 +2103,10 @@ def process_submit_returns(docname):
 
             frappe.db.commit()
 
-        # Activate only SI-only serialized stock.
-        activate_bulk_si_only_serials_after_submit(docname)
+        # DELIVERY NOTE RETURNS (purchase-return step + consolidated submit)
+        failed = submit_linked_delivery_note_returns(docname)
 
-        doc.db_set("submit_status", "Completed")
+        doc.db_set("submit_status", "Failed" if failed else "Completed")
 
         frappe.db.commit()
 
@@ -3469,54 +3172,8 @@ def get_return_source_from_serial(serial_no, company, customer=None):
 
 
 # =============================================================================
-# ACTIVATE SI-ONLY SERIALS AFTER BULK SI RETURN SUBMISSION
+# SUBMIT CONSOLIDATED DN RETURN
 # =============================================================================
-
-def activate_bulk_si_only_serials_after_submit(bulk_sales_return):
-    """
-    Activate only SI-only serialized items after the
-    Bulk-linked Sales Invoice Return has actually been submitted.
-    """
-
-    if not bulk_sales_return:
-        return
-
-    submitted_si = frappe.db.exists(
-        "Sales Invoice",
-        {
-            "custom_bulk_sales_return": bulk_sales_return,
-            "is_return": 1,
-            "docstatus": 1
-        }
-    )
-
-    if not submitted_si:
-
-        frappe.logger().info(
-            f"Bulk Sales Return {bulk_sales_return}: "
-            f"No submitted Bulk Sales Invoice Return found. "
-            f"Serial activation skipped."
-        )
-
-        return
-
-    bulk_doc = frappe.get_doc("Bulk Sales Return", bulk_sales_return)
-
-    resolved_rows = []
-
-    for row in bulk_doc.items:
-
-        resolved = resolve_bulk_return_row(row)
-
-        if resolved:
-            resolved_rows.append(resolved)
-
-    if not resolved_rows:
-        return
-
-    activate_sales_invoice_only_stock(bulk_doc, resolved_rows)
-
-
 
 def submit_bulk_dn_return(dn_doc):
     """
@@ -3595,9 +3252,13 @@ def auto_submit_linked_delivery_note_return(doc, method=None):
     )
 
 
+# FIX: serial activation hack (db me seedha status Active) hata diya.
+# SI-only items ka SI return ab update_stock=1 hota hai, isliye ERPNext
+# khud Stock Ledger Entry banake serial Active karta hai.
+# Ab ye function failed list return karta hai.
 def submit_linked_delivery_note_returns(bulk_sales_return):
     if not bulk_sales_return:
-        return
+        return []
 
     lock_name = f"bsr_submit_dn:{bulk_sales_return}"
     got_lock = frappe.db.sql("SELECT GET_LOCK(%s, 30)", lock_name)[0][0] == 1
@@ -3638,6 +3299,16 @@ def submit_linked_delivery_note_returns(bulk_sales_return):
                     f"Bulk Sales Return - DN Return submit failed: {dn_name}",
                 )
 
+        # DN returns submit ho gaye -> check karo ki saare serial Active hain
+        if not failed:
+            inactive = get_inactive_bulk_serials(bulk_sales_return)
+
+            if inactive:
+                failed.append(
+                    "These serial numbers are not Active after the returns: "
+                    + ", ".join(inactive)
+                )
+
         if failed:
             frappe.publish_realtime(
                 event="msgprint",
@@ -3646,14 +3317,34 @@ def submit_linked_delivery_note_returns(bulk_sales_return):
                     f"return submit failed:<br>" + "<br>".join(failed)
                 ),
             )
-            return
 
-        activate_bulk_si_only_serials_after_submit(bulk_sales_return)
-        frappe.db.commit()
+        return failed
 
     finally:
         frappe.db.sql("SELECT RELEASE_LOCK(%s)", lock_name)
-        
+
+
+def get_inactive_bulk_serials(bulk_sales_return):
+    """Bulk Return ke jo serial abhi Active nahi hain unki list (check only)."""
+
+    bulk_doc = frappe.get_doc("Bulk Sales Return", bulk_sales_return)
+
+    inactive = []
+
+    for row in bulk_doc.items:
+        for serial in (row.serial_nos or "").split("\n"):
+            serial = serial.strip()
+
+            if not serial:
+                continue
+
+            status = frappe.db.get_value("Serial No", serial, "status")
+
+            if status != "Active":
+                inactive.append(f"{serial} ({status or 'not found'})")
+
+    return inactive
+
 
 def auto_purchase_return_for_dn_serials(dn_doc):
     """
