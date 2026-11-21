@@ -148,8 +148,8 @@ class IncomingLogistics(Document):
             frappe.throw(f"Gate Entry not found: {gate_entry}")
 
         # 🔹 TZU Settings
-        settings = frappe.get_single("TZU Setting")
-        transport_item = settings.transport_service_item
+        # settings = frappe.get_single("TZU Setting")
+        # transport_item = settings.transport_service_item
 
         # 🔹 Parent update
         frappe.db.set_value("Gate Entry", gate_entry, {
@@ -162,7 +162,7 @@ class IncomingLogistics(Document):
             "document_no": self.lr_document_no,
             "consignor_customer": self.consignor_customer,
             "incoming_logistics": self.name,
-            "transport_service_item": transport_item,
+            # "transport_service_item": transport_item,
             "document_date": self.lr_date,
             "status": 'Submitted',
             "lr_entry_date": self.lr_date,
