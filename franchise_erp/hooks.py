@@ -421,6 +421,7 @@ override_doctype_class = {
     "Purchase Receipt": "franchise_erp.overrides.purchase_receipt.PurchaseReceipt",
     # "HD Team": "franchise_erp.overrides.hd_team.CustomHDTeam",
     "Payment Reconciliation": "franchise_erp.overrides.payment_reconciliation.CustomPaymentReconciliation",
+    "Serial and Batch Bundle": "franchise_erp.overrides.serial_and_batch_bundle.CustomSerialandBatchBundle",
 
 }
 
