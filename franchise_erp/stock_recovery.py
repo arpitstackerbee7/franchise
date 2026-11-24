@@ -427,6 +427,7 @@ def recover_return_stock(sales_invoice):
                 )
             )
 
+
         make_sl_entries(
             [
                 frappe._dict(
