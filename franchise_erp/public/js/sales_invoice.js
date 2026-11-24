@@ -47,6 +47,45 @@ frappe.ui.form.on("Sales Invoice", {
     },
     refresh(frm) {
         frm.set_df_property("title", "read_only", 1);
+
+                // Custom Return Stock Recovery Button
+        if (
+            frm.doc.docstatus === 1 &&
+            frm.doc.is_return === 1
+        ) {
+            frm.add_custom_button(
+                __("Update Return Stock"),
+                function () {
+                    frappe.confirm(
+                        __("Recover missing stock for this Return Invoice?"),
+                        function () {
+                            frappe.call({
+                                method: "franchise_erp.stock_recovery.recover_return_stock",
+                                args: {
+                                    sales_invoice: frm.doc.name
+                                },
+                                freeze: true,
+                                freeze_message: __("Recovering Return Stock..."),
+                                callback: function (r) {
+                                    if (!r.exc && r.message) {
+                                        frappe.msgprint({
+                                            title: __("Return Stock Recovery"),
+                                            indicator: "green",
+                                            message: `
+                                                Recovered: ${r.message.recovered_count}<br>
+                                                Skipped: ${r.message.skipped_count}
+                                            `
+                                        });
+                                        frm.reload_doc();
+                                    }
+                                }
+                            });
+                        }
+                    );
+                },
+                __("Actions")
+            );
+        }
         if (frm.doc.custom_bulk_sales_return) {
             frm.set_df_property("return_against", "hidden", 1);
         }
