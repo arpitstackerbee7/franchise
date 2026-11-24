@@ -26,6 +26,7 @@
   "enable_geo_location",
   "enable_pricing_rule",
   "require_grn_return_before_purchase_invoice_return",
+  "recover_stock",
   "column_break_qyul",
   "enable_whatsapp_notification",
   "enable_whatsapp_group_notification",
@@ -270,13 +271,19 @@
    "fieldname": "is_system_generated_je",
    "fieldtype": "Check",
    "label": "Is System Generated JE"
+  },
+  {
+   "default": "0",
+   "fieldname": "recover_stock",
+   "fieldtype": "Check",
+   "label": "Recover Stock"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-17 17:32:21.001491",
+ "modified": "2026-11-24 14:39:35.441315",
  "modified_by": "Administrator",
  "module": "Franchise Erp",
  "name": "TZU Setting",
