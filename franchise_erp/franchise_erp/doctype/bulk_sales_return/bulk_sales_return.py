@@ -424,72 +424,54 @@ def process_bulk_sales_return(docname):
             resolved_rows.append(resolved)
 
         # ---------------------------------------------------------------
-        # HAMESHA MAX 1 SALES INVOICE RETURN + MAX 1 DELIVERY NOTE RETURN
-        #
-        # Case A: koi DN-backed item nahi (sirf SI-only items)
-        #     -> 1 SI return, update_stock = 1 (SLE banega, serial Active hoga)
-        #
-        # Case B: DN-backed items hain (ya DN + SI-only mixed)
-        #     -> 1 SI return, update_stock = 0 (sirf billing / credit note)
-        #     -> 1 DN return: DN-backed items + SI-only items dono ka stock
-        #        isi DN return se wapas aata hai (SLE banega, serial Active hoga)
+        # SINGLE CONSOLIDATED SALES INVOICE RETURN ONLY
+        # Stock movement is handled by Sales Invoice Return (update_stock=1).
+        # No Delivery Note Return is created.
         # ---------------------------------------------------------------
-        si_rows = [r for r in resolved_rows if r.get("sales_invoice_item")]
-        dn_rows = [
+
+        si_rows = [
             r for r in resolved_rows
-            if r.get("delivery_note") and r.get("delivery_note_item")
+            if r.get("sales_invoice_item")
         ]
-        stock_si_rows, _billing_only_rows = split_si_rows_by_stock_effect(si_rows)
 
-        # Pichle run ke purane DRAFT returns hata do, taaki purana draft
-        # (jisme naye items na hon) dobara use na ho jaye.
-        delete_draft_bulk_returns(doc.name)
+        unresolved_rows = [
+            r for r in resolved_rows
+            if not r.get("sales_invoice_item")
+        ]
 
-        if not dn_rows:
-
-            # Case A
-            if si_rows and not get_existing_bulk_sales_invoice_return(doc.name):
-                create_single_sales_invoice_return(
-                    doc,
-                    si_rows,
-                    update_stock=1 if stock_si_rows else 0,
+        if unresolved_rows:
+            row_details = ", ".join(
+                f"Row {getattr(r.get('row'), 'idx', '?')}: "
+                f"{r.get('item_code') or 'Unknown Item'}"
+                for r in unresolved_rows
+            )
+            frappe.throw(
+                _("These return items could not be mapped to Sales Invoice Items: {0}").format(
+                    row_details
                 )
-
-        else:
-
-            # Case B
-            if si_rows and not get_existing_bulk_sales_invoice_return(doc.name):
-                create_single_sales_invoice_return(doc, si_rows, update_stock=0)
-
-            create_delivery_note_returns(
-                doc, dn_rows, extra_si_rows=stock_si_rows
             )
 
-            # DN return me saare items (DN wale + SI-only) hone chahiye,
-            # nahi to SI-only serial Active nahi honge -> clear error do.
-            verify_dn_return_items(doc.name, dn_rows, stock_si_rows)
+        if len(si_rows) != len(resolved_rows):
+            frappe.throw(
+                _("Not all return items could be mapped to Sales Invoice Items.")
+            )
+
+        if not si_rows:
+            frappe.throw(_("No Sales Invoice Items found for return."))
+
+        # Remove only old DRAFT returns linked to this Bulk Sales Return.
+        delete_draft_bulk_returns(doc.name)
+
+        if not get_existing_bulk_sales_invoice_return(doc.name):
+            create_single_sales_invoice_return(
+                doc,
+                si_rows,
+                update_stock=1,
+            )
 
         doc.db_set("status", "Completed")
         frappe.db.commit()
 
-        # Koi SI return pehle se submit ho chuka ho to DN submit queue karo
-        if frappe.db.exists(
-            "Sales Invoice",
-            {
-                "custom_bulk_sales_return": doc.name,
-                "is_return": 1,
-                "docstatus": 1,
-            },
-        ):
-            frappe.enqueue(
-                "franchise_erp.franchise_erp.doctype.bulk_sales_return."
-                "bulk_sales_return.submit_linked_delivery_note_returns",
-                queue="short",
-                timeout=600,
-                job_id=f"bsr_submit_dn::{doc.name}",
-                deduplicate=True,
-                bulk_sales_return=doc.name,
-            )
 
     except Exception as e:
 
@@ -2103,10 +2085,9 @@ def process_submit_returns(docname):
 
             frappe.db.commit()
 
-        # DELIVERY NOTE RETURNS (purchase-return step + consolidated submit)
-        failed = submit_linked_delivery_note_returns(docname)
-
-        doc.db_set("submit_status", "Failed" if failed else "Completed")
+        # No Delivery Note Return submission.
+        # Only the consolidated Sales Invoice Return is submitted.
+        doc.db_set("submit_status", "Completed")
 
         frappe.db.commit()
 
@@ -2878,6 +2859,36 @@ def get_return_source_from_serial(serial_no, company, customer=None):
     serial_doc = frappe.get_doc("Serial No", serial_no)
 
     # =========================================================================
+    # CURRENT STOCK COMPANY VALIDATION
+    # Reject an Active serial if its current warehouse belongs to another
+    # company. Warehouse company is authoritative; Serial No company is fallback.
+    # =========================================================================
+
+    if serial_doc.status == "Active":
+
+        warehouse_company = None
+
+        if serial_doc.warehouse:
+            warehouse_company = frappe.db.get_value(
+                "Warehouse",
+                serial_doc.warehouse,
+                "company"
+            )
+
+        current_company = warehouse_company or serial_doc.company
+
+        if current_company and current_company != company:
+
+            frappe.throw(
+                _("Serial No {0} is currently available in warehouse {1} under company {2}. It cannot be returned against company {3}.").format(
+                    serial_no,
+                    serial_doc.warehouse or _("Not Set"),
+                    current_company,
+                    company
+                )
+            )
+
+    # =========================================================================
     # FIRST: SALES INVOICE
     # =========================================================================
 
@@ -3233,23 +3244,8 @@ def submit_bulk_dn_return(dn_doc):
 # =============================================================================
 
 def auto_submit_linked_delivery_note_return(doc, method=None):
-    if not doc or not doc.is_return or doc.docstatus != 1:
-        return
-
-    bulk_sales_return = doc.get("custom_bulk_sales_return")
-    if not bulk_sales_return:
-        return
-
-    frappe.enqueue(
-        "franchise_erp.franchise_erp.doctype.bulk_sales_return."
-        "bulk_sales_return.submit_linked_delivery_note_returns",
-        queue="long",
-        timeout=1800,
-        enqueue_after_commit=True,
-        job_id=f"bsr_submit_dn::{bulk_sales_return}",
-        deduplicate=True,
-        bulk_sales_return=bulk_sales_return,
-    )
+    # Bulk Sales Return no longer creates or auto-submits Delivery Note Returns.
+    return
 
 
 # FIX: serial activation hack (db me seedha status Active) hata diya.
