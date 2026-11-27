@@ -1039,9 +1039,9 @@ function set_service_item(frm, changed_field) {
         return;
     }
 
-    frappe.db.get_value('Supplier', supplier, 'custom_service_item')
+    frappe.db.get_value('Supplier', supplier, 'custom_outgoing_service_item')
         .then(r => {
-            const item = (r.message && r.message.custom_service_item) || '';
+            const item = (r.message && r.message.custom_outgoing_service_item) || '';
             if (frm.doc.transport_service_item !== item) {
                 frm.set_value('transport_service_item', item);
             }
